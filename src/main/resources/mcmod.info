@@ -1,0 +1,21 @@
+{
+	"modListVersion": 2,
+	"modList": [{
+		"modid": "${modId}",
+		"name": "${modName}",
+		"description": "Tiered communications for GT New Horizons, from wired telephones to satellites, carried by GTNH Voice.",
+		"version": "${modVersion}",
+		"mcversion": "${minecraftVersion}",
+		"url": "https://github.com/Enn3Developer/BeCom",
+		"updateUrl": "",
+		"authorList": ["Enn3Developer"],
+		"credits": "",
+		"logoFile": "",
+		"screenshots": [],
+		"parent": "",
+		"requiredMods": ["gtnhvoice", "gregtech"],
+		"dependencies": ["gtnhvoice", "gregtech"],
+		"dependants": [],
+		"useDependencyInformation": true
+	}]
+}

@@ -1,0 +1,10 @@
+// Add any additional repositories for your dependencies here.
+
+repositories {
+    maven {
+        name = "JitPack"
+        url = uri("https://jitpack.io")
+        // Only gtnh-voice: anything else resolved from JitPack comes with rewritten metadata.
+        content { includeGroup("com.github.Enn3Developer") }
+    }
+}
