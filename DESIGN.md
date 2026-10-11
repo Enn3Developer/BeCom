@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 5, 2026-10-11. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 6, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -11,7 +11,7 @@ not a promise.
 
 A GT New Horizons addon that adds a communications tech tree on top of GTNH Voice: wired telephones on pylon lines at
 LV, radio from MV, mobile phones and satellites at HV, ME-backed phones at EV. Every call is real voice carried by GTNH
-Voice. BeCom decides who hears whom, and how good it sounds.
+Voice, with in-game video on phones that have a screen. BeCom decides who hears and sees whom, and how good it is.
 
 Goals:
 
@@ -73,6 +73,10 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D38 | Antennas serve everyone. The owner can lock one to their GT team.                                                                  | decided  |
 | D39 | Phones get do-not-disturb, a block list and a hide-from-contacts option. The server rate-limits call attempts.                    | decided  |
 | D40 | Only the Satellite Launch Pad and the Satellite Dish need a maintenance hatch.                                                     | decided  |
+| D41 | Video calls stay in-game, with no real webcam. The front camera shows the caller's character; the rear camera streams their first-person view, in one-to-one calls only, off by default. | decided  |
+| D42 | Video works on the Mobile Phone (up to High), the ME Phone (Max) and a new MV Videophone block for wired networks. Telephones stay voice-only. | decided  |
+| D43 | Video needs Medium or better. At Low the picture freezes and the voice carries on.                                                 | decided  |
+| D44 | During a call, video shows in a small corner window that can be hidden, and full size in the phone screen.                         | decided  |
 
 ## 3. Progression
 
@@ -82,6 +86,7 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | Late LV  | Antenna T1                                                                 |
 | Early MV | Transceiver, Signal Analyzer                                               |
 | Mid MV   | Walkie-Talkie, Antenna T2, Portal Relay                                    |
+| Late MV  | Videophone                                                                 |
 | Early HV | Mobile Phone                                                               |
 | Mid HV   | Antenna T3, Rocket Radio Receiver                                          |
 | Late HV  | Satellite Rocket, Satellite Launch Pad, Satellite Dish                     |
@@ -107,6 +112,7 @@ receives takes a sensor, at the item's tier. The exact crafting grids are left t
 | Walkie-Talkie         | Assembler, 120 EU/t, 20 s   | MV Emitter, MV Sensor, MV circuit, MV battery, 2 Polyethylene Plates                         |
 | Antenna T2 Head       | Crafting                    | MV Machine Hull, MV Emitter, MV Sensor, 2 MV circuits, 2 Copper Cables, 2 Long Aluminium Rods |
 | Portal Relay          | Crafting                    | MV Machine Hull, MV Emitter, MV Sensor, 2 MV circuits, 2 Copper Cables, 2 Eyes of Ender      |
+| Videophone            | Crafting                    | MV Machine Hull, Screen Cover, MV Sensor (the camera), 2 MV circuits, Note Block (the speaker), 2 Phone Cables |
 | Mobile Phone          | Assembler, 480 EU/t, 30 s   | MV Emitter, MV Sensor, Screen Cover, HV circuit, HV battery, 2 Polyethylene Plates           |
 | Antenna T3 Head       | Crafting                    | HV Machine Hull, HV Emitter, HV Sensor, 2 HV circuits, 2 Gold Cables, 2 Long Stainless Steel Rods |
 | Rocket Radio Receiver | Assembler, 480 EU/t, 30 s   | HV Emitter, HV Sensor, 2 HV circuits, 4 Stainless Steel Plates                               |
@@ -193,7 +199,8 @@ The first tier: telephones connected by lines on pylons. No radio involved.
 ### 5.2 Line Terminal
 
 Ground block where a line starts or ends (the draft's "inizio e fine linea"). LV, 4 EU/t (D29). Links to one Pylon Head
-(wrench) and connects to exactly one Telephone through Phone Cable (D19). A line needs a terminal at each end.
+(wrench) and connects to exactly one Telephone or Videophone through Phone Cable (D19). A line needs a terminal at each
+end.
 
 ### 5.3 Repeater
 
@@ -429,6 +436,51 @@ lookup per antenna in range.
 - **Logout** ends the player's calls.
 - **A voice session that times out** ends the player's calls after a 10-second grace period, unless the voice comes back.
 
+### 10.1 Video
+
+Video calls stay in-game (D41): there's no webcam. Each side shows the other what its character is and what it sees.
+
+- **Front camera:** shows your character: skin, armor, held item, head turning where you look, arm swings, and a talking
+  animation.
+  - The server already knows all of that, so it sends it to the others in the call about 10 times a second (about 1–2
+    kbps). Your client uploads nothing.
+  - Your profile goes along once when the call connects, so their clients can load your skin.
+  - Their client draws you the way the inventory screen draws the player, into a small image at the size your level
+    allows.
+  - The talking animation comes from your voice, which is arriving anyway ([13.5](#135-client-audio)).
+- **Rear camera:** shows what you see.
+  - Your client copies its finished world image just before the HUD is drawn, so no HUD and no coordinates.
+  - It shrinks the copy on the GPU, compresses it to JPEG off the main thread, and sends it on BeCom's network channel.
+  - The server only drops frames a viewer's level doesn't allow; it never decodes them.
+  - One-to-one calls only, so the bandwidth stays bounded.
+- **Devices (D42):** Mobile Phone up to High, ME Phone up to Max, Videophone up to High ([10.2](#102-videophone)).
+  Telephones are voice-only.
+- **Group calls:** a grid of up to 8 front-camera tiles.
+- **Your choice:** each camera can be switched on or off during a call. The front camera starts on, the rear camera
+  off.
+
+Video uses the same per-direction level as voice, and needs Medium or better (D43):
+
+| Level  | Front camera                                          | Rear camera     |
+|--------|-------------------------------------------------------|-----------------|
+| Low    | Frozen, with "weak signal". The voice carries on.    | Off             |
+| Medium | 48 px tall, 5 fps, noisy                              | Off             |
+| High   | 96 px tall, 12 fps, light noise                       | 128×72, 2 fps   |
+| Max    | 192 px tall, every frame, clean                       | 192×108, 5 fps  |
+
+Dropouts use the same burst model as voice ([4.2](#42-dropouts)): the server drops video frames, so the picture
+freezes, then shows a few frames of blocky glitches.
+
+### 10.2 Videophone
+
+- An MV block for wired networks (D42), 32 EU/t, with a cap of High. It connects to a Line Terminal like a Telephone, and
+  counts as that terminal's one phone (D19).
+- It's a speakerphone: everyone within 4 blocks is in the call, unless they're already in another one. The call plays
+  from its loudspeaker to everyone within 16 blocks.
+- Its screen shows the call to the whole room. The other side sees everyone within 4 blocks as front-camera tiles.
+- Right-click opens its phone screen: dial, answer, hang up. It hangs up by itself once nobody has been within 4 blocks
+  for 30 s.
+
 ## 11. Controls and screens
 
 ### 11.1 Keys
@@ -452,6 +504,8 @@ its own push-to-talk unbound.
   - during a call: everyone in it with their signal bars, Add (group calls up to 8), Hang up;
   - settings: power, silent mode, do-not-disturb, hide from contacts, block list ([12.3](#123-unwanted-calls)).
 - **Signal bars** sit next to the hotbar while you hold a phone or are in a call.
+- **Video window (D44):** during a video call, a small window in a corner of the screen shows the other side. The phone
+  screen shows it full size, switches each camera on or off, and hides or shows the window.
 - **Telephone (block):** right-click picks up the handset. On a 1 ↔ 1 line that rings the other end; on a routed network
   it opens the phone screen. Right-click again, or walk more than 1 block away, to hang up. A ringing Telephone is
   answered the same way.
@@ -522,6 +576,7 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
 
 - A speaker's frames reach a group's `route()` only if the speaker is a member, so:
   - joining `becom:call` when a call connects, and leaving when it ends;
+  - for a Videophone call, joining `becom:call` while within 4 blocks of the Videophone;
   - joining `becom:radio.N` while carrying a working walkie tuned to N (inventory or Baubles), or standing at a
     Transceiver tuned to N.
 - Who receives the audio is decided inside `route()`, from the routing snapshot ([13.3](#133-routing)).
@@ -542,6 +597,8 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   - For each other participant at Low or better, unless they're within 16 blocks of the speaker (D17), apply the dropout
     model.
   - If the frame survives, `sendTo(listener, SourceState.FLAT, ...)`.
+  - A Videophone at the other end gets the frame POSITIONAL from its block, sent to every player within 16 blocks of it
+    ([10.2](#102-videophone)).
 - **`becom:radio.N`:**
   - Only frames whose `getAudio().getActivationId()` equals `ActivationIds.of("BeCom", "radio")`, meaning the speaker
     is holding push-to-talk.
@@ -574,6 +631,8 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   source through someone else's walkie or a Transceiver gets that device's level.
 - **Branch state:** `when()` rebuilds a branch's filter state each time it's entered again. The server's hysteresis and
   once-per-second evaluation keep that rare.
+- **Talking animation:** a `frame()` stage on the call branches measures each source's loudness for the front camera
+  ([10.1](#101-video)).
 
 ### 13.6 Other sounds
 
@@ -589,6 +648,11 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 - **Rockets:** rockets are Galacticraft's entities, so BeCom can't tick them. It keeps track of the `EntityAutoRocket`
   entities in loaded chunks as they join their world, and checks each one's pad, launch phase and cargo once per second
   ([9.3](#93-rocket-radio-receiver)).
+- **Video ([10.1](#101-video)):**
+  - Front-camera poses go out about 10 times a second to the others in each video call.
+  - Rear-camera frames are relayed as they are, dropped per viewer by level and dropouts, and never decoded.
+  - Both travel on BeCom's own network channel. If that turns out to lag the game connection, they move to GTNH Voice's
+    UDP transport, which would need a new API there.
 - **Path finding:** a call's best path is a widest-path search (maximize the weakest hop's SNR). It's re-run only when a
   node, a link or an access level changes.
 - **Threading:** surveys, access evaluation, clearance checks, path finding and snapshot building all run on the server
@@ -615,7 +679,7 @@ From D32:
   ([3.2](#32-structures)), and screens use GT's theme. A resource pack that restyles GT restyles those parts of BeCom
   for free. That includes Modernity, with its connected textures and its UI packs.
 - **BeCom's own art** is small:
-  - front overlays for its 11 machines, drawn as transparent layers over GT's hull like GT's own overlays, with `_GLOW`
+  - front overlays for its 12 machines, drawn as transparent layers over GT's hull like GT's own overlays, with `_GLOW`
     variants for lights;
   - about 8 item icons;
   - the Telephone's model and the Phone Cable.
@@ -656,7 +720,7 @@ in 0.4.
 |-----------------|------------------------------------------------------------------------------------------------------------|-----------|
 | 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
 | 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
-| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line. |
+| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone. Video calls: front and rear camera, the corner window, the Videophone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
 | 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. | A call connects from the Overworld to the Moon, and to the Nether. |
 | 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
 
@@ -709,6 +773,12 @@ in 0.4.
 | Walkie battery; drain standby, receiving, transmitting | 300,000 EU; 1, 2, 4 EU/t |
 | Phone battery; drain standby, in a call | 1,200,000 EU; 4, 16 EU/t      |
 | Analyzer overlay refresh                | 1 s                           |
+| Video: front-camera pose updates        | 10 per second                 |
+| Video: front-camera height (Medium, High, Max) | 48, 96, 192 px         |
+| Video: front-camera frame rate (Medium, High, Max) | 5, 12 fps, every frame |
+| Video: rear camera (High, Max)          | 128×72 at 2 fps, 192×108 at 5 fps |
+| Videophone power, room, loudspeaker     | 32 EU/t, 4 blocks, 16 blocks  |
+| Videophone hangs up after an empty room | 30 s                          |
 | Machine ID range                        | 25000–25199                   |
 
 ## 18. Open questions
