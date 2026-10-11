@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 8, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 9, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -85,6 +85,7 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D50 | BeCom adds its own task type to BetterQuesting, which BeCom completes when something happens: a first call, a first radio contact, satellites in orbit. | decided  |
 | D51 | Quests give GTNH-style rewards, balanced per tier against GTNH's own quests.                                                       | decided  |
 | D52 | Quests are written with each milestone, for the content that milestone adds.                                                       | decided  |
+| D53 | Claude Code generates every asset: textures in both styles, models and synthesized sounds.                                        | decided  |
 
 ## 3. Progression
 
@@ -712,12 +713,26 @@ From D32:
   and attaches it to each release. Players stack it above Modernity, like Modernity's other add-ons. It can be offered
   to ModernityGTNH upstream later.
 - **No pack detection in code:** pack file names change, and detection would mean shipping both styles in the jar.
-- **Placeholder art** is fine until 1.0.
+- **Who makes it (D53):** Claude Code generates all of it, in both styles, alongside each milestone's content, and the
+  owner reviews it in-game. The Modernity style uses Modernity's textures only as a reference for style and palette;
+  none of them are copied.
 
 ### 15.2 Sounds
 
-Ringtone, silent-mode buzz, dial tone, ringback, busy, unreachable, hang-up click, the walkie's squelch tail and the
-rocket launch. They must be self-made or CC0, so the license stays clean. Vanilla sounds stand in until 1.0.
+Claude Code synthesizes every sound (D53), so none of them needs a license. The call tones follow North America's
+precise tone plan, which most players know from films and games:
+
+| Sound                | How it's made                                                    |
+|----------------------|------------------------------------------------------------------|
+| Dial tone            | 350 + 440 Hz, continuous                                         |
+| Ringback             | 440 + 480 Hz, 2 s on, 4 s off                                    |
+| Busy                 | 480 + 620 Hz, 0.5 s on, 0.5 s off                                |
+| Unreachable          | The three rising special information tones (950, 1400, 1800 Hz) |
+| Ringtone             | A synthesized two-tone ring                                      |
+| Silent-mode buzz     | A short low buzz                                                 |
+| Hang-up click        | A short click                                                    |
+| Walkie squelch tail  | A short burst of filtered noise at the end of each transmission  |
+| Rocket launch        | A rising rumble of filtered noise                                |
 
 ### 15.3 Languages
 
@@ -778,7 +793,7 @@ Each milestone ends with:
 - a two-player test on a dev server.
 
 Each hard dependency (D27) joins the build with the milestone that first uses it: AE2 and Baubles in 0.3, Galacticraft
-in 0.4.
+in 0.4. Each milestone also brings the textures and sounds for its own content ([15](#15-assets)).
 
 Each milestone starts by trying out what it relies on that nobody has tested yet:
 
@@ -798,7 +813,7 @@ Each milestone starts by trying out what it relies on that nobody has tested yet
 | 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. The radio quests. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
 | 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone and ME Bridge. Video calls: front and rear camera, the corner window, the Videophone. The quests for phones, ME and video. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
 | 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. The space quests. | A call connects from the Overworld to the Moon, and to the Nether. |
-| 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, the GuideNH guide, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
+| 1.0 Polish      | A final pass over art and sounds, the Modernity add-on pack, Italian, the GuideNH guide, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
 
 ## 17. Tunables
 
