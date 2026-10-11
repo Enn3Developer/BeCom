@@ -1,10 +1,10 @@
 # Better Communications: design
 
-Draft 4, 2026-10-11. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 5, 2026-10-11. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
-still needs a yes or a change. Every number lives in [Tunables](#13-tunables) and is a starting point for playtesting,
+still needs a yes or a change. Every number lives in [Tunables](#17-tunables) and is a starting point for playtesting,
 not a promise.
 
 ## 1. What BeCom is
@@ -27,7 +27,7 @@ Not in v1:
 - Real-world RF accuracy. The model is physically flavoured and tuned for gameplay.
 
 BeCom is not part of the official GTNH pack, and won't be in the foreseeable future. It has to fit into a GTNH install
-without anyone reserving anything for it ([12.1](#121-machine-ids)).
+without anyone reserving anything for it ([14.1](#141-machine-ids)).
 
 ## 2. Decision log
 
@@ -64,6 +64,15 @@ without anyone reserving anything for it ([12.1](#121-machine-ids)).
 | D29 | Line Terminals and Repeaters are LV machines drawing 4 EU/t, not real ULV machines that LV power would blow up.                  | decided  |
 | D30 | A Satellite Rocket is a BeCom Satellite on Galacticraft Tier 1 rocket parts.                                                        | decided  |
 | D31 | Recipes follow GT's conventions: controllers are shaped crafting around a machine hull, devices come from the assembler, emitters transmit and sensors receive at the item's tier, handhelds included. Structures use only blocks GT already has. | decided  |
+| D32 | Default textures ship in the jar. A separate add-on resource pack restyles BeCom for Modernity. BeCom reuses GT's textures wherever it can and never detects resource packs in code. | decided  |
+| D33 | BeCom is built in five milestones (0.1 wired, 0.2 radio, 0.3 phones, 0.4 space, 1.0 polish) and stays private until 1.0. | decided  |
+| D34 | Two keys: radio push-to-talk, and Phone, which answers, hangs up or opens the dialer. Sneak + Phone rejects a call. Incoming calls show an on-screen notice. | decided  |
+| D35 | The Signal Analyzer shows a live on-screen overlay while held.                                                                     | decided  |
+| D36 | Walkie-talkies and phones drain their battery on standby too, more while in use, and can be switched off.                          | decided  |
+| D37 | Anyone can wrench-link a node into any network. Only a node's owner or their GT team can unlink it.                               | decided  |
+| D38 | Antennas serve everyone. The owner can lock one to their GT team.                                                                  | decided  |
+| D39 | Phones get do-not-disturb, a block list and a hide-from-contacts option. The server rate-limits call attempts.                    | decided  |
+| D40 | Only the Satellite Launch Pad and the Satellite Dish need a maintenance hatch.                                                     | decided  |
 
 ## 3. Progression
 
@@ -116,8 +125,8 @@ heads, which take a cable directly.
 |----------------------|------------------------------------------------------------------------------------------------------------|
 | Pylon                | Steel Frame Boxes, 6 to 16 tall, with the head on top                                                      |
 | Antenna T1, T2, T3   | A 3×3 base of LV, MV or HV Machine Casings, a mast of Steel, Aluminium or Stainless Steel Frame Boxes, the head on top, and an Energy Hatch in the base |
-| Satellite Launch Pad | A 5×5 floor of Clean Stainless Steel Machine Casings with the controller on one edge. An Input Bus for Satellite Rockets, an Input Hatch for fuel and an Energy Hatch take the place of casings. |
-| Satellite Dish       | A 5×5 dish of Clean Stainless Steel Machine Casings on a stand of Stainless Steel Frame Boxes, with an Energy Hatch |
+| Satellite Launch Pad | A 5×5 floor of Clean Stainless Steel Machine Casings with the controller on one edge. An Input Bus for Satellite Rockets, an Input Hatch for fuel, an Energy Hatch and a Maintenance Hatch (D40) take the place of casings. |
+| Satellite Dish       | A 5×5 dish of Clean Stainless Steel Machine Casings on a stand of Stainless Steel Frame Boxes, with an Energy Hatch and a Maintenance Hatch (D40) |
 
 ## 4. Signal quality
 
@@ -151,7 +160,7 @@ degrades until it drops", and it works the same for wires and radio.
 
 ### 4.3 How it sounds
 
-The listener's client filters audio that arrived through a BeCom group ([11.5](#115-client-audio)). Starting recipes,
+The listener's client filters audio that arrived through a BeCom group ([13.5](#135-client-audio)). Starting recipes,
 to be tuned by ear:
 
 | Level  | Calls                                                    | Radio channels                                     |
@@ -173,7 +182,8 @@ The first tier: telephones connected by lines on pylons. No radio involved.
   Taller pylons mean fewer pylons per line.
 - **Links:** a plain head has 2 link slots (a line passes through).
 - **Linking:** when a pylon forms, it links on its own only if exactly one formed pylon in range has a free slot.
-  Otherwise, link by hand: GT wrench on head A, then on head B. Wrench on a linked head to unlink.
+  Otherwise, link by hand: GT wrench on head A, then on head B. Wrench on a linked head to unlink. Who may do which:
+  [12.2](#122-networks).
 - **Clearance (D20):** the straight line between two heads must be free of solid blocks when they're linked. Every 60
   seconds, each link whose whole length is in loaded chunks is checked again. A blocked link goes down, and its wire
   renders broken, until the blocks are cleared. Links running through unloaded chunks keep their last state.
@@ -227,7 +237,7 @@ For a radio hop between two ends `a` and `b`:
 SNR = B − L_dist − L_terrain − L_cover(a) − L_cover(b) − L_weather − N
 ```
 
-- `B`: the hop's link budget in dB ([13](#13-tunables)). +6 dB doubles the range on open ground.
+- `B`: the hop's link budget in dB ([17](#17-tunables)). +6 dB doubles the range on open ground.
   - If either end is an antenna, `B` is that antenna's budget, in both directions: an antenna's gain helps it receive
     as much as transmit, so a phone's small transmitter doesn't limit its range. Between two antennas, the lower
     budget.
@@ -295,16 +305,16 @@ lookup per antenna in range.
 
 ## 7. Antennas
 
-- **Structure:** a base of machine casings, a mast of frame boxes with variable height, and an antenna head on top as the
-  controller ([3.2](#32-structures)). The survey uses the head's height, so a taller mast on a hill covers more.
+- **Structure:** a base of machine casings, a mast of 4 to 32 frame boxes, and an antenna head on top as the controller
+  ([3.2](#32-structures)). The survey uses the head's height, so a taller mast on a hill covers more.
 - **Tiers:** T1 (late LV), T2 (mid MV), T3 (mid HV). Link budgets of 42, 48 and 54 dB, which give roughly 64, 128 and
   256 blocks to the edge of Low on open ground: the draft's ranges.
 - **Power:** 32, 128 and 512 EU/t. Offline when unpowered or unloaded (D11).
 - **What an antenna does:**
   - Access point for wireless devices in range, on both bands.
   - Repeater for all 16 radio channels.
-  - Bridge for wired lines: an antenna can be wrench-linked to a Pylon Head or Line Terminal, which carries the wired
-    signal over radio, as in the draft.
+  - Bridge for wired lines: an antenna can be wrench-linked to a Pylon Head or Line Terminal within 16 blocks, which
+    carries the wired signal over radio, as in the draft.
   - Links to other antennas wherever the survey finds at least Low, separately for each band: radio channels travel
     between antennas on VHF, calls on UHF.
 
@@ -355,7 +365,8 @@ lookup per antenna in range.
 - **Launch (D6, D16):** the Satellite Launch Pad (late HV multiblock, [3.2](#32-structures)) needs open sky above it. It
   takes Satellite Rockets from its input bus, and fuel from its input hatch: any fluid Galacticraft accepts as rocket
   fuel. Each launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts one satellite into orbit over the pad's
-  dimension. Every dimension with a sky keeps its own constellation.
+  dimension. Every dimension with a sky keeps its own constellation. Maintenance problems slow launches down, as on any
+  GT machine (D40).
 - **Decay (D23):** each satellite stays up for 100 Minecraft days of world time, ± 20% at random so they don't all come
   down together. Decay only advances while the server runs. The Launch Pad GUI shows each dimension's satellite count
   and when the next one comes down.
@@ -368,7 +379,8 @@ lookup per antenna in range.
 ### 9.2 Satellite Dish
 
 - Late HV multiblock. Needs open sky above the dish and 512 EU/t.
-- Wrench-linked to an antenna, Pylon Head or Line Terminal, which joins it to that network.
+- Wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks, which joins it to that network.
+- It has no process to slow down, so each maintenance problem costs its sky hops 2 dB instead (D40).
 - While its dimension has at least 5 satellites, it links its network to every other dish in the same dimension. In the
   Overworld it also links to every planet's uplink ([9.3](#93-rocket-radio-receiver)). These are sky hops, so rain at
   the dish weakens them.
@@ -390,8 +402,8 @@ lookup per antenna in range.
 
 - Mid MV machine, 32 EU/t (D22). Works when it's within 4 blocks of a Nether portal, an End portal or the End's exit
   portal.
-- Two relays on opposite sides of a portal pair the same way pylons link: wrench on one, carry the wrench through the
-  portal, wrench on the other.
+- Two relays on opposite sides of a portal pair the same way pylons link: wrench on one, go through the portal, and
+  wrench the other within 5 minutes ([12.2](#122-networks)).
 - A linked pair is a fixed High hop between the two dimensions' networks.
 
 ### 9.5 Calls between dimensions
@@ -409,16 +421,92 @@ lookup per antenna in range.
 - **Call states:** idle, dialing, ringing, connected, ended. Dial tone, ringback, busy, unreachable and hang-up are
   ordinary Minecraft sounds.
 - **One call at a time** per player in v1.
-- **Unreachable** means: no voice session, no device with service, or a link at None.
+- **Unreachable** means: no voice session, no device with service, a link at None, or a phone that is switched off, on
+  do-not-disturb, or blocking the caller ([12.3](#123-unwanted-calls)).
 - **Levels** are per direction: what A hears from B uses the link from B to A. Calls through antennas come out the same
   both ways; direct radio links can differ, since a Transceiver transmits further than a walkie. All re-evaluated once
   per second.
 - **Logout** ends the player's calls.
 - **A voice session that times out** ends the player's calls after a 10-second grace period, unless the voice comes back.
 
-## 11. GTNH Voice integration (0.10.1)
+## 11. Controls and screens
 
-### 11.1 Groups
+### 11.1 Keys
+
+| Key                | Default   | What it does                                                                                        |
+|--------------------|-----------|-----------------------------------------------------------------------------------------------------|
+| Radio push-to-talk | Caps Lock | Hold to transmit on your walkie-talkie, or on a Transceiver within 2 blocks ([8.1](#81-radio-channels)). |
+| Phone              | N         | Answers a ringing phone, hangs up during a call, opens the phone screen otherwise. Sneak + Phone rejects a call (D34). |
+
+Both defaults are unbound in a full GTNH install, and both can be rebound. GTNH Voice itself uses `,` and `M`, and leaves
+its own push-to-talk unbound.
+
+### 11.2 Phones
+
+- **Ringing:** an incoming call rings at the phone, so a carried phone rings from its player and nearby players hear it.
+  A notice in the corner of the screen shows the caller's name and number, and the keys. After 30 s without an answer
+  the caller hears "no answer", and the call shows up as missed.
+- **Silent mode:** only the phone's owner hears it, as a short buzz.
+- **Phone screen** (Phone key while idle, or right-click with the phone in hand):
+  - keypad, contacts (D25), recent and missed calls;
+  - during a call: everyone in it with their signal bars, Add (group calls up to 8), Hang up;
+  - settings: power, silent mode, do-not-disturb, hide from contacts, block list ([12.3](#123-unwanted-calls)).
+- **Signal bars** sit next to the hotbar while you hold a phone or are in a call.
+- **Telephone (block):** right-click picks up the handset. On a 1 ↔ 1 line that rings the other end; on a routed network
+  it opens the phone screen. Right-click again, or walk more than 1 block away, to hang up. A ringing Telephone is
+  answered the same way.
+
+### 11.3 Radios
+
+- **Walkie-talkie:** right-click it in hand to open its screen: channel (1–16) and power. Sneak + scroll in hand changes
+  the channel. Its TX light shows while you transmit.
+- **Transceiver:** its screen sets the channel and turns the loudspeaker on or off.
+- **Power (D36):** a walkie or phone that is switched off uses no charge, receives nothing and can't be called. A flat
+  battery switches it off.
+
+### 11.4 Machines and tools
+
+- **Signal Analyzer (D35):** while held, an overlay shows SNR, level, what's serving you (an antenna or the satellites)
+  and the biggest loss, refreshed every second.
+- **Antenna screen:** the coverage map ([6.6](#66-making-it-learnable)), the antenna's links, and the team lock
+  ([12.2](#122-networks)).
+- **Satellite Launch Pad screen:** each dimension's constellation, when the next satellite comes down, and the queue of
+  rockets waiting to launch.
+- **All screens use ModularUI2 with GT's theme**, like GT's newer machines, so GTNH's UI resource packs restyle them too.
+
+## 12. Ownership and abuse
+
+### 12.1 Owners and teams
+
+- A machine's owner is the player who placed it; GT already records this for every machine. A phone's owner is its
+  first user.
+- Teams are GT's own, the ones it uses for wireless EU and space projects (`/sp invite`, `/sp accept`, `/sp leave`).
+  BeCom adds no team system of its own.
+
+### 12.2 Networks
+
+- **Linking is open (D37):** anyone can wrench-link a node into any network.
+- **Unlinking isn't:** only the owner of either end, or their team, can unlink. Otherwise anyone with a wrench could cut
+  your lines, and land claims don't cover that.
+- **Half-made links:** after the wrench touches the first node, the server remembers it for that player for 5 minutes.
+  That is how a Portal Relay pair gets linked through a portal.
+- **Antennas serve everyone (D38).** The owner can lock one to their team in its screen. A locked antenna refuses other
+  players' devices, but still relays calls along its links.
+- **Calls are private** to the people in them. Radio channels are public: anyone tuned in hears them.
+
+### 12.3 Unwanted calls
+
+From D39:
+
+- **Do-not-disturb:** rejects every incoming call; callers hear the unreachable tone.
+- **Block list:** blocked players can't call you, and you don't appear in their contacts.
+- **Hide from contacts:** you aren't listed, so people need your number.
+- **Rate limit:** at most 5 call attempts per minute per caller, enforced by the server.
+- **Admin commands** (ops only): list active calls, hang up any call, set a dimension's satellite count for testing.
+
+## 13. GTNH Voice integration (0.10.1)
+
+### 13.1 Groups
 
 Registered in `FMLServerStartingEvent` on every server start through `GtnhVoiceApi.groupManager().registerGroup(...)`.
 GTNH Voice has no unregistration, so the set is fixed.
@@ -430,13 +518,13 @@ GTNH Voice has no unregistration, so the set is fixed.
 
 Calls beat radio, radio beats proximity. GTNH Voice's global group stays above everything.
 
-### 11.2 Membership and sessions
+### 13.2 Membership and sessions
 
 - A speaker's frames reach a group's `route()` only if the speaker is a member, so:
   - joining `becom:call` when a call connects, and leaving when it ends;
   - joining `becom:radio.N` while carrying a working walkie tuned to N (inventory or Baubles), or standing at a
     Transceiver tuned to N.
-- Who receives the audio is decided inside `route()`, from the routing snapshot ([11.3](#113-routing)).
+- Who receives the audio is decided inside `route()`, from the routing snapshot ([13.3](#133-routing)).
 - GTNH Voice wipes memberships on logout and on a timed-out session. BeCom listens through
   `GtnhVoiceApi.addSessionListener(...)`:
   - `sessionStarted`: re-join the player's groups.
@@ -444,7 +532,7 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   - `REPLACED` keeps memberships, so nothing to do.
 - `GtnhVoiceApi.session(uuid)` answers "does this player have voice?" for the unreachable check.
 
-### 11.3 Routing
+### 13.3 Routing
 
 - **Snapshot:** the server thread builds an immutable routing snapshot whenever something changes: calls, channel
   members, per-direction levels and dropout settings, walkie holders and their channels, Transceiver positions. It's
@@ -468,15 +556,16 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   (who each listener is hearing on each channel, and when their last frame arrived) live in BeCom's own concurrent maps.
   Non-blocking, as `route()` requires.
 
-### 11.4 Push-to-talk
+### 13.4 Push-to-talk
 
 - The client registers the addon with `GtnhVoiceClient.addon("BeCom").register()`, then takes its
   `activation("radio")`.
-- Every client tick, the push-to-talk handler calls `setKeyed(keyHeld && hasUsableRadio)`.
+- Every client tick, the push-to-talk handler calls `setKeyed(keyHeld && hasUsableRadio)`, with the key from
+  [11.1](#111-keys).
 - `isTransmitting()` drives the walkie's TX light.
 - GTNH Voice clears keyed activations when a voice session ends, so a stuck key can't open the mic on the next connection.
 
-### 11.5 Client audio
+### 13.5 Client audio
 
 - **One `audio().playbackChain(...)`** with a `when()` branch per row of the table in [4.3](#43-how-it-sounds).
 - **Each branch** matches frames whose `groupName()` starts with `becom:` and whose level, looked up by `(sourceId(),
@@ -486,11 +575,11 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
 - **Branch state:** `when()` rebuilds a branch's filter state each time it's entered again. The server's hysteresis and
   once-per-second evaluation keep that rare.
 
-### 11.6 Other sounds
+### 13.6 Other sounds
 
 Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 
-## 12. Server architecture
+## 14. Server architecture
 
 - **Network data:** one `WorldSavedData` per dimension holds every node (pylons, terminals, repeaters, routers, antennas,
   dishes, relays, Transceivers), with its position and links.
@@ -505,7 +594,7 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 - **Threading:** surveys, access evaluation, clearance checks, path finding and snapshot building all run on the server
   thread, within the budgets in [6.5](#65-budget). Only the snapshot crosses to the network thread.
 
-### 12.1 Machine IDs
+### 14.1 Machine IDs
 
 - BeCom's GT MetaTileEntities use IDs **25000–25199** (D18).
 - How the range was chosen: GT5-Unofficial 5.09.54.205, with all its merged addons, was booted and every registered ID
@@ -516,7 +605,62 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 - At startup, BeCom checks every ID it is about to use. If another mod already took one, BeCom stops the game with an
   error naming that machine, instead of letting two machines share an ID and corrupt worlds.
 
-## 13. Tunables
+## 15. Assets
+
+### 15.1 Textures
+
+From D32:
+
+- **GT's textures wherever possible:** machine bodies use GT's hull textures, structures are GT blocks
+  ([3.2](#32-structures)), and screens use GT's theme. A resource pack that restyles GT restyles those parts of BeCom
+  for free. That includes Modernity, with its connected textures and its UI packs.
+- **BeCom's own art** is small:
+  - front overlays for its 11 machines, drawn as transparent layers over GT's hull like GT's own overlays, with `_GLOW`
+    variants for lights;
+  - about 8 item icons;
+  - the Telephone's model and the Phone Cable.
+
+  All of it lives under `assets/becom/textures/`, at 16×16 like GT.
+- **Default style:** ships in the jar.
+- **Modernity style:** lives in the repo under `resourcepacks/modernity/`. CI zips it as `Modernity-GTNHAddon-BeCom.zip`
+  and attaches it to each release. Players stack it above Modernity, like Modernity's other add-ons. It can be offered
+  to ModernityGTNH upstream later.
+- **No pack detection in code:** pack file names change, and detection would mean shipping both styles in the jar.
+- **Placeholder art** is fine until 1.0.
+
+### 15.2 Sounds
+
+Ringtone, silent-mode buzz, dial tone, ringback, busy, unreachable, hang-up click, the walkie's squelch tail and the
+rocket launch. They must be self-made or CC0, so the license stays clean. Vanilla sounds stand in until 1.0.
+
+### 15.3 Languages
+
+Every player-facing string goes through the language files from the first milestone. English (`en_US`) always, Italian
+(`it_IT`) by 1.0.
+
+## 16. Roadmap
+
+BeCom stays private until 1.0 (D33). Milestones are tracked here, with no public releases and no version tags before
+1.0, since the release workflow publishes on tags.
+
+Each milestone ends with:
+
+- unit tests for its math;
+- the CI server boot check;
+- a two-player test on a dev server.
+
+Each hard dependency (D27) joins the build with the milestone that first uses it: AE2 and Baubles in 0.3, Galacticraft
+in 0.4.
+
+| Milestone       | Contents                                                                                                   | Done when |
+|-----------------|------------------------------------------------------------------------------------------------------------|-----------|
+| 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
+| 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
+| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line. |
+| 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. | A call connects from the Overworld to the Moon, and to the Nether. |
+| 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
+
+## 17. Tunables
 
 | What                                    | Value                         |
 |-----------------------------------------|-------------------------------|
@@ -555,8 +699,18 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 | Portal Relay power, portal distance     | 32 EU/t, 4 blocks             |
 | Portal Relay hop level                  | High                          |
 | Satellite launch                        | 30 s at 480 EU/t, 1,000 L fuel |
+| Dish maintenance penalty                | 2 dB per problem              |
+| Antenna mast height                     | 4 to 32 frame boxes           |
+| Wrench-link distance (dish or antenna to a node) | 16 blocks            |
+| Half-made link kept for                 | 5 min                         |
+| Default keys (radio, phone)             | Caps Lock, N                  |
+| Ringing before "no answer"              | 30 s                          |
+| Call attempts per caller                | 5 per minute                  |
+| Walkie battery; drain standby, receiving, transmitting | 300,000 EU; 1, 2, 4 EU/t |
+| Phone battery; drain standby, in a call | 1,200,000 EU; 4, 16 EU/t      |
+| Analyzer overlay refresh                | 1 s                           |
 | Machine ID range                        | 25000–25199                   |
 
-## 14. Open questions
+## 18. Open questions
 
 None right now.
