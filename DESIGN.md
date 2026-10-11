@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 6, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 7, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -49,7 +49,7 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D14 | Mobile phones and walkie-talkies work from a Baubles slot (the draft's proposal).                                                  | decided  |
 | D15 | A handheld Signal Analyzer and a coverage map in the antenna GUI explain the simulation to players.                               | decided  |
 | D16 | Satellites are launched from BeCom's own Satellite Launch Pad, not from Galacticraft rockets.                                     | decided  |
-| D17 | When a listener is within 16 blocks of the speaker, BeCom doesn't route the call or radio audio; they hear the speaker directly. | decided  |
+| D17 | When a listener is within 16 blocks of the speaker (or GTNH Voice's proximity range, if smaller), BeCom doesn't route the call or radio audio; they hear the speaker directly. | decided  |
 | D18 | BeCom's machines are GT MetaTileEntities, in their own ID range (25000–25199) since BeCom isn't in the official pack.            | decided  |
 | D19 | One Telephone per Line Terminal: strictly the draft's "1 ↔ 1".                                                                     | decided  |
 | D20 | Pylon lines are re-checked from time to time, and a blocked line goes down until it's cleared.                                    | decided  |
@@ -77,6 +77,10 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D42 | Video works on the Mobile Phone (up to High), the ME Phone (Max) and a new MV Videophone block for wired networks. Telephones stay voice-only. | decided  |
 | D43 | Video needs Medium or better. At Low the picture freezes and the voice carries on.                                                 | decided  |
 | D44 | During a call, video shows in a small corner window that can be hidden, and full size in the phone screen.                         | decided  |
+| D45 | An ME Bridge joins an ME network to a BeCom network, so ME phones can call any phone. ME phones on the same ME network need no bridge. | decided  |
+| D46 | Portal Relays also work at Twilight Forest and Personal Space portals. Other dimensions stay unreachable in v1.                   | decided  |
+| D47 | Radio channels stay open: blocking and do-not-disturb apply to calls only.                                                         | decided  |
+| D48 | An in-game GuideNH guide explains the mod, written for 1.0.                                                                        | decided  |
 
 ## 3. Progression
 
@@ -90,7 +94,7 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | Early HV | Mobile Phone                                                               |
 | Mid HV   | Antenna T3, Rocket Radio Receiver                                          |
 | Late HV  | Satellite Rocket, Satellite Launch Pad, Satellite Dish                     |
-| Late EV  | ME Phone                                                                   |
+| Late EV  | ME Phone, ME Bridge                                                        |
 
 ### 3.1 Recipes
 
@@ -121,6 +125,7 @@ receives takes a sensor, at the item's tier. The exact crafting grids are left t
 | Satellite Launch Pad  | Crafting                    | HV Machine Hull, 2 HV Electric Pumps, HV Robot Arm, 3 HV circuits, 2 Gold Cables             |
 | Satellite Dish        | Crafting                    | HV Machine Hull, 2 HV Emitters, 2 HV Sensors, 2 HV circuits, 2 Gold Cables                   |
 | ME Phone              | Assembler, 1,920 EU/t, 30 s | Mobile Phone, AE2 Wireless Terminal, EV Emitter, 2 EV circuits                               |
+| ME Bridge             | Crafting                    | EV Machine Hull, AE2 Wireless Access Point, EV Emitter, EV Sensor, 2 EV circuits, 2 Aluminium Cables, ME Glass Cable |
 
 ### 3.2 Structures
 
@@ -220,8 +225,9 @@ Cable block made from red alloy wire (D8). Connects a Telephone to a Line Termin
 ### 5.6 Telephone
 
 - **Block.** Right-click picks up the handset. You can move 1 block away (the cord). Further than that hangs up.
-- **On a 1 ↔ 1 line:** picking up rings the other end.
-- **On a routed network:** picking up opens the dialer ([8.2](#82-calls)).
+- **Picking up:** if exactly one other phone is reachable, it rings that phone. Otherwise it opens the dialer
+  ([8.2](#82-calls)). A plain 1 ↔ 1 line rings the other end; a line that reaches more phones, through routers or an
+  antenna bridge, dials.
 - **Incoming call:** the phone rings (a sound at the block). Picking up answers.
 - **Quality cap:** Low (D10).
 
@@ -281,12 +287,13 @@ The simulation never loads chunks. Terrain comes from a per-dimension height cac
 
 When an antenna forms, and every 5 minutes after that, it surveys its surroundings:
 
-- For 64 bearings, step outward in 4-block steps up to the antenna's maximum range, and record the running horizon: the
-  obstacle that rises highest above the line of sight so far, and its distance.
+- For 64 bearings, step outward in 4-block steps up to the antenna's maximum range, and store the terrain height at
+  every step: a profile of at most 64 heights per bearing, about 4 KB per antenna.
 - During the same survey, compute the links to other antennas in range.
 
-A player's link to an antenna is then cheap: find the bearing and distance, read the horizon obstacle in front of the
-player, compute `ν` from the player's real eye height, and add cover loss at the player's position.
+A player's link to an antenna is then cheap: find the bearing and distance, scan that bearing's profile up to the player
+for the obstacle with the largest `ν` toward the player's real eye height, and add cover loss at the player's position.
+Which obstacle is worst depends on where the far end is, so the survey keeps the whole profile, not just a horizon.
 
 ### 6.4 Direct links
 
@@ -300,8 +307,8 @@ sampling the height cache every 4 blocks along the path and taking the worst obs
 - Surveys: spread over ticks, at most 2 ms per tick in total.
 - Direct links: only for transmitters that are currently keyed.
 
-A T3 survey is 64 bearings × 64 steps, about 4,000 height-cache reads. A player's access evaluation is one horizon
-lookup per antenna in range.
+A T3 survey is 64 bearings × 64 steps, about 4,000 height-cache reads. A player's access evaluation scans one stored
+profile, at most 64 heights, per antenna in range.
 
 ### 6.6 Making it learnable
 
@@ -364,6 +371,10 @@ lookup per antenna in range.
 - Linked to an ME network the same way as a wireless terminal.
 - Works only inside that network's wireless range, using AE2's own range check (D13). Max quality there, no service
   anywhere else.
+- ME phones on the same ME network call each other at Max, with no BeCom network involved.
+- **ME Bridge (D45):** to reach any other phone, the ME network needs an ME Bridge. It's a late-EV machine that connects
+  to ME cable the way GT's ME hatches do, uses one ME channel, and draws 512 EU/t. Wrench-link it to a BeCom node
+  within 16 blocks, and it joins the two networks as a Max hop.
 
 ## 9. Space and other dimensions
 
@@ -407,8 +418,9 @@ lookup per antenna in range.
 
 ### 9.4 Portal Relay
 
-- Mid MV machine, 32 EU/t (D22). Works when it's within 4 blocks of a Nether portal, an End portal or the End's exit
-  portal.
+- Mid MV machine, 32 EU/t (D22). Works when it's within 4 blocks of a Nether portal, an End portal, the End's exit
+  portal, a Twilight Forest portal or a Personal Space portal (D46). It recognizes them by block, so neither Twilight
+  Forest nor Personal Space is a dependency.
 - Two relays on opposite sides of a portal pair the same way pylons link: wrench on one, go through the portal, and
   wrench the other within 5 minutes ([12.2](#122-networks)).
 - A linked pair is a fixed High hop between the two dimensions' networks.
@@ -420,8 +432,11 @@ lookup per antenna in range.
   through a Satellite Dish. The gateway hop's level is the lower of the Overworld end's sky hop (the device's or the
   dish's) and the receiver's uplink (High).
 - **Planet and planet:** through the Overworld's satellites, so both planets need a receiver.
-- **Overworld and the Nether or the End:** through a linked pair of Portal Relays.
+- **Overworld and the Nether, the End, the Twilight Forest or a personal dimension:** through a linked pair of Portal
+  Relays.
 - Longer chains combine these, for example Nether to Overworld to planet.
+- **Every other dimension** (the Deep Dark, the Spirit World and so on) has no link in v1. Players there can't be
+  reached.
 
 ## 10. Calls and channels
 
@@ -506,9 +521,9 @@ its own push-to-talk unbound.
 - **Signal bars** sit next to the hotbar while you hold a phone or are in a call.
 - **Video window (D44):** during a video call, a small window in a corner of the screen shows the other side. The phone
   screen shows it full size, switches each camera on or off, and hides or shows the window.
-- **Telephone (block):** right-click picks up the handset. On a 1 ↔ 1 line that rings the other end; on a routed network
-  it opens the phone screen. Right-click again, or walk more than 1 block away, to hang up. A ringing Telephone is
-  answered the same way.
+- **Telephone (block):** right-click picks up the handset. If exactly one other phone is reachable that rings it;
+  otherwise it opens the phone screen ([5.6](#56-telephone)). Right-click again, or walk more than 1 block away, to hang
+  up. A ringing Telephone is answered the same way.
 
 ### 11.3 Radios
 
@@ -547,6 +562,8 @@ its own push-to-talk unbound.
 - **Antennas serve everyone (D38).** The owner can lock one to their team in its screen. A locked antenna refuses other
   players' devices, but still relays calls along its links.
 - **Calls are private** to the people in them. Radio channels are public: anyone tuned in hears them.
+- **Radio stays open (D47):** blocking and do-not-disturb apply to calls only. If someone jams a channel, change
+  channel.
 
 ### 12.3 Unwanted calls
 
@@ -594,16 +611,15 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   published through a volatile field.
 - **`route()`** runs on GTNH Voice's network thread and reads only the snapshot and the `RoutingContext`, never the world.
 - **`becom:call`:**
-  - For each other participant at Low or better, unless they're within 16 blocks of the speaker (D17), apply the dropout
-    model.
+  - For each other participant at Low or better, unless they hear the speaker directly (D17), apply the dropout model.
   - If the frame survives, `sendTo(listener, SourceState.FLAT, ...)`.
   - A Videophone at the other end gets the frame POSITIONAL from its block, sent to every player within 16 blocks of it
     ([10.2](#102-videophone)).
 - **`becom:radio.N`:**
   - Only frames whose `getAudio().getActivationId()` equals `ActivationIds.of("BeCom", "radio")`, meaning the speaker
     is holding push-to-talk.
-  - Listeners need a link at Low or better, pass the capture rule (D24), get the dropout model, and are skipped within
-    16 blocks of the speaker (D17).
+  - Listeners need a link at Low or better, pass the capture rule (D24), get the dropout model, and are skipped when
+    they hear the speaker directly (D17).
   - First, FLAT to walkie holders tuned to N.
   - Then POSITIONAL from each walkie holder who got the frame to players within 6 blocks of them (D21).
   - Then POSITIONAL from each Transceiver on N that got the frame to players within its 16-block loudspeaker range.
@@ -655,6 +671,8 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
     UDP transport, which would need a new API there.
 - **Path finding:** a call's best path is a widest-path search (maximize the weakest hop's SNR). It's re-run only when a
   node, a link or an access level changes.
+- **Client input:** the server caps each client's rear-camera frames by size and rate, and checks every phone-screen
+  action against what that player may do, so a modified client can't flood the server or act for someone else.
 - **Threading:** surveys, access evaluation, clearance checks, path finding and snapshot building all run on the server
   thread, within the budgets in [6.5](#65-budget). Only the snapshot crosses to the network thread.
 
@@ -679,7 +697,7 @@ From D32:
   ([3.2](#32-structures)), and screens use GT's theme. A resource pack that restyles GT restyles those parts of BeCom
   for free. That includes Modernity, with its connected textures and its UI packs.
 - **BeCom's own art** is small:
-  - front overlays for its 12 machines, drawn as transparent layers over GT's hull like GT's own overlays, with `_GLOW`
+  - front overlays for its 13 machines, drawn as transparent layers over GT's hull like GT's own overlays, with `_GLOW`
     variants for lights;
   - about 8 item icons;
   - the Telephone's model and the Phone Cable.
@@ -702,6 +720,11 @@ rocket launch. They must be self-made or CC0, so the license stays clean. Vanill
 Every player-facing string goes through the language files from the first milestone. English (`en_US`) always, Italian
 (`it_IT`) by 1.0.
 
+### 15.4 Guide
+
+An in-game guide through GuideNH, which GTNH already ships (D48). It covers the tiers, how signal works and how to read
+the Signal Analyzer. BeCom isn't in GTNH's quest book, so this is where players learn the mod. Written for 1.0.
+
 ## 16. Roadmap
 
 BeCom stays private until 1.0 (D33). Milestones are tracked here, with no public releases and no version tags before
@@ -716,13 +739,23 @@ Each milestone ends with:
 Each hard dependency (D27) joins the build with the milestone that first uses it: AE2 and Baubles in 0.3, Galacticraft
 in 0.4.
 
+Each milestone starts by trying out what it relies on that nobody has tested yet:
+
+- **0.1:** Repeater and Router heads taking power straight from a cable. GT controllers normally only take power through
+  energy hatches, so this needs a custom controller.
+- **0.3:**
+  - the rear camera's frame copy with Angelica and shader packs;
+  - drawing a far-away player's skin from their profile;
+  - the ME Bridge connecting to ME cable.
+- **0.4:** rocket detection on a real Galacticraft install, so far only read from its code.
+
 | Milestone       | Contents                                                                                                   | Done when |
 |-----------------|------------------------------------------------------------------------------------------------------------|-----------|
 | 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
 | 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
-| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone. Video calls: front and rear camera, the corner window, the Videophone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
+| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone and ME Bridge. Video calls: front and rear camera, the corner window, the Videophone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
 | 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. | A call connects from the Overworld to the Moon, and to the Nether. |
-| 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
+| 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, the GuideNH guide, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
 
 ## 17. Tunables
 
@@ -752,7 +785,7 @@ in 0.4.
 | Transceiver talk range                  | 2 blocks                      |
 | Walkie-talkie speaker range (D21)       | 6 blocks                      |
 | Capture: hold, takeover margin (D24)    | 100 ms, 3 dB                  |
-| Direct-hearing range (D17)              | 16 blocks                     |
+| Direct-hearing range (D17)              | 16 blocks, or GTNH Voice's proximity range if smaller |
 | Phone number length                     | 6 digits                      |
 | Group call size                         | 8                             |
 | Timed-out session grace                 | 10 s                          |
@@ -779,6 +812,8 @@ in 0.4.
 | Video: rear camera (High, Max)          | 128×72 at 2 fps, 192×108 at 5 fps |
 | Videophone power, room, loudspeaker     | 32 EU/t, 4 blocks, 16 blocks  |
 | Videophone hangs up after an empty room | 30 s                          |
+| Rear-camera cap per client              | 8 KB per frame, 6 frames per second |
+| ME Bridge power, ME channels            | 512 EU/t, 1                   |
 | Machine ID range                        | 25000–25199                   |
 
 ## 18. Open questions
