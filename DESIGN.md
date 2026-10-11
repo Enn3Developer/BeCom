@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 7, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 8, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -81,6 +81,10 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D46 | Portal Relays also work at Twilight Forest and Personal Space portals. Other dimensions stay unreachable in v1.                   | decided  |
 | D47 | Radio channels stay open: blocking and do-not-disturb apply to calls only.                                                         | decided  |
 | D48 | An in-game GuideNH guide explains the mod, written for 1.0.                                                                        | decided  |
+| D49 | BeCom carries its own questline and adds it to the BetterQuesting quest book itself, with a config switch to turn that off. The same quest files are published for pack makers. | decided  |
+| D50 | BeCom adds its own task type to BetterQuesting, which BeCom completes when something happens: a first call, a first radio contact, satellites in orbit. | decided  |
+| D51 | Quests give GTNH-style rewards, balanced per tier against GTNH's own quests.                                                       | decided  |
+| D52 | Quests are written with each milestone, for the content that milestone adds.                                                       | decided  |
 
 ## 3. Progression
 
@@ -723,7 +727,44 @@ Every player-facing string goes through the language files from the first milest
 ### 15.4 Guide
 
 An in-game guide through GuideNH, which GTNH already ships (D48). It covers the tiers, how signal works and how to read
-the Signal Analyzer. BeCom isn't in GTNH's quest book, so this is where players learn the mod. Written for 1.0.
+the Signal Analyzer. The questline ([15.5](#155-questline)) is where players start; the guide is for those who want the
+details. Written for 1.0.
+
+### 15.5 Questline
+
+BeCom isn't in GTNH's quest book, so it brings its own tab (D49).
+
+- **How it gets there:**
+  - BetterQuesting (BQ) stores quests and questlines by UUID. BeCom carries its questline in GTNH's quest file format,
+    with fixed UUIDs, so it can never collide with GTNH's quests.
+  - BeCom adds the questline once server start has finished: after BQ has loaded the world's quests, and after the
+    automatic reload BQ does whenever the pack version goes up. That reload wipes anything not in `DefaultQuests`.
+  - BQ fires no event after `/bq_admin default load`, so BeCom checks every minute and adds the tab back if it's gone.
+  - BeCom only ever touches its own questline and quests. The UUIDs never change, so players keep their progress.
+  - If anything goes wrong, BeCom logs it and carries on, without the quests.
+- **Off switch:** a server config option stops BeCom from touching the quest book, for servers with a curated book.
+- **For pack makers:** the same quest files are published in GTNH's `DefaultQuests` layout, so a pack can merge them
+  into its own book.
+- **One caveat:** an admin who exports their quest book with `/bq_admin default save` while BeCom is installed bakes
+  BeCom's quests into their own files.
+- **BQ is optional:** without it, nothing happens.
+- **Text:** BQ looks up `betterquesting.quest.<id>.name` and `.desc` in the language files first, so quest text lives in
+  BeCom's own language files ([15.3](#153-languages)): English, and Italian by 1.0.
+- **Shape:** one "Better Communications" tab, ordered by tier: LV wired, MV radio and Videophone, HV phones and space,
+  EV ME. About 25 quests, short and in GTNH's style, each pointing to its guide page for depth. No prerequisites on
+  GTNH's own quests, since their IDs can change between pack versions.
+- **Tasks:** item quests use BQ's own item tasks. The quests that teach a mechanic use BeCom's own task type (D50), which
+  BeCom completes when it happens:
+  - a first call, a first call from a mobile phone, a first video call, a first ME Phone call through an ME Bridge;
+  - a first radio contact;
+  - a Portal Relay pair linked;
+  - a first satellite launched, and 5 satellites over one dimension;
+  - a first call between dimensions.
+- **Rewards (D51):** like GTNH's own quests. Most give a lootbag of the quest's tier (`enhancedlootbags`); the big steps
+  add Technician coins (`dreamcraft`), sometimes as a choice. They're balanced against GTNH's quests of the same tier.
+  A reward whose item isn't installed is left out.
+- **Timing (D52):** quest support and the LV quests come in 0.1. Each milestone then adds the quests for its own
+  content, so no quest ever describes a feature that doesn't exist yet.
 
 ## 16. Roadmap
 
@@ -741,8 +782,10 @@ in 0.4.
 
 Each milestone starts by trying out what it relies on that nobody has tested yet:
 
-- **0.1:** Repeater and Router heads taking power straight from a cable. GT controllers normally only take power through
-  energy hatches, so this needs a custom controller.
+- **0.1:**
+  - Repeater and Router heads taking power straight from a cable. GT controllers normally only take power through
+    energy hatches, so this needs a custom controller.
+  - Adding the questline through BQ's API on a GTNH server, including right after a pack-version reload.
 - **0.3:**
   - the rear camera's frame copy with Angelica and shader packs;
   - drawing a far-away player's skin from their profile;
@@ -751,10 +794,10 @@ Each milestone starts by trying out what it relies on that nobody has tested yet
 
 | Milestone       | Contents                                                                                                   | Done when |
 |-----------------|------------------------------------------------------------------------------------------------------------|-----------|
-| 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
-| 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
-| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone and ME Bridge. Video calls: front and rear camera, the corner window, the Videophone. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
-| 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. | A call connects from the Overworld to the Moon, and to the Nether. |
+| 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. Quest support (BeCom's task type, the off switch) and the LV quests. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
+| 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. The radio quests. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
+| 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone and ME Bridge. Video calls: front and rear camera, the corner window, the Videophone. The quests for phones, ME and video. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
+| 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. The space quests. | A call connects from the Overworld to the Moon, and to the Nether. |
 | 1.0 Polish      | Final art and the Modernity add-on pack, sounds, Italian, the GuideNH guide, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
 
 ## 17. Tunables
@@ -814,6 +857,7 @@ Each milestone starts by trying out what it relies on that nobody has tested yet
 | Videophone hangs up after an empty room | 30 s                          |
 | Rear-camera cap per client              | 8 KB per frame, 6 frames per second |
 | ME Bridge power, ME channels            | 512 EU/t, 1                   |
+| Questline re-check                      | every 60 s                    |
 | Machine ID range                        | 25000–25199                   |
 
 ## 18. Open questions
