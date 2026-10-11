@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 3, 2026-10-11. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 4, 2026-10-11. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -60,6 +60,10 @@ without anyone reserving anything for it ([12.1](#121-machine-ids)).
 | D25 | Every phone has a 6-digit number, and the dialer lists reachable phones by owner name.                                            | decided  |
 | D26 | Rain and thunder weaken UHF links (calls) and satellite hops: 3 dB in rain, 6 dB in a thunderstorm. VHF links on the ground don't care. | decided  |
 | D27 | GTNH Voice, GregTech, AE2, Baubles and Galacticraft are all hard dependencies: BeCom doesn't load without any of them.          | decided  |
+| D28 | The Rocket Radio Receiver works in any rocket built on Galacticraft's `EntityAutoRocket`: Galacticraft T1–T3 and its cargo rocket, GalaxySpace T4–T8, AmunRa's shuttle. | decided  |
+| D29 | Line Terminals and Repeaters are LV machines drawing 4 EU/t, not real ULV machines that LV power would blow up.                  | decided  |
+| D30 | A Satellite Rocket is a BeCom Satellite on Galacticraft Tier 1 rocket parts.                                                        | decided  |
+| D31 | Recipes follow GT's conventions: controllers are shaped crafting around a machine hull, devices come from the assembler, emitters transmit and sensors receive at the item's tier, handhelds included. Structures use only blocks GT already has. | decided  |
 
 ## 3. Progression
 
@@ -74,7 +78,46 @@ without anyone reserving anything for it ([12.1](#121-machine-ids)).
 | Late HV  | Satellite Rocket, Satellite Launch Pad, Satellite Dish                     |
 | Late EV  | ME Phone                                                                   |
 
-Recipes are GT machine recipes at the listed tier. The actual recipes come later.
+### 3.1 Recipes
+
+Following GT's conventions (D31): machines and multiblock controllers are shaped crafting recipes built around a machine
+hull, like GT's own controllers. Devices and parts come from the assembler. Whatever transmits takes an emitter, whatever
+receives takes a sensor, at the item's tier. The exact crafting grids are left to the code.
+
+| Item                  | Made in                     | Ingredients                                                                                  |
+|-----------------------|-----------------------------|----------------------------------------------------------------------------------------------|
+| Phone Cable ×2        | Assembler, 8 EU/t, 5 s      | Red Alloy Wire, 72 L Rubber                                                                  |
+| Telephone             | Assembler, 30 EU/t, 10 s    | LV circuit, Note Block (the bell), 2 Steel Plates, Phone Cable (the cord)                    |
+| Pylon Head            | Crafting                    | Steel Frame Box, 2 Steel Plates, 4 Steel Wires (the line), 2 Glass Plates (insulators)       |
+| Line Terminal         | Crafting                    | LV Machine Hull, LV circuit, 2 Phone Cables, 2 Steel Wires                                   |
+| Repeater Head         | Crafting                    | Pylon Head, LV Machine Hull, 2 LV circuits, 2 Tin Cables                                     |
+| Router Head           | Crafting                    | Pylon Head, LV Machine Hull, 4 LV circuits, 2 Tin Cables                                     |
+| Antenna T1 Head       | Crafting                    | LV Machine Hull, LV Emitter, LV Sensor, 2 LV circuits, 2 Tin Cables, 2 Long Steel Rods       |
+| Transceiver           | Crafting                    | MV Machine Hull, MV Emitter, MV Sensor, 2 MV circuits, 2 Copper Cables, Note Block (the speaker) |
+| Signal Analyzer       | Assembler, 120 EU/t, 20 s   | MV Sensor, Screen Cover, MV circuit, 4 Aluminium Plates                                      |
+| Walkie-Talkie         | Assembler, 120 EU/t, 20 s   | MV Emitter, MV Sensor, MV circuit, MV battery, 2 Polyethylene Plates                         |
+| Antenna T2 Head       | Crafting                    | MV Machine Hull, MV Emitter, MV Sensor, 2 MV circuits, 2 Copper Cables, 2 Long Aluminium Rods |
+| Portal Relay          | Crafting                    | MV Machine Hull, MV Emitter, MV Sensor, 2 MV circuits, 2 Copper Cables, 2 Eyes of Ender      |
+| Mobile Phone          | Assembler, 480 EU/t, 30 s   | MV Emitter, MV Sensor, Screen Cover, HV circuit, HV battery, 2 Polyethylene Plates           |
+| Antenna T3 Head       | Crafting                    | HV Machine Hull, HV Emitter, HV Sensor, 2 HV circuits, 2 Gold Cables, 2 Long Stainless Steel Rods |
+| Rocket Radio Receiver | Assembler, 480 EU/t, 30 s   | HV Emitter, HV Sensor, 2 HV circuits, 4 Stainless Steel Plates                               |
+| Satellite             | Assembler, 480 EU/t, 40 s   | HV Emitter, HV Sensor, 2 HV circuits, 2 Solar Panel covers, 4 Aluminium Plates               |
+| Satellite Rocket      | Assembler, 480 EU/t, 60 s   | Satellite, and Galacticraft's Nose Cone, Tier 1 Rocket Engine, 4 Rocket Fins, 4 Heavy Duty Plates (D30) |
+| Satellite Launch Pad  | Crafting                    | HV Machine Hull, 2 HV Electric Pumps, HV Robot Arm, 3 HV circuits, 2 Gold Cables             |
+| Satellite Dish        | Crafting                    | HV Machine Hull, 2 HV Emitters, 2 HV Sensors, 2 HV circuits, 2 Gold Cables                   |
+| ME Phone              | Assembler, 1,920 EU/t, 30 s | Mobile Phone, AE2 Wireless Terminal, EV Emitter, 2 EV circuits                               |
+
+### 3.2 Structures
+
+Multiblocks use only blocks GT already has (D31). Power comes in through GT energy hatches, except on Repeater and Router
+heads, which take a cable directly.
+
+| Multiblock           | Blocks                                                                                                     |
+|----------------------|------------------------------------------------------------------------------------------------------------|
+| Pylon                | Steel Frame Boxes, 6 to 16 tall, with the head on top                                                      |
+| Antenna T1, T2, T3   | A 3×3 base of LV, MV or HV Machine Casings, a mast of Steel, Aluminium or Stainless Steel Frame Boxes, the head on top, and an Energy Hatch in the base |
+| Satellite Launch Pad | A 5×5 floor of Clean Stainless Steel Machine Casings with the controller on one edge. An Input Bus for Satellite Rockets, an Input Hatch for fuel and an Energy Hatch take the place of casings. |
+| Satellite Dish       | A 5×5 dish of Clean Stainless Steel Machine Casings on a stand of Stainless Steel Frame Boxes, with an Energy Hatch |
 
 ## 4. Signal quality
 
@@ -139,12 +182,12 @@ The first tier: telephones connected by lines on pylons. No radio involved.
 
 ### 5.2 Line Terminal
 
-Ground block where a line starts or ends (the draft's "inizio e fine linea"). ULV, 4 EU/t. Links to one Pylon Head
+Ground block where a line starts or ends (the draft's "inizio e fine linea"). LV, 4 EU/t (D29). Links to one Pylon Head
 (wrench) and connects to exactly one Telephone through Phone Cable (D19). A line needs a terminal at each end.
 
 ### 5.3 Repeater
 
-A Pylon Head variant that takes power from a cable on any side (ULV, 4 EU/t). It regenerates the signal, so line loss
+A Pylon Head variant that takes power from a cable on any side (LV, 4 EU/t). It regenerates the signal, so line loss
 starts over after it ([5.7](#57-line-loss)).
 
 ### 5.4 Router
@@ -245,15 +288,15 @@ lookup per antenna in range.
 
 ### 6.6 Making it learnable
 
-- **Signal Analyzer** (early MV, handheld): shows SNR, level, the serving antenna, and the biggest loss (distance,
-  terrain, cover, weather or noise).
+- **Signal Analyzer** (early MV, handheld, needs no power): shows SNR, level, the serving antenna, and the biggest loss
+  (distance, terrain, cover, weather or noise).
 - **Antenna GUI:** a coverage map drawn from the survey, showing expected SNR at standing height around the antenna.
 - **`/becom signal`:** the same breakdown in chat, for testing and debugging.
 
 ## 7. Antennas
 
-- **Structure:** a base, a mast of frame boxes with variable height, and an antenna head as the controller. The survey
-  uses the head's height, so a taller mast on a hill covers more.
+- **Structure:** a base of machine casings, a mast of frame boxes with variable height, and an antenna head on top as the
+  controller ([3.2](#32-structures)). The survey uses the head's height, so a taller mast on a hill covers more.
 - **Tiers:** T1 (late LV), T2 (mid MV), T3 (mid HV). Link budgets of 42, 48 and 54 dB, which give roughly 64, 128 and
   256 blocks to the edge of Low on open ground: the draft's ranges.
 - **Power:** 32, 128 and 512 EU/t. Offline when unpowered or unloaded (D11).
@@ -270,8 +313,8 @@ lookup per antenna in range.
 | Device        | Stage    | Band | Cap    | Power             | Talking                          |
 |---------------|----------|------|--------|-------------------|----------------------------------|
 | Transceiver   | Early MV | VHF  | Medium | MV, 32 EU/t       | push-to-talk within 2 blocks     |
-| Walkie-Talkie | Mid MV   | VHF  | Medium | battery           | push-to-talk key                 |
-| Mobile Phone  | Early HV | UHF  | High   | battery           | your usual voice settings, in calls |
+| Walkie-Talkie | Mid MV   | VHF  | Medium | MV battery        | push-to-talk key                 |
+| Mobile Phone  | Early HV | UHF  | High   | HV battery        | your usual voice settings, in calls |
 | ME Phone      | Late EV  | none | Max    | AE, like a wireless terminal | your usual voice settings, in calls |
 
 ### 8.1 Radio channels
@@ -309,8 +352,10 @@ lookup per antenna in range.
 
 ### 9.1 Satellites
 
-- **Launch (D6, D16):** the Satellite Launch Pad (late HV multiblock) launches a Satellite Rocket, using rocket fuel,
-  into orbit over the pad's dimension. Every dimension with a sky keeps its own constellation.
+- **Launch (D6, D16):** the Satellite Launch Pad (late HV multiblock, [3.2](#32-structures)) needs open sky above it. It
+  takes Satellite Rockets from its input bus, and fuel from its input hatch: any fluid Galacticraft accepts as rocket
+  fuel. Each launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts one satellite into orbit over the pad's
+  dimension. Every dimension with a sky keeps its own constellation.
 - **Decay (D23):** each satellite stays up for 100 Minecraft days of world time, ± 20% at random so they don't all come
   down together. Decay only advances while the server runs. The Launch Pad GUI shows each dimension's satellite count
   and when the next one comes down.
@@ -331,9 +376,15 @@ lookup per antenna in range.
 
 ### 9.3 Rocket Radio Receiver
 
-- An upgrade for Galacticraft rockets (D6), carried in the rocket's cargo.
-- While the rocket is landed in a dimension other than the Overworld and its chunk is loaded, it acts as a T1 antenna
-  there, and as that dimension's uplink to the Overworld's satellites. It needs no power.
+- An upgrade for rockets (D6), carried in the rocket's cargo. A rocket built without chests has no cargo slots, so it
+  needs at least one.
+- Works in any rocket built on Galacticraft's `EntityAutoRocket` (D28): Galacticraft's Tier 1–3 rockets and its cargo
+  rocket, GalaxySpace's Tier 4–8 rockets, and AmunRa's shuttle.
+- Counts while the rocket stands unignited on a launch pad in a dimension other than the Overworld, with its chunk
+  loaded. There it acts as a T1 antenna, and as that dimension's uplink to the Overworld's satellites. It needs no
+  power.
+- A rocket you fly yourself turns into an item in a parachest when you arrive: place it on a launch pad there and put
+  the receiver in its cargo. An unmanned rocket sent by a Launch Controller counts as soon as it lands on its target pad.
 
 ### 9.4 Portal Relay
 
@@ -445,7 +496,10 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
   dishes, relays, Transceivers), with its position and links.
 - **Global data:** the Overworld's data holds the phone number registry, and each satellite's dimension and launch time.
 - **Online status:** powered nodes report from their tile entity tick. A node not heard from for 2 seconds counts as
-  offline. A landed rocket with a receiver reports the same way from its entity tick.
+  offline.
+- **Rockets:** rockets are Galacticraft's entities, so BeCom can't tick them. It keeps track of the `EntityAutoRocket`
+  entities in loaded chunks as they join their world, and checks each one's pad, launch phase and cargo once per second
+  ([9.3](#93-rocket-radio-receiver)).
 - **Path finding:** a call's best path is a widest-path search (maximize the weakest hop's SNR). It's re-run only when a
   node, a link or an access level changes.
 - **Threading:** surveys, access evaluation, clearance checks, path finding and snapshot building all run on the server
@@ -500,10 +554,9 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 | Rocket Radio Receiver uplink level      | High                          |
 | Portal Relay power, portal distance     | 32 EU/t, 4 blocks             |
 | Portal Relay hop level                  | High                          |
+| Satellite launch                        | 30 s at 480 EU/t, 1,000 L fuel |
 | Machine ID range                        | 25000–25199                   |
 
 ## 14. Open questions
 
-1. **Recipes:** tiers are set above; the actual GT recipes are still to do.
-2. **Rockets:** which rocket entities count for the Rocket Radio Receiver? Galacticraft's tiered rockets for sure;
-   GTNH also has rockets from other mods (GalaxySpace), to be checked when the integration is built.
+None right now.
