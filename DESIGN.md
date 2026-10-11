@@ -1,7 +1,8 @@
 # Better Communications: design
 
-Draft 9, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
-the GTNH Voice 0.10.1 API. From now on this file is the source of truth.
+Draft 10, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+the GTNH Voice 0.10.1 API. From now on this file is the source of truth. How BeCom gets built is in
+[16](#16-roadmap), and the build's working rules are in [`CLAUDE.md`](CLAUDE.md).
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
 still needs a yes or a change. Every number lives in [Tunables](#17-tunables) and is a starting point for playtesting,
@@ -86,6 +87,11 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D51 | Quests give GTNH-style rewards, balanced per tier against GTNH's own quests.                                                       | decided  |
 | D52 | Quests are written with each milestone, for the content that milestone adds.                                                       | decided  |
 | D53 | Claude Code generates every asset: textures in both styles, models and synthesized sounds.                                        | decided  |
+| D54 | One Claude Code session in the cloud builds all five milestones, following [16](#16-roadmap) and the repo's `CLAUDE.md`. The owner reviews everything afterwards. | decided  |
+| D55 | Each milestone is built on its own branch, stacked on the one before and pushed as it goes, and ends with a summary: what was built, the tests, deviations and known issues. | decided  |
+| D56 | When an untested assumption fails, the run takes its agreed fallback ([16.2](#162-untested-assumptions)), logs it and carries on. The owner decides afterwards whether to keep it. | decided  |
+| D57 | What BeCom needs from GTNH Voice gets added to GTNH Voice. [`VOICE.md`](VOICE.md) lists each need, starting with reading its proximity range (D17), and the run adds any it finds. | decided  |
+| D58 | Each milestone ends with two adversarial reviews: one checks it against this design, the other tries to break the code. The run proves a finding with a test before fixing it, and records each one it rejects, with the reason. | decided  |
 
 ## 3. Progression
 
@@ -234,6 +240,8 @@ Cable block made from red alloy wire (D8). Connects a Telephone to a Line Termin
   ([8.2](#82-calls)). A plain 1 ↔ 1 line rings the other end; a line that reaches more phones, through routers or an
   antenna bridge, dials.
 - **Incoming call:** the phone rings (a sound at the block). Picking up answers.
+- **The handset** isn't an item. The Telephone remembers who picked it up, their hands stay free, and the handset is
+  missing from the block's model until it's hung up.
 - **Quality cap:** Low (D10).
 
 ### 5.7 Line loss
@@ -346,6 +354,9 @@ profile, at most 64 heights, per antenna in range.
 | Mobile Phone  | Early HV | UHF  | High   | HV battery        | your usual voice settings, in calls |
 | ME Phone      | Late EV  | none | Max    | AE, like a wireless terminal | your usual voice settings, in calls |
 
+Walkie-talkies and phones work from the inventory or from a Baubles slot (D14). They use Baubles Expanded's universal
+type, so they fit any slot.
+
 ### 8.1 Radio channels
 
 - 16 channels. Tune with the GUI, or by scrolling while sneaking.
@@ -424,8 +435,9 @@ profile, at most 64 heights, per antenna in range.
 ### 9.4 Portal Relay
 
 - Mid MV machine, 32 EU/t (D22). Works when it's within 4 blocks of a Nether portal, an End portal, the End's exit
-  portal, a Twilight Forest portal or a Personal Space portal (D46). It recognizes them by block, so neither Twilight
-  Forest nor Personal Space is a dependency.
+  portal, a Twilight Forest portal or a Personal Space portal (D46). It recognizes them by block class
+  (`twilightforest.block.BlockTFPortal`, `me.eigenraven.personalspace.block.PortalBlock`), so neither Twilight Forest
+  nor Personal Space is a dependency.
 - Two relays on opposite sides of a portal pair the same way pylons link: wrench on one, go through the portal, and
   wrench the other within 5 minutes ([12.2](#122-networks)).
 - A linked pair is a fixed High hop between the two dimensions' networks.
@@ -615,6 +627,13 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   members, per-direction levels and dropout settings, walkie holders and their channels, Transceiver positions. It's
   published through a volatile field.
 - **`route()`** runs on GTNH Voice's network thread and reads only the snapshot and the `RoutingContext`, never the world.
+- **Positions:** players' positions come from GTNH Voice's own position snapshot (`getPositionSnapshot()` on the
+  `RoutingContext`), the one its proximity group uses. Blocks' positions (Transceivers, Videophones) come from BeCom's
+  snapshot.
+- **Direct hearing (D17):** a listener in the speaker's dimension within `min(16, r)` blocks of them, measured the way
+  GTNH Voice measures it, is skipped. `r` is GTNH Voice's effective proximity range, `min(distance, maxDistance)` from
+  its server config. GTNH Voice has no public way to read `r` yet: [`VOICE.md`](VOICE.md) V1 asks for one, and until
+  then BeCom uses 16.
 - **`becom:call`:**
   - For each other participant at Low or better, unless they hear the speaker directly (D17), apply the dropout model.
   - If the frame survives, `sendTo(listener, SourceState.FLAT, ...)`.
@@ -652,8 +671,10 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   source through someone else's walkie or a Transceiver gets that device's level.
 - **Branch state:** `when()` rebuilds a branch's filter state each time it's entered again. The server's hysteresis and
   once-per-second evaluation keep that rare.
-- **Talking animation:** a `frame()` stage on the call branches measures each source's loudness for the front camera
-  ([10.1](#101-video)).
+- **Talking animation:** a stage at the head of the chain, added with `stage(...)`, so each source gets its own
+  instance. Its `beginFrame` tells it which source each frame comes from. It measures each source's loudness and passes
+  every sample through unchanged. The front camera ([10.1](#101-video)) uses the loudness of the people in the call,
+  whichever group their voice arrives through.
 
 ### 13.6 Other sounds
 
@@ -691,6 +712,18 @@ Ringing, tones and the radio's squelch tail are Minecraft sounds, not voice.
 - Nobody reserves this range for BeCom. Re-check it whenever BeCom moves to a new GT5-Unofficial version.
 - At startup, BeCom checks every ID it is about to use. If another mod already took one, BeCom stops the game with an
   error naming that machine, instead of letting two machines share an ID and corrupt worlds.
+
+### 14.2 Config and saved data
+
+- **Server config:** every value in [Tunables](#17-tunables), and the questline's off switch ([15.5](#155-questline)),
+  in BeCom's Forge config file. Three tunables are fixed instead: the machine ID range, the phone number length and
+  the default keys. Values are read at startup, so changes need a restart. Clients learn what they need from the
+  server, never from their own config.
+- **Client config:** the keys, in Minecraft's own controls screen ([11.1](#111-keys)), and which corner the video window
+  sits in ([11.2](#112-phones)).
+- **Saved data:** everything BeCom saves carries a format version. A newer BeCom upgrades older data as it loads it. A
+  BeCom that finds data newer than it understands stops the server with an error instead of overwriting it, like the
+  machine ID check. The height cache is only a cache: on a version mismatch it's thrown away and rebuilt.
 
 ## 15. Assets
 
@@ -745,6 +778,9 @@ An in-game guide through GuideNH, which GTNH already ships (D48). It covers the 
 the Signal Analyzer. The questline ([15.5](#155-questline)) is where players start; the guide is for those who want the
 details. Written for 1.0.
 
+The pages are Markdown files under `assets/becom/guidenh/` in BeCom's jar, where GuideNH's data-driven loader finds
+them.
+
 ### 15.5 Questline
 
 BeCom isn't in GTNH's quest book, so it brings its own tab (D49).
@@ -770,14 +806,31 @@ BeCom isn't in GTNH's quest book, so it brings its own tab (D49).
   GTNH's own quests, since their IDs can change between pack versions.
 - **Tasks:** item quests use BQ's own item tasks. The quests that teach a mechanic use BeCom's own task type (D50), which
   BeCom completes when it happens:
-  - a first call, a first call from a mobile phone, a first video call, a first ME Phone call through an ME Bridge;
-  - a first radio contact;
-  - a Portal Relay pair linked;
-  - a first satellite launched, and 5 satellites over one dimension;
-  - a first call between dimensions.
-- **Rewards (D51):** like GTNH's own quests. Most give a lootbag of the quest's tier (`enhancedlootbags`); the big steps
-  add Technician coins (`dreamcraft`), sometimes as a choice. They're balanced against GTNH's quests of the same tier.
-  A reward whose item isn't installed is left out.
+
+  | Task                    | Completes for                     | When                                                                  |
+  |-------------------------|-----------------------------------|-----------------------------------------------------------------------|
+  | First call              | everyone in it                    | a call connects                                                       |
+  | Mobile call             | everyone in it on a Mobile Phone  | a call connects                                                       |
+  | Video call              | the viewer                        | they get live video from someone in their call: both on video devices, that person's front camera on, at Medium or better |
+  | ME Bridge call          | the ME Phone's user               | a call connects whose path goes through an ME Bridge                  |
+  | Radio contact           | the speaker and the listener      | BeCom carries a radio frame from one player to another; hearing someone directly (D17) doesn't count |
+  | Portal Relay pair       | whoever links the pair            | the second relay of a pair is linked                                  |
+  | First satellite         | the Launch Pad's owner            | a launch from their pad puts a satellite into orbit                   |
+  | Five satellites         | the Launch Pad's owner            | a launch from their pad leaves its dimension with at least 5 satellites in orbit |
+  | Call between dimensions | everyone in it                    | a call connects with people in different dimensions                   |
+
+  BeCom completes tasks on the server thread. Radio contact is noticed in `route()`, on GTNH Voice's network thread, so
+  it's queued from there.
+- **Rewards (D51):** like GTNH's own quests. Most give a lootbag of the quest's tier; the big steps add Technician
+  coins, sometimes as a choice. Amounts are balanced against GTNH's quests of the same tier. A reward whose item isn't
+  installed is left out.
+
+  | Tier | Lootbag                              | Coins on the big steps         |
+  |------|--------------------------------------|--------------------------------|
+  | LV   | `enhancedlootbags:lootbag`, damage 4 | `dreamcraft:CoinTechnician`    |
+  | MV   | `enhancedlootbags:lootbag`, damage 5 | `dreamcraft:CoinTechnician`    |
+  | HV   | `enhancedlootbags:lootbag`, damage 6 | `dreamcraft:CoinTechnicianI`   |
+  | EV   | `enhancedlootbags:lootbag`, damage 7 | `dreamcraft:CoinTechnicianII`  |
 - **Timing (D52):** quest support and the LV quests come in 0.1. Each milestone then adds the quests for its own
   content, so no quest ever describes a feature that doesn't exist yet.
 
@@ -786,36 +839,152 @@ BeCom isn't in GTNH's quest book, so it brings its own tab (D49).
 BeCom stays private until 1.0 (D33). Milestones are tracked here, with no public releases and no version tags before
 1.0, since the release workflow publishes on tags.
 
-Each milestone ends with:
-
-- unit tests for its math;
-- the CI server boot check;
-- a two-player test on a dev server.
-
 Each hard dependency (D27) joins the build with the milestone that first uses it: AE2 and Baubles in 0.3, Galacticraft
-in 0.4. Each milestone also brings the textures and sounds for its own content ([15](#15-assets)).
-
-Each milestone starts by trying out what it relies on that nobody has tested yet:
-
-- **0.1:**
-  - Repeater and Router heads taking power straight from a cable. GT controllers normally only take power through
-    energy hatches, so this needs a custom controller.
-  - Adding the questline through BQ's API on a GTNH server, including right after a pack-version reload.
-- **0.3:**
-  - the rear camera's frame copy with Angelica and shader packs;
-  - drawing a far-away player's skin from their profile;
-  - the ME Bridge connecting to ME cable.
-- **0.4:** rocket detection on a real Galacticraft install, so far only read from its code.
+in 0.4. Each milestone also brings the textures and sounds for its own content ([15](#15-assets)), and its quests
+(D52).
 
 | Milestone       | Contents                                                                                                   | Done when |
 |-----------------|------------------------------------------------------------------------------------------------------------|-----------|
-| 0.1 Wired calls | Machine ID check. Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. Quest support (BeCom's task type, the off switch) and the LV quests. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
+| 0.1 Wired calls | Machine ID check, config and saved-data versions ([14.2](#142-config-and-saved-data)), the self-test ([16.3](#163-verification)). Pylon, Line Terminal, Repeater, Router, Phone Cable, Telephone and their recipes. Numbers, contacts and the phone screen. `becom:call` routing, line loss, levels, dropouts and call audio. Ownership, linking rules, block list, do-not-disturb, rate limit. Quest support (BeCom's task type, the off switch) and the LV quests. | Two players talk over a 300-block line with one repeater, and the audio degrades and drops past the limits in [5.7](#57-line-loss). |
 | 0.2 Radio       | Height cache, radio model, surveys. Antennas T1–T3. Transceiver, Walkie-Talkie, push-to-talk, channels, capture effect, walkie speaker. Signal Analyzer overlay, `/becom signal`. The radio quests. | Two walkies talk directly and through an antenna, and the analyzer explains every loss. |
 | 0.3 Phones      | Mobile Phone, Baubles slots, ringing and the Phone key, group calls, weather, coverage map, battery drain. ME Phone and ME Bridge. Video calls: front and rear camera, the corner window, the Videophone. The quests for phones, ME and video. | A mobile phone calls a Telephone through an antenna bridged onto a pylon line, and a video call between a mobile phone and a Videophone shows both sides. |
 | 0.4 Space       | Launch Pad, Satellite, Satellite Rocket, decay, sky hops. Satellite Dish, Rocket Radio Receiver, Portal Relay. Calls between dimensions. The space quests. | A call connects from the Overworld to the Moon, and to the Nether. |
-| 1.0 Polish      | A final pass over art and sounds, the Modernity add-on pack, Italian, the GuideNH guide, WAILA info, a balancing pass, profiling on a big server, README. | First public release. |
+| 1.0 Polish      | A final pass over art and sounds, the Modernity add-on pack, Italian, the GuideNH guide, WAILA info, a balancing pass, a load test against the budgets in [6.5](#65-budget), README. | Ready for the first public release, which the owner tags. |
+
+### 16.1 How it gets built
+
+- **One run (D54):** a single Claude Code session in the cloud builds the milestones in order, with nobody watching,
+  and the owner reviews everything afterwards. Its working rules are in [`CLAUDE.md`](CLAUDE.md); this section is the
+  plan behind them.
+- **In the cloud:** the run starts from a fresh clone of the repo on a cloud VM. Nothing on the owner's machine is
+  there, and a VM left idle can be reclaimed, taking anything unpushed with it, so the run pushes after every commit.
+- **Branches (D55):** each milestone has its own branch, `milestone/0.1-wired` to `milestone/1.0-polish`, started from
+  the end of the one before. `master` stays as it is until the owner merges. The run makes CI run on every push to a
+  milestone branch too.
+- **Adversarial review (D58):** when a milestone's work is done, two reviewer agents kept in the repo
+  (`.claude/agents/`) go through it side by side. `design-adversary` checks it against this file; `code-adversary`
+  tries to break the code. Both only read. The run proves each finding with a failing test before fixing it, keeps the
+  test, and records every finding it rejects, with the reason.
+- **What the run keeps,** in the repo:
+  - `PROGRESS.md`: every item of every milestone with its status, and each milestone's summary: what was built, the
+    tests, the review, deviations, known issues, and a checklist for the owner.
+  - `DEVIATIONS.md`: everywhere the code differs from this file, and every choice the run made where this file is
+    silent that changes gameplay, balance, saved data, config, commands or names.
+  - [`VOICE.md`](VOICE.md): what BeCom needs from GTNH Voice (D57).
+- **Releases are the owner's:** the run never tags, so 1.0 ends ready to release. GitHub's proxy refuses tag pushes
+  from cloud sessions anyway.
+- **Review:** one milestone branch at a time, starting from 0.1: its CI result, its summary, its deviations and VOICE.md
+  entries, then its checklist in-game.
+
+### 16.2 Untested assumptions
+
+Each milestone starts by trying out what it relies on that nobody has tested yet. If one fails, the run takes its
+fallback, logs it and carries on (D56). Some can only be tried in a game client, which the run doesn't have. Those go
+on the owner's checklist, and their fallback is built if the owner finds them broken.
+
+| Milestone | Assumption                                                                                   | Tried by  | Fallback                                                                                     |
+|-----------|----------------------------------------------------------------------------------------------|-----------|----------------------------------------------------------------------------------------------|
+| 0.1       | Repeater and Router heads take power straight from a cable. GT controllers normally take it only through energy hatches, so this needs a custom controller. | Self-test | Repeater and Router pylons take an Energy Hatch at the foot of their frame column.           |
+| 0.1       | BeCom can add its questline through BQ's API on a GTNH server, including right after a pack-version reload. | Self-test, with BQ in the dev server | BeCom only publishes the quest files ([15.5](#155-questline)). Its task type stays; adding the tab, and its off switch, go. |
+| 0.2       | Caps Lock works as a held push-to-talk key under lwjgl3ify on every OS. macOS may report it only when it toggles. | Owner     | Another default key that's free in a full GTNH install.                                      |
+| 0.3       | The ME Bridge joins an ME network on ME cable, the way GT's ME hatches do.                   | Self-test, with an ME controller and cable | The bridge isn't a grid node. It holds a linked ME Phone or Wireless Terminal, and joins that terminal's ME network while AE2's range check passes at the bridge, the way an ME Phone does. It uses no ME channel. |
+| 0.3       | Video renders under Angelica and shader packs: the front camera's small offscreen picture, and the rear camera's copy of the world image. | Owner     | The front camera draws straight into its window at full detail, keeping its frame rate and freezes. The rear camera is left out, with its switch hidden. |
+| 0.3       | A far-away player's skin can be drawn from the profile the server sends.                     | Owner     | The default skin, with the player's name under the picture.                                  |
+| 0.3       | Video on BeCom's own network channel doesn't lag the game connection.                        | Owner     | Lower rear-camera rates and caps ([17](#17-tunables)), and [`VOICE.md`](VOICE.md)'s V2.      |
+| 0.4       | BeCom finds rockets as they join their world, and counts one standing unignited on a pad with a receiver in its cargo ([9.3](#93-rocket-radio-receiver)). So far this is only read from Galacticraft's code. | Self-test, with a Tier 1 rocket spawned on a launch pad | Once per second, scan each loaded world's entities for rockets, and count one as landed when it's unignited and the block under it is a Galacticraft launch pad. |
+| 1.0       | GuideNH's data-driven loader finds BeCom's pages ([15.4](#154-guide)).                        | Owner     | The guide ships as Markdown in the repo, linked from the README, and the quests point there. |
+
+### 16.3 Verification
+
+The run has no players and no game client, so every milestone is checked in five layers:
+
+- **Logic:** the radio model, levels and hysteresis, dropouts, line loss, path finding, capture, call states, numbers,
+  the rate limit, satellite strength and decay, and the quest triggers live in classes that import nothing from
+  Minecraft, with unit tests. The tests also pin this file's worked numbers, allowing for their rounding:
+  - a line starts dropping out past 225 blocks and drops at 300 ([5.7](#57-line-loss));
+  - antennas reach about 64, 128 and 256 blocks to the edge of Low on open ground ([7](#7-antennas));
+  - a walkie-talkie reaches about 80 blocks directly, a Transceiver about 125 ([8.1](#81-radio-channels));
+  - 5, 14, 37 and 100 satellites give Low, Medium, High and Max ([9.1](#91-satellites)).
+- **Routing:** BeCom's `route()` code runs in tests on hand-built snapshots, through GTNH Voice's
+  `RoutingContext.builder()` with a capturing `PacketSender`. The tests check who gets each frame, FLAT or POSITIONAL
+  from where, in which order, and who is skipped: direct hearing (D17), capture (D24), dropouts, blocking.
+- **Self-test:** `/becom selftest` runs the checks that need a real server: machine IDs, recipes, groups, forming each
+  multiblock, linking, the levels along a built line or antenna link, the questline, and the self-test rows in
+  [16.2](#162-untested-assumptions). It builds what it needs in a scratch area far from spawn, prints one line per check
+  and then `BeCom self-test: N passed, M failed`, and stops the server. It exists only in the development environment,
+  so it can never build in a real world. CI's run-server job runs it and fails on any failed check, and the run uses
+  the same steps locally.
+- **Adversarial review:** the two reviewers from [16.1](#161-how-it-gets-built) read the milestone's whole diff and the
+  code around it. Each finding gets a failing test, then a fix, or a written reason why it's wrong.
+- **Owner's checklist:** whatever needs a game client or two people: sounds, screens, textures, keys, video, the guide,
+  and each milestone's "Done when" played by two players. Each milestone's summary lists the steps, and what should
+  happen.
+
+A milestone is done when its tests and self-test pass, every review finding is fixed or answered, and its checklist is
+written.
+
+### 16.4 Versions
+
+BeCom builds against the versions in the owner's GTNH install. They come from the GTNH Maven as
+`com.github.GTNewHorizons:<artifact>:<version>:dev`, except GTNH Voice, which comes from JitPack. The run sticks to
+these; if one can't be used, that's a deviation.
+
+| Mod                                     | Artifact                                 | Version                              | Used for                                       |
+|-----------------------------------------|------------------------------------------|--------------------------------------|------------------------------------------------|
+| GTNH Voice                              | `com.github.Enn3Developer:gtnh-voice`    | v0.10.1                              | compile, from 0.1                              |
+| GregTech                                | `GT5-Unofficial`                         | 5.09.54.205                          | compile, from 0.1                              |
+| StructureLib, ModularUI2, GTNHLib       | `StructureLib`, `ModularUI2`, `GTNHLib`  | 1.4.45, 2.3.92-1.7.10, 0.11.52       | through GregTech                               |
+| BetterQuesting                          | `BetterQuesting`                         | 3.8.89-GTNH                          | optional, from 0.1                             |
+| Applied Energistics 2                   | `Applied-Energistics-2-Unofficial`       | rv3-beta-1080-GTNH                   | compile, from 0.3                              |
+| Baubles Expanded                        | `Baubles-Expanded`                       | 2.2.25-GTNH                          | compile, from 0.3                              |
+| Galacticraft                            | `Galacticraft`                           | 3.4.34-GTNH                          | compile, from 0.4                              |
+| Twilight Forest, Personal Space         | `twilightforest`, `PersonalSpace`        | 2.7.44, 1.0.41                       | the dev server's self-test, from 0.4           |
+| Waila                                   | `waila`                                  | 1.19.34                              | optional, at 1.0                               |
+| GuideNH                                 | `GuideNH`                                | 1.3.41                               | none: the guide is data ([15.4](#154-guide))   |
+| Enhanced Loot Bags, NewHorizonsCoreMod  | `EnhancedLootBags`, `NewHorizonsCoreMod` | 1.3.5, 2.9.84                        | none: quest rewards name their items           |
+| GalaxySpace, AmunRa, Angelica           | -                                        | 1.1.143-GTNH, 0.8.14, 2.2.28         | none: the owner's in-game checks               |
+
+### 16.5 Before the run
+
+The run is a Claude Code session in the cloud (D54), so it has only what's in the repo and what its cloud environment
+gives it. For the owner:
+
+- **GitHub:** the Claude GitHub App installed on the repo, or `/web-setup`, so the session can clone and push.
+- **A cloud environment for the run:**
+  - **Network access: Full.** The default level, Trusted, leaves out the GTNH Maven, JitPack, Mojang's and Forge's
+    servers and the JDK downloads Gradle makes, so the build fails there. Custom works too, with the defaults plus
+    `nexus.gtnewhorizons.com`, `jitpack.io`, `*.mojang.com`, `libraries.minecraft.net`,
+    `resources.download.minecraft.net`, `*.minecraftforge.net`, `api.foojay.io` and `cdn.azul.com`. That list is a best
+    reading of what the build fetches, and the dry run below is what proves it.
+  - **Setup script:** the cloud image has JDK 21, Python 3 and pip, but no ffmpeg, numpy or Pillow. Gradle downloads
+    the other JDKs it needs, Java 25 included, by itself.
+
+    ```bash
+    #!/bin/bash
+    set -e
+    apt-get update -qq && apt-get install -y -qq ffmpeg
+    python3 -m pip install -q numpy pillow || python3 -m pip install -q --break-system-packages numpy pillow
+    ```
+
+  - **Environment variables:** `BASH_DEFAULT_TIMEOUT_MS=600000` and `BASH_MAX_TIMEOUT_MS=1800000`. A first build or a
+    server boot takes longer than the 2-minute default.
+  - **Personal instructions:** `~/.claude/CLAUDE.md` stays on your machine. If you want it in the run, have the setup
+    script write it.
+- **A dry run first:** a short session in that environment that runs `./gradlew build` and the server boot, and nothing
+  else. It proves the network, the JDKs and the memory (the VM has 16 GB) before the real run depends on them.
+- **Starting the run:** from `master`, with this file, `CLAUDE.md`, `VOICE.md` and `.claude/agents/` committed, in a
+  permission mode that doesn't stop for approvals.
+- **Usage limits:** the run shares the plan's limits and stops when it hits one. Once the limit resets, send it a
+  message to carry on, from the app or with `claude -p "continue" --cloud <session-id>`. It pushes after every commit,
+  so nothing is lost in between.
+- **For the in-game checks:** update the GTNH install's GTNH Voice from 0.9.2 to 0.10.1 or newer, and check that GTNH
+  Voice Radio 0.1.0 still loads with it.
+- **Optional:** ship [`VOICE.md`](VOICE.md)'s V1 in a GTNH Voice release and point BeCom's dependency at it. Otherwise
+  the run uses V1's stopgap.
 
 ## 17. Tunables
+
+Every value here is a server config option, except the three that [14.2](#142-config-and-saved-data) keeps fixed.
 
 | What                                    | Value                         |
 |-----------------------------------------|-------------------------------|
