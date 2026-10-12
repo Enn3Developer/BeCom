@@ -51,13 +51,16 @@ public final class SpaceService {
 
     private static String nameOf(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);
-        if (world != null) return world.provider.getDimensionName();
+        String name;
         try {
-            return DimensionManager.createProviderFor(dimension)
-                .getDimensionName();
+            name = world != null ? world.provider.getDimensionName()
+                : DimensionManager.createProviderFor(dimension)
+                    .getDimensionName();
         } catch (RuntimeException e) {
-            return String.valueOf(dimension);
+            name = null;
         }
+        // A provider may leave its name out; the screen shows the number instead.
+        return name == null ? String.valueOf(dimension) : name;
     }
 
     /** The Overworld's world time, the clock satellites go up and come down by. */

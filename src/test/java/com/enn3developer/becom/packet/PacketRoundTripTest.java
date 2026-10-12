@@ -194,6 +194,19 @@ class PacketRoundTripTest {
     }
 
     @Test
+    void aDimensionWithNoNameGoesAsNone() {
+        LaunchPadView view = new LaunchPadView(0, false, List.of(new LaunchPadView.Orbit(null, 5, 0)));
+        PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
+        view.write(buf);
+        assertEquals(
+            "",
+            LaunchPadView.read(buf)
+                .orbits()
+                .get(0)
+                .dimension());
+    }
+
+    @Test
     void dishView() {
         DishView view = new DishView(true, 37, true, true, 5, 16.0, SignalLevel.MEDIUM, 1, 2.0, "(1, 64, -3)");
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());

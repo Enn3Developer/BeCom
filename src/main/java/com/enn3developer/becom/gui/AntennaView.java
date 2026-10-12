@@ -141,6 +141,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
     private static final int MAX_NAME = 64;
 
     static void writeString(PacketBuffer buf, String s) {
+        // A missing name is sent as none, rather than throwing in the middle of a screen's sync every tick.
+        if (s == null) s = "";
         byte[] bytes = (s.length() > MAX_NAME ? s.substring(0, MAX_NAME) : s)
             .getBytes(java.nio.charset.StandardCharsets.UTF_8);
         buf.writeShort(bytes.length);
