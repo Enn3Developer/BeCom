@@ -63,6 +63,7 @@ import com.enn3developer.becom.machine.MTELineTerminal;
 import com.enn3developer.becom.machine.MTEMeBridge;
 import com.enn3developer.becom.machine.MTEPylonHead;
 import com.enn3developer.becom.machine.MTETransceiver;
+import com.enn3developer.becom.machine.MTEVideophone;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
@@ -74,6 +75,7 @@ import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 import com.enn3developer.becom.server.RadioService;
 import com.enn3developer.becom.voice.CallGroup;
+import com.enn3developer.becom.voice.CallSnapshot;
 import com.enn3developer.becom.voice.RadioGroup;
 import com.enn3developer.becom.voice.RadioSnapshot;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
@@ -253,6 +255,15 @@ public final class SelfTest {
         steps.add(this::buildMe);
         steps.add(this::linkMe);
         steps.add(this::checkMe);
+        steps.add(this::checkVideophoneRegistration);
+        steps.add(this::buildVideophone);
+        steps.add(this::formVideophone);
+        steps.add(this::checkVideophoneCall);
+        steps.add(this::checkVideophoneRoom);
+        steps.add(this::checkVideophoneEmpty);
+        steps.add(this::holdVideophone);
+        steps.add(this::checkVideophoneHungUp);
+        steps.add(this::checkVideophonePower);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -2138,6 +2149,224 @@ public final class SelfTest {
                 .append(wap != null && wap.getGrid() == node.getGrid());
         }
         return detail.toString();
+    }
+
+    // endregion
+
+    // region Videophone (0.3)
+
+    // A Videophone on a Line Terminal of its own, bridged onto the phone antenna 5 blocks north (DESIGN.md 10.2).
+    private static final int VIDEOPHONE_DZ = -7;
+    private MTEVideophone videophone;
+    private MTELineTerminal videophoneTerminal;
+    private FakePlayer vic;
+    private FakePlayer wes;
+    private boolean videophoneOwnerless;
+
+    private int checkVideophoneRegistration() {
+        check("crafting recipe for the Videophone", hasCraftingRecipe(BeComMachines.videophone.getStackForm(1)), "");
+        return 1;
+    }
+
+    private int buildVideophone() {
+        int z = phoneZ + VIDEOPHONE_DZ;
+        for (int x = X0 - 3; x <= X0 + 3; x++) {
+            for (int dz = -3; dz <= 2; dz++) {
+                for (int y = Y - 1; y <= Y + 1; y++) world.setBlockToAir(x, y, z + dz);
+            }
+        }
+        videophone = place(BeComMachines.videophone, X0, Y, z);
+        powered.add(videophone.getBaseMetaTileEntity());
+        world.setBlock(X0, Y, z + 1, BeComBlocks.phoneCable);
+        videophoneTerminal = place(BeComMachines.lineTerminal, X0, Y, z + 2);
+        powered.add(videophoneTerminal.getBaseMetaTileEntity());
+        clearWeather();
+        return 2;
+    }
+
+    private int formVideophone() {
+        // Its number comes on its first tick; this one may not have had it yet.
+        if (videophone.number() < 0) videophone.settle();
+        // A fake player, like a machine, never owns a phone (X6). The self-test's owner stands in for the player who
+        // would place it.
+        PhoneRecord record = becom.phones.record(videophone.number());
+        videophoneOwnerless = record != null && record.owner() == null;
+        if (videophoneOwnerless) record.setOwner(owner.getUniqueID(), owner.getCommandSenderName());
+        videophoneTerminal.scanCable();
+        link(videophoneTerminal, phoneAntenna);
+        return SETTLE_TICKS;
+    }
+
+    /** A fake player at {@code (x, Y, z)}, carrying nothing, who can stand at a Videophone. */
+    private FakePlayer roomPlayer(String name, int n, double x, double z) {
+        FakePlayer player = FakePlayerFactory.get(
+            world,
+            new GameProfile(
+                UUID.fromString(String.format(Locale.ROOT, "b3c0b3c0-0000-4000-8000-0000000000%02x", 0xf0 + n)),
+                name));
+        player.setPosition(x, Y, z);
+        java.util.Arrays.fill(player.inventory.mainInventory, null);
+        becom.calls.presentForSelfTest(player);
+        return player;
+    }
+
+    /** DESIGN.md 10.2, D19, D42: a Videophone is its Line Terminal's phone, rings, and answers as a speakerphone. */
+    private int checkVideophoneCall() {
+        int number = videophone.number();
+        int z = phoneZ + VIDEOPHONE_DZ;
+        PhoneRecord record = becom.phones.record(number);
+        check(
+            "a Videophone gets its number, and its Line Terminal serves it as its one phone (D19)",
+            record != null && record.kind() == PhoneKind.VIDEOPHONE && videophoneTerminal.phone() == number,
+            "number " + number + ", record " + record + ", the terminal serves " + videophoneTerminal.phone());
+        check(
+            "...a machine's fake player placing it doesn't own it (X6)",
+            videophoneOwnerless,
+            record == null ? "no record" : "owner " + record.owner());
+        check(
+            "...it works while powered, and is in a Mobile Phone's contacts",
+            becom.calls.videophoneWorking(number) && becom.calls.reachableFrom(monaNumber)
+                .contains(number),
+            "working " + becom.calls.videophoneWorking(number));
+        vic = roomPlayer("BeComVic", 0, X0 + 2.5, z + 0.5);
+        wes = roomPlayer("BeComWes", 1, X0 - 1.5, z - 2.5);
+        becom.carried.refreshForSelfTest(pia);
+        CallBook.DialResult result = becom.calls.dialCarried(pia, piaNumber, number);
+        check(
+            "...it rings when called",
+            result == CallBook.DialResult.RINGING && becom.calls.isRinging(number),
+            String.valueOf(result));
+        PhoneScreenActions.pickUp(vic, new PhoneHandle.Videophone(videophone));
+        Call call = becom.calls.book()
+            .callOfPhone(number);
+        Call.Leg leg = call == null ? null : call.legOf(number);
+        UUID p = pia.getUniqueID(), v = vic.getUniqueID(), w = wes.getUniqueID();
+        check(
+            "...its screen answers it, and everyone within 4 blocks is in the call",
+            call != null && call.state() == Call.State.CONNECTED
+                && leg != null
+                && leg.speakerphone()
+                && leg.players()
+                    .containsAll(List.of(v, w))
+                && call.participants()
+                    .size() == 3,
+            call == null ? "no call" : call.participants() + "");
+        check(
+            "...an ME Phone's Max comes through at the Videophone's High (D42)",
+            call != null && call.level(p, v) == SignalLevel.HIGH && call.level(v, p) == SignalLevel.HIGH,
+            call == null ? "no call" : call.level(p, v) + " / " + call.level(v, p));
+        CallSnapshot snapshot = becom.calls.group()
+            .snapshot();
+        CallSnapshot.Loudspeaker[] loud = snapshot.loudspeakersOf(p);
+        check(
+            "...the call plays from its loudspeaker at the block, out to 16 blocks, and to nobody flat",
+            loud.length == 1 && loud[0].phone() == number
+                && loud[0].range() == BeComConfig.get()
+                    .videophoneLoudspeaker()
+                && loud[0].x() == X0 + 0.5
+                && loud[0].z() == z + 0.5
+                && snapshot.routesOf(p).length == 0,
+            loud.length + " loudspeakers, " + snapshot.routesOf(p).length + " flat routes");
+        check(
+            "...and everyone in its room is heard by the caller",
+            hasRoute(snapshot, v, p) && hasRoute(snapshot, w, p),
+            "");
+        // Wes walks 6 blocks off: out of the room, still within the loudspeaker's reach.
+        wes.setPosition(X0 + 6.5, Y, z + 0.5);
+        return TICKS_PER_SECOND + 5;
+    }
+
+    private static boolean hasRoute(CallSnapshot snapshot, UUID speaker, UUID listener) {
+        for (CallSnapshot.Route route : snapshot.routesOf(speaker)) if (route.listener()
+            .equals(listener)) return true;
+        return false;
+    }
+
+    private int checkVideophoneRoom() {
+        Call call = becom.calls.book()
+            .callOfPhone(videophone.number());
+        check(
+            "...someone walking out of the room leaves the call, which goes on",
+            call != null && call.state() == Call.State.CONNECTED
+                && becom.calls.book()
+                    .callOf(wes.getUniqueID()) == null
+                && call.legOf(vic.getUniqueID()) != null,
+            call == null ? "no call" : call.participants() + "");
+        vic.setPosition(X0 + 10.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
+        return TICKS_PER_SECOND + 5;
+    }
+
+    private long videophoneEmptySince = -1;
+    private boolean videophoneHungUpEarly;
+    private long videophoneHungUpAfter = -1;
+
+    private int checkVideophoneEmpty() {
+        Call call = becom.calls.book()
+            .callOfPhone(videophone.number());
+        Call.Leg leg = call == null ? null : call.legOf(videophone.number());
+        check(
+            "...with nobody left in its room, it stays in the call for now",
+            call != null && call.state() == Call.State.CONNECTED
+                && leg != null
+                && leg.players()
+                    .isEmpty()
+                && leg.emptySinceMillis() >= 0,
+            call == null ? "no call" : call.participants() + "");
+        videophoneEmptySince = leg == null ? -1 : leg.emptySinceMillis();
+        videophoneHungUpEarly = false;
+        videophoneHungUpAfter = -1;
+        return VIDEOPHONE_POLL_TICKS;
+    }
+
+    // The room's clock is the call book's, in real time; the server's ticks can run slow, so this watches the clock.
+    private static final int VIDEOPHONE_POLL_TICKS = 5;
+    private static final long VIDEOPHONE_SLACK_MILLIS = 500;
+
+    private int holdVideophone() {
+        long limit = BeComConfig.get()
+            .videophoneEmptySeconds() * 1000L;
+        long elapsed = System.nanoTime() / 1_000_000L - videophoneEmptySince;
+        boolean ended = videophoneEmptySince < 0 || becom.calls.book()
+            .callOfPhone(videophone.number()) == null;
+        if (ended) {
+            videophoneHungUpAfter = elapsed;
+            videophoneHungUpEarly = elapsed < limit - VIDEOPHONE_SLACK_MILLIS;
+            return 1;
+        }
+        if (elapsed < limit + 2 * VIDEOPHONE_SLACK_MILLIS) steps.add(index, this::holdVideophone);
+        return VIDEOPHONE_POLL_TICKS;
+    }
+
+    private int checkVideophoneHungUp() {
+        check(
+            "...and hangs up by itself once nobody has been within 4 blocks for " + BeComConfig.get()
+                .videophoneEmptySeconds() + " s",
+            !videophoneHungUpEarly && videophoneHungUpAfter >= 0
+                && becom.calls.book()
+                    .callOfPhone(videophone.number()) == null
+                && becom.calls.book()
+                    .callOf(pia.getUniqueID()) == null,
+            "hung up after " + videophoneHungUpAfter + " ms");
+        // Its power cut: what's in its buffer goes, and nothing comes in.
+        IGregTechTileEntity tile = videophone.getBaseMetaTileEntity();
+        powered.remove(tile);
+        tile.decreaseStoredEnergyUnits(tile.getStoredEU(), true);
+        return 3 * TICKS_PER_SECOND;
+    }
+
+    private int checkVideophonePower() {
+        int number = videophone.number();
+        CallBook.DialResult result = becom.calls.dialCarried(pia, piaNumber, number);
+        check(
+            "an unpowered Videophone isn't in contacts and can't be called (D11)",
+            !videophone.isWorking() && !becom.calls.videophoneWorking(number)
+                && !becom.calls.reachableFrom(piaNumber)
+                    .contains(number)
+                && result == CallBook.DialResult.UNREACHABLE,
+            "working " + videophone.isWorking() + ", " + result);
+        becom.calls.hangUp(pia);
+        powered.add(videophone.getBaseMetaTileEntity());
+        return 1;
     }
 
     // endregion

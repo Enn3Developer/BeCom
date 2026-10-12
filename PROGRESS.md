@@ -531,7 +531,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Video: front camera (10.1, D41, D43)                                         | todo   |
 | Video: rear camera (10.1)                                                    | todo   |
 | Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
-| Videophone (10.2, D42)                                                       | todo   |
+| Videophone (10.2, D42)                                                       | doing  |
 | The 0.3 tunables in the config (17)                                          | done   |
 | Self-test rows for 0.3 (16.3)                                                | doing  |
 
@@ -557,7 +557,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Item                                                                         | Status |
 |------------------------------------------------------------------------------|--------|
 | Mobile Phone and ME Phone icons                                              | done   |
-| Videophone overlay and glow                                                  | todo   |
+| Videophone overlay and glow                                                  | done   |
 | ME Bridge overlay and glow                                                   | done   |
 | Modernity style of all of the above                                          | todo   |
 | Sounds: the ringtone from a carried phone, the silent-mode buzz             | done   |

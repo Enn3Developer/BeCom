@@ -27,6 +27,7 @@ public final class BeComMachines {
     public static final int ANTENNA_T3_ID = 25006;
     public static final int TRANSCEIVER_ID = 25007;
     public static final int ME_BRIDGE_ID = 25008;
+    public static final int VIDEOPHONE_ID = 25009;
 
     public static MTEPylonHead pylonHead;
     public static MTEPylonHead repeaterHead;
@@ -37,6 +38,7 @@ public final class BeComMachines {
     public static MTEAntenna antennaT3;
     public static MTETransceiver transceiver;
     public static MTEMeBridge meBridge;
+    public static MTEVideophone videophone;
 
     private BeComMachines() {}
 
@@ -52,6 +54,7 @@ public final class BeComMachines {
         ids.put(ANTENNA_T3_ID, "becom.antenna_t3");
         ids.put(TRANSCEIVER_ID, "becom.transceiver");
         ids.put(ME_BRIDGE_ID, "becom.me_bridge");
+        ids.put(VIDEOPHONE_ID, "becom.videophone");
         return ids;
     }
 
@@ -100,5 +103,6 @@ public final class BeComMachines {
         antennaT3 = new MTEAntenna(ANTENNA_T3_ID, "becom.antenna_t3", "Antenna T3 Head", 3);
         transceiver = new MTETransceiver(TRANSCEIVER_ID, "becom.transceiver", "Transceiver");
         meBridge = new MTEMeBridge(ME_BRIDGE_ID, "becom.me_bridge", "ME Bridge");
+        videophone = new MTEVideophone(VIDEOPHONE_ID, "becom.videophone", "Videophone");
     }
 }

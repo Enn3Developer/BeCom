@@ -6,10 +6,13 @@ import net.minecraft.item.ItemStack;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemCarriedPhone;
+import com.enn3developer.becom.machine.MTEVideophone;
+
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The phone a phone screen works (DESIGN.md 11.2): a Telephone where it stands, or a phone its player carries. Every
- * action checks again that the player can still use it (DESIGN.md 14: client input).
+ * The phone a phone screen works (DESIGN.md 11.2): a Telephone or a Videophone where it stands, or a phone its player
+ * carries. Every action checks again that the player can still use it (DESIGN.md 14: client input).
  */
 public sealed interface PhoneHandle {
 
@@ -34,6 +37,25 @@ public sealed interface PhoneHandle {
         public boolean usableBy(EntityPlayer player) {
             return !tile.isInvalid() && player.worldObj == tile.getWorldObj()
                 && player.getDistanceSq(tile.xCoord + 0.5, tile.yCoord + 0.5, tile.zCoord + 0.5) <= REACH_SQ;
+        }
+    }
+
+    /** A Videophone, used from within the same reach as a Telephone's screen (DESIGN.md 10.2). */
+    record Videophone(MTEVideophone machine) implements PhoneHandle {
+
+        @Override
+        public int number() {
+            return machine.number();
+        }
+
+        @Override
+        public boolean usableBy(EntityPlayer player) {
+            IGregTechTileEntity tile = machine.getBaseMetaTileEntity();
+            return tile != null && !tile.isDead()
+                && tile.getMetaTileEntity() == machine
+                && player.worldObj == tile.getWorld()
+                && player.getDistanceSq(tile.getXCoord() + 0.5, tile.getYCoord() + 0.5, tile.getZCoord() + 0.5)
+                    <= Telephone.REACH_SQ;
         }
     }
 

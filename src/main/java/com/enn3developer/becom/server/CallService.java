@@ -1,6 +1,7 @@
 package com.enn3developer.becom.server;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +15,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.world.WorldServer;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.UsernameCache;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
@@ -52,12 +55,15 @@ public final class CallService implements CallBook.Listener {
     private static final long MILLIS_PER_SECOND = 1000L;
     // How often handset cords are checked: often enough that walking off hangs up within a quarter second.
     private static final int CORD_CHECK_TICKS = 5;
+    // A Videophone not heard from for this long is unpowered or unloaded, like a node offline (DESIGN.md 14).
+    private static final int VIDEOPHONE_LOST_TICKS = 2 * TICKS_PER_SECOND;
 
     private final MinecraftServer server;
     private final NetworkService network;
     private final PhoneService phones;
     private final CarriedPhones carried;
     private final CallGroup group;
+    private final Tunables tunables;
     private final LevelScale levels;
     private final DropoutModel dropouts;
     private final CallBook book;
@@ -70,6 +76,10 @@ public final class CallService implements CallBook.Listener {
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
     // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
     private final Map<Integer, Long> ringingCarried = new HashMap<>();
+    // Working Videophones, where they stand, and the tick each last reported in (DESIGN.md 10.2).
+    private final Map<Integer, Videophone> videophones = new HashMap<>();
+    // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
+    private final Map<Heard, SignalLevel> loudspeakerLevels = new HashMap<>();
     private long ticks;
     private long publishedVersion = -1;
 
@@ -80,6 +90,7 @@ public final class CallService implements CallBook.Listener {
         this.phones = phones;
         this.carried = carried;
         this.group = group;
+        this.tunables = tunables;
         this.levels = tunables.levelScale();
         this.dropouts = tunables.dropoutModel(Tunables.FRAME_MILLIS);
         this.book = new CallBook(
@@ -203,8 +214,9 @@ public final class CallService implements CallBook.Listener {
         names.remove(player);
     }
 
-    /** A Telephone was broken or removed: its call ends and its handset is let go. */
+    /** A phone block was broken or removed: its call ends and a Telephone's handset is let go. */
     public void phoneGone(int phone) {
+        videophones.remove(phone);
         UUID holder = handsets.remove(phone);
         if (holder != null) {
             handsetOf.remove(holder);
@@ -248,7 +260,11 @@ public final class CallService implements CallBook.Listener {
         CallGraph graph = network.graph();
         for (Map.Entry<Integer, Double> entry : graph.phonesFrom(own)
             .entrySet()) {
-            if (entry.getValue() >= low && phones.record(entry.getKey()) != null) reachable.add(entry.getKey());
+            PhoneRecord record = phones.record(entry.getKey());
+            if (entry.getValue() < low || record == null) continue;
+            // An unpowered or unloaded Videophone can't be called (D11).
+            if (record.kind() == PhoneKind.VIDEOPHONE && !videophoneWorking(entry.getKey())) continue;
+            reachable.add(entry.getKey());
         }
         for (int other : carried.working()) {
             if (other != phone && phones.record(other) != null && graph.width(own, entriesOf(other)) >= low) {
@@ -295,6 +311,7 @@ public final class CallService implements CallBook.Listener {
                 .contains(to) || !hasVoice.test(holder)) return CallBook.Check.UNREACHABLE;
             if (book.callOf(holder) != null || handsetOf.containsKey(holder)) return CallBook.Check.BUSY;
         }
+        if (target.kind() == PhoneKind.VIDEOPHONE && !videophoneWorking(to)) return CallBook.Check.UNREACHABLE;
         // Someone holding the other handset without a call is dialling out (DESIGN.md 10: busy).
         if (handsets.containsKey(to)) return CallBook.Check.BUSY;
         if (width(from, to) < levels.threshold(SignalLevel.LOW)) return CallBook.Check.UNREACHABLE;
@@ -433,6 +450,198 @@ public final class CallService implements CallBook.Listener {
         if (ringingCarried.remove(number) == null) return;
         EntityPlayerMP holder = player(carried.holderOf(number));
         if (holder != null) BeComPackets.send(RingPacket.stop(), holder);
+    }
+
+    // endregion
+
+    // region Videophones
+
+    /** A working Videophone: where it stands and faces, and the tick it last reported in (DESIGN.md 10.2). */
+    public record Videophone(int dimension, int x, int y, int z, int facing, long heard) {
+
+        public double centerX() {
+            return x + 0.5;
+        }
+
+        public double centerY() {
+            return y + 0.5;
+        }
+
+        public double centerZ() {
+            return z + 0.5;
+        }
+    }
+
+    /** A listener and a speaker they hear. */
+    private record Heard(UUID listener, UUID speaker) {}
+
+    /** A Videophone reports in each tick it's loaded and powered (D11). */
+    public void videophoneHeard(int number, int dimension, int x, int y, int z, int facing) {
+        videophones.put(number, new Videophone(dimension, x, y, z, facing, ticks));
+    }
+
+    /** Whether Videophone {@code number} is loaded and powered, so it can be called and stays in its call. */
+    public boolean videophoneWorking(int number) {
+        Videophone phone = videophones.get(number);
+        return phone != null && ticks - phone.heard() <= VIDEOPHONE_LOST_TICKS;
+    }
+
+    /** Where Videophone {@code number} stands while it works, or null. */
+    public Videophone videophone(int number) {
+        return videophoneWorking(number) ? videophones.get(number) : null;
+    }
+
+    /**
+     * {@code player}, at Videophone {@code number}'s screen, dials {@code to}; or, while it's in a call and they're in
+     * its room, adds {@code to} to the call (group calls).
+     */
+    public CallBook.DialResult dialVideophone(EntityPlayerMP player, int number, int to) {
+        UUID id = player.getUniqueID();
+        if (!videophoneWorking(number) || handsetOf.containsKey(id)) return CallBook.DialResult.INVALID;
+        Call call = book.callOfPhone(number);
+        CallBook.DialResult result;
+        if (call != null) {
+            Call.Leg own = call.legOf(id);
+            if (own == null || own.phone() != number) return CallBook.DialResult.INVALID;
+            result = book.add(id, to, now(), worldCheck(player, number, to));
+            if (result != CallBook.DialResult.RINGING) report(player, result);
+            return result;
+        }
+        result = book.dial(id, number, to, now(), worldCheck(player, number, to));
+        report(player, result);
+        // Whoever stands around it is in the call from the start, ringing out included.
+        if (result == CallBook.DialResult.RINGING) updateRoom(number, now());
+        return result;
+    }
+
+    /** {@code player}, at Videophone {@code number}'s screen, answers the call ringing it. */
+    public boolean answerVideophone(EntityPlayerMP player, int number) {
+        UUID id = player.getUniqueID();
+        if (!videophoneWorking(number) || !isRinging(number) || handsetOf.containsKey(id)) return false;
+        if (!hasVoice.test(id)) {
+            tell(player, "becom.call.no_voice");
+            return false;
+        }
+        if (!book.answer(id, number, now())) return false;
+        updateRoom(number, now());
+        return true;
+    }
+
+    /** Anyone at Videophone {@code number}'s screen hangs it up for its whole room, or turns down a ringing call. */
+    public void hangUpVideophone(EntityPlayerMP player, int number) {
+        if (isRinging(number)) {
+            book.reject(number);
+            return;
+        }
+        if (book.hangUpPhone(number)) tone(player, TonePacket.Tone.HANG_UP);
+    }
+
+    /**
+     * Once a second: Videophones not heard from leave their calls (D11); the rest take in whoever stands around them
+     * (DESIGN.md 10.2); and the players around each loudspeaker learn the level they hear the call at.
+     */
+    private void updateVideophones(long now) {
+        for (int number : new ArrayList<>(videophones.keySet())) {
+            if (!videophoneWorking(number)) {
+                videophones.remove(number);
+                book.phoneGone(number);
+                continue;
+            }
+            Call call = book.callOfPhone(number);
+            Call.Leg leg = call == null ? null : call.legOf(number);
+            if (leg != null && leg.state() == Call.Leg.State.ACTIVE) updateRoom(number, now);
+        }
+        sendLoudspeakerLevels();
+    }
+
+    private void updateRoom(int number, long now) {
+        Videophone phone = videophones.get(number);
+        if (phone != null) book.setRoom(number, playersAround(phone, tunables.videophoneRoom()), now);
+    }
+
+    /**
+     * The players within {@code range} of a Videophone, nearest first, so the nearest join a call that's nearly full.
+     * Someone on a Telephone's handset is on that phone, not this one.
+     */
+    private List<UUID> playersAround(Videophone phone, double range) {
+        double rangeSq = range * range;
+        List<EntityPlayer> near = new ArrayList<>();
+        for (EntityPlayer player : playersIn(phone.dimension())) {
+            if (player.isDead || handsetOf.containsKey(player.getUniqueID())) continue;
+            if (player.getDistanceSq(phone.centerX(), phone.centerY(), phone.centerZ()) <= rangeSq) near.add(player);
+        }
+        near.sort(Comparator.comparingDouble(p -> p.getDistanceSq(phone.centerX(), phone.centerY(), phone.centerZ())));
+        List<UUID> ids = new ArrayList<>(near.size());
+        for (EntityPlayer player : near) ids.add(player.getUniqueID());
+        return ids;
+    }
+
+    // The self-test's fake players are in no world's player list; it adds them here to stand at a Videophone.
+    private final List<EntityPlayer> selfTestPlayers = new ArrayList<>();
+
+    private List<EntityPlayer> playersIn(int dimension) {
+        List<EntityPlayer> players = new ArrayList<>();
+        WorldServer world = DimensionManager.getWorld(dimension);
+        if (world != null) {
+            for (Object o : world.playerEntities) if (o instanceof EntityPlayer player) players.add(player);
+        }
+        for (EntityPlayer player : selfTestPlayers) {
+            if (player.worldObj == world && !players.contains(player)) players.add(player);
+        }
+        return players;
+    }
+
+    /** Lets a self-test fake player stand at a Videophone, as if it were in its world's player list. */
+    public void presentForSelfTest(EntityPlayer player) {
+        if (!selfTestPlayers.contains(player)) selfTestPlayers.add(player);
+    }
+
+    /**
+     * The players around a Videophone's loudspeaker who aren't in its call hear it too (DESIGN.md 10.2), at the level
+     * the Videophone hears each speaker at, as around a Transceiver (DESIGN.md 13.5).
+     */
+    private void sendLoudspeakerLevels() {
+        Map<Heard, SignalLevel> current = new HashMap<>();
+        for (Call call : book.calls()) {
+            if (call.state() != Call.State.CONNECTED) continue;
+            List<UUID> inCall = call.participants();
+            for (Call.Leg to : call.activeLegs()) {
+                Videophone loud = kindOf(to.phone()) == PhoneKind.VIDEOPHONE ? videophone(to.phone()) : null;
+                if (loud == null) continue;
+                for (UUID listener : playersAround(loud, tunables.videophoneLoudspeaker())) {
+                    if (inCall.contains(listener)) continue;
+                    for (Call.Leg from : call.activeLegs()) {
+                        if (from == to) continue;
+                        SignalLevel level = call.level(from, to);
+                        if (!level.atLeast(SignalLevel.LOW)) continue;
+                        for (UUID speaker : from.players()) current.putIfAbsent(new Heard(listener, speaker), level);
+                    }
+                }
+            }
+        }
+        for (Map.Entry<Heard, SignalLevel> entry : current.entrySet()) {
+            if (entry.getValue() == loudspeakerLevels.get(entry.getKey())) continue;
+            EntityPlayerMP mp = player(
+                entry.getKey()
+                    .listener());
+            if (mp != null) BeComPackets.send(
+                new LevelPacket(
+                    entry.getKey()
+                        .speaker(),
+                    CallGroup.NAME,
+                    entry.getValue()),
+                mp);
+        }
+        for (Heard gone : loudspeakerLevels.keySet()) {
+            if (current.containsKey(gone)) continue;
+            // Someone who walked into the call has their level from it now; clearing it would silence them.
+            Call theirs = book.callOf(gone.listener());
+            if (theirs != null && theirs == book.callOf(gone.speaker())) continue;
+            EntityPlayerMP mp = player(gone.listener());
+            if (mp != null) BeComPackets.send(new LevelPacket(gone.speaker(), CallGroup.NAME, SignalLevel.NONE), mp);
+        }
+        loudspeakerLevels.clear();
+        loudspeakerLevels.putAll(current);
     }
 
     // endregion
@@ -579,11 +788,17 @@ public final class CallService implements CallBook.Listener {
     @Override
     public void roomChanged(Call call, Call.Leg leg, Set<UUID> joined, Set<UUID> left) {
         List<UUID> players = call.participants();
-        for (UUID player : left) leaveCall(player, players, null);
+        for (UUID player : left) {
+            leaveCall(player, players, null);
+            // Whoever dialled from the Videophone and walked off before it connected still hears the ringback.
+            EntityPlayerMP mp = player(player);
+            if (mp != null) tone(mp, TonePacket.Tone.NONE);
+        }
         for (UUID player : joined) {
             GtnhVoiceApi.groupManager()
                 .join(player, group);
         }
+        if (call.state() == Call.State.CONNECTED) BeComQuests.complete(QuestTask.FIRST_CALL, new ArrayList<>(joined));
         // Newcomers hear and are heard at the levels the speakerphone already has.
         for (Call.Leg other : call.activeLegs()) {
             if (other == leg) continue;
@@ -619,6 +834,7 @@ public final class CallService implements CallBook.Listener {
         for (int number : new ArrayList<>(ringingCarried.keySet())) ringCarried(number);
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
+            updateVideophones(now);
             book.evaluate(now, quality);
             // SNR moves dropout rates even when no level changes, so the snapshot is rebuilt every evaluation.
             publish();
@@ -698,6 +914,9 @@ public final class CallService implements CallBook.Listener {
         handsetOf.clear();
         names.clear();
         ringingCarried.clear();
+        videophones.clear();
+        loudspeakerLevels.clear();
+        selfTestPlayers.clear();
         talked.clear();
         recorded.clear();
         group.clear();
@@ -717,14 +936,28 @@ public final class CallService implements CallBook.Listener {
                     if (from == to || !call.level(from, to)
                         .atLeast(SignalLevel.LOW)) continue;
                     double loss = dropouts.lossRate(call.snr(from, to));
+                    double enterBad = dropouts.enterBadChance(loss);
+                    double leaveBad = dropouts.leaveBadChance();
+                    // A Videophone plays the call from its loudspeaker to everyone around it, its room included
+                    // (DESIGN.md 10.2, 13.3).
+                    Videophone loud = kindOf(to.phone()) == PhoneKind.VIDEOPHONE ? videophone(to.phone()) : null;
                     for (UUID speaker : from.players()) {
-                        for (UUID listener : to.players()) {
-                            builder.route(
+                        if (loud != null) {
+                            builder.loudspeaker(
                                 speaker,
-                                new CallSnapshot.Route(
-                                    listener,
-                                    dropouts.enterBadChance(loss),
-                                    dropouts.leaveBadChance()));
+                                new CallSnapshot.Loudspeaker(
+                                    to.phone(),
+                                    loud.dimension(),
+                                    loud.centerX(),
+                                    loud.centerY(),
+                                    loud.centerZ(),
+                                    tunables.videophoneLoudspeaker(),
+                                    enterBad,
+                                    leaveBad));
+                            continue;
+                        }
+                        for (UUID listener : to.players()) {
+                            builder.route(speaker, new CallSnapshot.Route(listener, enterBad, leaveBad));
                         }
                     }
                 }

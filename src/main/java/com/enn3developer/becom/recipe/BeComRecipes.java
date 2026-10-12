@@ -114,6 +114,15 @@ public final class BeComRecipes {
                 ItemList.Sensor_MV, 'C', OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'W',
                 OrePrefixes.cableGt01.get(Materials.Copper) });
 
+        // Videophone: an MV hull with a screen, a sensor for the camera, its circuits, a note block for the loudspeaker
+        // and two Phone Cables to its Line Terminal.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.videophone.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "DSN", "CHC", "P P", 'D', ItemList.Cover_Screen, 'S', ItemList.Sensor_MV, 'N',
+                new ItemStack(Blocks.noteblock), 'C', OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'P',
+                cable.copy() });
+
         // Signal Analyzer: it only listens, so a sensor and no emitter, behind a screen in an aluminium case.
         GTValues.RA.stdBuilder()
             .itemInputs(

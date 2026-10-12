@@ -13,7 +13,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.block.PhoneCables;
-import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
@@ -32,7 +31,7 @@ import gregtech.api.render.TextureFactory;
 
 /**
  * The Line Terminal (DESIGN.md 5.2): where a line starts or ends. An LV machine drawing a few EU/t (D29) that links to
- * one Pylon Head and serves exactly one phone on its Phone Cable (D19).
+ * one Pylon Head and serves exactly one phone on its Phone Cable (D19), a Telephone or a Videophone (DESIGN.md 10.2).
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -102,11 +101,9 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         CableWalk.Result walk = PhoneCables
             .walk(tile.getWorld(), tile.getXCoord(), tile.getYCoord(), tile.getZCoord(), t.phoneCableLength());
         tooMuchCable = walk.overflow();
-        List<TileTelephone> phones = PhoneCables.phonesOf(tile.getWorld(), walk);
+        List<Integer> phones = PhoneCables.phonesOf(tile.getWorld(), walk);
         phonesSeen = phones.size();
-        phone = phones.size() == 1 && phones.get(0)
-            .number() >= 0 ? phones.get(0)
-                .number() : -1;
+        phone = phones.size() == 1 ? phones.get(0) : -1;
         becom.network.attach(
             tile.getWorld(),
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()),

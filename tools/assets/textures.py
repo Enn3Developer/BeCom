@@ -227,6 +227,26 @@ def me_bridge():
     return c
 
 
+def videophone():
+    """A Videophone: a camera lens over a screen showing someone's head and shoulders, a speaker grille and a lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    c.rect(6, 3, 9, 3, "r")
+    c.rect(7, 3, 8, 3, "k")
+    c.rect(3, 5, 12, 10, "o")
+    c.rect(4, 6, 11, 9, "g")
+    # Head, a dark gap for the neck, then rounded shoulders.
+    c.rect(7, 6, 8, 7, "G")
+    c.set(6, 8, "G")
+    c.set(9, 8, "G")
+    c.rect(5, 9, 10, 9, "G")
+    for x in range(4, 10, 2):
+        c.set(x, 12, "k")
+        c.set(x + 1, 12, "d")
+    c.lamp(11, 12, 2, 1)
+    return c
+
+
 OVERLAYS = {
     "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
@@ -237,6 +257,7 @@ OVERLAYS = {
     "OVERLAY_ANTENNA_T3": antenna_head(3),
     "OVERLAY_TRANSCEIVER": transceiver,
     "OVERLAY_ME_BRIDGE": me_bridge,
+    "OVERLAY_VIDEOPHONE": videophone,
 }
 
 

@@ -10,6 +10,7 @@ gt.blockmachines.becom.antenna_t2.name=Antenna T2 Head
 gt.blockmachines.becom.antenna_t3.name=Antenna T3 Head
 gt.blockmachines.becom.transceiver.name=Transceiver
 gt.blockmachines.becom.me_bridge.name=ME Bridge
+gt.blockmachines.becom.videophone.name=Videophone
 item.becom.walkie_talkie.name=Walkie-Talkie
 item.becom.signal_analyzer.name=Signal Analyzer
 item.becom.mobile_phone.name=Mobile Phone
@@ -40,6 +41,8 @@ becom.machine.transceiver.info=A radio on a block. Hold push-to-talk within reac
 becom.machine.transceiver.range=Reaches about %s blocks directly. Talk within %s blocks; the loudspeaker carries %s.
 becom.machine.me_bridge.info=Joins its ME network to BeCom's, so ME Phones on it can call any phone. Takes ME cable on any side and one channel.
 becom.machine.me_bridge.link=Wrench-link it to a BeCom node within %s blocks.
+becom.machine.videophone.info=A video speakerphone for wired networks. Give it Phone Cable to a Line Terminal, like a Telephone.
+becom.machine.videophone.room=Everyone within %s blocks is in its call, and its loudspeaker carries %s. It hangs up after %s s with nobody near.
 
 # Scanner info
 becom.info.formed=Pylon height: %s

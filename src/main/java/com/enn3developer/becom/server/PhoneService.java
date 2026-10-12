@@ -1,12 +1,14 @@
 package com.enn3developer.becom.server;
 
 import java.util.Random;
+import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.FakePlayer;
 
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.data.GlobalSavedData;
@@ -14,8 +16,14 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
+import com.enn3developer.becom.machine.MTEVideophone;
 
-/** The world's phone registry (DESIGN.md 8.2, 14) and where block phones stand. Server thread only. */
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+
+/**
+ * The world's phone registry (DESIGN.md 8.2, 14) and where block phones, Telephones and Videophones, stand. Server
+ * thread only.
+ */
 public final class PhoneService {
 
     private final Random random = new Random();
@@ -33,14 +41,38 @@ public final class PhoneService {
 
     /** A new number for a Telephone placed at {@code pos}; its owner is whoever placed it (DESIGN.md 12.1). */
     public PhoneRecord registerTelephone(World world, long pos, EntityPlayer placer) {
-        PhoneRecord record = registry().create(
+        return registerBlockPhone(
             PhoneKind.TELEPHONE,
+            world,
+            pos,
             placer == null ? null : placer.getUniqueID(),
-            placer == null ? "" : placer.getCommandSenderName(),
-            random);
+            placer == null ? "" : placer.getCommandSenderName());
+    }
+
+    /** A new number for a phone block at {@code pos}, owned by {@code owner}, or by its first user when null. */
+    public PhoneRecord registerBlockPhone(PhoneKind kind, World world, long pos, UUID owner, String ownerName) {
+        PhoneRecord record = registry()
+            .create(kind, owner, owner == null || ownerName == null ? "" : ownerName, random);
         record.setLocation(world.provider.dimensionId, pos);
         registry().changed();
         return record;
+    }
+
+    /** Whether {@code number} is a phone of {@code kind} whose record says it stands at {@code pos}. */
+    public boolean isHome(int number, PhoneKind kind, int dimension, long pos) {
+        PhoneRecord record = number < 0 ? null : registry().get(number);
+        return record != null && record.kind() == kind && record.dimension() == dimension && record.pos() == pos;
+    }
+
+    /**
+     * A phone's owner is its first user (DESIGN.md 12.1): a phone block that has none, because a machine placed it or
+     * its number had to be renewed, goes to the first real player who uses it. Fake players never claim one.
+     */
+    public void claimIfOwnerless(int number, EntityPlayer player) {
+        PhoneRecord record = registry().get(number);
+        if (record == null || record.owner() != null || player instanceof FakePlayer) return;
+        record.setOwner(player.getUniqueID(), player.getCommandSenderName());
+        registry().changed();
     }
 
     public PhoneRecord record(int number) {
@@ -65,17 +97,38 @@ public final class PhoneService {
         return tile instanceof TileTelephone phone && phone.number() == number ? phone : null;
     }
 
+    /** The loaded Videophone with {@code number}, or null when it isn't one or its chunk isn't loaded. */
+    public MTEVideophone videophone(int number) {
+        PhoneRecord record = registry().get(number);
+        if (record == null || record.kind() != PhoneKind.VIDEOPHONE) return null;
+        WorldServer world = DimensionManager.getWorld(record.dimension());
+        if (world == null) return null;
+        long pos = record.pos();
+        int x = BlockPos.x(pos), y = BlockPos.y(pos), z = BlockPos.z(pos);
+        if (!world.getChunkProvider()
+            .chunkExists(x >> 4, z >> 4)) return null;
+        return world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
+            && tile.getMetaTileEntity() instanceof MTEVideophone phone
+            && phone.number() == number ? phone : null;
+    }
+
     /**
      * Makes {@code tile} the home of its number again if the Telephone moved (a frame or a dolly carries its saved
      * number along without breaking it). A copy whose original still stands with the number is left alone here; it
      * gets a number of its own on its first tick (X17). Returns whether the record now points at {@code tile}.
      */
     public boolean relocate(TileTelephone tile) {
-        int number = tile.number();
+        return relocate(
+            PhoneKind.TELEPHONE,
+            tile.getWorldObj(),
+            BlockPos.pack(tile.xCoord, tile.yCoord, tile.zCoord),
+            tile.number());
+    }
+
+    /** {@link #relocate(TileTelephone)} for any phone block: the one of {@code kind} holding {@code number} at pos. */
+    public boolean relocate(PhoneKind kind, World world, long pos, int number) {
         PhoneRecord record = number < 0 ? null : registry().get(number);
-        if (record == null || record.kind() != PhoneKind.TELEPHONE) return false;
-        World world = tile.getWorldObj();
-        long pos = BlockPos.pack(tile.xCoord, tile.yCoord, tile.zCoord);
+        if (record == null || record.kind() != kind) return false;
         if (record.dimension() == world.provider.dimensionId && record.pos() == pos) return true;
         // The original still stands: this is a copy. One saved by a newer BeCom counts too, though it shows no number.
         if (standsAt(record)) return false;
@@ -87,7 +140,7 @@ public final class PhoneService {
         return true;
     }
 
-    /** Whether a Telephone holding {@code record}'s number, or one this BeCom leaves alone, stands where it says. */
+    /** Whether a phone holding {@code record}'s number, or one this BeCom leaves alone, stands where it says. */
     private static boolean standsAt(PhoneRecord record) {
         WorldServer world = DimensionManager.getWorld(record.dimension());
         long pos = record.pos();
@@ -95,7 +148,9 @@ public final class PhoneService {
         if (world == null || !world.getChunkProvider()
             .chunkExists(x >> 4, z >> 4)) return false;
         TileEntity tile = world.getTileEntity(x, BlockPos.y(pos), z);
-        return tile instanceof TileTelephone phone && (phone.isTooNew() || phone.number() == record.number());
+        if (tile instanceof TileTelephone phone) return phone.isTooNew() || phone.number() == record.number();
+        return tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof MTEVideophone phone
+            && (phone.isTooNew() || phone.number() == record.number());
     }
 
     /**

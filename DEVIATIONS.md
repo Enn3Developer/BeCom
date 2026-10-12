@@ -389,3 +389,29 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   battery as the phone it's made from keeps the two in step.
 - **To match the design:** register the ME Phone as a wireless terminal handler and call AE2's `checkRange`, which
   also gives it the ME terminal; or give it the wireless terminal's own battery.
+
+### X28: Who is in a Videophone's room, who works it, and its number
+
+- **Where:** 0.3, DESIGN.md 10.2, 12.1, D11, D19, D42
+- **Design says:** everyone within 4 blocks is in the Videophone's call, unless they're already in another one; it
+  hangs up by itself once nobody has been within 4 blocks for 30 s; right-click opens its phone screen to dial,
+  answer and hang up. A phone's owner is its first user.
+- **Built:**
+  - Its room is the people in the call through it: within 4 blocks of the block, nearest first, until the call
+    reaches the group call size (8, everyone in it counted). Someone in another call, or holding a Telephone's
+    handset, isn't in it. The 30 s clock runs while the room is empty, so someone standing near in another call
+    doesn't keep it on the line.
+  - Anyone at its screen, within the 8 blocks a block's screen stays open at, can dial, answer or hang up, and
+    hanging up ends the call for the whole room, as the Phone key does from anyone in it. Answering needs a voice
+    session, as at a Telephone (X8).
+  - It works while loaded and powered (D11): not heard from for 2 s, it leaves its call, and it can't be called or
+    show in contacts.
+  - Its number works like a Telephone's (X17): one moved keeps its number, a copy gets its own. GT records whoever
+    placed it, a machine's fake player too, so it is owned by its placer only if the server's username cache knows
+    them as a player; otherwise its first user owns it (X6).
+  - Players around its loudspeaker who aren't in its call hear each speaker at the level the Videophone hears them
+    at, as around a Transceiver (DESIGN.md 13.5).
+  - Dialling from it, the ringback plays for whoever dialled.
+- **Why:** DESIGN.md doesn't say how a speakerphone's room works past who is in it, and a timer kept running by
+  someone who isn't in the call would leave the far side talking to nobody.
+- **To match the design:** count everyone within 4 blocks for the 30 s timer, whatever call they are in.

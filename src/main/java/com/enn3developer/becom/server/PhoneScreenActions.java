@@ -21,7 +21,8 @@ import com.enn3developer.becom.logic.phone.PhoneRegistry;
 
 /**
  * What the phone screen may do, checked on the server (DESIGN.md 14: client input). Every action re-checks that the
- * player can use the phone, at a Telephone or carrying the phone, and is allowed to do it, whatever their client sent.
+ * player can use the phone, at a Telephone or a Videophone or carrying the phone, and is allowed to do it, whatever
+ * their client sent.
  */
 public final class PhoneScreenActions {
 
@@ -112,13 +113,17 @@ public final class PhoneScreenActions {
     }
 
     /**
-     * Dials {@code target}: from a Telephone, taking its handset if needed; from a carried phone, or adds it to the
-     * call.
+     * Dials {@code target}: from a Telephone, taking its handset if needed; from a carried phone or a Videophone, or
+     * adds it to the call.
      */
     public static void dial(EntityPlayer player, PhoneHandle handle, int target) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
         if (!PhoneNumbers.isValid(target)) return;
+        if (handle instanceof PhoneHandle.Videophone) {
+            becom.calls.dialVideophone(mp, handle.number(), target);
+            return;
+        }
         if (handle instanceof PhoneHandle.Telephone telephone) {
             Integer held = becom.calls.handsetOf(player.getUniqueID());
             if (held == null) {
@@ -136,6 +141,10 @@ public final class PhoneScreenActions {
     public static void pickUp(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
+        if (handle instanceof PhoneHandle.Videophone) {
+            becom.calls.answerVideophone(mp, handle.number());
+            return;
+        }
         if (handle instanceof PhoneHandle.Telephone telephone) {
             becom.calls.takeHandset(mp, telephone.tile());
             return;
@@ -143,10 +152,17 @@ public final class PhoneScreenActions {
         becom.calls.answerCarried(mp, handle.number());
     }
 
-    /** Hangs up: puts a Telephone's handset back, or ends the carried phone's call, or turns down its ringing one. */
+    /**
+     * Hangs up: puts a Telephone's handset back, ends the carried phone's or the Videophone's call, or turns down a
+     * ringing one.
+     */
     public static void hangUp(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
+        if (handle instanceof PhoneHandle.Videophone) {
+            becom.calls.hangUpVideophone(mp, handle.number());
+            return;
+        }
         if (handle instanceof PhoneHandle.Telephone) {
             Integer held = becom.calls.handsetOf(player.getUniqueID());
             if (held != null && held == handle.number()) becom.calls.hangUpHandset(player.getUniqueID());
