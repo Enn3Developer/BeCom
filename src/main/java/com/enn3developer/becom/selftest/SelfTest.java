@@ -230,7 +230,13 @@ public final class SelfTest {
 
     /** Server tick hook; does nothing unless a self-test is running. */
     public static void tick() {
-        if (running != null) running.step();
+        if (running == null) return;
+        // One cut short by its world stopping must not carry on in the next world, against the old one's services.
+        if (running.becom != BeComServer.get()) {
+            running = null;
+            return;
+        }
+        running.step();
     }
 
     private void step() {
