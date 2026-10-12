@@ -39,7 +39,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     private NBTTagCompound tooNew;
     private boolean ringing;
     private int ringTicks;
-    private boolean hookChecked;
+    private long settledAt = Long.MIN_VALUE;
 
     public int number() {
         return number;
@@ -129,8 +129,10 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     public void updateEntity() {
         if (worldObj.isRemote) return;
         if (tooNew != null) return;
-        if (!hookChecked) {
-            hookChecked = true;
+        // On the first tick after loading, and again if a mover carried this same tile object somewhere else.
+        long here = BlockPos.pack(xCoord, yCoord, zCoord);
+        if (here != settledAt) {
+            settledAt = here;
             settleAfterLoad();
         }
         if (!ringing) return;
@@ -143,7 +145,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);
         if (tooNew != null) {
-            // Written back as a newer BeCom saved it, except where it stands now: a mover may have carried it.
+            // Written back as a newer BeCom saved it, except where it stands now: a mover that keeps the tile object
+            // may have carried it.
             for (String key : tooNew.func_150296_c()) {
                 if (!key.equals("id") && !key.equals("x") && !key.equals("y") && !key.equals("z")) {
                     nbt.setTag(key, tooNew.getTag(key));

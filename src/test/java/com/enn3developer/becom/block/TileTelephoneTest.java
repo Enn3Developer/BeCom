@@ -58,7 +58,7 @@ class TileTelephoneTest {
 
     @Test
     void aNewerTelephoneMovedElsewhereSavesWhereItIsNow() {
-        // AE2's spatial storage moves the same tile object and sets its coordinates, without reading it again.
+        // A mover that keeps the tile object sets its coordinates without reading it again.
         NBTTagCompound nbt = new NBTTagCompound();
         nbt.setString("id", "becom.telephone");
         nbt.setInteger("x", 1);

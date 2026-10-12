@@ -433,4 +433,36 @@ class SavedDataTest {
         badRead.readFromNBT(bad);
         assertTrue(badRead.isTooNew());
     }
+
+    @Test
+    void aRepeatedNumberIsReportedAsDamageNotAsANewerBeCom(@TempDir File dir) throws Exception {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        NBTTagCompound inner = new NBTTagCompound();
+        data.writeToNBT(inner);
+        inner.getTagList("phones", 10)
+            .appendTag(
+                inner.getTagList("phones", 10)
+                    .getCompoundTagAt(0)
+                    .copy());
+        NBTTagCompound root = new NBTTagCompound();
+        root.setTag("data", inner);
+        StorageFixture fixture = new StorageFixture(dir);
+        File file = fixture.file(GlobalSavedData.NAME);
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            CompressedStreamTools.writeCompressed(root, out);
+        }
+        IllegalStateException e = assertThrows(
+            IllegalStateException.class,
+            () -> GlobalSavedData.load(fixture.storage(), file));
+        assertTrue(
+            e.getMessage()
+                .contains("damaged"),
+            e.getMessage());
+        assertFalse(
+            e.getMessage()
+                .contains("newer BeCom"),
+            e.getMessage());
+    }
 }

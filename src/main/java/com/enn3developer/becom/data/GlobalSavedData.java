@@ -30,6 +30,8 @@ public final class GlobalSavedData extends WorldSavedData {
     private NBTTagCompound tooNewData;
     // What this BeCom found it doesn't understand, which means a newer BeCom saved the file.
     private String notUnderstood;
+    // Set with notUnderstood when what was found is something no BeCom writes, rather than a newer BeCom's.
+    private boolean damaged;
     private boolean read;
 
     public GlobalSavedData(String name) {
@@ -56,7 +58,10 @@ public final class GlobalSavedData extends WorldSavedData {
             data.tooNewData = new NBTTagCompound();
             throw SavedDataFormat.couldNotRead("the phone registry", file);
         }
-        if (data.notUnderstood != null) throw SavedDataFormat.notUnderstood("the phone registry", data.notUnderstood);
+        if (data.notUnderstood != null) {
+            throw data.damaged ? SavedDataFormat.damaged("the phone registry", data.notUnderstood)
+                : SavedDataFormat.notUnderstood("the phone registry", data.notUnderstood);
+        }
         if (data.tooNewData != null) {
             throw SavedDataFormat
                 .newerThanUnderstood("the phone registry", SavedDataFormat.versionOf(data.tooNewData), FORMAT);
@@ -96,10 +101,11 @@ public final class GlobalSavedData extends WorldSavedData {
         java.util.Set<Integer> numbers = new java.util.HashSet<>();
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound phone = list.getCompoundTagAt(i);
-            // Numbers are six digits and unique (D12, DESIGN.md 14.2): anything else isn't data this BeCom wrote.
+            // Numbers are six digits and unique (D12, DESIGN.md 14.2): anything else is damage, not a newer BeCom.
             int number = phone.getInteger("number");
             if (!PhoneNumbers.isValid(number) || !numbers.add(number)) {
                 notUnderstood(nbt, "a phone number that is invalid or repeated, " + number);
+                damaged = true;
                 return;
             }
             String kind = phone.getString("kind");

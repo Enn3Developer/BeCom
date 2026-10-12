@@ -181,4 +181,21 @@ class PhoneRegistryTest {
             mine.blocked()
                 .size());
     }
+
+    @Test
+    void aHistoryLoadedLongerThanTheCapRollsAtThatLength() {
+        // A newer BeCom kept 40; this one keeps 32 of its own, but doesn't cut what it was given.
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        for (int i = 0; i < PhoneRecord.HISTORY_SIZE + 8; i++) {
+            mine.restoreHistory(
+                new PhoneRecord.HistoryEntry(1000 - i, 222_222, "bob", PhoneRecord.Direction.MISSED, bob));
+        }
+        mine.addHistory(new PhoneRecord.HistoryEntry(2000, 333_333, "carol", PhoneRecord.Direction.INCOMING, carol));
+        List<PhoneRecord.HistoryEntry> history = mine.history();
+        assertEquals(PhoneRecord.HISTORY_SIZE + 8, history.size());
+        assertEquals(
+            2000,
+            history.get(0)
+                .time());
+    }
 }

@@ -743,6 +743,7 @@ public final class SelfTest {
                 ra.history()
                     .get(0)
                     .otherPlayer()));
+        checkCopyDuringCall(a, b, start, end, alice, bob);
         calls.voiceForSelfTest(
             id -> GtnhVoiceApi.session(id)
                 .isPresent());
@@ -754,6 +755,34 @@ public final class SelfTest {
         end.releaseStaleHandset();
         check("a handset nobody holds goes back on the hook when the phone loads", !end.offHook(), "");
         return 1;
+    }
+
+    /**
+     * A copy still holding the original's number, before its first tick gives it its own: it doesn't ring with the
+     * original, and breaking it doesn't end the original's call.
+     */
+    private void checkCopyDuringCall(int a, int b, TileTelephone start, TileTelephone end, UUID alice, UUID bob) {
+        // Bob dials this time: Alice has used up her five attempts this minute (DESIGN.md 12.3).
+        CallService calls = becom.calls;
+        NBTTagCompound saved = new NBTTagCompound();
+        start.writeToNBT(saved);
+        calls.takeHandset(stranger, end);
+        calls.dial(stranger, b, a);
+        TileTelephone copy = placeSaved(saved, X0 + 11, Y + 1, end.zCoord);
+        copy.restoreRinging();
+        check("a copy holding a ringing phone's number stays silent", start.ringing() && !copy.ringing(), "");
+        calls.takeHandset(owner, start);
+        world.setBlockToAir(X0 + 11, Y + 1, end.zCoord);
+        Call call = calls.book()
+            .callOf(bob);
+        check(
+            "breaking a copy leaves the original's call up",
+            call != null && call.state() == Call.State.CONNECTED,
+            call == null ? "no call"
+                : call.state()
+                    .name());
+        calls.hangUpHandset(alice);
+        calls.hangUpHandset(bob);
     }
 
     /**
@@ -775,16 +804,23 @@ public final class SelfTest {
             "a Telephone that was moved keeps its number",
             record != null && registry().get(number) == record && record.pos() == BlockPos.pack(X0 + 7, y, z),
             record == null ? "freed" : BlockPos.toString(record.pos()));
+        // The owner's settings go with a copy, so a renumbered phone doesn't show to players it blocks.
+        if (record != null) {
+            record.block(stranger.getUniqueID(), stranger.getCommandSenderName());
+            record.setHidden(true);
+        }
         TileTelephone copy = placeSaved(saved, X0 + 9, y, z);
         copy.settleAfterLoad();
         PhoneRecord copied = registry().get(copy.number());
         check(
-            "a copy of a Telephone that still stands gets its own number, its owner's",
+            "a copy of a Telephone that still stands gets its own number, with its owner and settings",
             record != null && record.pos() == BlockPos.pack(X0 + 7, y, z)
                 && copy.number() != number
                 && copied != null
                 && owner.getUniqueID()
-                    .equals(copied.owner()),
+                    .equals(copied.owner())
+                && copied.hidden()
+                && copied.blocks(stranger.getUniqueID()),
             "copy holds " + copy.number());
         world.setBlockToAir(X0 + 9, y, z);
         // An original saved by a newer BeCom shows no number, but still stands: a copy doesn't take its record.

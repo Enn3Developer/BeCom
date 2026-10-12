@@ -67,8 +67,8 @@ public final class PhoneService {
 
     /**
      * Makes {@code tile} the home of its number again if the Telephone moved (a frame or a dolly carries its saved
-     * number along without breaking it). A copy whose original still stands with the number is left alone; it gets a
-     * number of its own on first use. Returns whether the record now points at {@code tile}.
+     * number along without breaking it). A copy whose original still stands with the number is left alone here; it
+     * gets a number of its own on its first tick (X17). Returns whether the record now points at {@code tile}.
      */
     public boolean relocate(TileTelephone tile) {
         int number = tile.number();
@@ -80,7 +80,7 @@ public final class PhoneService {
         // The original still stands: this is a copy. One saved by a newer BeCom counts too, though it shows no number.
         if (standsAt(record)) return false;
         // Its old spot isn't loaded, so there's no telling; a move happens with both spots loaded, so this is most
-        // likely a copy, and a copy gets its own number on first use.
+        // likely a copy, and a copy gets its own number on its first tick.
         if (!isLoaded(record)) return false;
         record.setLocation(world.provider.dimensionId, pos);
         registry().changed();
@@ -99,13 +99,18 @@ public final class PhoneService {
     }
 
     /**
-     * A fresh number for a copy of a Telephone, owned by the original's owner: a copy made with a world editor, or a
-     * phone carried off from a spot that has since unloaded, stays its owner's rather than going to whoever uses it
-     * first.
+     * A fresh number for a copy of a Telephone, owned by the original's owner and with its settings: a copy made with a
+     * world editor, or a phone carried off from a spot that has since unloaded, stays its owner's rather than going to
+     * whoever uses it first. Its history stays with the original.
      */
     public PhoneRecord registerCopy(World world, long pos, PhoneRecord original) {
         PhoneRecord record = registry().create(PhoneKind.TELEPHONE, original.owner(), original.ownerName(), random);
         record.setLocation(world.provider.dimensionId, pos);
+        // The owner's settings come along, so a renumbered phone doesn't turn up in the contacts of players it blocks.
+        record.setDoNotDisturb(original.doNotDisturb());
+        record.setHidden(original.hidden());
+        for (java.util.Map.Entry<java.util.UUID, String> blocked : original.blocked()
+            .entrySet()) record.restoreBlock(blocked.getKey(), blocked.getValue());
         registry().changed();
         return record;
     }

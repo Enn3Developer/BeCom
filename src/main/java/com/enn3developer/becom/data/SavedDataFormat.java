@@ -61,6 +61,16 @@ public final class SavedDataFormat {
                 + " or restore a backup made with this version.");
     }
 
+    /** Data no BeCom writes, in any version: the file was damaged, or edited by hand. */
+    public static IllegalStateException damaged(String what, String detail) {
+        return new IllegalStateException(
+            "BeCom found " + what
+                + " holding "
+                + detail
+                + ", which no BeCom writes: the file is damaged or was edited by hand. Stopping instead of saving over"
+                + " it: restore a backup, or fix the file.");
+    }
+
     public static IllegalStateException newerThanUnderstood(String what, int found, int current) {
         return new IllegalStateException(
             "BeCom found " + what
