@@ -2660,7 +2660,8 @@ public final class SelfTest {
         VideoPlan.Tile monaSeen = tileOf(plan, v, m);
         VideoPlan.Tile vicSeen = tileOf(plan, m, v);
         check(
-            "a video call between a Mobile Phone and a Videophone shows both sides (DESIGN.md 16, 0.3)",
+            "a video call between a Mobile Phone and a Videophone: the server sends each side the other's poses "
+                + "(DESIGN.md 16, 0.3; that they show is the owner's check)",
             becom.video.posesDelivered(m, v) > 0 && becom.video.posesDelivered(v, m) > 0,
             "poses Mona to Vic " + becom.video.posesDelivered(m, v)
                 + ", Vic to Mona "
