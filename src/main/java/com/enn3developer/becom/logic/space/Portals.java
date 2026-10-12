@@ -1,5 +1,6 @@
 package com.enn3developer.becom.logic.space;
 
+import java.lang.reflect.Field;
 import java.util.Set;
 
 /**
@@ -106,6 +107,35 @@ public final class Portals {
     public static boolean leadsInto(Kind kind, Set<Integer> personalTargets, int farDimension) {
         if (kind != Kind.PERSONAL_SPACE) return true;
         return personalTargets.contains(farDimension) || personalTargets.contains(UNKNOWN_DIMENSION);
+    }
+
+    // Personal Space's portal tile, read by field name: Personal Space isn't a dependency. Server thread only.
+    private static Class<?> personalTile;
+    private static Field personalActive;
+    private static Field personalTarget;
+
+    /**
+     * Where the tile of a Personal Space portal block leads: its dimension, or null while it isn't linked. A tile BeCom
+     * can't read, missing, of another class or without those fields, leads anywhere ({@link #UNKNOWN_DIMENSION}), as
+     * every Personal Space portal did before relays read them.
+     */
+    public static Integer personalTarget(Object tile) {
+        if (tile == null || !PERSONAL_PORTAL_TILE.equals(
+            tile.getClass()
+                .getName()))
+            return UNKNOWN_DIMENSION;
+        try {
+            if (personalTile != tile.getClass()) {
+                personalActive = tile.getClass()
+                    .getField("active");
+                personalTarget = tile.getClass()
+                    .getField("targetDimId");
+                personalTile = tile.getClass();
+            }
+            return personalActive.getBoolean(tile) ? personalTarget.getInt(tile) : null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return UNKNOWN_DIMENSION;
+        }
     }
 
     private static boolean near(double x, double z, int toX, int toZ, double within) {

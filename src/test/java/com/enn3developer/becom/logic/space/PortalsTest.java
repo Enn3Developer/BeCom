@@ -100,6 +100,29 @@ class PortalsTest {
     }
 
     @Test
+    void aPersonalSpacePortalsTileSaysWhereItLeads() throws ReflectiveOperationException {
+        // Personal Space 1.0.41 is on the test classpath, as in the dev server: its own tile, linked as linking does.
+        Object tile = Class.forName(Portals.PERSONAL_PORTAL_TILE)
+            .getConstructor()
+            .newInstance();
+        assertNull(Portals.personalTarget(tile));
+        tile.getClass()
+            .getField("active")
+            .setBoolean(tile, true);
+        tile.getClass()
+            .getField("targetDimId")
+            .setInt(tile, 180);
+        assertEquals(180, Portals.personalTarget(tile));
+    }
+
+    @Test
+    void aTileBeComCantReadLeadsAnywhere() {
+        // A Personal Space portal with no tile, or one of a class BeCom doesn't know, as from a later Personal Space.
+        assertEquals(Portals.UNKNOWN_DIMENSION, Portals.personalTarget(null));
+        assertEquals(Portals.UNKNOWN_DIMENSION, Portals.personalTarget(new Object()));
+    }
+
+    @Test
     void reachIsASphereOfTheDistance() {
         // DESIGN.md 9.4: within 4 blocks.
         assertTrue(Portals.inReach(4, 0, 0, 4));

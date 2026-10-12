@@ -2,7 +2,6 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -15,7 +14,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
@@ -63,8 +61,9 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     private boolean registered;
     // The kinds of portal in reach at the last look, once a second.
     private Set<Portals.Kind> portals = EnumSet.noneOf(Portals.Kind.class);
-    // Where the Personal Space portals in reach lead, at the last look.
-    private Set<Integer> personalTargets = Set.of();
+    // Where the Personal Space portals in reach lead, at the last look; none yet, so the first look always tells the
+    // network, which may still hold what this relay saw before its chunk unloaded.
+    private Set<Integer> personalTargets;
 
     public MTEPortalRelay(int id, String name, String regionalName) {
         super(id, name, regionalName, TIER, 0, (String) null);
@@ -99,7 +98,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
 
     /** The dimensions the Personal Space portals in its reach lead to, at the last look. */
     public Set<Integer> personalTargets() {
-        return personalTargets;
+        return personalTargets == null ? Set.of() : personalTargets;
     }
 
     public NodeRef ref() {
@@ -155,8 +154,17 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
                     Portals.Kind kind = kindOf(world.getBlock(x, y, z));
                     if (kind != null) found.add(kind);
                     if (kind == Portals.Kind.PERSONAL_SPACE) {
-                        Integer target = personalTarget(world.getTileEntity(x, y, z));
+                        Integer target = Portals.personalTarget(world.getTileEntity(x, y, z));
                         if (target != null) targets.add(target);
+                        if (target != null && target == Portals.UNKNOWN_DIMENSION && !personalUnreadable) {
+                            personalUnreadable = true;
+                            BeCom.LOG.warn(
+                                "Can't read where a Personal Space portal at {}, {}, {} leads, so relays take any as "
+                                    + "leading anywhere",
+                                x,
+                                y,
+                                z);
+                        }
                     }
                 }
             }
@@ -171,39 +179,8 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
         return portals;
     }
 
-    // Personal Space's portal tile, read by name since Personal Space isn't a dependency (DESIGN.md 9.4).
-    private static Class<?> personalTile;
-    private static Field personalActive;
-    private static Field personalTarget;
+    // Logged once: a Personal Space whose portals BeCom can't read.
     private static boolean personalUnreadable;
-
-    /**
-     * The dimension a Personal Space portal's tile leads to, or null while it isn't linked. One BeCom can't read leads
-     * anywhere, as every Personal Space portal did before relays read them.
-     */
-    static Integer personalTarget(TileEntity tile) {
-        if (tile == null || !Portals.PERSONAL_PORTAL_TILE.equals(
-            tile.getClass()
-                .getName()))
-            return null;
-        try {
-            if (personalTile != tile.getClass()) {
-                personalActive = tile.getClass()
-                    .getField("active");
-                personalTarget = tile.getClass()
-                    .getField("targetDimId");
-                personalTile = tile.getClass();
-            }
-            return personalActive.getBoolean(tile) ? personalTarget.getInt(tile) : null;
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            if (!personalUnreadable) {
-                personalUnreadable = true;
-                BeCom.LOG
-                    .warn("Can't read where a Personal Space portal leads, so relays take any as leading anywhere", e);
-            }
-            return Portals.UNKNOWN_DIMENSION;
-        }
-    }
 
     /** The kind of portal a block is: vanilla's by their blocks, the others by class name (DESIGN.md 9.4). */
     public static Portals.Kind kindOf(Block block) {
@@ -349,6 +326,11 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
                         StatCollector.translateToLocal(
                             "becom.portal." + kind.name()
                                 .toLowerCase(Locale.ROOT))));
+            }
+            for (int target : personalTargets()) {
+                info.add(
+                    target == Portals.UNKNOWN_DIMENSION ? StatCollector.translateToLocal("becom.relay.leads_anywhere")
+                        : StatCollector.translateToLocalFormatted("becom.relay.leads_into", target));
             }
         }
         BeComServer becom = BeComServer.get();
