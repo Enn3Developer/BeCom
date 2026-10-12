@@ -64,6 +64,7 @@ import gregtech.api.metatileentity.implementations.MTEHatchInput;
 import ic2.api.item.ElectricItem;
 import micdoodle8.mods.galacticraft.api.entity.IRocketType;
 import micdoodle8.mods.galacticraft.api.prefab.entity.EntityAutoRocket;
+import micdoodle8.mods.galacticraft.api.tile.IFuelDock;
 import micdoodle8.mods.galacticraft.core.blocks.GCBlocks;
 import micdoodle8.mods.galacticraft.core.entities.EntityTier1Rocket;
 import micdoodle8.mods.galacticraft.core.tile.TileEntityLandingPad;
@@ -614,6 +615,31 @@ final class SpaceSelfTest {
             "...and not without the receiver in its cargo",
             !without && becom.rockets.countsForSelfTest(ref),
             "without " + without);
+        // A rocket from another mod that throws when asked for its pad mustn't take the server tick down.
+        EntityTier1Rocket broken = new EntityTier1Rocket(
+            moon,
+            MX + 6.5,
+            MY + 2,
+            MZ + 0.5,
+            IRocketType.EnumRocketType.INVENTORY27) {
+
+            @Override
+            public IFuelDock getLandingPad() {
+                throw new IllegalStateException("a rocket that can't say where it stands");
+            }
+        };
+        moon.spawnEntityInWorld(broken);
+        boolean threw = false;
+        try {
+            becom.rockets.lookForSelfTest();
+        } catch (RuntimeException e) {
+            threw = true;
+        }
+        t.check(
+            "a rocket that throws when looked at is dropped, and the others go on counting",
+            !threw && !becom.rockets.followsForSelfTest(broken) && becom.rockets.countsForSelfTest(ref),
+            "threw " + threw);
+        broken.setDead();
         return 1;
     }
 

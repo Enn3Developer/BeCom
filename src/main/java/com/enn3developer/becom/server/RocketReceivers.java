@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
@@ -70,7 +71,18 @@ public final class RocketReceivers {
                 it.remove();
                 continue;
             }
-            if (counts(rocket)) now.put(refOf(rocket), rocket);
+            try {
+                if (counts(rocket)) now.put(refOf(rocket), rocket);
+            } catch (RuntimeException e) {
+                // Another mod's rocket that fails to say where it stands or what it carries: BeCom stops following
+                // it rather than take the server down with it.
+                BeCom.LOG.warn(
+                    "Not following rocket {} any more: it threw when asked for its pad or cargo",
+                    rocket.getClass()
+                        .getName(),
+                    e);
+                it.remove();
+            }
         }
         for (NodeRef gone : counting.keySet()) {
             if (now.containsKey(gone)) continue;
@@ -144,6 +156,11 @@ public final class RocketReceivers {
 
     private static int top(EntityAutoRocket rocket) {
         return MathHelper.floor_double(rocket.posY + rocket.height);
+    }
+
+    /** Whether BeCom follows {@code rocket}; for the self-test. */
+    public boolean followsForSelfTest(EntityAutoRocket rocket) {
+        return rockets.contains(rocket);
     }
 
     /** How many receivers count now; for the self-test. */
