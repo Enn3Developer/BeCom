@@ -1129,3 +1129,46 @@ branch, operator rights for `/becom satellites`, and the Modernity add-on pack f
    away.
 9. The quest book's BeCom tab shows the seven space quests with their task texts; pairing relays, launching the first
    satellite, having 5 over the pad's dimension, and a call between dimensions each complete theirs.
+
+## 1.0 Polish
+
+Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
+
+### Contents (DESIGN.md 16)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| A final pass over the art: every texture in both styles, next to GT's (15.1, D32, D53)          | todo   |
+| A final pass over the sounds (15.2, D53)                                                        | todo   |
+| The Modernity add-on pack, zipped by CI as `Modernity-GTNHAddon-BeCom.zip` for releases (15.1)  | todo   |
+| Italian: every string, the quest text included (15.3, 15.5)                                     | todo   |
+| The GuideNH guide: the tiers, how signal works, reading the Signal Analyzer (15.4, D48)         | todo   |
+| Quests point to their guide pages (15.5)                                                        | todo   |
+| WAILA info for BeCom's machines and blocks (16.4: Waila 1.19.34, optional)                      | todo   |
+| A balancing pass: the tunables, recipes and quest rewards (17, 3.1, 15.5, D51)                  | todo   |
+| A load test against the budgets in 6.5                                                          | todo   |
+| README                                                                                          | todo   |
+| Ready for the first public release, which the owner tags (16, D33)                              | todo   |
+
+### Untested assumptions (DESIGN.md 16.2)
+
+| Assumption                                                                                      | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| GuideNH's data-driven loader finds BeCom's pages (tried by the owner)                           | todo   |
+
+### Quests (DESIGN.md 15.5)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| Each quest points to its guide page                                                             | todo   |
+| The quest text in Italian                                                                       | todo   |
+
+### Assets (DESIGN.md 15)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| Italian language entries                                                                        | todo   |
+| Guide pages in English and Italian                                                              | todo   |
+| Textures in both styles, after the final pass                                                   | todo   |
+| Sounds, after the final pass                                                                    | todo   |
+
