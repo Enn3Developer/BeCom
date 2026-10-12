@@ -55,4 +55,37 @@ class TileTelephoneTest {
         assertEquals(654_321, written.getInteger("number"));
         assertEquals(TileTelephone.FORMAT + 1, SavedDataFormat.versionOf(written));
     }
+
+    @Test
+    void aNewerTelephoneMovedElsewhereSavesWhereItIsNow() {
+        // AE2's spatial storage moves the same tile object and sets its coordinates, without reading it again.
+        NBTTagCompound nbt = new NBTTagCompound();
+        nbt.setString("id", "becom.telephone");
+        nbt.setInteger("x", 1);
+        nbt.setInteger("y", 64);
+        nbt.setInteger("z", 1);
+        nbt.setInteger(SavedDataFormat.KEY, TileTelephone.FORMAT + 1);
+        TileTelephone tile = new TileTelephone();
+        tile.readFromNBT(nbt);
+        tile.xCoord = 100;
+        NBTTagCompound written = new NBTTagCompound();
+        tile.writeToNBT(written);
+        assertEquals(100, written.getInteger("x"));
+        assertEquals(TileTelephone.FORMAT + 1, SavedDataFormat.versionOf(written));
+    }
+
+    @Test
+    void readingCurrentDataAgainForgetsNewerData() {
+        TileTelephone tile = new TileTelephone();
+        NBTTagCompound newer = new NBTTagCompound();
+        newer.setString("id", "becom.telephone");
+        newer.setInteger(SavedDataFormat.KEY, TileTelephone.FORMAT + 1);
+        tile.readFromNBT(newer);
+        NBTTagCompound current = new NBTTagCompound();
+        current.setString("id", "becom.telephone");
+        current.setInteger("number", 222_222);
+        tile.readFromNBT(current);
+        assertFalse(tile.isTooNew());
+        assertEquals(222_222, tile.number());
+    }
 }

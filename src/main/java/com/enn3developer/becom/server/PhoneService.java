@@ -66,23 +66,6 @@ public final class PhoneService {
     }
 
     /**
-     * Whether {@code record}'s Telephone is gone from a loaded chunk without being broken: a chunk rolled back,
-     * trimmed or edited outside the game. Such a record holds its number forever otherwise. A phone in an unloaded
-     * chunk is left alone.
-     */
-    public boolean isStale(PhoneRecord record) {
-        if (record.kind() != PhoneKind.TELEPHONE) return false;
-        WorldServer world = DimensionManager.getWorld(record.dimension());
-        if (world == null) return false;
-        long pos = record.pos();
-        int x = BlockPos.x(pos), y = BlockPos.y(pos), z = BlockPos.z(pos);
-        if (!world.getChunkProvider()
-            .chunkExists(x >> 4, z >> 4)) return false;
-        TileEntity tile = world.getTileEntity(x, y, z);
-        return !(tile instanceof TileTelephone phone && phone.number() == record.number());
-    }
-
-    /**
      * Makes {@code tile} the home of its number again if the Telephone moved (a frame or a dolly carries its saved
      * number along without breaking it). A copy whose original still stands with the number is left alone; it gets a
      * number of its own on first use. Returns whether the record now points at {@code tile}.
@@ -94,14 +77,37 @@ public final class PhoneService {
         World world = tile.getWorldObj();
         long pos = BlockPos.pack(tile.xCoord, tile.yCoord, tile.zCoord);
         if (record.dimension() == world.provider.dimensionId && record.pos() == pos) return true;
-        // The original still stands with the number: this is a copy.
-        if (telephone(number) != null) return false;
+        // The original still stands: this is a copy. One saved by a newer BeCom counts too, though it shows no number.
+        if (standsAt(record)) return false;
         // Its old spot isn't loaded, so there's no telling; a move happens with both spots loaded, so this is most
         // likely a copy, and a copy gets its own number on first use.
         if (!isLoaded(record)) return false;
         record.setLocation(world.provider.dimensionId, pos);
         registry().changed();
         return true;
+    }
+
+    /** Whether a Telephone holding {@code record}'s number, or one this BeCom leaves alone, stands where it says. */
+    private static boolean standsAt(PhoneRecord record) {
+        WorldServer world = DimensionManager.getWorld(record.dimension());
+        long pos = record.pos();
+        int x = BlockPos.x(pos), z = BlockPos.z(pos);
+        if (world == null || !world.getChunkProvider()
+            .chunkExists(x >> 4, z >> 4)) return false;
+        TileEntity tile = world.getTileEntity(x, BlockPos.y(pos), z);
+        return tile instanceof TileTelephone phone && (phone.isTooNew() || phone.number() == record.number());
+    }
+
+    /**
+     * A fresh number for a copy of a Telephone, owned by the original's owner: a copy made with a world editor, or a
+     * phone carried off from a spot that has since unloaded, stays its owner's rather than going to whoever uses it
+     * first.
+     */
+    public PhoneRecord registerCopy(World world, long pos, PhoneRecord original) {
+        PhoneRecord record = registry().create(PhoneKind.TELEPHONE, original.owner(), original.ownerName(), random);
+        record.setLocation(world.provider.dimensionId, pos);
+        registry().changed();
+        return record;
     }
 
     private static boolean isLoaded(PhoneRecord record) {

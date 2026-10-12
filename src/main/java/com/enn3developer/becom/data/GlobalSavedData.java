@@ -11,7 +11,6 @@ import net.minecraft.world.WorldSavedData;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
-import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
@@ -94,8 +93,15 @@ public final class GlobalSavedData extends WorldSavedData {
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
         // Phone kinds and history directions are added without a format bump: one this BeCom doesn't know means a newer
         // BeCom saved the file. Dropping those phones would free their numbers for reuse (D12), so keep it untouched.
+        java.util.Set<Integer> numbers = new java.util.HashSet<>();
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound phone = list.getCompoundTagAt(i);
+            // Numbers are six digits and unique (D12, DESIGN.md 14.2): anything else isn't data this BeCom wrote.
+            int number = phone.getInteger("number");
+            if (!PhoneNumbers.isValid(number) || !numbers.add(number)) {
+                notUnderstood(nbt, "a phone number that is invalid or repeated, " + number);
+                return;
+            }
             String kind = phone.getString("kind");
             if (kindOf(kind) == null) {
                 notUnderstood(nbt, "a phone kind it doesn't know, \"" + kind + "\"");
@@ -111,10 +117,7 @@ public final class GlobalSavedData extends WorldSavedData {
                 }
             }
         }
-        for (int i = 0; i < list.tagCount(); i++) {
-            PhoneRecord record = readPhone(list.getCompoundTagAt(i));
-            if (record != null && phones.get(record.number()) == null) phones.restore(record);
-        }
+        for (int i = 0; i < list.tagCount(); i++) phones.restore(readPhone(list.getCompoundTagAt(i)));
         savedVersion = phones.version();
         // Last: anything thrown above leaves the data unread, and so never saved over the file.
         read = true;
@@ -155,14 +158,10 @@ public final class GlobalSavedData extends WorldSavedData {
         }
     }
 
+    /** One phone, already checked by {@link #readFromNBT}: its number, kind and history directions are known. */
     static PhoneRecord readPhone(NBTTagCompound tag) {
         int number = tag.getInteger("number");
-        if (!PhoneNumbers.isValid(number)) {
-            BeCom.LOG.warn("Dropping a saved phone with invalid number {}", number);
-            return null;
-        }
         PhoneKind kind = kindOf(tag.getString("kind"));
-        if (kind == null) return null;
         PhoneRecord record = new PhoneRecord(number, kind, readUuid(tag, "owner"), tag.getString("ownerName"));
         record.setLocation(tag.getInteger("dim"), tag.getLong("pos"));
         record.setDoNotDisturb(tag.getBoolean("dnd"));
@@ -175,12 +174,12 @@ public final class GlobalSavedData extends WorldSavedData {
             if (player != null) record.restoreBlock(player, entry.getString("name"));
         }
         NBTTagList history = tag.getTagList("history", Constants.NBT.TAG_COMPOUND);
-        // Saved newest first; added oldest first so the newest ends up on top again.
-        for (int i = history.tagCount() - 1; i >= 0; i--) {
+        // Saved newest first and kept in that order, all of it: a newer BeCom may keep more than this one does, and
+        // the next call trims it as usual.
+        for (int i = 0; i < history.tagCount(); i++) {
             NBTTagCompound entry = history.getCompoundTagAt(i);
             PhoneRecord.Direction direction = directionOf(entry.getString("dir"));
-            if (direction == null) continue;
-            record.addHistory(
+            record.restoreHistory(
                 new PhoneRecord.HistoryEntry(
                     entry.getLong("time"),
                     entry.getInteger("number"),

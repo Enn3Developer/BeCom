@@ -13,7 +13,9 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.PhoneScreen;
+import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.Cord;
+import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.BeComServer;
 
 import cpw.mods.fml.relauncher.Side;
@@ -44,6 +46,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     }
 
     public void setNumber(int number) {
+        // A new number isn't ringing, whatever the old one was doing.
+        if (number != this.number) setRinging(false);
         this.number = number;
         markDirty();
     }
@@ -69,12 +73,20 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     }
 
     /**
-     * What a Telephone does on its first tick after loading: claims its number again if it was moved, puts back a
-     * handset nobody holds, and rings if a call is ringing it. The self-test calls this directly.
+     * What a Telephone does on its first tick after loading: claims its number again if it was moved or lets go of it
+     * if it's a copy, puts back a handset nobody holds, and rings if a call is ringing it. The self-test calls this
+     * directly.
      */
     public void settleAfterLoad() {
         BeComServer becom = BeComServer.get();
-        if (becom != null && number >= 0) becom.phones.relocate(this);
+        PhoneRecord original = becom == null || number < 0 ? null : becom.phones.record(number);
+        if (original != null && !becom.phones.relocate(this)) {
+            // A copy: its number is the original's, which still stands elsewhere. Holding it would put the number on
+            // two cables and ring both. It gets its own, owned by the original's owner (X17).
+            setNumber(
+                becom.phones.registerCopy(worldObj, BlockPos.pack(xCoord, yCoord, zCoord), original)
+                    .number());
+        }
         releaseStaleHandset();
         restoreRinging();
     }
@@ -96,7 +108,9 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
      */
     public void restoreRinging() {
         BeComServer becom = BeComServer.get();
-        if (becom != null && number >= 0 && becom.calls.isRinging(number)) setRinging(true);
+        // Only the phone the number belongs to: the call stops ringing that one, and no other.
+        if (becom != null && number >= 0 && becom.phones.telephone(number) == this && becom.calls.isRinging(number))
+            setRinging(true);
     }
 
     /** Whether {@code player} is still within the handset's cord. */
@@ -129,8 +143,12 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);
         if (tooNew != null) {
-            // Written back exactly as a newer BeCom saved it.
-            for (String key : tooNew.func_150296_c()) nbt.setTag(key, tooNew.getTag(key));
+            // Written back as a newer BeCom saved it, except where it stands now: a mover may have carried it.
+            for (String key : tooNew.func_150296_c()) {
+                if (!key.equals("id") && !key.equals("x") && !key.equals("y") && !key.equals("z")) {
+                    nbt.setTag(key, tooNew.getTag(key));
+                }
+            }
             return;
         }
         SavedDataFormat.write(nbt, FORMAT);
@@ -141,12 +159,12 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            // A Telephone from a newer BeCom: kept untouched and left alone, never given a number here (DESIGN.md
-            // 14.2).
+            // A Telephone from a newer BeCom: kept untouched and left alone, never given a number here (X16).
             tooNew = (NBTTagCompound) nbt.copy();
             number = -1;
             return;
         }
+        tooNew = null;
         // Format 1 is the first; the number is all a Telephone keeps.
         number = nbt.hasKey("number") ? nbt.getInteger("number") : -1;
     }

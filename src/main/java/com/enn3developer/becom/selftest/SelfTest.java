@@ -40,7 +40,6 @@ import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
-import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.machine.BeComMachines;
@@ -729,15 +728,24 @@ public final class SelfTest {
         end.restoreRinging();
         check("a phone that loads while a call rings it rings again", end.ringing(), "");
         calls.hangUpHandset(alice);
+        // Nobody answered: the caller's row names the other phone's owner at the time, so a later block can't land on
+        // whoever holds that number next.
+        check(
+            "an unanswered call records the other phone's owner",
+            ra.history()
+                .get(0)
+                .direction() == PhoneRecord.Direction.OUTGOING && rb.owner()
+                    .equals(
+                        ra.history()
+                            .get(0)
+                            .otherPlayer()),
+            String.valueOf(
+                ra.history()
+                    .get(0)
+                    .otherPlayer()));
         calls.voiceForSelfTest(
             id -> GtnhVoiceApi.session(id)
                 .isPresent());
-
-        // A number whose Telephone vanished without being broken (a rolled-back chunk) is freed.
-        PhoneRecord ghost = registry().create(PhoneKind.TELEPHONE, alice, "ghost", new java.util.Random(7));
-        ghost.setLocation(world.provider.dimensionId, BlockPos.pack(X0 + 3, Y + 1, end.zCoord));
-        becom.checkPhone(ghost);
-        check("a number whose Telephone is gone is freed", registry().get(ghost.number()) == null, "");
 
         checkMovedPhone(end.zCoord);
 
@@ -763,19 +771,37 @@ public final class SelfTest {
         TileTelephone moved = placeSaved(saved, X0 + 7, y, z);
         moved.settleAfterLoad();
         PhoneRecord record = registry().get(number);
-        becom.checkPhone(record);
         check(
             "a Telephone that was moved keeps its number",
             record != null && registry().get(number) == record && record.pos() == BlockPos.pack(X0 + 7, y, z),
             record == null ? "freed" : BlockPos.toString(record.pos()));
         TileTelephone copy = placeSaved(saved, X0 + 9, y, z);
         copy.settleAfterLoad();
+        PhoneRecord copied = registry().get(copy.number());
         check(
-            "a copy of a Telephone that still stands doesn't take its number",
-            record != null && record.pos() == BlockPos.pack(X0 + 7, y, z),
-            "");
+            "a copy of a Telephone that still stands gets its own number, its owner's",
+            record != null && record.pos() == BlockPos.pack(X0 + 7, y, z)
+                && copy.number() != number
+                && copied != null
+                && owner.getUniqueID()
+                    .equals(copied.owner()),
+            "copy holds " + copy.number());
         world.setBlockToAir(X0 + 9, y, z);
+        // An original saved by a newer BeCom shows no number, but still stands: a copy doesn't take its record.
+        NBTTagCompound newer = new NBTTagCompound();
+        moved.writeToNBT(newer);
+        newer.setInteger(SavedDataFormat.KEY, TileTelephone.FORMAT + 1);
+        moved.readFromNBT(newer);
+        TileTelephone second = placeSaved(saved, X0 + 9, y, z);
+        second.settleAfterLoad();
+        check(
+            "an original saved by a newer BeCom keeps its number from a copy",
+            record != null && registry().get(number) == record && record.pos() == BlockPos.pack(X0 + 7, y, z),
+            record == null ? "freed" : BlockPos.toString(record.pos()));
+        world.setBlockToAir(X0 + 9, y, z);
+        world.removeTileEntity(X0 + 7, y, z);
         world.setBlockToAir(X0 + 7, y, z);
+        registry().remove(number);
     }
 
     private TileTelephone placeSaved(NBTTagCompound saved, int x, int y, int z) {

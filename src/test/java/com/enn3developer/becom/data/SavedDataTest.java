@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -295,9 +296,12 @@ class SavedDataTest {
             0,
             data.phones()
                 .size());
-        // A second load from the same storage, after the first save, isn't mistaken for an unreadable file.
-        file.getParentFile()
-            .mkdirs();
+        // A second load from the same storage, after the first save wrote the file, isn't mistaken for an unreadable
+        // one.
+        data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        storage.saveAllData();
+        assertTrue(file.isFile());
         assertTrue(GlobalSavedData.load(storage, file) == data);
     }
 
@@ -370,5 +374,63 @@ class SavedDataTest {
         read.readFromNBT(nbt);
         assertTrue(read.isTooNew());
         assertFalse(read.isDirty());
+    }
+
+    @Test
+    void aHistoryLongerThanThisBeComKeepsLoadsWhole() {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        PhoneRecord record = data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        NBTTagList history = new NBTTagList();
+        for (int i = 0; i < PhoneRecord.HISTORY_SIZE + 8; i++) {
+            NBTTagCompound entry = new NBTTagCompound();
+            entry.setLong("time", 1000 - i);
+            entry.setInteger("number", 222_222);
+            entry.setString("name", "bob");
+            entry.setString("dir", "MISSED");
+            history.appendTag(entry);
+        }
+        nbt.getTagList("phones", 10)
+            .getCompoundTagAt(0)
+            .setTag("history", history);
+        GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
+        read.readFromNBT(nbt);
+        List<PhoneRecord.HistoryEntry> back = read.phones()
+            .get(record.number())
+            .history();
+        assertEquals(PhoneRecord.HISTORY_SIZE + 8, back.size());
+        // Newest first, as saved.
+        assertEquals(
+            1000,
+            back.get(0)
+                .time());
+    }
+
+    @Test
+    void anInvalidOrRepeatedNumberStopsTheLoad() {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        NBTTagCompound twin = (NBTTagCompound) nbt.getTagList("phones", 10)
+            .getCompoundTagAt(0)
+            .copy();
+        nbt.getTagList("phones", 10)
+            .appendTag(twin);
+        GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+
+        NBTTagCompound bad = new NBTTagCompound();
+        data.writeToNBT(bad);
+        bad.getTagList("phones", 10)
+            .getCompoundTagAt(0)
+            .setInteger("number", 12);
+        GlobalSavedData badRead = new GlobalSavedData(GlobalSavedData.NAME);
+        badRead.readFromNBT(bad);
+        assertTrue(badRead.isTooNew());
     }
 }

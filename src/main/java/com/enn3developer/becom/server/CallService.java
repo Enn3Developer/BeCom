@@ -179,11 +179,12 @@ public final class CallService implements CallBook.Listener {
         UUID holder = handsets.remove(phone);
         if (holder != null) {
             handsetOf.remove(holder);
-            names.remove(holder);
             EntityPlayerMP mp = player(holder);
             if (mp != null) tone(mp, TonePacket.Tone.HANG_UP);
         }
         book.phoneGone(phone);
+        // After the call ends, so its history still has the name.
+        if (holder != null) names.remove(holder);
     }
 
     // endregion

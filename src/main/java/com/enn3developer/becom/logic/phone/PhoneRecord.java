@@ -118,6 +118,11 @@ public final class PhoneRecord {
         return new ArrayList<>(history);
     }
 
+    /** Puts back an entry read from saved data, after those already read (saved newest first), without trimming. */
+    public void restoreHistory(HistoryEntry entry) {
+        history.addLast(entry);
+    }
+
     public void addHistory(HistoryEntry entry) {
         history.addFirst(entry);
         while (history.size() > HISTORY_SIZE) history.removeLast();

@@ -165,10 +165,12 @@ public class BlockTelephone extends BlockContainer {
             BeComServer becom = BeComServer.get();
             if (becom != null) {
                 PhoneRecord record = becom.phones.record(tile.number());
-                becom.calls.phoneGone(tile.number());
-                // Only the phone that owns the number frees it; a copy with a stale number must not.
+                // Only the phone that owns the number ends its call and frees it; a copy with a stale number must not.
                 if (record != null && record.dimension() == world.provider.dimensionId
-                    && record.pos() == BlockPos.pack(x, y, z)) becom.phones.unregister(tile.number());
+                    && record.pos() == BlockPos.pack(x, y, z)) {
+                    becom.calls.phoneGone(tile.number());
+                    becom.phones.unregister(tile.number());
+                }
             }
         }
         super.breakBlock(world, x, y, z, block, meta);
