@@ -57,6 +57,8 @@ public final class CallService implements CallBook.Listener {
     private static final int CORD_CHECK_TICKS = 5;
     // A Videophone not heard from for this long is unpowered or unloaded, like a node offline (DESIGN.md 14).
     private static final int VIDEOPHONE_LOST_TICKS = 2 * TICKS_PER_SECOND;
+    /** How long a busy tone plays on a phone with no handset to put down before it stops by itself. */
+    public static final int BRIEF_TONE_TICKS = 3 * TICKS_PER_SECOND;
 
     private final MinecraftServer server;
     private final NetworkService network;
@@ -80,6 +82,11 @@ public final class CallService implements CallBook.Listener {
     private final Map<Integer, Videophone> videophones = new HashMap<>();
     // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
     private final Map<Heard, SignalLevel> loudspeakerLevels = new HashMap<>();
+    // Players hearing a tone that stops by itself, and the tick it stops.
+    private final Map<UUID, Long> toneStops = new HashMap<>();
+    // The last tone each player was played and the last thing they were told, kept only while the self-test asks.
+    private Map<UUID, TonePacket.Tone> toneLog;
+    private Map<UUID, String> messageLog;
     private long ticks;
     private long publishedVersion = -1;
 
@@ -135,7 +142,6 @@ public final class CallService implements CallBook.Listener {
 
     // region Handsets
 
-    /** Who holds phone {@code phone}'s handset, or null. */
     /** Whether a call is ringing {@code phone}, waiting for it to answer. */
     public boolean isRinging(int phone) {
         Call call = book.callOfPhone(phone);
@@ -143,6 +149,7 @@ public final class CallService implements CallBook.Listener {
         return leg != null && leg.state() == Call.Leg.State.RINGING;
     }
 
+    /** Who holds phone {@code phone}'s handset, or null. */
     public UUID holderOf(int phone) {
         return handsets.get(phone);
     }
@@ -207,9 +214,8 @@ public final class CallService implements CallBook.Listener {
         handsets.remove(phone);
         TileTelephone telephone = phones.telephone(phone);
         if (telephone != null) telephone.setOffHook(false);
-        EntityPlayerMP mp = player(player);
-        if (mp != null) tone(mp, TonePacket.Tone.HANG_UP);
-        book.hangUp(player);
+        // Leaving a call clicks as they leave it; with no call, the click is here.
+        if (!book.hangUp(player)) tone(player, TonePacket.Tone.HANG_UP);
         // After the call ends, so its history still has the name.
         names.remove(player);
     }
@@ -218,14 +224,15 @@ public final class CallService implements CallBook.Listener {
     public void phoneGone(int phone) {
         videophones.remove(phone);
         UUID holder = handsets.remove(phone);
-        if (holder != null) {
-            handsetOf.remove(holder);
-            EntityPlayerMP mp = player(holder);
-            if (mp != null) tone(mp, TonePacket.Tone.HANG_UP);
-        }
+        if (holder != null) handsetOf.remove(holder);
+        boolean inCall = holder != null && book.callOf(holder) != null;
         book.phoneGone(phone);
-        // After the call ends, so its history still has the name.
-        if (holder != null) names.remove(holder);
+        if (holder != null) {
+            // Leaving the call clicked already.
+            if (!inCall) tone(holder, TonePacket.Tone.HANG_UP);
+            // After the call ends, so its history still has the name.
+            names.remove(holder);
+        }
     }
 
     // endregion
@@ -351,10 +358,14 @@ public final class CallService implements CallBook.Listener {
         return result;
     }
 
+    /**
+     * Tells someone dialling from a carried phone or a Videophone how it went. With no handset to put down, a busy tone
+     * stops by itself; a ringback stops as the call connects or ends.
+     */
     private void report(EntityPlayerMP player, CallBook.DialResult result) {
         switch (result) {
             case RINGING -> tone(player, TonePacket.Tone.RINGBACK);
-            case BUSY -> tone(player, TonePacket.Tone.BUSY);
+            case BUSY -> briefTone(player.getUniqueID(), TonePacket.Tone.BUSY);
             case UNREACHABLE -> tone(player, TonePacket.Tone.UNREACHABLE);
             case RATE_LIMITED -> {
                 tell(player, "becom.call.rate_limited");
@@ -393,7 +404,8 @@ public final class CallService implements CallBook.Listener {
             hangUpHandset(id);
             return;
         }
-        if (book.hangUp(id)) tone(player, TonePacket.Tone.HANG_UP);
+        // Leaving the call clicks.
+        book.hangUp(id);
     }
 
     /**
@@ -527,13 +539,16 @@ public final class CallService implements CallBook.Listener {
         return true;
     }
 
-    /** Anyone at Videophone {@code number}'s screen hangs it up for its whole room, or turns down a ringing call. */
+    /**
+     * Anyone at Videophone {@code number}'s screen hangs it up for its whole room, who hear the click as they leave the
+     * call, or turns down a ringing call.
+     */
     public void hangUpVideophone(EntityPlayerMP player, int number) {
         if (isRinging(number)) {
             book.reject(number);
             return;
         }
-        if (book.hangUpPhone(number)) tone(player, TonePacket.Tone.HANG_UP);
+        book.hangUpPhone(number);
     }
 
     /**
@@ -680,8 +695,7 @@ public final class CallService implements CallBook.Listener {
         for (UUID player : players) {
             GtnhVoiceApi.groupManager()
                 .join(player, group);
-            EntityPlayerMP mp = player(player);
-            if (mp != null) tone(mp, TonePacket.Tone.NONE);
+            tone(player, TonePacket.Tone.NONE);
         }
         BeComQuests.complete(QuestTask.FIRST_CALL, players);
         callQuests(call);
@@ -755,19 +769,25 @@ public final class CallService implements CallBook.Listener {
         if (!bridged.isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, bridged);
     }
 
-    /** {@code player} is out of their call: out of the group, the others' levels cleared, and told why. */
+    /**
+     * {@code player} is out of their call: out of the group, the others' levels cleared, and told why. A null
+     * {@code reason} means they walked out of a speakerphone's room and the call goes on without them.
+     */
     private void leaveCall(UUID player, List<UUID> others, CallBook.EndReason reason) {
         GtnhVoiceApi.groupManager()
             .leave(player, group);
+        // Whoever still holds a handset hears the line go dead until they put it down. Any other phone clicks, which
+        // also stops a ringback it played; someone walking out of a room just stops hearing a ringback.
+        TonePacket.Tone tone = reason == null ? TonePacket.Tone.NONE
+            : handsetOf.containsKey(player) ? TonePacket.Tone.BUSY : TonePacket.Tone.HANG_UP;
+        tone(player, tone);
+        if (reason == CallBook.EndReason.NO_ANSWER) tell(player, "becom.call.no_answer");
+        if (reason == CallBook.EndReason.DROPPED) tell(player, "becom.call.dropped");
         EntityPlayerMP mp = player(player);
         if (mp == null) return;
         for (UUID other : others) {
             if (!other.equals(player)) BeComPackets.send(new LevelPacket(other, CallGroup.NAME, SignalLevel.NONE), mp);
         }
-        if (reason == CallBook.EndReason.NO_ANSWER) tell(mp, "becom.call.no_answer");
-        if (reason == CallBook.EndReason.DROPPED) tell(mp, "becom.call.dropped");
-        // Whoever still holds a handset hears the line go dead; whoever hung up already heard the click.
-        if (handsetOf.containsKey(player)) tone(mp, TonePacket.Tone.BUSY);
     }
 
     /**
@@ -815,12 +835,7 @@ public final class CallService implements CallBook.Listener {
     @Override
     public void roomChanged(Call call, Call.Leg leg, Set<UUID> joined, Set<UUID> left) {
         List<UUID> players = call.participants();
-        for (UUID player : left) {
-            leaveCall(player, players, null);
-            // Whoever dialled from the Videophone and walked off before it connected still hears the ringback.
-            EntityPlayerMP mp = player(player);
-            if (mp != null) tone(mp, TonePacket.Tone.NONE);
-        }
+        for (UUID player : left) leaveCall(player, players, null);
         for (UUID player : joined) {
             GtnhVoiceApi.groupManager()
                 .join(player, group);
@@ -858,6 +873,11 @@ public final class CallService implements CallBook.Listener {
         ticks++;
         long now = now();
         book.tick(now);
+        if (!toneStops.isEmpty()) {
+            for (Map.Entry<UUID, Long> stop : new ArrayList<>(toneStops.entrySet())) {
+                if (ticks >= stop.getValue()) tone(stop.getKey(), TonePacket.Tone.NONE);
+            }
+        }
         for (int number : new ArrayList<>(ringingCarried.keySet())) ringCarried(number);
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
@@ -941,6 +961,7 @@ public final class CallService implements CallBook.Listener {
         handsetOf.clear();
         names.clear();
         ringingCarried.clear();
+        toneStops.clear();
         videophones.clear();
         loudspeakerLevels.clear();
         selfTestPlayers.clear();
@@ -1034,11 +1055,48 @@ public final class CallService implements CallBook.Listener {
         return null;
     }
 
-    private static void tone(EntityPlayerMP player, TonePacket.Tone tone) {
-        BeComPackets.send(new TonePacket(tone), player);
+    /** Plays {@code tone} on {@code player}'s phone, in place of whatever it played. */
+    private void tone(UUID player, TonePacket.Tone tone) {
+        toneStops.remove(player);
+        if (toneLog != null) toneLog.put(player, tone);
+        EntityPlayerMP mp = player(player);
+        if (mp != null) BeComPackets.send(new TonePacket(tone), mp);
     }
 
-    private static void tell(EntityPlayerMP player, String key, Object... args) {
+    private void tone(EntityPlayer player, TonePacket.Tone tone) {
+        tone(player.getUniqueID(), tone);
+    }
+
+    /** A tone that loops until a handset goes down, played for a while on a phone with no handset (DESIGN.md 10). */
+    private void briefTone(UUID player, TonePacket.Tone tone) {
+        tone(player, tone);
+        toneStops.put(player, ticks + BRIEF_TONE_TICKS);
+    }
+
+    /** From now on, keeps the last tone each player was played and what they were told, for the self-test. */
+    public void logForSelfTest() {
+        if (toneLog == null) toneLog = new HashMap<>();
+        if (messageLog == null) messageLog = new HashMap<>();
+    }
+
+    /** The last tone {@code player} was played since {@link #logForSelfTest}, or null. */
+    public TonePacket.Tone lastToneForSelfTest(UUID player) {
+        return toneLog == null ? null : toneLog.get(player);
+    }
+
+    /** The language key of the last thing {@code player} was told since {@link #logForSelfTest}, or null. */
+    public String lastMessageForSelfTest(UUID player) {
+        return messageLog == null ? null : messageLog.get(player);
+    }
+
+    private void tell(EntityPlayerMP player, String key, Object... args) {
+        if (messageLog != null) messageLog.put(player.getUniqueID(), key);
         player.addChatComponentMessage(new ChatComponentTranslation(key, args));
+    }
+
+    private void tell(UUID player, String key, Object... args) {
+        if (messageLog != null) messageLog.put(player, key);
+        EntityPlayerMP mp = player(player);
+        if (mp != null) mp.addChatComponentMessage(new ChatComponentTranslation(key, args));
     }
 }

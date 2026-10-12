@@ -66,6 +66,7 @@ import com.enn3developer.becom.machine.MTEPylonHead;
 import com.enn3developer.becom.machine.MTETransceiver;
 import com.enn3developer.becom.machine.MTEVideophone;
 import com.enn3developer.becom.packet.AnalyzerPacket;
+import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
@@ -250,6 +251,8 @@ public final class SelfTest {
         steps.add(this::checkGroupCall);
         steps.add(this::checkPhonePower);
         steps.add(this::checkPhoneDrain);
+        steps.add(this::checkTones);
+        steps.add(this::checkBusyToneStops);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -1917,6 +1920,59 @@ public final class SelfTest {
             standby == (double) t.phoneStandbyDrain() * TICKS_PER_SECOND
                 && calling == (double) t.phoneCallDrain() * TICKS_PER_SECOND,
             "standby " + standby + ", in a call " + calling);
+        return 1;
+    }
+
+    private TonePacket.Tone busyTone;
+
+    /** DESIGN.md 10: a carried phone's ringback and busy tones stop, with no handset to put down. */
+    private int checkTones() {
+        UUID m = mona.getUniqueID(), n = nell.getUniqueID(), s = stranger.getUniqueID();
+        becom.calls.logForSelfTest();
+        becom.calls.dialCarried(nell, nellNumber, monaNumber);
+        TonePacket.Tone ringback = becom.calls.lastToneForSelfTest(n);
+        becom.calls.phoneKey(mona, true);
+        TonePacket.Tone rejected = becom.calls.lastToneForSelfTest(n);
+        becom.calls.dialCarried(nell, nellNumber, monaNumber);
+        becom.calls.book()
+            .tick(
+                System.nanoTime() / 1_000_000L + BeComConfig.get()
+                    .ringSeconds() * 1000L);
+        TonePacket.Tone unanswered = becom.calls.lastToneForSelfTest(n);
+        check(
+            "a carried phone's ringback stops when its call is turned down or goes unanswered",
+            ringback == TonePacket.Tone.RINGBACK && rejected == TonePacket.Tone.HANG_UP
+                && unanswered == TonePacket.Tone.HANG_UP
+                && "becom.call.no_answer".equals(becom.calls.lastMessageForSelfTest(n)),
+            ringback + ", then "
+                + rejected
+                + ", then "
+                + unanswered
+                + ", told "
+                + becom.calls.lastMessageForSelfTest(n));
+        // Nell talks to the Telephone, and Mona calls her.
+        becom.calls.dialCarried(nell, nellNumber, phoneTelephone.number());
+        standBy(stranger, phoneTelephone);
+        becom.calls.takeHandset(stranger, phoneTelephone);
+        CallBook.DialResult busy = becom.calls.dialCarried(mona, monaNumber, nellNumber);
+        busyTone = busy == CallBook.DialResult.BUSY ? becom.calls.lastToneForSelfTest(m) : null;
+        becom.calls.hangUp(nell);
+        TonePacket.Tone dead = becom.calls.lastToneForSelfTest(s);
+        becom.calls.hangUpHandset(s);
+        TonePacket.Tone down = becom.calls.lastToneForSelfTest(s);
+        check(
+            "...a Telephone's handset hears the line go dead when the other side hangs up, until it's put down",
+            dead == TonePacket.Tone.BUSY && down == TonePacket.Tone.HANG_UP,
+            dead + ", then " + down);
+        return CallService.BRIEF_TONE_TICKS + 1;
+    }
+
+    private int checkBusyToneStops() {
+        TonePacket.Tone now = becom.calls.lastToneForSelfTest(mona.getUniqueID());
+        check(
+            "...and a carried phone calling a busy one hears busy, which stops by itself",
+            busyTone == TonePacket.Tone.BUSY && now == TonePacket.Tone.NONE,
+            busyTone + ", then " + now);
         return 1;
     }
 
