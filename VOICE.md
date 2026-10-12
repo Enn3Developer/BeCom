@@ -77,3 +77,14 @@ stopgap.
 - **Stopgap:** BeCom's test fixture builds the internal types, in one place (`RoutingFixture`). Nothing outside the
   tests touches them.
 - **Found:** 0.1 design review, 2026-10-12.
+
+### V5: Whether a send went through
+
+- **Status:** open, polish
+- **Needed by:** 0.2, DESIGN.md 15.5 (the Radio contact task)
+- **Missing:** `RoutingContext.sendTo` returns nothing, and drops a send silently when a higher-priority group already
+  served that listener this frame. BeCom counts a radio contact for the quests when it sends a radio frame, so it
+  also counts one that GTNH Voice dropped because the two players were, say, in a call with each other.
+- **Proposed API:** `sendTo` returns whether it sent, or `RoutingContext` gets `isServed(UUID)`.
+- **Stopgap:** count the contact on every send; the case it miscounts is two players already talking another way.
+- **Found:** code review, 2026-10-12.

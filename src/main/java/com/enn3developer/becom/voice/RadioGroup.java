@@ -99,7 +99,8 @@ public final class RadioGroup implements IGroup {
             IVoiceSession session = sessions.get(holder);
             if (session == null || !shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
-            shared.contact(speaker, holder);
+            // VOICE.md V5: GTNH Voice doesn't say whether this send went through or a higher group had served them.
+            shared.contact(speaker, holder, now);
         }
         for (int i = 0; i < tx.walkies().length; i++) {
             if (!walkieGot[i]) continue;
@@ -172,7 +173,8 @@ public final class RadioGroup implements IGroup {
             IVoiceSession session = sessions.get(id);
             if (session == null || !shared.listeners.admit(id, channel, speaker, snr, now)) continue;
             context.sendTo(session, SourceState.POSITIONAL, x, y, z);
-            shared.contact(speaker, id);
+            // VOICE.md V5
+            shared.contact(speaker, id, now);
         }
     }
 

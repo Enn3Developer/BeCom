@@ -450,4 +450,24 @@ class RadioGroupTest {
         assertTrue(shared.deviceHeldBy(bob, 1, alice));
         assertTrue(!shared.deviceHeldBy(bob, 2, alice));
     }
+
+    @Test
+    void reportsAContactAgainAfterAMinute() {
+        // A contact made while its quest was still locked mustn't be used up for good.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 60, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertNotNull(shared.pollContact());
+        now += 1_000 * MS;
+        fixture.route(one, alice, RADIO);
+        assertNull(shared.pollContact());
+        now += 61_000 * MS;
+        fixture.route(one, alice, RADIO);
+        assertNotNull(shared.pollContact());
+    }
 }

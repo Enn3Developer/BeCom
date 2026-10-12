@@ -2,7 +2,6 @@ package com.enn3developer.becom.voice;
 
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -42,7 +41,10 @@ public final class RadioRouting {
     private volatile RadioSnapshot snapshot = RadioSnapshot.EMPTY;
     private final Map<Pair, DropoutModel.Chain> chains = new ConcurrentHashMap<>();
     private final Map<UUID, Keyed> keyed = new ConcurrentHashMap<>();
-    private final Set<Contact> reported = ConcurrentHashMap.newKeySet();
+    // When each contact was last reported. A pair is reported again after a while, so a contact made while its quest
+    // was still locked isn't used up for good.
+    private static final long REPORT_AGAIN_NANOS = 60_000_000_000L;
+    private final Map<Contact, Long> reported = new ConcurrentHashMap<>();
     private final Queue<Contact> contacts = new ConcurrentLinkedQueue<>();
 
     /**
@@ -86,9 +88,12 @@ public final class RadioRouting {
         keyed.put(speaker, new Keyed(channel, nanos));
     }
 
-    void contact(UUID speaker, UUID listener) {
+    void contact(UUID speaker, UUID listener, long nanos) {
         Contact contact = new Contact(speaker, listener);
-        if (reported.add(contact)) contacts.add(contact);
+        Long last = reported.get(contact);
+        if (last != null && nanos - last < REPORT_AGAIN_NANOS) return;
+        reported.put(contact, nanos);
+        contacts.add(contact);
     }
 
     /** Server thread: whether a receiving device's capture is held by {@code speaker} on {@code channel}. */
@@ -112,6 +117,8 @@ public final class RadioRouting {
             .removeIf(k -> nowNanos - k.nanos() > maxNanos);
         capture.sweep(nowNanos);
         listeners.sweep(nowNanos);
+        reported.values()
+            .removeIf(last -> nowNanos - last >= REPORT_AGAIN_NANOS);
     }
 
     void forget(UUID player) {
@@ -120,11 +127,12 @@ public final class RadioRouting {
         chains.keySet()
             .removeIf(pair -> pair.speaker.equals(player) || player.equals(pair.device));
         keyed.remove(player);
-        reported.removeIf(
-            c -> c.speaker()
-                .equals(player)
-                || c.listener()
-                    .equals(player));
+        reported.keySet()
+            .removeIf(
+                c -> c.speaker()
+                    .equals(player)
+                    || c.listener()
+                        .equals(player));
     }
 
     public void clear() {
