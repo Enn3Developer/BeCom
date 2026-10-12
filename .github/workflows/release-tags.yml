@@ -37,12 +37,20 @@ jobs:
         id: version
         run: echo "number=${RELEASE_VERSION#v}" >> "$GITHUB_OUTPUT"
 
+      # The tag's own section of CHANGELOG.md, or Unreleased while none is cut for it: a changelog kept under
+      # Unreleased until the tag still makes a release.
       - name: Get changelog entry for ${{ github.ref_name }}
-        id: changelog_reader
-        uses: mindsers/changelog-reader-action@v2
-        with:
-          version: ${{ steps.version.outputs.number }}
-          path: ./CHANGELOG.md
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          section() { awk -v h="## [$1]" 'index($0, h) == 1 { on = 1; next } on && /^## \[/ { exit } on' CHANGELOG.md; }
+          notes="$(section "$VERSION")"
+          if [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then notes="$(section Unreleased)"; fi
+          if [ -z "$(printf '%s' "$notes" | tr -d '[:space:]')" ]; then
+            echo "::error::CHANGELOG.md has no section for ${VERSION} nor an Unreleased one."
+            exit 1
+          fi
+          printf '%s\n' "$notes" > release-notes.md
 
       - name: Set up JDK 25
         uses: actions/setup-java@v5
@@ -80,6 +88,6 @@ jobs:
         run: |
           gh release create "${RELEASE_VERSION}" \
             --title "${RELEASE_VERSION}" \
-            --notes-file "${{ steps.changelog_reader.outputs.changes_file }}" \
+            --notes-file release-notes.md \
             ./build/libs/*.jar \
             Modernity-GTNHAddon-BeCom.zip
