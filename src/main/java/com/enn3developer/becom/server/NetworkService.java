@@ -52,6 +52,8 @@ public final class NetworkService {
     private final Map<NodeRef, Long> lastHeard = new HashMap<>();
     private final Map<NodeRef, Integer> attachments = new HashMap<>();
     private final Map<NodeRef, Integer> phonesSeen = new HashMap<>();
+    // Each working ME Bridge's ME network, by grid id (DESIGN.md 8.3).
+    private final Map<NodeRef, Integer> meBridges = new HashMap<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
     private final Map<Integer, Long> wiresSent = new HashMap<>();
     private long tick;
@@ -103,6 +105,8 @@ public final class NetworkService {
             .removeIf(ref -> ref.dimension() == dimension);
         phonesSeen.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
+        meBridges.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
         wiresSent.remove(dimension);
         version++;
     }
@@ -150,6 +154,7 @@ public final class NetworkService {
         lastHeard.remove(ref);
         attachments.remove(ref);
         phonesSeen.remove(ref);
+        meBridges.remove(ref);
         version++;
     }
 
@@ -181,6 +186,17 @@ public final class NetworkService {
     public void heartbeat(World world, long pos) {
         Long before = lastHeard.put(new NodeRef(world.provider.dimensionId, pos), tick);
         if (before == null) version++;
+    }
+
+    /** An ME Bridge is online in ME network {@code grid} this tick: calls cross between the two (DESIGN.md 8.3). */
+    public void meBridge(World world, long pos, int grid) {
+        Integer before = meBridges.put(new NodeRef(world.provider.dimensionId, pos), grid);
+        if (before == null || before != grid) version++;
+    }
+
+    /** An ME Bridge is offline, in BeCom's network or its ME network. */
+    public void meBridgeOff(World world, long pos) {
+        if (meBridges.remove(new NodeRef(world.provider.dimensionId, pos)) != null) version++;
     }
 
     public boolean working(int dimension, long pos) {
@@ -267,6 +283,16 @@ public final class NetworkService {
                         CallGraph.HopKind.RADIO);
                 }
             });
+        }
+        // An ME Bridge joins its ME network to the line it bridges, losing nothing (DESIGN.md 8.3: a Max hop).
+        for (Map.Entry<NodeRef, Integer> entry : meBridges.entrySet()) {
+            NodeRef bridge = entry.getKey();
+            if (!working(bridge.dimension(), bridge.pos())) continue;
+            builder.twoWay(
+                new CallGraph.MeVertex(entry.getValue()),
+                new CallGraph.NodeVertex(bridge.dimension(), bridge.pos()),
+                Double.POSITIVE_INFINITY,
+                CallGraph.HopKind.ME_BRIDGE);
         }
         Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
         for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);

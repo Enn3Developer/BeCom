@@ -128,4 +128,21 @@ class LinkRulesTest {
         antenna.setFormed(false);
         assertEquals(LinkRules.Result.NOT_FORMED, rules.check(model, antenna, node(4, 0, NodeKind.PYLON, 6)));
     }
+
+    @Test
+    void anMeBridgeBridgesAnyOtherNodeWithinTheBridgeDistance() {
+        NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
+        NetNode router = node(10, 0, NodeKind.ROUTER, 16);
+        NetNode antenna = node(0, 12, NodeKind.ANTENNA_T1, 0);
+        NetNode far = node(20, 0, NodeKind.TERMINAL, 0);
+        NetNode other = node(0, 5, NodeKind.ME_BRIDGE, 0);
+        assertEquals(LinkRules.Result.OK, rules.check(model, bridge, router));
+        assertEquals(LinkRules.Result.OK, rules.check(model, antenna, bridge));
+        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, bridge, far));
+        // Two ME Bridges would join two ME networks, which is AE2's business.
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, other));
+        model.link(bridge.pos(), router.pos());
+        // One link only.
+        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, bridge, antenna));
+    }
 }

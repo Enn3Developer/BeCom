@@ -41,6 +41,8 @@ DEFAULT = {
     "G": (120, 200, 120),  # display, digits
     "t": (90, 16, 16),  # TX lamp, off
     "T": (255, 60, 50),  # TX lamp, lit
+    "f": (140, 84, 196),  # fluix, AE2's crystal
+    "e": (92, 52, 132),  # fluix, shade
 }
 MODERNITY = {
     "o": (34, 33, 30),
@@ -60,6 +62,8 @@ MODERNITY = {
     "G": (110, 210, 230),  # display, digits
     "t": (80, 30, 24),
     "T": (250, 110, 70),
+    "f": (150, 120, 196),
+    "e": (100, 80, 140),
 }
 LIT = {"L"}
 
@@ -204,6 +208,25 @@ def transceiver():
     return c
 
 
+def me_bridge():
+    """An ME Bridge: AE2's fluix crystal, a wire across to BeCom's radio waves, and a lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    crystal = [(5, 4), (4, 5), (5, 5), (6, 5), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6), (4, 7), (5, 7), (6, 7), (5, 8)]
+    for x, y in crystal:
+        c.set(x, y, "f")
+    for x, y in ((6, 6), (6, 7), (5, 8), (7, 6), (6, 5)):
+        c.set(x, y, "e")
+    c.rect(8, 6, 9, 6, "s")
+    for x, y in ((10, 5), (11, 6), (10, 7)):
+        c.set(x, y, "h")
+    for x, y in ((12, 4), (13, 5), (13, 6), (13, 7), (12, 8)):
+        c.set(x, y, "h")
+    c.lamp(3, 11, 2, 1)
+    c.rect(7, 11, 12, 11, "s")
+    return c
+
+
 OVERLAYS = {
     "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
@@ -213,6 +236,7 @@ OVERLAYS = {
     "OVERLAY_ANTENNA_T2": antenna_head(2),
     "OVERLAY_ANTENNA_T3": antenna_head(3),
     "OVERLAY_TRANSCEIVER": transceiver,
+    "OVERLAY_ME_BRIDGE": me_bridge,
 }
 
 
@@ -268,11 +292,24 @@ def mobile_phone():
     return c
 
 
+def me_phone():
+    """The ME Phone: the mobile phone in fluix trim, an ME crystal on its screen."""
+    c = mobile_phone()
+    for y in range(2, 15):
+        c.set(4, y, "f")
+        c.set(11, y, "e")
+    c.rect(6, 8, 9, 10, "g")
+    for x, y in ((7, 8), (6, 9), (7, 9), (8, 9), (7, 10)):
+        c.set(x, y, "f")
+    return c
+
+
 ITEMS = {
     "walkie_talkie": lambda: walkie(False),
     "walkie_talkie_tx": lambda: walkie(True),
     "signal_analyzer": signal_analyzer,
     "mobile_phone": mobile_phone,
+    "me_phone": me_phone,
 }
 
 # Block textures for BeCom's own models: base colour, shade, and highlight per style.

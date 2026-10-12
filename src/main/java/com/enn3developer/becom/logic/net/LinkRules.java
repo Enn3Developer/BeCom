@@ -34,13 +34,13 @@ public final class LinkRules {
      * The longest link {@code a} and {@code b} may have: the span factor times the shorter pylon's height. A terminal
      * on the ground borrows its pylon's height, since only the pylon's end is up in the air. An antenna's bridge
      * reaches
-     * the bridge distance.
+     * the bridge distance, and so does an ME Bridge's.
      */
     public double maxSpan(NetNode a, NetNode b) {
         if (a.kind()
-            .antenna()
+            .bridge()
             || b.kind()
-                .antenna())
+                .bridge())
             return bridgeDistance;
         if (a.kind()
             .pylonHead()
@@ -62,22 +62,27 @@ public final class LinkRules {
             || b.kind()
                 .linkSlots() == 0)
             return Result.INCOMPATIBLE;
-        // An antenna bridges a Pylon Head or a Line Terminal (DESIGN.md 7); antennas reach each other by radio.
-        if (a.kind()
+        // An ME Bridge bridges any other BeCom node (DESIGN.md 8.3); two of them would join ME networks, not lines.
+        if (a.kind() == NodeKind.ME_BRIDGE || b.kind() == NodeKind.ME_BRIDGE) {
+            if (a.kind() == b.kind()) return Result.INCOMPATIBLE;
+        } else if (a.kind()
             .antenna()
             || b.kind()
                 .antenna()) {
-            NetNode wired = a.kind()
-                .antenna() ? b : a;
-            if (!wired.kind()
-                .pylonHead() && wired.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
-        } else if (!a.kind()
-            .pylonHead()
-            && !b.kind()
-                .pylonHead()) {
-                    // A line runs over pylon heads; a terminal only ends one (DESIGN.md 5.2).
-                    return Result.INCOMPATIBLE;
-                }
+                    // An antenna bridges a Pylon Head or a Line Terminal (DESIGN.md 7); antennas reach each other by
+                    // radio.
+                    NetNode wired = a.kind()
+                        .antenna() ? b : a;
+                    if (!wired.kind()
+                        .pylonHead() && wired.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
+                } else
+            if (!a.kind()
+                .pylonHead()
+                && !b.kind()
+                    .pylonHead()) {
+                        // A line runs over pylon heads; a terminal only ends one (DESIGN.md 5.2).
+                        return Result.INCOMPATIBLE;
+                    }
         if (!a.formed() || !b.formed()) return Result.NOT_FORMED;
         if (!a.hasFreeSlot() || !b.hasFreeSlot()) return Result.NO_FREE_SLOT;
         if (a.distanceTo(b) > maxSpan(a, b)) return Result.TOO_FAR;

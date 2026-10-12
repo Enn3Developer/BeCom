@@ -22,7 +22,12 @@ public enum NodeKind {
     ANTENNA_T2(15, true, false, 2),
     ANTENNA_T3(15, true, false, 3),
     /** A radio on a block (DESIGN.md 8): kept here so the network knows where every Transceiver is (DESIGN.md 14). */
-    TRANSCEIVER(0, true, false, 0);
+    TRANSCEIVER(0, true, false, 0),
+    /**
+     * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network. Its one wrench link is a bridge onto
+     * any other node within the bridge distance, a short stretch of line it drives, like an antenna's.
+     */
+    ME_BRIDGE(1, true, false, 0);
 
     private final int linkSlots;
     private final boolean powered;
@@ -57,6 +62,11 @@ public enum NodeKind {
 
     public boolean antenna() {
         return antennaTier > 0;
+    }
+
+    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna or an ME Bridge. */
+    public boolean bridge() {
+        return antenna() || this == ME_BRIDGE;
     }
 
     /** Needs its multiblock formed before it works or links. */

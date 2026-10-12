@@ -10,6 +10,8 @@ import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.machine.BeComMachines;
 
+import appeng.api.AEApi;
+import appeng.api.util.AEColor;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
@@ -34,6 +36,8 @@ public final class BeComRecipes {
     private static final int HANDHELD_SECONDS = 20;
     private static final int MOBILE_EUT = 480;
     private static final int MOBILE_SECONDS = 30;
+    private static final int ME_PHONE_EUT = 1920;
+    private static final int ME_PHONE_SECONDS = 30;
 
     private BeComRecipes() {}
 
@@ -150,6 +154,40 @@ public final class BeComRecipes {
             .duration(MOBILE_SECONDS * SECONDS)
             .eut(MOBILE_EUT)
             .addTo(assemblerRecipes);
+
+        // ME Phone: a Mobile Phone with an AE2 Wireless Terminal's link, an EV emitter and two EV circuits.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                new ItemStack(BeComItems.mobilePhone),
+                AEApi.instance()
+                    .definitions()
+                    .items()
+                    .wirelessTerminal()
+                    .maybeStack(1)
+                    .get(),
+                ItemList.Emitter_EV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.EV, 2))
+            .itemOutputs(new ItemStack(BeComItems.mePhone))
+            .duration(ME_PHONE_SECONDS * SECONDS)
+            .eut(ME_PHONE_EUT)
+            .addTo(assemblerRecipes);
+
+        // ME Bridge: an EV hull with an AE2 Wireless Access Point, an emitter and a sensor, its circuits, two cables
+        // to the BeCom side and ME glass cable to the AE2 side.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.meBridge.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "EAS", "CHC", "TGT", 'E', ItemList.Emitter_EV, 'A', AEApi.instance()
+                .definitions()
+                .blocks()
+                .wireless()
+                .maybeStack(1)
+                .get(), 'S', ItemList.Sensor_EV, 'C', OrePrefixes.circuit.get(Materials.EV), 'H', ItemList.Hull_EV, 'T',
+                OrePrefixes.cableGt01.get(Materials.Aluminium), 'G', AEApi.instance()
+                    .definitions()
+                    .parts()
+                    .cableGlass()
+                    .stack(AEColor.Transparent, 1) });
     }
 
     private static final ItemList[] HULLS = { null, ItemList.Hull_LV, ItemList.Hull_MV, ItemList.Hull_HV };

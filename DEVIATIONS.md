@@ -370,3 +370,22 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
   A ringing or dialling phone is busy with the call already.
 - **To match the design:** none of these contradicts it; they fill in what it leaves open.
+
+### X27: The ME Phone's power, linking and range check
+
+- **Where:** 0.3, DESIGN.md 8, 8.3, 17, D13, D45
+- **Design says:** the ME Phone is linked to an ME network the same way as a wireless terminal, uses AE2's own
+  wireless range check, and runs on AE power like a wireless terminal; DESIGN.md 17's phone battery and drain rows
+  name no kind of phone. The ME Bridge uses one ME channel.
+- **Built:**
+  - Its battery and drain are the Mobile Phone's, 1,200,000 EU and 4 or 16 EU/t, in AE at AE2's own rate (2 AE to
+    the EU): 2,400,000 AE, charged in an ME charger.
+  - It is linked at a Security Terminal as an encodable item, not as a wireless terminal, so it doesn't also open
+    the ME terminal.
+  - Its range check is AE2's rule, active access points of its network and their ranges with boosters, done by
+    BeCom: AE2 only runs it for items that are wireless terminals.
+  - The ME Bridge's channel can be switched off in the config (`meBridgeChannels`, 0 or 1).
+- **Why:** making it a wireless terminal would turn it into one, a feature DESIGN.md doesn't give it. The same
+  battery as the phone it's made from keeps the two in step.
+- **To match the design:** register the ME Phone as a wireless terminal handler and call AE2's `checkRange`, which
+  also gives it the ME terminal; or give it the wireless terminal's own battery.

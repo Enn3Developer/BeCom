@@ -526,8 +526,8 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Coverage map in the antenna screen (6.6, 11.4)                               | done   |
 | Battery drain for phones (D36, 11.3)                                         | done   |
 | Signal bars while holding a phone or in a call (11.2)                        | done   |
-| ME Phone (8.3, D13)                                                          | todo   |
-| ME Bridge (8.3, D45)                                                         | todo   |
+| ME Phone (8.3, D13)                                                          | done   |
+| ME Bridge (8.3, D45)                                                         | done   |
 | Video: front camera (10.1, D41, D43)                                         | todo   |
 | Video: rear camera (10.1)                                                    | todo   |
 | Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
@@ -539,7 +539,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 
 | Assumption                                                                     | Status |
 |--------------------------------------------------------------------------------|--------|
-| The ME Bridge joins an ME network on ME cable, the way GT's ME hatches do       | todo   |
+| The ME Bridge joins an ME network on ME cable, the way GT's ME hatches do       | done   |
 | Video renders under Angelica and shader packs                                  | todo   |
 | A far-away player's skin can be drawn from the profile the server sends        | todo   |
 | Video on BeCom's own network channel doesn't lag the game connection           | todo   |
@@ -556,9 +556,9 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 
 | Item                                                                         | Status |
 |------------------------------------------------------------------------------|--------|
-| Mobile Phone and ME Phone icons                                              | doing  |
+| Mobile Phone and ME Phone icons                                              | done   |
 | Videophone overlay and glow                                                  | todo   |
-| ME Bridge overlay and glow                                                   | todo   |
+| ME Bridge overlay and glow                                                   | done   |
 | Modernity style of all of the above                                          | todo   |
 | Sounds: the ringtone from a carried phone, the silent-mode buzz             | done   |
 | English language entries                                                     | doing  |

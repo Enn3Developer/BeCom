@@ -9,9 +9,11 @@ gt.blockmachines.becom.antenna_t1.name=Antenna T1 Head
 gt.blockmachines.becom.antenna_t2.name=Antenna T2 Head
 gt.blockmachines.becom.antenna_t3.name=Antenna T3 Head
 gt.blockmachines.becom.transceiver.name=Transceiver
+gt.blockmachines.becom.me_bridge.name=ME Bridge
 item.becom.walkie_talkie.name=Walkie-Talkie
 item.becom.signal_analyzer.name=Signal Analyzer
 item.becom.mobile_phone.name=Mobile Phone
+item.becom.me_phone.name=ME Phone
 
 # Machine tooltips
 becom.machine.pylon.type=Pylon
@@ -36,10 +38,14 @@ becom.machine.antenna.mast=%s, in a mast below the head
 becom.machine.antenna.hatch=Any base casing
 becom.machine.transceiver.info=A radio on a block. Hold push-to-talk within reach to transmit through it; its loudspeaker plays its channel.
 becom.machine.transceiver.range=Reaches about %s blocks directly. Talk within %s blocks; the loudspeaker carries %s.
+becom.machine.me_bridge.info=Joins its ME network to BeCom's, so ME Phones on it can call any phone. Takes ME cable on any side and one channel.
+becom.machine.me_bridge.link=Wrench-link it to a BeCom node within %s blocks.
 
 # Scanner info
 becom.info.formed=Pylon height: %s
 becom.info.online=Online
+becom.info.me_online=ME network: online
+becom.info.me_offline=ME network: offline
 becom.info.offline=Offline: unformed, unpowered or switched off
 becom.info.links=Links: %s of %s
 becom.info.link=Linked to %s, %s blocks
@@ -155,6 +161,9 @@ becom.mobile.on=Switched on
 becom.mobile.off=Switched off
 becom.mobile.charge=%s / %s EU
 becom.mobile.help=Right-click or press the Phone key for its screen. Works from the inventory or a bauble slot.
+becom.me_phone.charge=%s / %s AE
+becom.me_phone.linked=Linked to an ME network
+becom.me_phone.unlinked=Not linked: link it at an ME Security Terminal
 becom.transceiver.loudspeaker=Loudspeaker
 becom.analyzer.help=Hold it to see your radio signal: its strength, what serves you, and what costs the most.
 becom.analyzer.reading=Reading...

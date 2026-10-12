@@ -53,3 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rain and thunderstorms weaken calls between antennas and phones' service where they fall: 3 dB in rain, 6 in a storm.
 - The antenna screen draws a coverage map: the level a player standing on the ground would get around the antenna,
   for radio channels or for calls.
+- The ME Phone and the ME Bridge: an ME Phone linked to an ME network at a Security Terminal has service at Max inside
+  that network's wireless range, calls other ME Phones on it directly, and any other phone through an ME Bridge,
+  which joins the ME network on ME cable and is wrench-linked to a BeCom node.

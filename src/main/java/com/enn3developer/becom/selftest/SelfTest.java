@@ -45,6 +45,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.phone.PhoneKind;
@@ -56,6 +57,7 @@ import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTELineTerminal;
+import com.enn3developer.becom.machine.MTEMeBridge;
 import com.enn3developer.becom.machine.MTEPylonHead;
 import com.enn3developer.becom.machine.MTETransceiver;
 import com.enn3developer.becom.packet.AnalyzerPacket;
@@ -75,6 +77,12 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
 import com.mojang.authlib.GameProfile;
 
+import appeng.api.AEApi;
+import appeng.api.definitions.IBlocks;
+import appeng.api.parts.IPartHost;
+import appeng.api.util.AEColor;
+import appeng.api.util.IOrientable;
+import appeng.tile.misc.TileSecurity;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.Materials;
@@ -235,6 +243,10 @@ public final class SelfTest {
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
+        steps.add(this::checkMeRegistration);
+        steps.add(this::buildMe);
+        steps.add(this::linkMe);
+        steps.add(this::checkMe);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -1912,6 +1924,208 @@ public final class SelfTest {
             view.vhfMap().length + " and " + view.uhfMap().length + " cells");
         return 1;
     }
+
+    // region ME (0.3)
+
+    // A small ME network north of the phone area: a creative cell powers a controller with a security station and a
+    // wireless access point beside it, and glass cable runs to the ME Bridge, wrench-linked to the phone antenna.
+    private static final int ME_DZ = 8;
+    private MTEMeBridge meBridge;
+    private TileEntity meSecurity;
+    private TileEntity meWireless;
+    private FakePlayer odo;
+    private FakePlayer pia;
+    private int odoNumber = -1;
+    private int piaNumber = -1;
+
+    private int checkMeRegistration() {
+        checkAssemblerOnly(BeComItems.mePhone, 4);
+        check(
+            "crafting recipe for " + BeComMachines.meBridge.getMetaName(),
+            hasCraftingRecipe(BeComMachines.meBridge.getStackForm(1)),
+            "");
+        return 1;
+    }
+
+    private int buildMe() {
+        int z = phoneZ + ME_DZ;
+        for (int x = X0 + 2; x <= X0 + 9; x++) {
+            for (int dz = -3; dz <= 2; dz++) world.setBlockToAir(x, Y, z + dz);
+        }
+        IBlocks blocks = AEApi.instance()
+            .definitions()
+            .blocks();
+        world.setBlock(
+            X0 + 4,
+            Y,
+            z,
+            blocks.energyCellCreative()
+                .maybeBlock()
+                .get());
+        world.setBlock(
+            X0 + 5,
+            Y,
+            z,
+            blocks.controller()
+                .maybeBlock()
+                .get());
+        world.setBlock(
+            X0 + 5,
+            Y,
+            z + 1,
+            blocks.security()
+                .maybeBlock()
+                .get());
+        world.setBlock(
+            X0 + 5,
+            Y,
+            z - 1,
+            blocks.wireless()
+                .maybeBlock()
+                .get());
+        meSecurity = world.getTileEntity(X0 + 5, Y, z + 1);
+        meWireless = world.getTileEntity(X0 + 5, Y, z - 1);
+        // An access point connects from its back: it faces away from the controller.
+        if (meWireless instanceof IOrientable wap) wap.setOrientation(ForgeDirection.NORTH, ForgeDirection.UP);
+        // A cable bus with a glass cable in it, as a player's cable placement makes one.
+        world.setBlock(
+            X0 + 6,
+            Y,
+            z,
+            blocks.multiPart()
+                .maybeBlock()
+                .get());
+        if (world.getTileEntity(X0 + 6, Y, z) instanceof IPartHost bus) {
+            bus.addPart(
+                AEApi.instance()
+                    .definitions()
+                    .parts()
+                    .cableGlass()
+                    .stack(AEColor.Transparent, 1),
+                ForgeDirection.UNKNOWN,
+                owner);
+        }
+        meBridge = place(BeComMachines.meBridge, X0 + 7, Y, z);
+        powered.add(meBridge.getBaseMetaTileEntity());
+        // AE2 boots a new network over a few ticks.
+        return SETTLE_TICKS;
+    }
+
+    private int linkMe() {
+        link(meBridge, phoneAntenna);
+        return 2 * TICKS_PER_SECOND;
+    }
+
+    /** A fake player at {@code (x, Y, z)} carrying a charged ME Phone linked to the test's ME network. */
+    private FakePlayer mePlayer(String name, int n, double x, double z) {
+        FakePlayer player = FakePlayerFactory.get(
+            world,
+            new GameProfile(
+                UUID.fromString(String.format(Locale.ROOT, "b3c0b3c0-0000-4000-8000-0000000000%02x", 0xe0 + n)),
+                name));
+        player.setPosition(x, Y, z);
+        java.util.Arrays.fill(player.inventory.mainInventory, null);
+        player.inventory.currentItem = 0;
+        ItemStack phone = new ItemStack(BeComItems.mePhone);
+        BeComItems.mePhone.injectAEPower(phone, BeComItems.mePhone.getAEMaxPower(phone));
+        if (meSecurity instanceof TileSecurity security) {
+            BeComItems.mePhone.setEncryptionKey(phone, String.valueOf(security.getLocatableSerial()), "");
+        }
+        player.inventory.mainInventory[0] = phone;
+        becom.carried.refreshForSelfTest(player);
+        return player;
+    }
+
+    /** DESIGN.md 8.3, D13, D45, and 16.2's ME Bridge row. */
+    private int checkMe() {
+        int z = phoneZ + ME_DZ;
+        // 16.2: the fallback is a bridge holding a linked terminal, if this fails.
+        check(
+            "the ME Bridge joins an ME network on ME cable, the way GT's ME hatches do",
+            meBridge.meOnline() && meBridge.isWorking(),
+            "online in ME " + meBridge.meOnline() + ", working " + meBridge.isWorking() + ", " + meDetail(z));
+        odo = mePlayer("BeComOdo", 0, X0 + 5.5, z - 6.5);
+        pia = mePlayer("BeComPia", 1, X0 + 8.5, z - 6.5);
+        odoNumber = ItemCarriedPhone.number(odo.inventory.mainInventory[0]);
+        piaNumber = ItemCarriedPhone.number(pia.inventory.mainInventory[0]);
+        CarriedPhones.Service service = becom.carried.serviceOf(odoNumber);
+        check(
+            "an ME Phone in its network's wireless range has service, at Max",
+            service.entries()
+                .size() == 1 && service.level() == SignalLevel.MAX,
+            service.entries()
+                .size() + " entries, "
+                + service.level());
+        CallBook.DialResult between = becom.calls.dialCarried(odo, odoNumber, piaNumber);
+        becom.calls.answerCarried(pia, piaNumber);
+        Call call = becom.calls.book()
+            .callOf(odo.getUniqueID());
+        check(
+            "...two ME Phones on one ME network call each other at Max, through no BeCom network",
+            between == CallBook.DialResult.RINGING && call != null
+                && call.level(odo.getUniqueID(), pia.getUniqueID()) == SignalLevel.MAX,
+            between + ", " + (call == null ? "no call" : call.level(odo.getUniqueID(), pia.getUniqueID())));
+        becom.calls.hangUp(odo);
+        int telephone = phoneTelephone.number();
+        CallBook.DialResult result = becom.calls.dialCarried(odo, odoNumber, telephone);
+        standBy(stranger, phoneTelephone);
+        becom.calls.takeHandset(stranger, phoneTelephone);
+        call = becom.calls.book()
+            .callOf(odo.getUniqueID());
+        List<CallGraph.HopKind> hops = becom.network.graph()
+            .hops(becom.calls.entriesOf(odoNumber), becom.calls.entriesOf(telephone));
+        check(
+            "...and any other phone through an ME Bridge (D45)",
+            result == CallBook.DialResult.RINGING && call != null
+                && call.state() == Call.State.CONNECTED
+                && hops.contains(CallGraph.HopKind.ME_BRIDGE),
+            result + ", hops " + hops);
+        becom.calls.hangUpHandset(stranger.getUniqueID());
+        becom.calls.hangUp(odo);
+        odo.setPosition(X0 - 60.5, Y, z);
+        becom.carried.refreshForSelfTest(odo);
+        check(
+            "...but has no service outside its network's wireless range",
+            becom.carried.serviceOf(odoNumber)
+                .entries()
+                .isEmpty(),
+            "");
+        return 1;
+    }
+
+    /** What the ME network and the bridge's node look like, for a failed check. */
+    private String meDetail(int z) {
+        StringBuilder detail = new StringBuilder();
+        detail.append("cable block ")
+            .append(
+                world.getBlock(X0 + 6, Y, z)
+                    .getUnlocalizedName());
+        appeng.api.networking.IGridNode node = meBridge.getProxy()
+            .getNode();
+        if (node == null) return detail.append(", no node")
+            .toString();
+        detail.append(", node active ")
+            .append(node.isActive())
+            .append(", channels met ")
+            .append(node.meetsChannelRequirements())
+            .append(", connections ")
+            .append(
+                node.getConnections()
+                    .size())
+            .append(", grid nodes ")
+            .append(
+                node.getGrid()
+                    .getNodes()
+                    .size());
+        if (meWireless instanceof appeng.api.networking.IGridHost host) {
+            appeng.api.networking.IGridNode wap = host.getGridNode(ForgeDirection.UNKNOWN);
+            detail.append(", same grid as the access point ")
+                .append(wap != null && wap.getGrid() == node.getGrid());
+        }
+        return detail.toString();
+    }
+
+    // endregion
 
     private void clearWeather() {
         WorldInfo info = world.getWorldInfo();

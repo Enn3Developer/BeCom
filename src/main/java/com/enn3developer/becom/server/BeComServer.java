@@ -1,5 +1,6 @@
 package com.enn3developer.becom.server;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -12,11 +13,16 @@ import net.minecraftforge.common.DimensionManager;
 
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.GlobalSavedData;
+import com.enn3developer.becom.item.ItemMePhone;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.net.CallGraph;
+import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Terrain;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
+
+import appeng.api.networking.IGrid;
 
 /**
  * Everything BeCom runs while a server is up, made at server start and dropped at server stop, so a singleplayer
@@ -45,6 +51,7 @@ public final class BeComServer {
     public final CallService calls;
     public final RadioService radio;
     public final CarriedPhones carried;
+    public final MeGrids meGrids = new MeGrids();
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
@@ -87,6 +94,13 @@ public final class BeComServer {
                 .nextDouble());
         this.radio = new RadioService(server, tunables, antennas, heights);
         this.carried = new CarriedPhones(server, tunables, phones, antennas, RadioService::endOf);
+        // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
+        // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge.
+        carried.setAccess(PhoneKind.ME_PHONE, (holder, stack) -> {
+            IGrid grid = MeAccess.gridInRange(((ItemMePhone) stack.getItem()).getEncryptionKey(stack), holder);
+            if (grid == null) return List.of();
+            return List.of(new CallGraph.Entry(new CallGraph.MeVertex(meGrids.idOf(grid)), Double.POSITIVE_INFINITY));
+        });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
     }
 

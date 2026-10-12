@@ -100,7 +100,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     /** Its tag, marked with BeCom's format as BeCom writes into it. */
-    private static NBTTagCompound tag(ItemStack stack) {
+    protected static NBTTagCompound tag(ItemStack stack) {
         if (stack.getTagCompound() == null) stack.setTagCompound(new NBTTagCompound());
         BeComNbt.write(stack.getTagCompound(), FORMAT);
         return stack.getTagCompound();
@@ -179,11 +179,19 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         int number = number(stack);
         if (number >= 0) lines.add(StatCollector.translateToLocalFormatted("becom.mobile.number", number));
         lines.add(StatCollector.translateToLocal(on(stack) ? "becom.mobile.on" : "becom.mobile.off"));
-        lines.add(
-            StatCollector
-                .translateToLocalFormatted("becom.mobile.charge", (long) charge(stack), (long) maxCharge(stack)));
+        lines.add(chargeLine(stack));
+        moreInformation(stack, lines);
         lines.add(StatCollector.translateToLocal("becom.mobile.help"));
     }
+
+    /** Its charge, for the tooltip, in the units its battery uses. */
+    protected String chargeLine(ItemStack stack) {
+        return StatCollector
+            .translateToLocalFormatted("becom.mobile.charge", (long) charge(stack), (long) maxCharge(stack));
+    }
+
+    /** Lines a kind of phone adds to the tooltip. */
+    protected void moreInformation(ItemStack stack, List<String> lines) {}
 
     @Override
     public boolean showDurabilityBar(ItemStack stack) {

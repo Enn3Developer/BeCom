@@ -24,6 +24,9 @@ public final class CallGraph {
     /** A phone, by number. */
     public record PhoneVertex(int number) {}
 
+    /** An ME network, by the id the server gives its grid while it lives (DESIGN.md 8.3). */
+    public record MeVertex(int grid) {}
+
     /**
      * Where a phone that isn't a vertex of its own joins the graph, and how good that hop is: a carried phone at each
      * antenna it reaches (DESIGN.md 8.2). A phone on a line joins at its own vertex, through a lossless hop.
@@ -45,7 +48,9 @@ public final class CallGraph {
         LINE,
         CABLE,
         /** A UHF link between two antennas (DESIGN.md 7). */
-        RADIO
+        RADIO,
+        /** An ME Bridge joining its ME network (DESIGN.md 8.3). */
+        ME_BRIDGE
     }
 
     private final Map<Object, Integer> index;

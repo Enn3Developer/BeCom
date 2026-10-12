@@ -26,6 +26,8 @@ public final class BeComTextures {
     public static final IIconContainer ANTENNA_T3_GLOW = icon("OVERLAY_ANTENNA_T3_GLOW");
     public static final IIconContainer TRANSCEIVER = icon("OVERLAY_TRANSCEIVER");
     public static final IIconContainer TRANSCEIVER_GLOW = icon("OVERLAY_TRANSCEIVER_GLOW");
+    public static final IIconContainer ME_BRIDGE = icon("OVERLAY_ME_BRIDGE");
+    public static final IIconContainer ME_BRIDGE_GLOW = icon("OVERLAY_ME_BRIDGE_GLOW");
 
     private BeComTextures() {}
 
