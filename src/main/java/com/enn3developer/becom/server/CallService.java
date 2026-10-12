@@ -9,6 +9,7 @@ import java.util.UUID;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraftforge.common.UsernameCache;
 
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.logic.DropoutModel;
@@ -264,8 +265,11 @@ public final class CallService implements CallBook.Listener {
                 if (other == leg) continue;
                 PhoneRecord.Direction direction = leg == caller ? PhoneRecord.Direction.OUTGOING
                     : call.wasConnected() ? PhoneRecord.Direction.INCOMING : PhoneRecord.Direction.MISSED;
-                record.addHistory(
-                    new PhoneRecord.HistoryEntry(time, other.phone(), phones.name(other.phone()), direction));
+                // The player on the other end, so blocking this row blocks whoever called, whosever phone it was.
+                UUID otherPlayer = other.player();
+                String name = otherPlayer != null ? playerName(otherPlayer, phones.name(other.phone()))
+                    : phones.name(other.phone());
+                record.addHistory(new PhoneRecord.HistoryEntry(time, other.phone(), name, direction, otherPlayer));
             }
         }
         phones.registry()
@@ -397,6 +401,13 @@ public final class CallService implements CallBook.Listener {
     public PhoneKind kindOf(int phone) {
         PhoneRecord record = phones.record(phone);
         return record == null ? null : record.kind();
+    }
+
+    private String playerName(UUID id, String fallback) {
+        EntityPlayerMP online = player(id);
+        if (online != null) return online.getCommandSenderName();
+        String cached = UsernameCache.getLastKnownUsername(id);
+        return cached != null ? cached : fallback;
     }
 
     private EntityPlayerMP player(UUID id) {

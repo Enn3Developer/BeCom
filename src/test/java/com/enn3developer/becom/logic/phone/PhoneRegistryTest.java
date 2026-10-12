@@ -1,7 +1,9 @@
 package com.enn3developer.becom.logic.phone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -87,7 +89,7 @@ class PhoneRegistryTest {
     void historyKeepsTheNewestEntriesOnly() {
         PhoneRecord a = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
         for (int i = 0; i < PhoneRecord.HISTORY_SIZE + 10; i++) {
-            a.addHistory(new PhoneRecord.HistoryEntry(i, 100_000 + i, "x", PhoneRecord.Direction.MISSED));
+            a.addHistory(new PhoneRecord.HistoryEntry(i, 100_000 + i, "x", PhoneRecord.Direction.MISSED, null));
         }
         assertEquals(
             PhoneRecord.HISTORY_SIZE,
@@ -98,5 +100,69 @@ class PhoneRegistryTest {
             a.history()
                 .get(0)
                 .time());
+    }
+
+    @Test
+    void blockingARecentCallBlocksWhoeverCalledNotThePhonesOwner() {
+        // Bob calls Alice from Carol's phone; Alice blocks that row of her recent calls.
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        PhoneRecord carols = registry.create(PhoneKind.TELEPHONE, carol, "carol", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, carols.number(), "bob", PhoneRecord.Direction.MISSED, bob));
+        PhoneRegistry.Blockable target = registry.recentTarget(mine, 0, carols.number());
+        assertEquals(new PhoneRegistry.Blockable(bob, "bob"), target);
+        mine.block(target.player(), target.name());
+        assertEquals(PhoneRegistry.Refusal.BLOCKED, registry.refusal(bob, mine.number()));
+        assertEquals(PhoneRegistry.Refusal.NONE, registry.refusal(carol, mine.number()));
+    }
+
+    @Test
+    void anUnansweredOutgoingCallBlocksThePhonesOwner() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        PhoneRecord bobs = registry.create(PhoneKind.TELEPHONE, bob, "bob", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, bobs.number(), "bob", PhoneRecord.Direction.OUTGOING, null));
+        assertEquals(new PhoneRegistry.Blockable(bob, "bob"), registry.recentTarget(mine, 0, bobs.number()));
+    }
+
+    @Test
+    void aRecentRowThatMovedOnBlocksNobody() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.MISSED, bob));
+        assertNull(registry.recentTarget(mine, 0, 333_333));
+        assertNull(registry.recentTarget(mine, 1, 222_222));
+        assertNull(registry.recentTarget(mine, -1, 222_222));
+    }
+
+    @Test
+    void nobodyBlocksThemselves() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "alice", PhoneRecord.Direction.MISSED, alice));
+        assertNull(registry.recentTarget(mine, 0, 222_222));
+    }
+
+    @Test
+    void onlyAShownContactCanBeBlocked() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        PhoneRecord bobs = registry.create(PhoneKind.TELEPHONE, bob, "bob", random);
+        PhoneRecord carols = registry.create(PhoneKind.TELEPHONE, carol, "carol", random);
+        carols.setHidden(true);
+        List<Integer> reachable = Arrays.asList(bobs.number(), carols.number());
+        assertEquals(
+            new PhoneRegistry.Blockable(bob, "bob"),
+            registry.contactTarget(alice, mine.number(), reachable, bobs.number()));
+        // Carol is hidden, so blocking her number would tell a modified client who owns it.
+        assertNull(registry.contactTarget(alice, mine.number(), reachable, carols.number()));
+        // Nor any number outside the contacts at all.
+        assertNull(registry.contactTarget(alice, mine.number(), List.of(bobs.number()), carols.number()));
+    }
+
+    @Test
+    void theBlockListHasRoomFor128() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        for (int i = 0; i < PhoneRecord.MAX_BLOCKED; i++) assertTrue(mine.block(UUID.randomUUID(), "p" + i));
+        assertFalse(mine.block(UUID.randomUUID(), "one more"));
+        assertEquals(
+            PhoneRecord.MAX_BLOCKED,
+            mine.blocked()
+                .size());
     }
 }

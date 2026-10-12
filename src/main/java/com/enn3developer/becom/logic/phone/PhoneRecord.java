@@ -17,6 +17,8 @@ public final class PhoneRecord {
 
     /** How many recent calls a phone remembers. */
     public static final int HISTORY_SIZE = 32;
+    /** How many players one phone can block; enough for any grudge, small enough for one screen packet. */
+    public static final int MAX_BLOCKED = 128;
 
     private final int number;
     private final PhoneKind kind;
@@ -95,8 +97,11 @@ public final class PhoneRecord {
         return player != null && blocked.containsKey(player);
     }
 
-    public void block(UUID player, String name) {
+    /** Blocks {@code player}; false when the list is full. */
+    public boolean block(UUID player, String name) {
+        if (!blocked.containsKey(player) && blocked.size() >= MAX_BLOCKED) return false;
         blocked.put(player, name == null ? "" : name);
+        return true;
     }
 
     public boolean unblock(UUID player) {
@@ -119,6 +124,10 @@ public final class PhoneRecord {
         MISSED
     }
 
-    /** One call this phone made, took or missed. */
-    public record HistoryEntry(long time, int otherNumber, String otherName, Direction direction) {}
+    /**
+     * One call this phone made, took or missed: the other phone, and the player on it (the one who called, or who
+     * answered), by name and UUID. The player is null when nobody answered an outgoing call, or for entries saved
+     * before players were recorded.
+     */
+    public record HistoryEntry(long time, int otherNumber, String otherName, Direction direction, UUID otherPlayer) {}
 }

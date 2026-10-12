@@ -85,6 +85,50 @@ public final class PhoneRegistry {
         return contacts;
     }
 
+    /** A player the phone screen may block, and the name the block list shows. */
+    public record Blockable(UUID player, String name) {}
+
+    /**
+     * Who blocking row {@code index} of {@code own}'s recent calls blocks: the player on the other end of that call,
+     * or, when nobody answered an outgoing call, the owner of the phone it went to. Null when the row has moved on
+     * (it no longer shows {@code number}), or it would block the phone's own owner. The client names the row by its
+     * position and number, never by a player, so a modified client can only block someone this phone has talked to.
+     */
+    public Blockable recentTarget(PhoneRecord own, int index, int number) {
+        List<PhoneRecord.HistoryEntry> history = own.history();
+        if (index < 0 || index >= history.size()) return null;
+        PhoneRecord.HistoryEntry entry = history.get(index);
+        if (entry.otherNumber() != number) return null;
+        Blockable target;
+        if (entry.otherPlayer() != null) {
+            target = new Blockable(entry.otherPlayer(), entry.otherName());
+        } else {
+            PhoneRecord other = phones.get(number);
+            if (other == null || other.owner() == null) return null;
+            target = new Blockable(other.owner(), other.ownerName());
+        }
+        return target.player()
+            .equals(own.owner()) ? null : target;
+    }
+
+    /**
+     * Who blocking a contact blocks: the owner of phone {@code number}, but only if it is in the contacts
+     * {@code caller} sees right now. Anything else could tell a modified client who owns a hidden number.
+     */
+    public Blockable contactTarget(UUID caller, int ownNumber, Collection<Integer> reachable, int number) {
+        PhoneRecord own = phones.get(ownNumber);
+        for (Contact contact : contacts(caller, ownNumber, reachable)) {
+            if (contact.number() != number) continue;
+            PhoneRecord other = phones.get(number);
+            if (other == null || other.owner() == null
+                || own != null && other.owner()
+                    .equals(own.owner()))
+                return null;
+            return new Blockable(other.owner(), other.ownerName());
+        }
+        return null;
+    }
+
     /** Why a call can't ring a phone, before any network check. */
     public enum Refusal {
         NONE,

@@ -153,8 +153,9 @@ class SavedDataTest {
         record.setDoNotDisturb(true);
         record.setHidden(true);
         record.block(pest, "pest");
-        record.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.OUTGOING));
-        record.addHistory(new PhoneRecord.HistoryEntry(2, 333_333, "carol", PhoneRecord.Direction.MISSED));
+        UUID carol = UUID.randomUUID();
+        record.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.OUTGOING, null));
+        record.addHistory(new PhoneRecord.HistoryEntry(2, 333_333, "carol", PhoneRecord.Direction.MISSED, carol));
         NBTTagCompound nbt = new NBTTagCompound();
         data.writeToNBT(nbt);
 
@@ -178,6 +179,16 @@ class SavedDataTest {
             back.history()
                 .get(0)
                 .direction());
+        assertEquals(
+            carol,
+            back.history()
+                .get(0)
+                .otherPlayer());
+        assertEquals(
+            null,
+            back.history()
+                .get(1)
+                .otherPlayer());
         assertFalse(read.isDirty());
     }
 

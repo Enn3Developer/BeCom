@@ -2,7 +2,9 @@ package com.enn3developer.becom.gui;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -19,8 +21,10 @@ import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.logic.PhoneNumbers;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.server.PhoneScreenActions;
 
 /**
@@ -33,15 +37,19 @@ public final class PhoneScreen {
     private static final int HEIGHT = 206;
     private static final int ROWS = 7;
     private static final int ROW_HEIGHT = 13;
+    // The settings page has two toggles and a heading above its block list.
+    private static final int BLOCKED_ROWS = ROWS - 4;
     private static final int KEY_SIZE = 22;
     private static final int TAB_COUNT = 4;
+    private static final int BARS_WIDTH = 14;
 
     private static final String DIAL = "dial";
     private static final String PICK_UP = "pickup";
     private static final String HANG_UP = "hangup";
     private static final String DND = "dnd";
     private static final String HIDE = "hide";
-    private static final String BLOCK = "block";
+    private static final String BLOCK_CONTACT = "block_contact";
+    private static final String BLOCK_RECENT = "block_recent";
     private static final String UNBLOCK = "unblock";
 
     private PhoneScreen() {}
@@ -63,7 +71,16 @@ public final class PhoneScreen {
             false,
             true,
             buf -> PhoneScreenActions.setHidden(player, tile, buf.readBoolean()));
-        sync.registerSyncedAction(BLOCK, false, true, buf -> PhoneScreenActions.block(player, tile, buf.readInt()));
+        sync.registerSyncedAction(
+            BLOCK_CONTACT,
+            false,
+            true,
+            buf -> PhoneScreenActions.blockContact(player, tile, buf.readInt()));
+        sync.registerSyncedAction(
+            BLOCK_RECENT,
+            false,
+            true,
+            buf -> PhoneScreenActions.blockRecent(player, tile, buf.readInt(), buf.readInt()));
         sync.registerSyncedAction(
             UNBLOCK,
             false,
@@ -92,11 +109,23 @@ public final class PhoneScreen {
                 .asWidget()
                 .widthRel(1f)
                 .height(10));
-        column.child(
+        Flow statusRow = Flow.row()
+            .widthRel(1f)
+            .height(10);
+        statusRow.child(
             IKey.dynamic(() -> status(view.get()))
                 .asWidget()
-                .widthRel(1f)
+                .width(WIDTH - 12 - BARS_WIDTH)
                 .height(10));
+        // The call's signal bars (DESIGN.md 11.2), drawn only on the client.
+        statusRow.child(
+            BeCom.proxy.signalBars(
+                () -> view.get()
+                    .state() == PhoneView.State.CONNECTED ? view.get()
+                        .hearing() : SignalLevel.NONE)
+                .asWidget()
+                .size(BARS_WIDTH, 10));
+        column.child(statusRow);
         Flow tabRow = Flow.row()
             .widthRel(1f)
             .height(14)
@@ -129,6 +158,7 @@ public final class PhoneScreen {
                             .contacts()
                             .get(i)
                             .number(),
+                        (i, n) -> sync.callSyncedAction(BLOCK_CONTACT, buf -> buf.writeInt(n)),
                         view))
                 .addPage(
                     rows(
@@ -153,6 +183,10 @@ public final class PhoneScreen {
                             .recent()
                             .get(i)
                             .number(),
+                        (i, n) -> sync.callSyncedAction(BLOCK_RECENT, buf -> {
+                            buf.writeInt(i);
+                            buf.writeInt(n);
+                        }),
                         view))
                 .addPage(settings(sync, view)));
         panel.child(column);
@@ -167,13 +201,7 @@ public final class PhoneScreen {
             case OFF_HOOK -> StatCollector.translateToLocal("becom.phone.state.off_hook");
             case RINGING_OUT -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_out", other);
             case RINGING_IN -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_in", other);
-            case CONNECTED -> StatCollector.translateToLocalFormatted(
-                "becom.phone.state.connected",
-                other,
-                StatCollector.translateToLocal(
-                    "becom.level." + view.hearing()
-                        .name()
-                        .toLowerCase(java.util.Locale.ROOT)));
+            case CONNECTED -> StatCollector.translateToLocalFormatted("becom.phone.state.connected", other);
             case IN_USE -> StatCollector.translateToLocal("becom.phone.state.in_use");
         };
     }
@@ -245,9 +273,12 @@ public final class PhoneScreen {
         return column;
     }
 
-    /** A paged list: each row dials its number; with the phone's owner, a second button blocks that number's owner. */
-    private static ParentWidget<?> rows(PanelSyncManager sync, java.util.function.IntSupplier size,
-        IntFunction<String> label, IntFunction<Integer> number, Supplier<PhoneView> view) {
+    /**
+     * A paged list: each row dials its number; for the phone's owner, a second button blocks whoever the row stands for
+     * (X9). The server decides who that is from the row, so the client only names the row.
+     */
+    private static ParentWidget<?> rows(PanelSyncManager sync, IntSupplier size, IntFunction<String> label,
+        IntFunction<Integer> number, BiConsumer<Integer, Integer> block, Supplier<PhoneView> view) {
         int[] page = { 0 };
         Flow column = Flow.column()
             .sizeRel(1f)
@@ -283,19 +314,16 @@ public final class PhoneScreen {
                             .mayManage() && page[0] * ROWS + row < size.getAsInt())
                     .onMousePressed(button -> {
                         int i = page[0] * ROWS + row;
-                        if (i < size.getAsInt()) {
-                            int n = number.apply(i);
-                            sync.callSyncedAction(BLOCK, buf -> buf.writeInt(n));
-                        }
+                        if (i < size.getAsInt()) block.accept(i, number.apply(i));
                         return true;
                     }));
             column.child(line);
         }
-        column.child(pager(page, size));
+        column.child(pager(page, size, ROWS));
         return column;
     }
 
-    private static Flow pager(int[] page, java.util.function.IntSupplier size) {
+    private static Flow pager(int[] page, IntSupplier size, int rows) {
         Flow pager = Flow.row()
             .coverChildren()
             .childPadding(4);
@@ -306,15 +334,19 @@ public final class PhoneScreen {
                     if (page[0] > 0) page[0]--;
                     return true;
                 }));
-        pager.child(
-            IKey.dynamic(() -> (page[0] + 1) + "/" + Math.max(1, (size.getAsInt() + ROWS - 1) / ROWS))
-                .asWidget()
-                .size(30, 12));
+        pager.child(IKey.dynamic(() -> {
+            // A list can shrink under an open page, after an unblock or a new view.
+            int pages = Math.max(1, (size.getAsInt() + rows - 1) / rows);
+            if (page[0] >= pages) page[0] = pages - 1;
+            return (page[0] + 1) + "/" + pages;
+        })
+            .asWidget()
+            .size(30, 12));
         pager.child(
             new ButtonWidget<>().size(20, 12)
                 .overlay(IKey.str(">"))
                 .onMousePressed(button -> {
-                    if ((page[0] + 1) * ROWS < size.getAsInt()) page[0]++;
+                    if ((page[0] + 1) * rows < size.getAsInt()) page[0]++;
                     return true;
                 }));
         return pager;
@@ -345,17 +377,21 @@ public final class PhoneScreen {
                 .asWidget()
                 .widthRel(1f)
                 .height(10));
-        int blockedRows = ROWS - 3;
-        for (int r = 0; r < blockedRows; r++) {
+        int[] page = { 0 };
+        IntSupplier size = () -> view.get()
+            .blocked()
+            .size();
+        for (int r = 0; r < BLOCKED_ROWS; r++) {
             int row = r;
             Flow line = Flow.row()
                 .widthRel(1f)
                 .height(ROW_HEIGHT)
                 .childPadding(2);
             line.child(IKey.dynamic(() -> {
+                int i = page[0] * BLOCKED_ROWS + row;
                 List<PhoneView.Blocked> blocked = view.get()
                     .blocked();
-                return row < blocked.size() ? blocked.get(row)
+                return i < blocked.size() ? blocked.get(i)
                     .name() : "";
             })
                 .asWidget()
@@ -365,15 +401,13 @@ public final class PhoneScreen {
                 new ButtonWidget<>().width(48)
                     .height(ROW_HEIGHT)
                     .overlay(IKey.lang("becom.phone.unblock"))
-                    .setEnabledIf(
-                        w -> row < view.get()
-                            .blocked()
-                            .size())
+                    .setEnabledIf(w -> page[0] * BLOCKED_ROWS + row < size.getAsInt())
                     .onMousePressed(button -> {
+                        int i = page[0] * BLOCKED_ROWS + row;
                         List<PhoneView.Blocked> blocked = view.get()
                             .blocked();
-                        if (row < blocked.size()) {
-                            UUID id = blocked.get(row)
+                        if (i < blocked.size()) {
+                            UUID id = blocked.get(i)
                                 .player();
                             sync.callSyncedAction(UNBLOCK, buf -> {
                                 buf.writeLong(id.getMostSignificantBits());
@@ -384,6 +418,7 @@ public final class PhoneScreen {
                     }));
             column.child(line);
         }
+        column.child(pager(page, size, BLOCKED_ROWS));
         column.child(
             IKey.dynamic(
                 () -> view.get()

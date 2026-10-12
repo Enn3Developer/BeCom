@@ -1,10 +1,14 @@
 package com.enn3developer.becom;
 
+import java.util.function.Supplier;
+
 import net.minecraftforge.common.MinecraftForge;
 
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.LevelPacket;
@@ -85,4 +89,9 @@ public class CommonProxy {
     public void onTone(TonePacket packet) {}
 
     public void onWires(WireSyncPacket packet) {}
+
+    /** Signal bars for a screen (DESIGN.md 11.2); nothing to draw on a server. */
+    public IDrawable signalBars(Supplier<SignalLevel> level) {
+        return IDrawable.EMPTY;
+    }
 }

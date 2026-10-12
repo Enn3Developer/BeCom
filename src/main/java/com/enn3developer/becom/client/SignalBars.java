@@ -28,8 +28,15 @@ public final class SignalBars {
         if (event.type != RenderGameOverlayEvent.ElementType.HOTBAR) return;
         SignalLevel level = ClientLevels.weakest(CallGroup.NAME);
         if (level == SignalLevel.NONE) return;
-        int left = event.resolution.getScaledWidth() / 2 + HOTBAR_HALF_WIDTH + MARGIN;
-        int bottom = event.resolution.getScaledHeight() - 4;
+        draw(
+            event.resolution.getScaledWidth() / 2 + HOTBAR_HALF_WIDTH + MARGIN,
+            event.resolution.getScaledHeight() - 4,
+            level);
+    }
+
+    /** Draws the bars from {@code (left, bottom)}; nothing at None, so a screen shows them only during a call. */
+    public static void draw(int left, int bottom, SignalLevel level) {
+        if (level == SignalLevel.NONE) return;
         for (int i = 0; i < BARS; i++) {
             int height = 3 + 2 * i;
             int x = left + i * (BAR_WIDTH + GAP);

@@ -87,9 +87,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 - **Where:** 0.1, DESIGN.md 11.2, 12.3
 - **Design says:** the phone screen's settings have a block list.
-- **Built:** the settings page lists blocked players with an Unblock button; a Block button on each contacts and recent
-  calls row blocks the owner of that number. There's no block-by-name field.
-- **Why:** blocking by typed name would need a name lookup that can block the server thread on Mojang's API.
+- **Built:** the settings page lists blocked players, a page at a time, with an Unblock button. A Block button on each
+  contacts row blocks that phone's owner; on each recent calls row it blocks the player on the other end of that call
+  (whoever called, from whichever phone), or the phone's owner when nobody answered an outgoing call. There's no
+  block-by-name field. The server only accepts a contact that row's player can see, and a recent row by position and
+  number. A phone blocks at most 128 players.
+- **Why:** blocking by typed name would need a name lookup that can block the server thread on Mojang's API. Blocking
+  any typed number would let a modified client learn who owns a hidden number, and the 0.1 code review found that
+  blocking a recent row by the phone's owner missed someone who called from another player's phone. The cap keeps the
+  screen's data inside one packet.
 - **To match the design:** nothing, unless the owner wants a name field limited to online players.
 
 ### X10: The handset cord reaches 1.2 blocks from the phone to the player's body
@@ -103,3 +109,13 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   doesn't hang up. Measuring to the body rather than the feet keeps a phone on a desk or at head height usable; the
   first version measured to the feet, and the 0.1 code review found a desk phone hung up after 0.8 blocks.
 - **To match the design:** `TileTelephone.CORD_REACH`.
+
+### X11: A Telephone's recent calls show only to its owner and their team
+
+- **Where:** 0.1, DESIGN.md 11.2, 12.2
+- **Design says:** the phone screen has recent and missed calls; calls are private to the people in them.
+- **Built:** anyone can open a Telephone's screen to dial, but its recent and missed calls list is empty unless they
+  own the phone or are on its owner's team (or an op).
+- **Why:** a desk phone stands in the open. Showing its history to whoever walks up would tell anyone who called the
+  owner and when (found in the 0.1 design review). DESIGN.md doesn't say who sees a shared phone's history.
+- **To match the design:** drop the `manage` check around the history in `PhoneScreenActions.view`.

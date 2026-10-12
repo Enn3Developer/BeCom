@@ -18,8 +18,11 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
     List<Blocked> blocked) {
 
-    /** Kept to the screen's rows, so a phone with a huge history can't bloat the packet. */
-    public static final int MAX_ROWS = 64;
+    // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
+    // players, and the whole history.
+    public static final int MAX_CONTACTS = 512;
+    public static final int MAX_RECENT = PhoneRecord.HISTORY_SIZE;
+    public static final int MAX_BLOCKED = PhoneRecord.MAX_BLOCKED;
 
     public static final PhoneView EMPTY = new PhoneView(
         -1,
@@ -68,13 +71,13 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         buf.writeByte(hearing.ordinal());
         buf.writeBoolean(doNotDisturb);
         buf.writeBoolean(hidden);
-        List<Contact> c = cap(contacts);
+        List<Contact> c = cap(contacts, MAX_CONTACTS);
         buf.writeVarIntToBuffer(c.size());
         for (Contact contact : c) {
             buf.writeInt(contact.number());
             writeString(buf, contact.name());
         }
-        List<Recent> r = cap(recent);
+        List<Recent> r = cap(recent, MAX_RECENT);
         buf.writeVarIntToBuffer(r.size());
         for (Recent entry : r) {
             buf.writeInt(entry.number());
@@ -83,7 +86,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
                 entry.direction()
                     .ordinal());
         }
-        List<Blocked> b = cap(blocked);
+        List<Blocked> b = cap(blocked, MAX_BLOCKED);
         buf.writeVarIntToBuffer(b.size());
         for (Blocked entry : b) {
             buf.writeLong(
@@ -106,10 +109,10 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         SignalLevel hearing = SignalLevel.byOrdinal(buf.readByte());
         boolean dnd = buf.readBoolean();
         boolean hidden = buf.readBoolean();
-        int count = Math.min(buf.readVarIntFromBuffer(), MAX_ROWS);
+        int count = Math.min(buf.readVarIntFromBuffer(), MAX_CONTACTS);
         List<Contact> contacts = new ArrayList<>(count);
         for (int i = 0; i < count; i++) contacts.add(new Contact(buf.readInt(), readString(buf)));
-        count = Math.min(buf.readVarIntFromBuffer(), MAX_ROWS);
+        count = Math.min(buf.readVarIntFromBuffer(), MAX_RECENT);
         List<Recent> recent = new ArrayList<>(count);
         PhoneRecord.Direction[] directions = PhoneRecord.Direction.values();
         for (int i = 0; i < count; i++) {
@@ -118,7 +121,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             int dir = buf.readByte();
             recent.add(new Recent(n, name, directions[Math.floorMod(dir, directions.length)]));
         }
-        count = Math.min(buf.readVarIntFromBuffer(), MAX_ROWS);
+        count = Math.min(buf.readVarIntFromBuffer(), MAX_BLOCKED);
         List<Blocked> blocked = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             blocked.add(new Blocked(new UUID(buf.readLong(), buf.readLong()), readString(buf)));
@@ -138,8 +141,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             blocked);
     }
 
-    private static <T> List<T> cap(List<T> list) {
-        return list.size() > MAX_ROWS ? list.subList(0, MAX_ROWS) : list;
+    private static <T> List<T> cap(List<T> list, int max) {
+        return list.size() > max ? list.subList(0, max) : list;
     }
 
     // Player names are at most 16 characters; anything longer in a view is a bug, cut rather than trusted.

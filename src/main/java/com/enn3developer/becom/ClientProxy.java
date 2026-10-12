@@ -2,9 +2,11 @@ package com.enn3developer.becom;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Supplier;
 
 import net.minecraftforge.common.MinecraftForge;
 
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.ClientAudio;
@@ -15,6 +17,7 @@ import com.enn3developer.becom.client.SignalBars;
 import com.enn3developer.becom.client.TelephoneRenderer;
 import com.enn3developer.becom.client.ToneSounds;
 import com.enn3developer.becom.client.WireRenderer;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
@@ -77,6 +80,11 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void onTone(TonePacket packet) {
         mainThread.add(() -> ToneSounds.play(packet.tone()));
+    }
+
+    @Override
+    public IDrawable signalBars(Supplier<SignalLevel> level) {
+        return (context, x, y, width, height, theme) -> SignalBars.draw(x, y + height, level.get());
     }
 
     @Override

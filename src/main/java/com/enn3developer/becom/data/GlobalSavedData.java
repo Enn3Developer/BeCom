@@ -125,7 +125,8 @@ public final class GlobalSavedData extends WorldSavedData {
                     entry.getLong("time"),
                     entry.getInteger("number"),
                     entry.getString("name"),
-                    direction));
+                    direction,
+                    readUuid(entry, "player")));
         }
         return record;
     }
@@ -158,6 +159,7 @@ public final class GlobalSavedData extends WorldSavedData {
             item.setLong("time", entry.time());
             item.setInteger("number", entry.otherNumber());
             item.setString("name", entry.otherName());
+            writeUuid(item, "player", entry.otherPlayer());
             item.setString(
                 "dir",
                 entry.direction()

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.util.ChatComponentTranslation;
 
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.gui.PhoneView;
@@ -65,9 +66,12 @@ public final class PhoneScreenActions {
             .contacts(player.getUniqueID(), number, becom.calls.reachableFrom(number))) {
             contacts.add(new PhoneView.Contact(contact.number(), contact.ownerName()));
         }
+        // Calls are private to the people in them (DESIGN.md 12.2): a phone's history is for its owner and their team.
         List<PhoneView.Recent> recent = new ArrayList<>();
-        for (PhoneRecord.HistoryEntry entry : record.history()) {
-            recent.add(new PhoneView.Recent(entry.otherNumber(), entry.otherName(), entry.direction()));
+        if (manage) {
+            for (PhoneRecord.HistoryEntry entry : record.history()) {
+                recent.add(new PhoneView.Recent(entry.otherNumber(), entry.otherName(), entry.direction()));
+            }
         }
         List<PhoneView.Blocked> blocked = new ArrayList<>();
         if (manage) {
@@ -140,16 +144,33 @@ public final class PhoneScreenActions {
             .changed();
     }
 
-    /** Blocks the owner of phone {@code number} (DESIGN.md 12.3), as picked from contacts or recent calls. */
-    public static void block(EntityPlayer player, TileTelephone tile, int number) {
+    /** Blocks the owner of a phone in this player's contacts (DESIGN.md 12.3, X9). */
+    public static void blockContact(EntityPlayer player, TileTelephone tile, int number) {
         PhoneRecord record = managed(player, tile);
         if (record == null) return;
-        PhoneRecord other = BeComServer.get().phones.record(number);
-        if (other == null || other.owner() == null
-            || other.owner()
-                .equals(record.owner()))
+        BeComServer becom = BeComServer.get();
+        PhoneRegistry.Blockable target = becom.phones.registry()
+            .contactTarget(player.getUniqueID(), record.number(), becom.calls.reachableFrom(record.number()), number);
+        block(player, record, target);
+    }
+
+    /** Blocks the player on the other end of row {@code index} of this phone's recent calls, if it still shows. */
+    public static void blockRecent(EntityPlayer player, TileTelephone tile, int index, int number) {
+        PhoneRecord record = managed(player, tile);
+        if (record == null) return;
+        block(
+            player,
+            record,
+            BeComServer.get().phones.registry()
+                .recentTarget(record, index, number));
+    }
+
+    private static void block(EntityPlayer player, PhoneRecord record, PhoneRegistry.Blockable target) {
+        if (target == null) return;
+        if (!record.block(target.player(), target.name())) {
+            player.addChatMessage(new ChatComponentTranslation("becom.phone.block_full", PhoneRecord.MAX_BLOCKED));
             return;
-        record.block(other.owner(), other.ownerName());
+        }
         BeComServer.get().phones.registry()
             .changed();
     }
