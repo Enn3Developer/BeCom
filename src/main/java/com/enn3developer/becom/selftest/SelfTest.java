@@ -2467,7 +2467,7 @@ public final class SelfTest {
         for (int i = 0; i < 4; i++) becom.video.rearFrame(odo, new byte[100]);
         int burst = becom.video.rearDelivered(o, p);
         check(
-            "...and pictures sent all at once don't go faster than the level allows",
+            "...and of pictures sent all at once, only the two the viewer's allowance holds go on (X29)",
             burst == 2,
             burst + " of 5 went on");
     }

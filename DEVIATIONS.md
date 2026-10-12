@@ -370,10 +370,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Whoever carries a phone may switch it on or off, as with a walkie; silent mode, like the other settings, is for
     its owner and their team. Silent mode is a carried phone's only: a Telephone rings out loud as before.
   - A phone dialling out or ringing counts as in a call for the drain.
-  - The Phone key answers a ringing phone the player carries, a ringing Telephone whose cord reaches them, or a
-    ringing Videophone whose room they stand in, in that order; with no call ringing or going on, it opens the screen
-    of the first phone the player carries: held, then inventory, then bauble slots. A phone being moved with the
-    mouse still counts as carried.
+  - The Phone key, in this order: answers, or with sneak turns down, a ringing phone the player carries, the one the
+    notice names when two ring; hangs up a call they're in; answers a ringing Telephone whose cord reaches them or a
+    ringing Videophone whose room they stand in, the first in the call book's order; and otherwise opens the screen of
+    the first phone the player carries: held, then inventory, then bauble slots. A phone being moved with the mouse
+    still counts as carried.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
   A ringing or dialling phone is busy with the call already.
 - **To match the design:** none of these contradicts it; they fill in what it leaves open.
@@ -459,8 +460,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 ### X30: Call tones on a phone with no handset
 
 - **Where:** 0.3, DESIGN.md 10, 15.2
-- **Design says:** dial tone, ringback, busy, unreachable and hang-up are ordinary Minecraft sounds; the busy tone
-  plays until the handset goes down.
+- **Design says:** dial tone, ringback, busy, unreachable and hang-up are ordinary Minecraft sounds (DESIGN.md 10), with
+  15.2's cadences. It doesn't say when each stops; on a Telephone, 0.1 plays the busy tone on a dead line (X7), and
+  the client loops it until the next tone, the click of the handset going down.
 - **Built:** a carried phone and a Videophone have no handset to put down. Dialling from one, the ringback plays until
   the call connects or ends, and a call ending, or the phone leaving it, plays the hang-up click, which stops it. A
   busy tone plays for 3 s and stops by itself. Adding a phone to a call makes no ringback over the call; an added
