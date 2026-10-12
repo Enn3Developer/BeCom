@@ -8,7 +8,8 @@ import com.enn3developer.becom.logic.radio.RadioModel;
  * How strong the satellites over a dimension make its sky hops (DESIGN.md 9.1). With {@code n} satellites in orbit, at
  * least as many as Low needs, the SNR is {@code Low + (Max - Low) * log10(n / nLow) / log10(nMax / nLow)}. With
  * DESIGN.md's numbers that's {@code 6 + 18 * log10(n / 5) / log10(20)}: Low at 5, Medium at 14, High at 37 and Max at
- * 100. A sky hop then loses its ground end's cover and the weather (DESIGN.md 6.1).
+ * 100. More than Max's count add nothing (X38). A sky hop then loses its ground end's cover and the weather (DESIGN.md
+ * 6.1).
  */
 public final class SkyStrength {
 
@@ -39,10 +40,14 @@ public final class SkyStrength {
         return satellites >= satellitesLow;
     }
 
-    /** The SNR of a sky hop with nothing in its way; negative infinity with too few satellites. */
+    /**
+     * The SNR of a sky hop with nothing in its way; negative infinity with too few satellites. It stops at Max's count
+     * (X38): "100 for maximum", and underground the hop stays gone however many go up (DESIGN.md 9.1).
+     */
     public double snr(int satellites) {
         if (!enough(satellites)) return Double.NEGATIVE_INFINITY;
-        return levelLow + (levelMax - levelLow) * Math.log10((double) satellites / satellitesLow)
+        int counted = Math.min(satellites, satellitesMax);
+        return levelLow + (levelMax - levelLow) * Math.log10((double) counted / satellitesLow)
             / Math.log10((double) satellitesMax / satellitesLow);
     }
 

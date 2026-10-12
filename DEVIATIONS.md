@@ -589,3 +589,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Pad's.
 - **To match the design:** nothing to undo; give the stand a range of heights, like an antenna's mast, if taller
   dishes are wanted.
+
+### X38: More than 100 satellites add nothing
+
+- **Where:** 0.4, DESIGN.md 9.1, 6.1
+- **Design says:** `SNR_sky = 6 + 18 · log10(n / 5) / log10(20)` for `n ≥ 5`: Low at 5, Medium at 14, High at 37 and Max
+  at 100, the draft's "at least 5 to start, 100 for maximum". A thin roof weakens a sky hop; underground it's gone.
+- **Built:** the formula as written up to 100 satellites, the configured Max count; past that, the hop stays at Max's
+  24 dB.
+- **Why:** the formula has no ceiling. 1,000 satellites would give 37.8 dB, enough for Low 12 blocks underground on
+  UHF, and about 3,900 would beat the 40 dB cover cap and reach any depth, which breaks "underground it's gone".
+  "100 for maximum" reads as the ceiling.
+- **To match the design:** drop the cap in `SkyStrength.snr`.

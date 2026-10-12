@@ -35,10 +35,19 @@ class SkyStrengthTest {
 
     @Test
     void theFormulaIsTheDesigns() {
-        // 6 + 18 * log10(n / 5) / log10(20)
-        for (int n = 5; n <= 200; n += 13) {
+        // 6 + 18 * log10(n / 5) / log10(20), up to Max's 100 (X38).
+        for (int n = 5; n <= 100; n += 5) {
             assertEquals(6 + 18 * Math.log10(n / 5.0) / Math.log10(20), sky.snr(n), 1e-9, n + " satellites");
         }
+    }
+
+    @Test
+    void moreThanAHundredAddNothing() {
+        // X38: Max at 100 is the most; a thousand satellites don't reach deeper underground.
+        assertEquals(t.levelMax(), sky.snr(1000), 1e-9);
+        assertEquals(t.levelMax(), sky.snr(Integer.MAX_VALUE), 1e-9);
+        assertTrue(sky.hop(4000, 200, t.uhf(), 0) < t.levelLow());
+        assertTrue(sky.hop(1000, 12, t.uhf(), 0) < t.levelLow());
     }
 
     @Test
