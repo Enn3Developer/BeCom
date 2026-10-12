@@ -913,3 +913,219 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 | Modernity style of all of the above                                                             | done   |
 | Sound: the rocket launch                                                                        | done   |
 | English language entries                                                                        | done   |
+
+### Summary
+
+**Built.** Space on top of 0.3, end to end on the server, with Galacticraft as a hard dependency (D27) and Twilight
+Forest and Personal Space in the dev server only:
+
+- The Satellite, the Satellite Rocket and the Rocket Radio Receiver, from the assembler (3.1, D30).
+- The Satellite Launch Pad (ID 25010): a 5 by 5 floor of Clean Stainless Steel Machine Casings under open sky, with
+  an input bus, an input hatch, an energy hatch and a maintenance hatch. A launch takes a Satellite Rocket, renamed
+  or not, and 1,000 L of any fluid Galacticraft burns as rocket fuel, runs 30 s at 480 EU/t, and puts one satellite
+  over the pad's dimension (9.1). Each maintenance problem makes a launch take longer (D40). While anything covers
+  the pad, a launch holds, drawing nothing, and the pad goes dark. Its screen shows the rockets waiting, a launch on
+  hold, each dimension's satellites and when the next comes down (11.4).
+- Satellites stay up 100 days of the Overworld's world time, give or take a fifth (D23), saved with the Overworld in a
+  file of their own (14).
+- Sky hops (9.1, D5): with at least 5 satellites over a dimension with a sky, a Mobile Phone, a walkie or a
+  Transceiver under open sky reaches them at 6 + 18 log10(n / 5) / log10(20) dB, Max's 24 at 100 and no more past it
+  (X38), less a roof's cover and the rain where the device stands. Radios hear each other through them. The Signal
+  Analyzer and `/becom signal` show the satellites when they serve best.
+- The Satellite Dish (ID 25011): a 5 by 5 dish of the same casings on three Stainless Steel Frame Boxes (X37), 512
+  EU/t, wrench-linked to an antenna, a Pylon Head or a Line Terminal. With 5 satellites over its dimension it joins
+  its network to every other dish there and, in the Overworld, to every planet's uplink, at its sky hop: rain at the
+  dish and 2 dB per maintenance problem come off it (9.2, D40). Without open sky over the whole dish it stops.
+- Rocket Radio Receivers (9.3, D28): a rocket standing unignited on a launch pad on one of Galacticraft's worlds, with
+  a receiver in its cargo, is a T1 antenna there and the planet's High uplink to the Overworld's satellites (X35,
+  X39). BeCom finds rockets as they join their world and looks at them once a second.
+- The Portal Relay (ID 25012, MV, 32 EU/t): works within 4 blocks of a Nether, End, Twilight Forest or Personal
+  Space portal, telling the last two by their block class. Wrench one, go through, wrench the other within 5 minutes:
+  the pair is a High hop between the Overworld's network and the one beyond, as long as the two stand on the two
+  sides of one portal: where Minecraft's or Twilight Forest's teleporter puts the far one, or, for Personal Space,
+  by a portal into the far relay's own dimension, which the relay reads from the portal and shows on its info screen
+  (9.4, D22, D46, X36). A relay joins its own network by a wrench link, like a dish, and an ME Bridge links to
+  neither (X40).
+- Calls between dimensions follow 9.5: the call graph has a vertex for each dimension's satellites, and the rules for
+  dishes, uplinks and relay pairs live in a pure class, Gateways. Planet to planet goes through the Overworld's
+  satellites, and longer chains combine. An ME network joins calls only within each dimension (X33), which settles
+  0.3's known issue. Radio channels stay in their dimension (X34).
+- `/becom satellites` lists each dimension's satellites, or sets a dimension's count for testing (12.3).
+- Seven space quests with four new task types: Portal Relay pair, First satellite, Five satellites and Call between
+  dimensions (15.5). Textures for the three items and the three machines' faces in GT's style and the Modernity
+  pack, and the rocket launch sound.
+
+**Tests.**
+
+- 398 unit and routing tests, all passing: 350 from 0.1 to 0.3, 48 new. Gateways: dishes, uplinks, relay pairs, planet
+  to planet and longer chains through the call graph (11). Portals: the block classes, which dimensions a pair joins,
+  the two sides of a Nether or Twilight Forest portal, wide portals, Personal Space portals leading into the far relay's
+  dimension, and reading Personal Space's own portal tile (11). Satellites: constellations per dimension and their decay
+  (5). Sky strength: DESIGN.md 9.1's formula and counts, the cap at 100, cover, weather and the analyzer's terms (7).
+  Link rules for dishes, relays and the ME Bridge (4). Call quests between dimensions (3). Saved data: satellites, newer
+  satellite files, and a relay's partner (3). Tunables (1). Packets: the pad's and dish's screen views, and a dimension
+  with no name (3).
+- The self-test: 285 checks on a real dev server, all passing, 66 of them new. GregTech's weather explosions off while
+  it runs; the space machines' IDs, recipes and quest task types; Galacticraft's landing pad from nine pads on the Moon;
+  the Launch Pad forming, taking rocket fuel, counting the rockets waiting, holding and going dark while covered,
+  launching a renamed rocket and putting a satellite up, First satellite and Five satellites, not launching without open
+  sky, and launching from an empty hatch when set to need no fuel; a satellite coming down by world time; a Mobile
+  Phone's sky hop at Max with 100 satellites, under a roof, and in the rain; walkies 1,000 blocks apart talking through
+  the satellites; two dishes forming and joining Telephones 300 blocks apart, a maintenance problem's 2 dB, a covered
+  dish stopping, and too few satellites; 16.2's rocket assumption on the Moon (a Tier 1 rocket found as it joins,
+  counted on a pad with a receiver, not without one) and a rocket that throws being dropped; a Moon phone's service from
+  the rocket; 0.4's first "Done when", a Mobile Phone in the Overworld calling the Moon phone at the uplink's High, and
+  a Telephone with a dish doing the same; relays by each kind of portal; two personal dimensions made through Personal
+  Space's own portal action, a relay pairing into the one its portal leads to and refused by the other, and the pair
+  dropped once the portal is relinked; Twilight Forest relays 300 blocks apart and End relays pairing; 0.4's second
+  "Done when", Telephones in the Overworld and the Nether through a relay pair; the pair's halves saved together, and
+  neither written while saving is off; one partner each, unpairing, and a relay 1,000 blocks off in the Nether refused;
+  `/becom satellites`. CI runs it on every push.
+
+**Review.** Three rounds, a design reviewer and a code reviewer side by side in each (D58): the milestone
+(`milestone/0.3-phones..9b9edcf`), then each round's fixes in turn (`9b9edcf..f255fbc`, `f255fbc..369671d`). The third
+round's fixes are `369671d..a88352a`. Each finding was confirmed by a failing test, a self-test check or the code
+before it was fixed, as each item says.
+
+- First round, design review (1 medium, 9 low, 4 questions), and code review (5 low):
+  - Design 1: relays paired whatever portal they stood by, so two Overworld portals far apart could join through the
+    Nether. Fixed: they pair only when one stands where the other's portal leads, as Minecraft scales the trip, and a
+    relay 1,000 blocks off in the Nether is refused (PortalsTest, which didn't compile before the rule; a self-test
+    row; X36).
+  - Design 2: an ME Bridge could be wrench-linked onto a dish or a relay, which link only to antennas, Pylon Heads and
+    Line Terminals. Fixed (LinkRulesTest, which failed before the fix; logged in the second round as X40).
+  - Design 3 and 4: X34 said only dishes carry no radio, and X18 left out 0.4's ceilings. Both now say what the code
+    does: radio stays in its dimension, through dishes, relays and uplinks alike.
+  - Design 5: a launch set to need no fuel still needed a fuel stack. Fixed; its test came in the second round.
+  - Design 6 and code 1: the pad's and dish's screens read server state on the client thread in single player, and
+    the dish's was translated on the server. Fixed: both are built on the server and read on the client, as the
+    antenna's screen is (round-trip tests for both views).
+  - Design 7: the pad checked the sky only when a launch started. Fixed: a launch holds while anything covers the
+    pad, drawing no power (a self-test row covers the pad mid-launch).
+  - Design 8: the self-test's last log predated the fixes. It runs on every round's head now; run 91 is the last.
+  - Design 9: no self-test for Twilight Forest or End pairs, or rain on a sky hop. Added; a Personal Space pair came
+    in the third round.
+  - Design 10 and code 4: a rocket from another mod that throws when looked at stopped the server's tick. Fixed: it's
+    dropped and logged once (a self-test row spawns one).
+  - Design question 1 and code 2: more than 100 satellites kept strengthening sky hops, at 1,000 enough for Low 12
+    blocks underground. Capped at Max's count (SkyStrengthTest, which failed without the cap; X38).
+  - Code 3: a renamed Satellite Rocket stalled the pad, which found it by item and took it by a stack equal to its tag.
+    Fixed: it takes the very stack it found (the self-test's launch uses a renamed rocket).
+  - Code 5: a pair's two halves were saved at different times, so a crash between could keep one. Fixed: pairing and
+    unpairing save both dimensions at once (a self-test row checks both files are clean right after).
+  - Design question 2, radio through satellites making a walkie's range moot outdoors, is DESIGN.md 9.1 and D5 as
+    written: a known issue for the owner. Question 3, planet to planet: DESIGN.md 9.5 asks for it, and it's built
+    (GatewaysTest). Question 4: a receiver bridges no line and can't be locked, now X39.
+- Second round, design review (1 medium, 4 low, 2 questions), "fix first", and code review (1 medium, 4 low), "fix
+  first":
+  - Design 1 and code 1: Twilight Forest pairs were held to vanilla's 128-block Nether search, where Twilight Forest
+    2.7.44 looks 200 blocks around and moves a new portal up to 600 blocks out of a biome the player can't enter yet.
+    Fixed: a reach per portal kind, 616 for the Twilight Forest, and room for the widest portals (PortalsTest cases
+    that failed on the old check; the self-test's Twilight Forest relays now stand 300 blocks apart; X36).
+  - Code 2 and design question 1: relays took any Personal Space portal as leading into every personal dimension.
+    Fixed: a relay reads where each Personal Space portal leads, and the Overworld relay of a pair must stand by one
+    into the far relay's dimension (PortalsTest; a self-test row links a portal's tile and checks the relay reads it).
+  - Design 3 and code 5: a held launch kept the pad lit and GT's screen calling it running. Fixed: it goes dark and
+    its screen says something covers the pad (self-test row).
+  - Code 3: the immediate save of a pair ignored saving switched off, as during a backup copying the world. Fixed:
+    neither half is written while either world has saving off (a self-test row that failed on the old code). The
+    third round found the window this leaves after a /save-off.
+  - Code 4: a dimension with no name made the pad's screen throw every tick. Fixed: it shows the number
+    (PacketRoundTripTest, which threw before).
+  - Design 4: the no-fuel launch had no test. Added (self-test row).
+  - Design 2 and 5: the ME Bridge's narrower link rule wasn't logged and its texts offered any node; X18 didn't say
+    where 0.4's ceilings live. X40 added, texts and X18 corrected.
+  - Design question 2: two Personal Space portals into one personal dimension, or End portals at two strongholds,
+    let relays join two distant Overworld networks at High in mid MV, the job DESIGN.md 9.2 gives the late-HV dish.
+    That is how those portals work under D46, so it's the owner's balance call, below.
+  - Both reviewers found nothing in the range behind the self-test's one failed run (run 87, 11 of 0.3's Videophone
+    rows). GregTech's explosion log had the cause: the self-test's own rain set the phone antenna's energy hatch on
+    fire, and it exploded 35 s later. The self-test now switches GregTech's weather explosions off while it runs (its
+    first check); what that hazard means for players is a known issue below.
+- Third round, design review (6 low, 1 question), "ready", and code review (3 low), "ready":
+  - Code 3 and design 3: nothing tested that a Personal Space pair goes into the dimension its portal leads to; the
+    self-test only checked that the relay reads the tile. Fixed: the self-test makes two personal dimensions through
+    Personal Space's own portal action, pairs into one, is refused by the other, and drops the pair when the portal is
+    relinked. Taking out either check fails a row.
+  - Code 2: a Personal Space tile of a class BeCom doesn't know counted as unlinked, refusing every pair silently,
+    where the fallback was meant to be "leads anywhere". Fixed (PortalsTest, which reads Personal Space's own tile).
+  - Design 2: a relay's targets could go stale in the network after its chunk reloaded. Fixed: its first look always
+    reports.
+  - Design 6: a relay's info screen didn't say where its Personal Space portal leads. It does now.
+  - Code 1: a world loaded since a /save-off still saves its half of a new pair alone as it unloads. That can't be
+    closed while the other world's saving is off; the javadoc now says so, and it's a known issue below.
+  - Design 1, 4 and 5, and a code note: X36, X18, X40, three code comments and the changelog said less than the code
+    does. Corrected.
+  - Both reviewers asked about GregTech's weather explosions: a known issue below, for the owner.
+  - These fixes got no fourth review: none is big or touches threads or saved data, and the self-test rows that check
+    them fail with either check taken out.
+
+**Deviations and GTNH Voice.** DEVIATIONS.md X33 to X40 are 0.4's: ME per dimension (X33), dishes, relays and uplinks
+carrying calls but not radio (X34), receivers only on Galacticraft's worlds (X35), a relay's own wrench link and the
+check that a pair stands on one portal (X36), the dish's stand (X37), the cap at 100 satellites (X38), a receiver that
+bridges no line and can't be locked (X39), and an ME Bridge that links to neither a dish nor a relay (X40). X18 gained
+0.4's config ceilings. None is a 16.2 fallback: the rocket assumption held. VOICE.md: nothing new.
+
+**Known issues.**
+
+- GregTech's weather hazards hit BeCom's machines like any GT machine's. With GT's `machineRainExplosions` and
+  `machineFireExplosions` on, their defaults, a powered machine standing in the rain without a cover on top, or with
+  an open side, catches fire at random, and one time in ten explodes on the spot; fire next to it can blow it up
+  later. Only machines holding energy explode: Repeater and Router Heads on their pylons, Line Terminals,
+  Transceivers, Videophones, ME Bridges, Portal Relays and every hatch, an antenna's energy hatch and the Launch
+  Pad's and dish's included, which stand under open sky by design. Covers on the top and open sides protect them, as
+  on any GT machine, and don't count against the pad's and dish's open-sky checks. The self-test hit this (run 87).
+  DESIGN.md is silent and BeCom keeps GT's rule; to spare BeCom's own machines, they could override
+  `willExplodeInRain`, while GT's hatches stay GT's. The owner's call.
+- Relays through Personal Space portals or End portals can join two distant Overworld networks at High in mid MV:
+  two portals into one personal dimension, or End portals at two strongholds, with relays and a short line beyond.
+  That is the job DESIGN.md 9.2 gives the late-HV Satellite Dish. It's how those portals work under D46, so it's the
+  owner's balance call.
+- A relay pair made while /save-off is on: a world loaded since then still saves its half as it unloads, so a crash
+  before the other world's next save keeps one half, and the pair has to be made again.
+  BeCom can't write the other half while its saving is off, which is the point of /save-off. ServerUtilities'
+  backups switch saving off in worlds loaded during them too, so they don't open this window.
+- DESIGN.md 9.1 and D40 say maintenance problems slow a launch "as on any GT machine". GT's processing multiblocks
+  instead keep their speed and draw more power with lower efficiency. The pad slows down, as the design asks.
+- Radio through satellites makes a walkie's range moot outdoors once a dimension has 5 satellites: any two radios
+  under open sky hear each other at the sky's level, however far apart. That is DESIGN.md 9.1 and D5 as written, and
+  a balance question for the owner.
+- From 0.3: video under Angelica and shader packs, a far player's skin, and video's own channel wait on the owner;
+  the ME Phone's Infinity Booster Card and security checks (X27); the Phone key and Telephones (X1); the corner
+  window's size (X29). From 0.1 and 0.2: quest text shows default numbers (X14), the IC2 rubber GT-ERR-01 line in the
+  boot log, X22's survey cost, and V1, V3 and V5.
+
+**Owner checks.** Two players with voice chat, a GTNH 2.8 install with GTNH Voice 0.10.1 or newer, BeCom from this
+branch, operator rights for `/becom satellites`, and the Modernity add-on pack for the second look at the textures:
+
+1. Launch: build a Satellite Launch Pad (the quest's text has the blocks) under open sky, with an HV energy hatch.
+   Put a Satellite Rocket in its bus and 1,000 L of rocket fuel in its hatch. The launch sound plays, and 30 s later
+   `/becom satellites` lists one satellite over the dimension and First satellite completes. The pad's screen shows
+   the rockets waiting, the satellites over each dimension and when the next comes down. Put a block over the pad
+   during a launch: the pad goes dark, its screen says something covers it, and the launch goes on once the block
+   goes.
+2. Sky hops: `/becom satellites 0 5`. A Mobile Phone under open sky far from any antenna shows Low; at 37 satellites
+   High, the Mobile Phone's cap. Under a roof the bars drop; in a cave there are none. Two walkies far apart under
+   open sky hear each other. In the rain the phone's hop drops 3 dB.
+3. The Signal Analyzer, held under open sky away from antennas, names the satellites as what serves it, with the
+   roof's and the rain's losses; `/becom signal` says the same.
+4. Dishes: two Telephone networks far apart, each with a Satellite Dish wrench-linked to its Line Terminal or an
+   antenna. With 5 or more satellites the Telephones call each other. The dish's screen shows its hop; a maintenance
+   problem takes 2 dB off it; a block over the dish stops it.
+5. 0.4's first "Done when": fly a Tier 1 rocket with a chest to the Moon, place it on a landing pad there and put a
+   Rocket Radio Receiver in its cargo; the player on the Moon holds a Mobile Phone near it. With 37 or more satellites
+   over the Overworld, the other player, under open sky in the Overworld, calls the Moon phone: it rings, connects at
+   High, and both hear each other. A Telephone on a network with a dish reaches it too. (16.2, the real flow: a
+   rocket flown by a player comes down as an item in a parachest, and counts once placed on the pad.)
+6. 0.4's second "Done when": Portal Relays within 4 blocks of a Nether portal on both sides, each wrench-linked to a
+   Telephone network's Line Terminal, powered at MV. Wrench the Overworld one, go through, wrench the Nether one: they
+   pair, and the Telephones call each other at High. A relay by a different Nether portal far away refuses to pair.
+7. The same through a Twilight Forest portal, an End portal (the stronghold's, and the exit portal in the End), and a
+   Personal Space portal: each pair carries a call at High. For Personal Space, the Overworld relay must stand by a
+   portal into the far relay's own dimension: one by a portal into another player's dimension is refused. A Twilight
+   Forest trip that lands far from where the portal leads, out of a biome you can't enter yet, still pairs.
+8. Look at the Satellite, Satellite Rocket and Rocket Radio Receiver, and the Launch Pad's, dish's and relay's faces,
+   next to GT's machines, in GT's style and with the Modernity add-on pack; listen to the launch from a few blocks
+   away.
+9. The quest book's BeCom tab shows the seven space quests with their task texts; pairing relays, launching the first
+   satellite, having 5 over the pad's dimension, and a call between dimensions each complete theirs.
