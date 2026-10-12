@@ -655,13 +655,41 @@ class RadioGroupTest {
                 .link(alice, walkie(bob, 20))
                 .build());
         assertEquals(SignalLevel.MEDIUM, shared.heardThrough(alice, 1, List.of(carrier(bob, 20, SignalLevel.MEDIUM))));
-        // One no stronger than the margin doesn't.
-        assertEquals(SignalLevel.NONE, shared.heardThrough(alice, 1, List.of(carrier(bob, 9, SignalLevel.LOW))));
         fixture.sent.clear();
         fixture.route(one, alice, RADIO);
         assertTrue(
             fixture.recipients()
                 .contains(bob));
+    }
+
+    @Test
+    void aSpeakerWaitingOutAHoldGetsTheLevelTheyWillBeHeardAt() {
+        // Alice keys up 20 ms after Cat's last frame, no stronger: Bob's walkie takes her once Cat's 100 ms hold runs
+        // out, before the next publish, so her level for Bob is already the walkie's, not the client's fallback.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 10))
+                .build());
+        fixture.route(one, cat, RADIO);
+        now += 20 * MS;
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 8))
+                .build());
+        assertEquals(SignalLevel.LOW, shared.heardThrough(alice, 1, List.of(carrier(bob, 8, SignalLevel.LOW))));
+        now += 100 * MS;
+        fixture.sent.clear();
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            fixture.recipients()
+                .contains(bob));
+        // With no device at all, there's no level.
+        assertEquals(SignalLevel.NONE, shared.heardThrough(alice, 1, List.of()));
     }
 
     private static RadioRouting.Carrier carrier(UUID device, double snr, SignalLevel level) {

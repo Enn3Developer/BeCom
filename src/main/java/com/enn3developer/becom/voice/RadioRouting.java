@@ -112,14 +112,17 @@ public final class RadioRouting {
      * Server thread: the level a listener hears {@code speaker} at, given the devices that could carry it to them in
      * the order {@code route()} sends through them (their own walkie, walkies around them, loudspeakers). route()
      * sends nothing through a device whose capture keeps another speaker, so the first device that would take this
-     * speaker's frame is the one they hear (DESIGN.md 13.5: that device's level).
+     * speaker's frame is the one they hear (DESIGN.md 13.5: that device's level). When every device is kept for now,
+     * the first takes them once its hold runs out, which can come long before the next publish: its level.
      */
     public SignalLevel heardThrough(UUID speaker, int channel, List<Carrier> carriers) {
+        if (carriers.isEmpty()) return SignalLevel.NONE;
         long now = clock.getAsLong();
         for (Carrier carrier : carriers) {
             if (capture.wouldAdmit(carrier.device(), channel, speaker, carrier.snr(), now)) return carrier.level();
         }
-        return SignalLevel.NONE;
+        return carriers.get(0)
+            .level();
     }
 
     /** Server thread: whether a receiving device's capture is held by {@code speaker} on {@code channel}. */
