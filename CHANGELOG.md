@@ -33,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sixteen radio channels through GTNH Voice's `becom:radio.1` to `becom:radio.16` groups, with a push-to-talk key
   (Caps Lock), direct links between radios, paths through antennas, the capture effect per listener, players around
   a receiving walkie hearing it, Transceiver loudspeakers, radio audio filtered by level, and a squelch tail. Radio
-  links keep their level with the same hysteresis as calls, and drop after 3 s below Low like them.
+  links keep their level with the same hysteresis as calls: one that falls below 4 dB cuts out at once, and one
+  between 4 and 6 dB holds at Low for 3 s, then drops.
 - Antennas bridge wired lines within 16 blocks and carry calls between them over UHF, so a Telephone can call across
   linked antennas.
 - Antenna screen with its links, bridges and a team lock; Transceiver and walkie screens; sneak + scroll to change a
