@@ -31,6 +31,8 @@ import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.data.SavedDataFormat;
+import com.enn3developer.becom.gui.AntennaScreen;
+import com.enn3developer.becom.gui.AntennaView;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
@@ -1207,6 +1209,29 @@ public final class SelfTest {
                 link.uhf()
                     .snr());
         }
+        AntennaView view = AntennaScreen.view(antennaA, owner);
+        check(
+            "the antenna screen lists its link and its bridge, and lets its owner lock it",
+            view.links()
+                .size() == 1
+                && view.bridges()
+                    .size() == 1
+                && view.mayManage()
+                && view.surveyed(),
+            view.links()
+                .size() + " links, "
+                + view.bridges()
+                    .size()
+                + " bridges, manage "
+                + view.mayManage());
+        // The stranger stands right at the antenna: only ownership stops them.
+        stranger.setPosition(X0 + 1.5, Y, RADIO_Z + 0.5);
+        AntennaScreen.setLocked(antennaA, stranger, true);
+        check(
+            "...and nobody else",
+            !AntennaScreen.view(antennaA, stranger)
+                .mayManage() && !antennaA.isLocked(),
+            "");
         int a = bridgePhoneA.number(), b = bridgePhoneB.number();
         near(
             "a call between lines bridged onto them: its weakest hop is the UHF link",

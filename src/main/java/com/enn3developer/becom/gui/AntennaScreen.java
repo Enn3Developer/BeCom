@@ -198,7 +198,7 @@ public final class AntennaScreen {
     }
 
     /** Server side: only the owner, their team or an operator may lock (DESIGN.md 12.2, D38). */
-    static void setLocked(MTEAntenna antenna, EntityPlayer player, boolean locked) {
+    public static void setLocked(MTEAntenna antenna, EntityPlayer player, boolean locked) {
         IGregTechTileEntity tile = antenna.getBaseMetaTileEntity();
         if (tile == null || tile.isDead() || !Ownership.mayManage(player, antenna.owner())) return;
         if (player.getDistanceSq(tile.getXCoord() + 0.5, tile.getYCoord() + 0.5, tile.getZCoord() + 0.5) > 64) return;
@@ -206,7 +206,7 @@ public final class AntennaScreen {
     }
 
     /** Server side: the view for one player. */
-    static AntennaView view(MTEAntenna antenna, EntityPlayer player) {
+    public static AntennaView view(MTEAntenna antenna, EntityPlayer player) {
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = antenna.getBaseMetaTileEntity();
         if (becom == null || tile == null) return AntennaView.EMPTY;
