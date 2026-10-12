@@ -910,5 +910,5 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 | Satellite, Satellite Rocket and Rocket Radio Receiver icons                                     | done   |
 | Satellite Launch Pad, Satellite Dish and Portal Relay overlays and glow                         | done   |
 | Modernity style of all of the above                                                             | done   |
-| Sound: the rocket launch                                                                        | todo   |
+| Sound: the rocket launch                                                                        | done   |
 | English language entries                                                                        | todo   |

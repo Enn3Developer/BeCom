@@ -127,6 +127,29 @@ def squelch():
     return fade(signal / np.max(np.abs(signal)) * 0.5, 0.004)
 
 
+def rocket_launch():
+    """A Satellite Rocket going up: a rumble of low-passed noise that rises in pitch and grows, then fades away."""
+    rng = np.random.default_rng(23)
+    length = 6.0
+    x = t(length)
+    noise = rng.normal(0, 1, len(x))
+    # A one-pole low-pass, run twice for a steeper slope, whose cutoff climbs from a deep rumble to a roar.
+    cutoff = 60 + 900 * (x / length) ** 1.5
+    alpha = 1 - np.exp(-2 * np.pi * cutoff / RATE)
+    signal = noise
+    for _ in range(2):
+        out = np.empty_like(signal)
+        acc = 0.0
+        for i in range(len(signal)):
+            acc += alpha[i] * (signal[i] - acc)
+            out[i] = acc
+        signal = out
+    # The engine catches over a second and a half, roars, then the rocket is gone in the last two seconds.
+    envelope = np.minimum(1, x / 1.5) * np.clip((length - x) / 2.0, 0, 1)
+    signal = signal * envelope
+    return fade(signal / np.max(np.abs(signal)) * 0.8, 0.02)
+
+
 # Sounds heard "at the ear", with no place in the world: the handset's tones and click, and the owner-only buzz.
 # Minecraft plays them at (0, 0, 0) with no attenuation, and OpenAL pans a mono source toward its position, so these
 # are written in stereo, which OpenAL never pans. Sounds that come from a block, like the ring, stay mono.
@@ -141,6 +164,7 @@ SOUNDS = {
     "phone/buzz": buzz,
     "phone/hangup": click,
     "radio/squelch": squelch,
+    "rocket/launch": rocket_launch,
 }
 
 

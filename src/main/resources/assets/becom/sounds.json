@@ -6,5 +6,6 @@
   "phone.ring": { "category": "block", "sounds": [ "phone/ring" ] },
   "phone.buzz": { "category": "player", "sounds": [ "phone/buzz" ] },
   "phone.hangup": { "category": "player", "sounds": [ "phone/hangup" ] },
-  "radio.squelch": { "category": "player", "sounds": [ "radio/squelch" ] }
+  "radio.squelch": { "category": "player", "sounds": [ "radio/squelch" ] },
+  "rocket.launch": { "category": "block", "sounds": [ "rocket/launch" ] }
 }
