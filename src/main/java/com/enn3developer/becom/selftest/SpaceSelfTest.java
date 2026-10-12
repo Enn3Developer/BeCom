@@ -89,9 +89,12 @@ final class SpaceSelfTest {
     private static final int MX = 4000;
     private static final int MZ = 4000;
     private static final int MY = 200;
-    private static final int NX = 4000;
-    private static final int NZ = 4000;
+    // Where the Overworld relay's Nether portal leads: its coordinates divided by 8, as Minecraft scales a trip.
+    private static final int NX = SX / 8;
+    private static final int NZ = RELAY_Z / 8;
     private static final int NY = 100;
+    // A Nether relay where a different portal leads, 1,000 blocks off.
+    private static final int FAR_NX = NX + 1000;
     private static final int NETHER = -1;
     // A terminal stands this far from the relay or dish it's wrench-linked to, with its cable and Telephone beyond.
     private static final int TERMINAL_GAP = 10;
@@ -120,6 +123,7 @@ final class SpaceSelfTest {
     private MTEPortalRelay relayTwilight;
     private MTEPortalRelay relayPersonal;
     private MTEPortalRelay relayBare;
+    private MTEPortalRelay relayFarNether;
     private MTELineTerminal relayTerminalOverworld;
     private MTELineTerminal relayTerminalNether;
     private TileTelephone relayPhoneOverworld;
@@ -276,14 +280,17 @@ final class SpaceSelfTest {
             t.fail("the Nether loads in the dev server", "no world for dimension " + NETHER);
             return 1;
         }
-        for (int cx = (NX - 32) >> 4; cx <= (NX + 32) >> 4; cx++) {
-            for (int cz = (NZ - 32) >> 4; cz <= (NZ + 32) >> 4; cz++) t.keepLoaded(nether, cx, cz);
+        for (int x : new int[] { NX, FAR_NX }) {
+            for (int cx = (x - 32) >> 4; cx <= (x + 32) >> 4; cx++) {
+                for (int cz = (NZ - 32) >> 4; cz <= (NZ + 32) >> 4; cz++) t.keepLoaded(nether, cx, cz);
+            }
+            clear(nether, x - 6, NY - 2, NZ - 6, x + 10, NY + 6, NZ + TERMINAL_GAP + 6);
+            forgetNodes(nether, x - 6, NZ - 6, x + 10, NZ + TERMINAL_GAP + 6);
         }
-        clear(nether, NX - 6, NY - 2, NZ - 6, NX + 10, NY + 6, NZ + TERMINAL_GAP + 6);
-        forgetNodes(nether, NX - 6, NZ - 6, NX + 10, NZ + TERMINAL_GAP + 6);
         netherHand = FakePlayerFactory.get(nether, profile("BeComNetherHand", 0x10));
         netherPortal(nether, NX + 2, NY - 1, NZ);
         relayNether = relay(nether, NX, NY, NZ);
+        relayFarNether = relay(nether, FAR_NX, NY, NZ);
         relayTerminalNether = terminal(nether, NX, NY, NZ + TERMINAL_GAP, 1);
         relayPhoneNether = telephone(nether, NX, NY, NZ + TERMINAL_GAP + 2, netherHand);
         // Machines join the network as they first tick.
@@ -727,6 +734,16 @@ final class SpaceSelfTest {
             "wrenching both relays of a pair again unpairs them",
             unpaired == LinkService.Outcome.UNLINKED && becom.network.partnerOf(relayOverworld.ref()) == null,
             unpaired + "");
+        // DESIGN.md 9.4: on opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
+        becom.links.wrench(owner, overworld, pos(relayBare));
+        LinkService.Outcome far = becom.links.wrench(owner, nether, pos(relayFarNether));
+        becom.links.wrench(owner, overworld, pos(relayBare));
+        LinkService.Outcome near = becom.links.wrench(owner, nether, pos(relayNether));
+        t.check(
+            "a relay pairs only with one where its portal leads: not 1,000 blocks off in the Nether, but at the spot",
+            far == LinkService.Outcome.REFUSED && near == LinkService.Outcome.LINKED,
+            far + ", " + near);
+        becom.network.unpair(relayBare.ref(), relayNether.ref());
         return 1;
     }
 

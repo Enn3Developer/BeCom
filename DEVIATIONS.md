@@ -572,7 +572,10 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Terminal within 16 blocks, which joins it to that network. Its partner through the portal is apart from that link. A
   pair carries calls while both relays are powered and each has the portal between their dimensions in reach: a
   Nether portal for the Nether, an End portal for the End, and the Twilight Forest's or Personal Space's own portal
-  for theirs.
+  for theirs. "Opposite sides of a portal" is checked when they pair: through the Nether or the Twilight Forest, one
+  relay must stand where its portal leads, its coordinates scaled the way Minecraft scales a trip (an eighth in the
+  Nether) and within the 128 blocks Minecraft searches for the far portal. Any End or personal dimension portal will
+  do, since each of those dimensions is reached at one place.
 - **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
   ends.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.

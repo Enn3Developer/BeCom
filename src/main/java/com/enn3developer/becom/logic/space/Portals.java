@@ -25,6 +25,8 @@ public final class Portals {
     public static final int OVERWORLD = 0;
     public static final int NETHER = -1;
     public static final int END = 1;
+    /** How far Minecraft looks for the far side's portal, in that world's blocks, around where a portal leads. */
+    public static final int PORTAL_SEARCH = 128;
 
     private Portals() {}
 
@@ -55,6 +57,28 @@ public final class Portals {
         if (dimensionA == OVERWORLD && dimensionB != OVERWORLD) return leadingTo(dimensionB, providerB);
         if (dimensionB == OVERWORLD && dimensionA != OVERWORLD) return leadingTo(dimensionA, providerA);
         return null;
+    }
+
+    /**
+     * Whether relays at these two spots stand on the two sides of one portal (DESIGN.md 9.4). Through a Nether or a
+     * Twilight Forest portal, one relay's spot, scaled by the two worlds' movement factors the way Minecraft scales a
+     * portal trip, lands within Minecraft's portal search of the other's, one way or the other; {@code reach} allows
+     * for each standing a few blocks off its portal. The End, and each personal dimension, is reached at one place,
+     * so any of their portals will do.
+     *
+     * @param factorA the movement factor of relay A's world: 8 for the Nether, 1 for most
+     */
+    public static boolean sameLink(Kind kind, double factorA, int xA, int zA, double factorB, int xB, int zB,
+        double reach) {
+        if (kind == Kind.END || kind == Kind.PERSONAL_SPACE) return true;
+        double ratio = factorA / factorB;
+        boolean toB = near(xA * ratio, zA * ratio, xB, zB, PORTAL_SEARCH + reach * (1 + ratio));
+        boolean toA = near(xB / ratio, zB / ratio, xA, zA, PORTAL_SEARCH + reach * (1 + 1 / ratio));
+        return toB || toA;
+    }
+
+    private static boolean near(double x, double z, int toX, int toZ, double within) {
+        return Math.abs(toX - x) <= within && Math.abs(toZ - z) <= within;
     }
 
     /** Whether a block {@code dx}, {@code dy}, {@code dz} from a relay is within {@code reach} blocks of it. */

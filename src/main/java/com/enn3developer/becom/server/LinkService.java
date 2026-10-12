@@ -35,11 +35,13 @@ public final class LinkService {
 
     private final NetworkService network;
     private final long halfLinkTicks;
+    private final double relayReach;
     private final Map<UUID, Pending> pending = new HashMap<>();
 
     public LinkService(NetworkService network, Tunables tunables) {
         this.network = network;
         this.halfLinkTicks = (long) tunables.halfLinkSeconds() * 20;
+        this.relayReach = tunables.relayPortalDistance();
     }
 
     private record Pending(int dimension, long pos, long tick) {}
@@ -148,6 +150,18 @@ public final class LinkService {
             NetworkService.providerOf(secondRef.dimension()));
         if (portal == null) {
             tell(player, "becom.link.refused.relay_dimensions");
+            return Outcome.REFUSED;
+        }
+        if (!Portals.sameLink(
+            portal,
+            NetworkService.movementFactorOf(firstRef.dimension()),
+            BlockPos.x(firstRef.pos()),
+            BlockPos.z(firstRef.pos()),
+            NetworkService.movementFactorOf(secondRef.dimension()),
+            BlockPos.x(secondRef.pos()),
+            BlockPos.z(secondRef.pos()),
+            relayReach)) {
+            tell(player, "becom.link.refused.relay_portal");
             return Outcome.REFUSED;
         }
         if (taken(firstRef, first) || taken(secondRef, second)) {

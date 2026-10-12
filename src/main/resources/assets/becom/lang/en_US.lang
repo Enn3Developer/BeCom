@@ -122,6 +122,7 @@ becom.link.refused.same_node=That's the same node.
 becom.link.refused.already_linked=Those are already linked.
 becom.link.refused.incompatible=These two can't be linked. Lines run over Pylon Heads; an antenna bridges a Pylon Head or a Line Terminal, and a dish or a relay an antenna, a Pylon Head or a Line Terminal.
 becom.link.refused.relay_dimensions=Portal Relays pair the Overworld with the Nether, the End, the Twilight Forest or a personal dimension.
+becom.link.refused.relay_portal=These two relays aren't on the two sides of one portal: the far one stands where a different portal leads.
 becom.link.refused.relay_paired=One of these relays is already paired. Unpair it first: wrench it and then its partner.
 becom.link.paired=Paired through the portal.
 becom.link.unpaired=Unpaired.

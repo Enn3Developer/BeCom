@@ -475,6 +475,12 @@ public final class NetworkService {
         return byDimension != 0 ? byDimension : Long.compare(a.pos(), b.pos());
     }
 
+    /** How a portal trip scales coordinates into a loaded dimension (8 for the Nether), as Minecraft scales them. */
+    public static double movementFactorOf(int dimension) {
+        WorldServer world = DimensionManager.getWorld(dimension);
+        return world == null ? 1 : world.provider.getMovementFactor();
+    }
+
     /** The class of a loaded dimension's world provider, which tells the Twilight Forest and Personal Space apart. */
     public static String providerOf(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);

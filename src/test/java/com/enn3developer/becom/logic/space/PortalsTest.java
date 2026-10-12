@@ -27,8 +27,13 @@ class PortalsTest {
     void pairsJoinTheOverworldToTheNetherTheEndTheTwilightForestOrAPersonalDimension() {
         assertEquals(Portals.Kind.NETHER, Portals.pairKind(0, OVERWORLD, -1, "net.minecraft.world.WorldProviderHell"));
         assertEquals(Portals.Kind.END, Portals.pairKind(1, "net.minecraft.world.WorldProviderEnd", 0, OVERWORLD));
-        assertEquals(Portals.Kind.TWILIGHT_FOREST, Portals.pairKind(0, OVERWORLD, 7, Portals.TWILIGHT_WORLD));
-        assertEquals(Portals.Kind.PERSONAL_SPACE, Portals.pairKind(180, Portals.PERSONAL_WORLD, 0, OVERWORLD));
+        // The mods' own class names, as their jars have them (Twilight Forest 2.7.44, Personal Space 1.0.41).
+        assertEquals(
+            Portals.Kind.TWILIGHT_FOREST,
+            Portals.pairKind(0, OVERWORLD, 7, "twilightforest.world.WorldProviderTwilightForest"));
+        assertEquals(
+            Portals.Kind.PERSONAL_SPACE,
+            Portals.pairKind(180, "me.eigenraven.personalspace.world.PersonalWorldProvider", 0, OVERWORLD));
     }
 
     @Test
@@ -40,6 +45,32 @@ class PortalsTest {
         assertNull(Portals.pairKind(0, OVERWORLD, 0, OVERWORLD));
         assertNull(
             Portals.pairKind(-1, "net.minecraft.world.WorldProviderHell", 1, "net.minecraft.world.WorldProviderEnd"));
+    }
+
+    @Test
+    void aNetherPairStandsWhereOnePortalLeads() {
+        // DESIGN.md 9.4: on opposite sides of a portal. The Nether's coordinates are an eighth of the Overworld's, and
+        // Minecraft looks for the far portal within 128 blocks of where that puts you.
+        assertTrue(Portals.sameLink(Portals.Kind.NETHER, 1, 800, 800, 8, 100, 100, 4));
+        assertTrue(Portals.sameLink(Portals.Kind.NETHER, 8, 100, 100, 1, 800, 800, 4));
+        assertTrue(Portals.sameLink(Portals.Kind.NETHER, 1, 1000, 0, 8, 0, 0, 4));
+        // Two Overworld portals 8,000 blocks apart can't both lead to one Nether spot.
+        assertFalse(Portals.sameLink(Portals.Kind.NETHER, 1, 8000, 0, 8, 100, 0, 4));
+        assertFalse(Portals.sameLink(Portals.Kind.NETHER, 8, 100, 0, 1, 8000, 0, 4));
+        assertFalse(Portals.sameLink(Portals.Kind.NETHER, 1, 0, 8000, 8, 0, 0, 4));
+    }
+
+    @Test
+    void aTwilightForestPairStandsAtTheSameSpot() {
+        // The Twilight Forest keeps the Overworld's scale.
+        assertTrue(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 600, 500, 4));
+        assertFalse(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 700, 500, 4));
+    }
+
+    @Test
+    void theEndAndAPersonalDimensionAreReachedAtOnePlace() {
+        assertTrue(Portals.sameLink(Portals.Kind.END, 1, 5000, -3000, 1, 0, 0, 4));
+        assertTrue(Portals.sameLink(Portals.Kind.PERSONAL_SPACE, 1, 5000, -3000, 1, 0, 0, 4));
     }
 
     @Test
