@@ -35,6 +35,7 @@ import com.enn3developer.becom.logic.radio.AntennaMesh;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Band;
 import com.enn3developer.becom.logic.radio.RadioHops;
+import com.enn3developer.becom.logic.radio.RadioLinkLevel;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.BeComPackets;
@@ -80,6 +81,7 @@ public final class RadioService {
     private final Band vhf;
     private final LevelScale levels;
     private final DropoutModel dropouts;
+    private final long dropGraceMillis;
     private final RadioRouting routing;
     private final RadioGroup[] groups = new RadioGroup[RadioGroup.CHANNELS + 1];
 
@@ -113,7 +115,16 @@ public final class RadioService {
 
     private record Pair(UUID speaker, Object device) {}
 
-    private record PairLevel(SignalLevel level, long tick) {}
+    /** A pair's link level, and the tick it was last evaluated. */
+    private static final class PairLevel {
+
+        final RadioLinkLevel link;
+        long tick;
+
+        PairLevel(RadioLinkLevel link) {
+            this.link = link;
+        }
+    }
 
     private record Heard(UUID listener, UUID speaker) {}
 
@@ -137,6 +148,7 @@ public final class RadioService {
         this.vhf = tunables.vhf();
         this.levels = tunables.levelScale();
         this.dropouts = tunables.dropoutModel(Tunables.FRAME_MILLIS);
+        this.dropGraceMillis = (long) (tunables.dropAfterSeconds() * 1000);
         this.routing = new RadioRouting(
             tunables.directHearingRange(),
             tunables.walkieSpeakerRange(),
@@ -500,13 +512,15 @@ public final class RadioService {
         return Math.max(direct, via);
     }
 
-    /** The pair's level after this evaluation, with hysteresis, capped at Medium for radios (D10). */
+    /**
+     * The pair's level after this evaluation: hysteresis, the radios' Medium cap (D10), and the drop after the grace
+     * below Low (DESIGN.md 4.2).
+     */
     private SignalLevel level(Pair pair, double snr) {
-        PairLevel before = pairLevels.get(pair);
-        SignalLevel next = SignalLevel
-            .min(levels.next(before == null ? SignalLevel.NONE : before.level, snr), SignalLevel.MEDIUM);
-        pairLevels.put(pair, new PairLevel(next, tick));
-        return next;
+        PairLevel pairLevel = pairLevels
+            .computeIfAbsent(pair, p -> new PairLevel(new RadioLinkLevel(levels, SignalLevel.MEDIUM, dropGraceMillis)));
+        pairLevel.tick = tick;
+        return pairLevel.link.update(snr, System.nanoTime() / 1_000_000L);
     }
 
     /**
@@ -566,7 +580,7 @@ public final class RadioService {
 
     private SignalLevel levelOf(UUID speaker, Object device) {
         PairLevel level = pairLevels.get(new Pair(speaker, device));
-        return level == null ? SignalLevel.NONE : level.level;
+        return level == null ? SignalLevel.NONE : level.link.level();
     }
 
     /**

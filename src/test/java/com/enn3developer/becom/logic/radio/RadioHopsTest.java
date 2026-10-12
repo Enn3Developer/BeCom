@@ -116,7 +116,7 @@ class RadioHopsTest {
     @Test
     void aSurveyOfAnAntennaT3IsAboutFiveKilobytes() {
         // DESIGN.md 6.3 says at most 64 heights per bearing, about 4 KB. The survey reaches as far as a link at Low
-        // holds, 2 dB further (X22): 79 steps, about 5 KB.
+        // holds, 2 dB further (X22): 80 steps, about 5 KB.
         Survey survey = Survey.of(
             FLAT,
             0.5,

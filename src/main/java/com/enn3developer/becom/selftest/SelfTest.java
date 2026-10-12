@@ -209,6 +209,10 @@ public final class SelfTest {
         steps.add(this::checkOffWalkie);
         steps.add(this::keyEdge);
         steps.add(this::checkEdge);
+        steps.add(this::startEdgeHold);
+        // Four seconds of evaluations with the link at 5.8 dB, inside the hysteresis but below Low.
+        for (int i = 0; i < 16; i++) steps.add(this::holdEdge);
+        steps.add(this::checkEdgeDrop);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -1494,6 +1498,47 @@ public final class SelfTest {
                 becom.radio.published()
                     .transmission(speaker),
                 iris.getUniqueID()) == null,
+            "");
+        return 1;
+    }
+
+    /** DESIGN.md 4.2: below Low for more than 3 s, a link drops, radio as well as wire. */
+    private int startEdgeHold() {
+        iris.setPosition(X0 + 78.5, Y, DIRECT_Z + 10.5);
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        becom.radio.publishForSelfTest();
+        iris.setPosition(X0 + 81.5, Y, DIRECT_Z + 10.5);
+        return holdEdge();
+    }
+
+    private int holdEdge() {
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        becom.radio.publishForSelfTest();
+        return 5;
+    }
+
+    private int checkEdgeDrop() {
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        becom.radio.publishForSelfTest();
+        check(
+            "a walkie link held below Low drops after 3 s, though it's inside the hysteresis",
+            linkTo(
+                becom.radio.published()
+                    .transmission(hank.getUniqueID()),
+                iris.getUniqueID()) == null,
+            "");
+        iris.setPosition(X0 + 78.5, Y, DIRECT_Z + 10.5);
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        becom.radio.publishForSelfTest();
+        check(
+            "...and comes back at Low's threshold",
+            linkTo(
+                becom.radio.published()
+                    .transmission(hank.getUniqueID()),
+                iris.getUniqueID()) != null,
             "");
         return 1;
     }

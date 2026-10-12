@@ -289,16 +289,21 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X22: Surveys and direct links reach where a link at Low still holds
 
-- **Where:** 0.2, DESIGN.md 4.1, 6.3, 6.5
-- **Design says:** a level is left only 2 dB below its threshold (4.1); a survey steps out "up to the antenna's maximum
-  range", "at most 64 heights per bearing, about 4 KB per antenna" (6.3).
+- **Where:** 0.2, DESIGN.md 4.1, 4.2, 6.3, 6.5
+- **Design says:** a level is left only 2 dB below its threshold (4.1), and a link below Low for more than 3 s drops
+  (4.2); a survey steps out "up to the antenna's maximum range", "at most 64 heights per bearing, about 4 KB per
+  antenna" (6.3); 6.5 counts a T3 survey at about 4,000 height-cache reads.
 - **Built:** surveys, device-to-antenna links and direct links all reach as far as a link already at Low holds on
-  open ground, 4 dB instead of 6. A T3's survey is 80 steps a bearing, about 5 KB, and walkies at Low stay at Low to
-  100 blocks. The ceiling on radio ranges in the config counts the hysteresis too.
+  open ground, 4 dB instead of 6. A link between 4 and 6 dB holds at Low for the 3 s grace of 4.2 and then drops, and
+  comes back only at 6 dB. What it costs against 6.3 and 6.5: a T3's survey is 80 steps a bearing, about 5 KB and
+  5,120 height-cache reads; a device's access scan reads up to 80 heights per antenna instead of 64; each antenna is
+  in range of devices over about 1.6 times the area; and a walkie's direct link samples out to 100 blocks instead of
+  80. The ceiling on radio ranges in the config counts the hysteresis too.
 - **Why:** stopping at the 6 dB range cut every link to None the moment it crossed it, so links at the edge of range
   flickered once a second, which 4.1's hysteresis exists to prevent (found by both 0.2 reviews; the self-test checks
-  a walkie link holding at 81 blocks).
-- **To match the design:** keep 64 steps and give up hysteresis at the edge of range, or shorten the step.
+  a walkie link holding at 81 blocks, then dropping after 3 s there).
+- **To match the design:** keep 64 steps and give up hysteresis at the edge of range, or lengthen the survey step to
+  5 blocks so 64 steps reach as far.
 
 ### X23: `/becom signal` is for operators, and an end's own cell isn't terrain
 
