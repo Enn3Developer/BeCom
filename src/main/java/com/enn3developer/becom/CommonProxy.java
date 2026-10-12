@@ -106,6 +106,7 @@ public class CommonProxy {
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
+        BeComServer.stopped();
         BeComQuests.backend()
             .serverStopped();
     }

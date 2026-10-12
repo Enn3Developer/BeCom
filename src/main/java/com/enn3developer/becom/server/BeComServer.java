@@ -90,13 +90,21 @@ public final class BeComServer {
         instance.radio.start();
     }
 
+    /**
+     * The server is stopping: calls end and radios go quiet while the worlds are still loaded. The services stay
+     * until {@link #stopped}, so the height cache follows the chunks the final world save writes.
+     */
     public static void stop() {
         LATER.clear();
         if (instance != null) {
             instance.calls.stop();
             instance.radio.stop();
-            instance.heights.saveAll();
         }
+    }
+
+    /** The worlds are saved and unloaded: the height cache's last regions go to disk, and BeCom forgets the server. */
+    public static void stopped() {
+        if (instance != null) instance.heights.saveAll();
         instance = null;
     }
 
