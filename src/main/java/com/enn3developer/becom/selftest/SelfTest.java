@@ -2,6 +2,7 @@ package com.enn3developer.becom.selftest;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -326,6 +327,15 @@ public final class SelfTest {
         running.log("starting");
     }
 
+    // How long each of BeCom's server ticks took while the self-test ran, in nanoseconds: a real server's figure
+    // beside the load test's (DESIGN.md 6.5).
+    private final List<Long> becomTicks = new ArrayList<>();
+
+    /** Server tick hook: how long BeCom's own tick took; does nothing unless a self-test is running. */
+    public static void becomTicked(long nanos) {
+        if (running != null) running.becomTicks.add(nanos);
+    }
+
     /** Server tick hook; does nothing unless a self-test is running. */
     public static void tick() {
         if (running == null) return;
@@ -399,6 +409,22 @@ public final class SelfTest {
     }
 
     private void finish() {
+        if (!becomTicks.isEmpty()) {
+            long[] ticks = becomTicks.stream()
+                .mapToLong(Long::longValue)
+                .sorted()
+                .toArray();
+            log(
+                String.format(
+                    Locale.ROOT,
+                    "BeCom's server tick over %d ticks: mean %.3f ms, p99 %.3f ms, max %.3f ms",
+                    ticks.length,
+                    Arrays.stream(ticks)
+                        .average()
+                        .orElse(0) / 1e6,
+                    ticks[(int) Math.min(ticks.length - 1, Math.ceil(ticks.length * 0.99) - 1)] / 1e6,
+                    ticks[ticks.length - 1] / 1e6));
+        }
         log(passed + " passed, " + failed + " failed");
         restoreWeatherHazards();
         running = null;

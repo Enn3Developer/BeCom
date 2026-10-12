@@ -25,7 +25,9 @@ public final class ServerEvents {
         if (event.phase != TickEvent.Phase.END) return;
         BeComServer becom = BeComServer.get();
         if (becom == null) return;
+        long start = System.nanoTime();
         becom.tick();
+        SelfTest.becomTicked(System.nanoTime() - start);
         InfoSnapshot.refreshWanted();
         BeComQuests.backend()
             .tick();
