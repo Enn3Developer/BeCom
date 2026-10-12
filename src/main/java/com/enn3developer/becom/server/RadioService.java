@@ -127,6 +127,9 @@ public final class RadioService {
 
     private record Pair(UUID speaker, Object device) {}
 
+    /** A keyed radio's links as last worked out, and what it transmitted from then. */
+    private record Links(Tx tx, List<RadioSnapshot.Link> links) {}
+
     /** A pair's link level, and the tick it was last evaluated. */
     private static final class PairLevel {
 
@@ -144,6 +147,7 @@ public final class RadioService {
 
     private final Map<NodeRef, Transceiver> transceivers = new HashMap<>();
     private final Map<UUID, Radio> radios = new HashMap<>();
+    private final Map<UUID, Links> evaluated = new HashMap<>();
     private final Map<UUID, Integer> joined = new HashMap<>();
     private final Set<UUID> active = new HashSet<>();
     private final Map<Pair, PairLevel> pairLevels = new HashMap<>();
@@ -197,6 +201,7 @@ public final class RadioService {
         active.clear();
         pairLevels.clear();
         sent.clear();
+        evaluated.clear();
         published = RadioSnapshot.EMPTY;
     }
 
@@ -270,7 +275,9 @@ public final class RadioService {
             contacted.add(contact.listener());
         }
         if (!contacted.isEmpty()) BeComQuests.complete(QuestTask.RADIO_CONTACT, contacted);
-        boolean changed = keys(now);
+        Set<UUID> pressed = new HashSet<>();
+        boolean changed = keys(now, pressed);
+        boolean everyone = false;
         int slot = (int) (tick % TICKS_PER_SECOND);
         for (EntityPlayerMP player : players()) {
             if (Math.floorMod(
@@ -284,7 +291,7 @@ public final class RadioService {
             Transceiver t = it.next();
             if (!working(t)) {
                 it.remove();
-                changed = true;
+                everyone = true;
             } else if (Math.floorMod(t.ref.hashCode(), TICKS_PER_SECOND) == slot) {
                 refreshAccess(t);
                 t.sky = skyHop(t.ref.dimension(), t.end, t.rains);
@@ -294,19 +301,26 @@ public final class RadioService {
             memberships();
             drainWalkies(players());
             forgetOld(now);
-            changed = true;
+            everyone = true;
         }
         if (tick % ((long) tunables.analyzerRefreshSeconds() * TICKS_PER_SECOND) == 0) analyzers();
-        if (changed) publish();
+        if (everyone) publish(null);
+        else if (changed) publish(pressed);
     }
 
-    /** Notices speakers pressing and releasing push-to-talk. Returns whether anyone did. */
-    private boolean keys(long now) {
+    /**
+     * Notices speakers pressing and releasing push-to-talk, and adds those who pressed to {@code pressed}. Returns
+     * whether anyone did either.
+     */
+    private boolean keys(long now, Set<UUID> pressed) {
         boolean changed = false;
         Map<UUID, RadioRouting.Keyed> keyed = routing.keyedSpeakers();
         for (Map.Entry<UUID, RadioRouting.Keyed> entry : keyed.entrySet()) {
             if (now - entry.getValue()
-                .nanos() <= RELEASED_AFTER_NANOS && active.add(entry.getKey())) changed = true;
+                .nanos() <= RELEASED_AFTER_NANOS && active.add(entry.getKey())) {
+                pressed.add(entry.getKey());
+                changed = true;
+            }
         }
         Iterator<UUID> it = active.iterator();
         while (it.hasNext()) {
@@ -461,55 +475,84 @@ public final class RadioService {
 
     // region Snapshot
 
-    /** Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. */
-    private void publish() {
+    /**
+     * Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. A keyed radio's
+     * links are worked out again when it keys, moves or changes what it transmits from, and once a second (DESIGN.md
+     * 6.4); otherwise its last ones stand, so one press doesn't work out every other keyed radio's links again.
+     *
+     * @param fresh the radios to work out again even if nothing changed, or null for all of them
+     */
+    private void publish(Set<UUID> fresh) {
         RadioSnapshot.Builder builder = RadioSnapshot.builder();
         List<UUID> speakers = new ArrayList<>(active);
         speakers.sort(Comparator.naturalOrder());
-        List<Radio> receivers = new ArrayList<>(radios.values());
-        receivers.sort(Comparator.comparing(r -> r.id));
-        List<Transceiver> loudspeakers = new ArrayList<>(transceivers.values());
-        loudspeakers.sort(Comparator.comparing(t -> t.ref.pos()));
+        List<Radio> receivers = null;
+        List<Transceiver> loudspeakers = null;
+        List<UUID> worked = new ArrayList<>();
         for (UUID speaker : speakers) {
             Radio radio = radios.get(speaker);
             Tx tx = radio == null ? null : txOf(radio);
             if (tx == null) continue;
-            builder.transmitter(speaker, tx.channel);
-            AntennaNetwork.Mesh mesh = antennas.mesh(tx.dimension);
-            double[] reach = tx.access != null && tx.access.length == mesh.antennas()
-                .size() ? mesh.vhf()
-                    .reach(tx.access) : null;
-            for (Radio other : receivers) {
-                if (other == radio || other.walkieChannel != tx.channel || other.dimension != tx.dimension) continue;
-                double snr = snr(tx, other.end, accessOf(other), reach, other.sky);
-                SignalLevel level = level(new Pair(speaker, other.id), snr);
-                if (level.atLeast(SignalLevel.LOW)) builder.link(speaker, link(other.id, null, snr));
-            }
-            for (Transceiver t : loudspeakers) {
-                if (!working(t) || t.channel != tx.channel
-                    || t.ref.dimension() != tx.dimension
-                    || t.ref.equals(tx.from)) continue;
-                double snr = snr(tx, t.end, refreshAccess(t), reach, t.sky);
-                SignalLevel level = level(new Pair(speaker, t.ref), snr);
-                if (level.atLeast(SignalLevel.LOW)) {
-                    builder.link(
-                        speaker,
-                        link(
-                            null,
-                            new RadioSnapshot.Transceiver(
-                                t.ref.dimension(),
-                                t.ref.pos(),
-                                t.end.x(),
-                                t.end.y() - 0.5,
-                                t.end.z(),
-                                t.loudspeaker),
-                            snr));
+            Links links = evaluated.get(speaker);
+            if (fresh == null || fresh.contains(speaker)
+                || links == null
+                || !links.tx()
+                    .equals(tx)) {
+                if (receivers == null) {
+                    receivers = new ArrayList<>(radios.values());
+                    receivers.sort(Comparator.comparing(r -> r.id));
+                    loudspeakers = new ArrayList<>(transceivers.values());
+                    loudspeakers.sort(Comparator.comparing(t -> t.ref.pos()));
                 }
+                links = links(speaker, radio, tx, receivers, loudspeakers);
+                evaluated.put(speaker, links);
+                worked.add(speaker);
             }
+            builder.transmitter(speaker, tx.channel);
+            for (RadioSnapshot.Link link : links.links()) builder.link(speaker, link);
         }
+        evaluated.keySet()
+            .retainAll(active);
         published = builder.build();
         routing.publish(published);
-        sendLevels(speakers);
+        sendLevels(worked);
+    }
+
+    /**
+     * A keyed radio's links to every receiver on its channel that hears it at Low or better, with each pair's level.
+     */
+    private Links links(UUID speaker, Radio radio, Tx tx, List<Radio> receivers, List<Transceiver> loudspeakers) {
+        List<RadioSnapshot.Link> links = new ArrayList<>();
+        AntennaNetwork.Mesh mesh = antennas.mesh(tx.dimension);
+        double[] reach = tx.access != null && tx.access.length == mesh.antennas()
+            .size() ? mesh.vhf()
+                .reach(tx.access) : null;
+        for (Radio other : receivers) {
+            if (other == radio || other.walkieChannel != tx.channel || other.dimension != tx.dimension) continue;
+            double snr = snr(tx, other.end, accessOf(other), reach, other.sky);
+            SignalLevel level = level(new Pair(speaker, other.id), snr);
+            if (level.atLeast(SignalLevel.LOW)) links.add(link(other.id, null, snr));
+        }
+        for (Transceiver t : loudspeakers) {
+            if (!working(t) || t.channel != tx.channel || t.ref.dimension() != tx.dimension || t.ref.equals(tx.from))
+                continue;
+            double snr = snr(tx, t.end, refreshAccess(t), reach, t.sky);
+            SignalLevel level = level(new Pair(speaker, t.ref), snr);
+            if (level.atLeast(SignalLevel.LOW)) {
+                links.add(
+                    link(
+                        null,
+                        new RadioSnapshot.Transceiver(
+                            t.ref.dimension(),
+                            t.ref.pos(),
+                            t.end.x(),
+                            t.end.y() - 0.5,
+                            t.end.z(),
+                            t.loudspeaker),
+                        snr));
+            }
+        }
+        return new Links(tx, links);
     }
 
     private RadioSnapshot.Link link(UUID holder, RadioSnapshot.Transceiver transceiver, double snr) {
@@ -776,8 +819,8 @@ public final class RadioService {
      * so a check right after a change would read the snapshot from before it.
      */
     public void publishForSelfTest() {
-        keys(System.nanoTime());
-        publish();
+        keys(System.nanoTime(), new HashSet<>());
+        publish(null);
     }
 
     // endregion
