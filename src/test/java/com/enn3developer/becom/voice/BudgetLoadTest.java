@@ -5,21 +5,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import com.enn3developer.becom.logic.LevelScale;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
+import com.enn3developer.becom.logic.radio.AntennaMesh;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.RadioHops;
 import com.enn3developer.becom.logic.radio.Terrain;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
+import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
 import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
@@ -118,6 +125,82 @@ class BudgetLoadTest {
         AntennaNetwork network = new AntennaNetwork(t, OVERWORLD, (a, b) -> false);
         times[0] = survey(network, refs, ends, budget);
         return network;
+    }
+
+    private record Pair(UUID speaker, UUID listener) {}
+
+    /**
+     * One radio publish, as RadioService runs it on the server thread: the links of each keyed radio in
+     * {@code fresh}, or of every one when it's null, to every other radio on the channel, direct when in range and
+     * through the antennas, each pair's level kept; the other radios' links as last worked out; then, for the radios
+     * worked out, the devices each listener could hear them through and the level they hear them at. Returns how many
+     * hear someone, so none of it goes unused.
+     */
+    private int publish(List<UUID> ids, List<RadioHops.End> players, double[][] access, AntennaNetwork.Mesh mesh,
+        RadioHops hops, RadioRouting radio, Map<UUID, PlayerSnapshot> positions, Map<Pair, SignalLevel> kept,
+        Map<UUID, List<RadioSnapshot.Link>> evaluated, Set<UUID> fresh) {
+        LevelScale scale = t.levelScale();
+        double range = t.rangeToHold(t.walkieBudget());
+        RadioSnapshot.Builder builder = RadioSnapshot.builder();
+        List<UUID> worked = new ArrayList<>();
+        for (int s = 0; s < TRANSMITTERS; s++) {
+            UUID speaker = ids.get(s);
+            List<RadioSnapshot.Link> links = evaluated.get(speaker);
+            if (fresh == null || fresh.contains(speaker) || links == null) {
+                links = new ArrayList<>();
+                RadioHops.End from = players.get(s);
+                double[] reach = mesh.vhf()
+                    .reach(access[s]);
+                for (int r = 0; r < PLAYERS; r++) {
+                    if (r == s) continue;
+                    RadioHops.End to = players.get(r);
+                    double direct = from.distanceTo(to) <= range
+                        ? hops.direct(HILLS, from, to, t.walkieBudget(), t.vhf(), 0, false)
+                            .snr()
+                        : Double.NEGATIVE_INFINITY;
+                    double snr = Math.max(direct, AntennaMesh.through(reach, access[r]));
+                    SignalLevel level = scale.levelOf(snr);
+                    kept.put(new Pair(speaker, ids.get(r)), level);
+                    if (level.atLeast(SignalLevel.LOW)) links.add(new RadioSnapshot.Link(ids.get(r), null, snr, 0, 1));
+                }
+                evaluated.put(speaker, links);
+                worked.add(speaker);
+            }
+            builder.transmitter(speaker, 1);
+            for (RadioSnapshot.Link link : links) builder.link(speaker, link);
+        }
+        RadioSnapshot snapshot = builder.build();
+        radio.publish(snapshot);
+        Nearby nearby = new Nearby(positions.values());
+        int hearing = 0;
+        for (UUID speaker : worked) {
+            RadioSnapshot.Transmission tx = snapshot.transmission(speaker);
+            Map<UUID, List<RadioRouting.Carrier>> carriers = radio.carriers(
+                speaker,
+                tx,
+                positions,
+                nearby,
+                link -> kept.getOrDefault(new Pair(speaker, link.holder()), SignalLevel.NONE));
+            for (UUID listener : ids) {
+                if (listener.equals(speaker)) continue;
+                SignalLevel level = radio.heardThrough(speaker, 1, carriers.getOrDefault(listener, List.of()));
+                if (level != SignalLevel.NONE) hearing++;
+            }
+        }
+        return hearing;
+    }
+
+    /** The median of {@code runs} timings of {@code work}, after as many to warm up. */
+    private static long median(int runs, Runnable work) {
+        for (int i = 0; i < runs; i++) work.run();
+        long[] times = new long[runs];
+        for (int i = 0; i < runs; i++) {
+            long start = System.nanoTime();
+            work.run();
+            times[i] = System.nanoTime() - start;
+        }
+        Arrays.sort(times);
+        return times[runs / 2];
     }
 
     @Test
@@ -329,6 +412,34 @@ class BudgetLoadTest {
             "  of which sending: the same frame sent flat to the same listeners with no routing logic takes %s",
             us(bareFrame));
         line("  a call frame among 8 people: %s", us(callFrame));
+
+        // A radio publish on the server thread, everyone on one channel and all of it in one tick.
+        Map<UUID, PlayerSnapshot> positions = new HashMap<>();
+        double[][] access = new double[PLAYERS][];
+        for (int i = 0; i < PLAYERS; i++) {
+            RadioHops.End p = players.get(i);
+            positions.put(ids.get(i), new PlayerSnapshot(ids.get(i), "p" + i, p.x(), p.y(), p.z(), 0));
+            access[i] = network.access(mesh, 0, p, ids.get(i));
+        }
+        Map<Pair, SignalLevel> kept = new HashMap<>();
+        Map<UUID, List<RadioSnapshot.Link>> evaluated = new HashMap<>();
+        int hearing = publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, null);
+        long everyone = median(
+            9,
+            () -> publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, null));
+        Set<UUID> pressed = Set.of(ids.get(TRANSMITTERS - 1));
+        long press = median(
+            9,
+            () -> publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, pressed));
+        line(
+            "Radio publish on the server thread: %d keyed radios to %d on their channel, %d hearing someone",
+            TRANSMITTERS,
+            PLAYERS,
+            hearing);
+        line(
+            "  every radio's links, once a second: %s in one tick; one radio pressing push-to-talk: %s",
+            ms(everyone),
+            ms(press));
         System.out.print(report);
 
         // What DESIGN.md 6.5 promises: surveys keep to their budget, give or take one step, and the rest is small
@@ -337,5 +448,8 @@ class BudgetLoadTest {
         assertTrue(links > 0, "the antennas link up");
         assertTrue(p95 <= budget + STEP_SLACK_NANOS, "surveys keep to their budget: p95 " + ms(p95));
         assertTrue(accessPerTick + directPerTick < 5_000_000, "access and direct links stay small beside a tick");
+        assertTrue(hearing > 0, "a publish finds listeners");
+        assertTrue(everyone < 10_000_000, "a whole radio publish, once a second, takes under a fifth of a tick");
+        assertTrue(press < 1_000_000, "a press of push-to-talk works out only that radio");
     }
 }
