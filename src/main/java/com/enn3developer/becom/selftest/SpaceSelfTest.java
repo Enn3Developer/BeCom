@@ -11,6 +11,7 @@ import java.util.UUID;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEndPortal;
 import net.minecraft.block.BlockPortal;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -128,6 +129,12 @@ final class SpaceSelfTest {
     private MTEPortalRelay relayNether;
     private MTEPortalRelay relayTwilight;
     private MTEPortalRelay relayPersonal;
+    private MTEPortalRelay relayPersonalFar;
+    private MTEPortalRelay relayPersonalOther;
+    private int personalA = NO_DIMENSION;
+    private int personalB = NO_DIMENSION;
+    private LinkService.Outcome pairedPersonal;
+    private LinkService.Outcome pairedPersonalOther;
     private MTEPortalRelay relayBare;
     private MTEPortalRelay relayFarNether;
     private MTEPortalRelay relayTwilightFar;
@@ -170,6 +177,7 @@ final class SpaceSelfTest {
         steps.add(this::landRocket);
         steps.add(this::buildNether);
         steps.add(this::buildTwilightAndEnd);
+        steps.add(this::buildPersonal);
         steps.add(this::form);
         steps.add(this::startLaunch);
         steps.add(this::coverLaunch);
@@ -371,6 +379,24 @@ final class SpaceSelfTest {
         return 5;
     }
 
+    // Where the self-test's second Personal Space portal stands: out of the Overworld relay's reach.
+    private static final int PERSONAL_OTHER_DX = 68;
+
+    /**
+     * DESIGN.md 9.4, D46: two personal dimensions, made the way a player makes one at a Personal Space portal in the
+     * Overworld, each with a relay by its return portal. The Overworld relay stands by the portal into the first.
+     */
+    private int buildPersonal() {
+        if (!personalPlaced) return 1;
+        placeByClass(overworld, SX + PERSONAL_OTHER_DX, Y, RELAY_Z, Portals.PERSONAL_PORTAL);
+        personalA = makePersonalDimension(SX + 62, Y, RELAY_Z);
+        personalB = makePersonalDimension(SX + PERSONAL_OTHER_DX, Y, RELAY_Z);
+        relayPersonalFar = returnRelay(SX + 62, Y, RELAY_Z, personalA);
+        relayPersonalOther = returnRelay(SX + PERSONAL_OTHER_DX, Y, RELAY_Z, personalB);
+        // Machines join the network as they first tick.
+        return 5;
+    }
+
     private int form() {
         for (MTEEnhancedMultiBlockBase<?> machine : List.<MTEEnhancedMultiBlockBase<?>>of(pad, dishA, dishB)) {
             machine.checkStructure(true, machine.getBaseMetaTileEntity());
@@ -408,6 +434,15 @@ final class SpaceSelfTest {
             becom.links.forget(owner.getUniqueID());
             becom.links.wrench(owner, overworld, pos(relayEnd));
             pairedEnd = becom.links.wrench(owner, end, pos(relayEndFar));
+        }
+        if (relayPersonalFar != null && relayPersonalOther != null) {
+            relayPersonal.look();
+            becom.links.forget(owner.getUniqueID());
+            becom.links.wrench(owner, overworld, pos(relayPersonal));
+            pairedPersonalOther = becom.links.wrench(owner, worldOf(relayPersonalOther), pos(relayPersonalOther));
+            becom.links.forget(owner.getUniqueID());
+            becom.links.wrench(owner, overworld, pos(relayPersonal));
+            pairedPersonal = becom.links.wrench(owner, worldOf(relayPersonalFar), pos(relayPersonalFar));
         }
         for (WorldServer w : new WorldServer[] { overworld, moon, nether }) {
             if (w == null) continue;
@@ -854,17 +889,41 @@ final class SpaceSelfTest {
             personalPlaced && relayPersonal.look()
                 .contains(Portals.Kind.PERSONAL_SPACE),
             "placed " + personalPlaced + ", " + relayPersonal.portals());
-        // A player links a Personal Space portal to their dimension; the self-test can't make one, so it sets the
-        // portal's tile the way linking does.
-        boolean linked = personalPlaced && linkPersonalPortal(SX + 62, Y, RELAY_Z, PERSONAL_DIMENSION);
-        relayPersonal.look();
-        t.check(
-            "...and reads where it leads, so it pairs only with a relay in that personal dimension (DESIGN.md 9.4)",
-            linked && relayPersonal.personalTargets()
-                .equals(Set.of(PERSONAL_DIMENSION))
-                && becom.network.personalTargetsOf(relayPersonal.ref())
-                    .equals(Set.of(PERSONAL_DIMENSION)),
-            "linked " + linked + ", leads to " + relayPersonal.personalTargets());
+        if (relayPersonalFar == null || relayPersonalOther == null) {
+            t.fail(
+                "Personal Space makes two personal dimensions at portals, as for a player",
+                "dimensions " + personalA + " and " + personalB);
+        } else {
+            relayPersonal.look();
+            t.check(
+                "...and reads where Personal Space linked it: into the personal dimension made there",
+                relayPersonal.personalTargets()
+                    .equals(Set.of(personalA))
+                    && becom.network.personalTargetsOf(relayPersonal.ref())
+                        .equals(Set.of(personalA)),
+                "leads to " + relayPersonal.personalTargets() + ", made " + personalA);
+            t.check(
+                "relays by that portal and its return portal pair into the personal dimension, a High hop, and one in "
+                    + "another personal dimension is refused (DESIGN.md 9.4)",
+                pairedPersonal == LinkService.Outcome.LINKED && pairedPersonalOther == LinkService.Outcome.REFUSED
+                    && Math.abs(
+                        becom.network.graph()
+                            .width(vertex(relayPersonal), vertex(relayPersonalFar)) - high())
+                        < SelfTest.EPS,
+                pairedPersonal + ", other " + pairedPersonalOther);
+            // Its owner relinks the Overworld portal into the other dimension.
+            boolean relinked = linkPersonalPortal(SX + 62, Y, RELAY_Z, personalB);
+            relayPersonal.look();
+            double width = becom.network.graph()
+                .width(vertex(relayPersonal), vertex(relayPersonalFar));
+            t.check(
+                "...and once the Overworld portal leads into another dimension, the pair carries no calls",
+                relinked && width < BeComConfig.get()
+                    .levelLow(),
+                "relinked " + relinked + ", " + width + " dB");
+            linkPersonalPortal(SX + 62, Y, RELAY_Z, personalA);
+            relayPersonal.look();
+        }
         if (twilight != null) {
             t.check(
                 "relays by Twilight Forest portals on both sides pair into the Twilight Forest, a High hop, "
@@ -1112,8 +1171,67 @@ final class SpaceSelfTest {
         ((BlockPortal) Blocks.portal).func_150000_e(world, x + 1, y + 1, z);
     }
 
-    // A personal dimension's id as Personal Space numbers them; no world needs to exist for a portal to name it.
-    private static final int PERSONAL_DIMENSION = 180;
+    // No personal dimension: Personal Space didn't make one.
+    private static final int NO_DIMENSION = Integer.MIN_VALUE;
+    private static final String PERSONAL_CONFIG = "me.eigenraven.personalspace.world.DimensionConfig";
+
+    /**
+     * Makes a personal dimension at the Personal Space portal in the Overworld at a spot, through Personal Space's own
+     * settings screen action, with its default settings, as the self-test's owner: its id, or {@link #NO_DIMENSION}.
+     * Personal Space adds a return portal there; each run makes new ones.
+     */
+    private int makePersonalDimension(int x, int y, int z) {
+        TileEntity tile = overworld.getTileEntity(x, y, z);
+        if (tile == null || !Portals.PERSONAL_PORTAL_TILE.equals(
+            tile.getClass()
+                .getName()))
+            return NO_DIMENSION;
+        try {
+            Class<?> config = Class.forName(PERSONAL_CONFIG);
+            tile.getClass()
+                .getMethod("updateSettings", EntityPlayerMP.class, config)
+                .invoke(
+                    tile,
+                    owner,
+                    config.getConstructor()
+                        .newInstance());
+            Integer target = Portals.personalTarget(tile);
+            return target == null || target == Portals.UNKNOWN_DIMENSION ? NO_DIMENSION : target;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            t.log("Personal Space didn't make a dimension: " + e);
+            return NO_DIMENSION;
+        }
+    }
+
+    /** A relay by the return portal in {@code dimension}, where the Overworld portal at a spot leads; null if none. */
+    private MTEPortalRelay returnRelay(int x, int y, int z, int dimension) {
+        if (dimension == NO_DIMENSION) return null;
+        WorldServer world = DimensionManager.getWorld(dimension);
+        TileEntity tile = overworld.getTileEntity(x, y, z);
+        if (world == null || tile == null) return null;
+        try {
+            int px = tile.getClass()
+                .getField("targetPosX")
+                .getInt(tile);
+            int py = tile.getClass()
+                .getField("targetPosY")
+                .getInt(tile);
+            int pz = tile.getClass()
+                .getField("targetPosZ")
+                .getInt(tile);
+            for (int cx = (px - 16) >> 4; cx <= (px + 16) >> 4; cx++) {
+                for (int cz = (pz - 16) >> 4; cz <= (pz + 16) >> 4; cz++) t.keepLoaded(world, cx, cz);
+            }
+            return relay(world, px + 2, py, pz);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private static WorldServer worldOf(MTEPortalRelay relay) {
+        return (WorldServer) relay.getBaseMetaTileEntity()
+            .getWorld();
+    }
 
     /** Links the Personal Space portal at a spot to {@code dimension}, as its owner linking it would. */
     private boolean linkPersonalPortal(int x, int y, int z, int dimension) {
