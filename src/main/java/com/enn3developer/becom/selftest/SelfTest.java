@@ -967,6 +967,10 @@ public final class SelfTest {
         questProbe = UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000aa");
         Object task = invoke(quests, "firstTask", QuestTask.FIRST_CALL);
         check("the first-call quest uses BeCom's task type", task != null, "");
+        check(
+            "the radio-contact quest uses BeCom's task type",
+            invoke(quests, "firstTask", QuestTask.RADIO_CONTACT) != null,
+            "");
         // A database to reload, saved by BQ itself without BeCom's quests: what a pack's DefaultQuests looks like.
         quests.removeQuestlineForTest();
         command("/bq_admin default save " + RELOAD_DATABASE);

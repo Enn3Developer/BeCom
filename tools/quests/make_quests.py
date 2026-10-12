@@ -137,6 +137,99 @@ QUESTS = [
         "big": True,
         "pos": (144, 120),
     },
+    {
+        "key": "antenna_t1",
+        "tier": "LV",
+        "name": "On the Air",
+        "desc": "An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine "
+        "Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, "
+        "and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or "
+        "Line Terminal within 16 blocks to carry that line over radio.",
+        "icon": (GT_MACHINE, 25004),
+        "pre": ["first_call"],
+        "tasks": [("item", GT_MACHINE, 25004, 1)],
+        "big": True,
+        "pos": (192, 48),
+    },
+    {
+        "key": "transceiver",
+        "tier": "MV",
+        "name": "Base Station",
+        "desc": "A Transceiver is a radio on a block, at MV and 32 EU/t. Stand within 2 blocks of it and hold the "
+        "radio push-to-talk key, Caps Lock unless you changed it, to talk on its channel. Its loudspeaker plays the "
+        "channel to everyone within 16 blocks. On its own it reaches about 125 blocks on open ground.",
+        "icon": (GT_MACHINE, 25007),
+        "pre": ["first_call"],
+        "tasks": [("item", GT_MACHINE, 25007, 1)],
+        "big": False,
+        "pos": (192, 96),
+    },
+    {
+        "key": "signal_analyzer",
+        "tier": "MV",
+        "name": "Reading the Air",
+        "desc": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna "
+        "serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs "
+        "6 dB for Low and 12 for Medium; below 6 it drops.",
+        "icon": ("becom:signal_analyzer", 0),
+        "pre": ["antenna_t1"],
+        "tasks": [("item", "becom:signal_analyzer", 0, 1)],
+        "big": False,
+        "pos": (240, 24),
+    },
+    {
+        "key": "walkie_talkie",
+        "tier": "MV",
+        "name": "Pocket Radio",
+        "desc": "A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of "
+        "16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It "
+        "reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears "
+        "what it receives.",
+        "icon": ("becom:walkie_talkie", 0),
+        "pre": ["transceiver"],
+        "tasks": [("item", "becom:walkie_talkie", 0, 1)],
+        "big": False,
+        "pos": (240, 96),
+    },
+    {
+        "key": "radio_contact",
+        "tier": "MV",
+        "name": "Over and Out",
+        "desc": "Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the "
+        "antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener "
+        "hears the stronger one.",
+        "icon": ("becom:walkie_talkie", 0),
+        "pre": ["walkie_talkie"],
+        "tasks": [("becom", "RADIO_CONTACT")],
+        "big": True,
+        "pos": (288, 96),
+    },
+    {
+        "key": "antenna_t2",
+        "tier": "MV",
+        "name": "A Taller Mast",
+        "desc": "An Antenna T2 stands on MV Machine Casings with an Aluminium Frame Box mast and uses 128 EU/t. It "
+        "reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. "
+        "Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.",
+        "icon": (GT_MACHINE, 25005),
+        "pre": ["antenna_t1"],
+        "tasks": [("item", GT_MACHINE, 25005, 1)],
+        "big": False,
+        "pos": (288, 48),
+    },
+    {
+        "key": "antenna_t3",
+        "tier": "HV",
+        "name": "Across the Valley",
+        "desc": "An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 "
+        "EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a "
+        "hill in the way can cost more than the distance.",
+        "icon": (GT_MACHINE, 25006),
+        "pre": ["antenna_t2"],
+        "tasks": [("item", GT_MACHINE, 25006, 1)],
+        "big": True,
+        "pos": (336, 48),
+    },
 ]
 
 

@@ -13,3 +13,17 @@ DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/KeepingtheSig
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/KeepingtheSignal-EwUn7B5YXiqaZtu5vTGc2Q==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-ARn2PctkVOe0cqI7997r1Q==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-ARn2PctkVOe0cqI7997r1Q==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OntheAir-UYdKN4lyUKWOiqsyX6luCQ==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OntheAir-UYdKN4lyUKWOiqsyX6luCQ==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BaseStation-VdecT0iBUsCxBEbIo6xNeA==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BaseStation-VdecT0iBUsCxBEbIo6xNeA==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ReadingtheAir-8sQY72VCXU2ZURqIKp1zVw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ReadingtheAir-8sQY72VCXU2ZURqIKp1zVw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PocketRadio-82uwmy_wU3eMPoGqyurVlw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PocketRadio-82uwmy_wU3eMPoGqyurVlw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OverandOut-gNOxxRElWUebInHOkYOeQw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OverandOut-gNOxxRElWUebInHOkYOeQw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ATallerMast-BRsUHvwqVhSei0mx4y1eWg==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ATallerMast-BRsUHvwqVhSei0mx4y1eWg==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AcrosstheValley-fia8emGdXIqzunSxVhLBng==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AcrosstheValley-fia8emGdXIqzunSxVhLBng==.json

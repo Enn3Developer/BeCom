@@ -178,6 +178,20 @@ betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.name=Keeping the Signal Alive
 betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=A Repeater Head is a Pylon Head that regenerates the signal, so line loss starts over after it. It takes 4 EU/t of LV power from a cable on any side, and works only while loaded and powered.
 betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.name=Switchboard
 betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two phones. A Router Head has 15 link slots and turns lines into a network, where any phone can dial any other. It regenerates the signal like a repeater, and takes 16 EU/t of LV power from a cable.
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=On the Air
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or Line Terminal within 16 blocks to carry that line over radio.
+betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=Base Station
+betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.desc=A Transceiver is a radio on a block, at MV and 32 EU/t. Stand within 2 blocks of it and hold the radio push-to-talk key, Caps Lock unless you changed it, to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks. On its own it reaches about 125 blocks on open ground.
+betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.name=Reading the Air
+betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.desc=Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs 6 dB for Low and 12 for Medium; below 6 it drops.
+betterquesting.quest.82uwmy_wU3eMPoGqyurVlw.name=Pocket Radio
+betterquesting.quest.82uwmy_wU3eMPoGqyurVlw.desc=A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears what it receives.
+betterquesting.quest.gNOxxRElWUebInHOkYOeQw.name=Over and Out
+betterquesting.quest.gNOxxRElWUebInHOkYOeQw.desc=Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener hears the stronger one.
+betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.name=A Taller Mast
+betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=An Antenna T2 stands on MV Machine Casings with an Aluminium Frame Box mast and uses 128 EU/t. It reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.
+betterquesting.quest.fia8emGdXIqzunSxVhLBng.name=Across the Valley
+betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a hill in the way can cost more than the distance.
 # End of quests
 
 # Quest tasks

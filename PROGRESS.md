@@ -296,7 +296,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 
 | Item                                                               | Status |
 |--------------------------------------------------------------------|--------|
-| The radio quests, with the Radio contact task                      | todo   |
+| The radio quests, with the Radio contact task                      | done   |
 
 ### Assets (DESIGN.md 15)
 
