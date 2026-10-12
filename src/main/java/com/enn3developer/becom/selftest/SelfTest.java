@@ -259,6 +259,7 @@ public final class SelfTest {
         steps.add(this::checkPhoneMoves);
         steps.add(this::checkBaublePhone);
         steps.add(this::checkTwoRinging);
+        steps.add(this::checkContactsAgain);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -2156,8 +2157,20 @@ public final class SelfTest {
             PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
         int more = becom.calls.reachableSearchesForSelfTest() - searches;
         check(
-            "a phone screen open for a second finds its contacts once, not every tick (DESIGN.md 14)",
-            more <= 1,
+            "a phone screen open for a second finds its contacts once, not every tick (X32)",
+            more == 1,
+            more + " searches");
+        return TICKS_PER_SECOND;
+    }
+
+    private int checkContactsAgain() {
+        int searches = becom.calls.reachableSearchesForSelfTest();
+        for (int i = 0; i < TICKS_PER_SECOND; i++)
+            PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
+        int more = becom.calls.reachableSearchesForSelfTest() - searches;
+        check(
+            "...and finds them again a second later, so a change shows within a second (X32)",
+            more == 1,
             more + " searches");
         return 1;
     }

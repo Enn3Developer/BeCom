@@ -489,3 +489,16 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** weather costs UHF alone (D26), so a VHF-only reading, as in 0.2, could never show it, and phone users would
   read the radio band's numbers.
 - **To match the design:** nothing to undo; show one band, chosen by what the player carries, if the owner prefers.
+
+### X32: A phone's contacts are kept a second
+
+- **Where:** 0.3, DESIGN.md 14 (path finding), 5.6, 11.2
+- **Design says:** a call's best path is found again only when a node, a link or an access level changes.
+- **Built:** the call graph solves each starting point's best paths once and keeps them until the network changes, as
+  the design says. On top of that, the list of phones a phone can reach, which its screen's contacts and a
+  Telephone's pick-up read, is kept a second per phone. That list can be up to a second old: a phone that just came into reach shows a second late, and
+  one that just went out of reach still shows, though dialling it checks the path again and is refused.
+- **Why:** an open phone screen asks for its contacts every tick, and the list is a lookup for every phone in reach
+  and every carried phone switched on. Kept a second, a screen costs one list a second. Carried phones' service
+  changes about once a second anyway, as they move.
+- **To match the design:** keep the list until the network or a carried phone's service changes, instead of a second.
