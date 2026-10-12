@@ -24,6 +24,24 @@ jobs:
       client-only: true
     secrets: inherit
 
+  modernity-pack:
+    name: Modernity add-on pack
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout mod repo
+        uses: actions/checkout@v5
+
+      # DESIGN.md 15.1: the Modernity style ships beside the jar, never in it. Players stack the zip above Modernity.
+      - name: Zip the pack
+        run: cd resourcepacks/modernity && zip -r -X "$GITHUB_WORKSPACE/Modernity-GTNHAddon-BeCom.zip" pack.mcmeta assets
+
+      - name: Attach the pack
+        uses: actions/upload-artifact@v7
+        with:
+          name: Modernity-GTNHAddon-BeCom
+          path: Modernity-GTNHAddon-BeCom.zip
+          retention-days: 90
+
   run-server:
     name: Run server (modern Java)
     runs-on: ubuntu-24.04

@@ -71,6 +71,9 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.number }}
 
+      - name: Zip the Modernity add-on pack
+        run: cd resourcepacks/modernity && zip -r -X "$GITHUB_WORKSPACE/Modernity-GTNHAddon-BeCom.zip" pack.mcmeta assets
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,4 +81,5 @@ jobs:
           gh release create "${RELEASE_VERSION}" \
             --title "${RELEASE_VERSION}" \
             --notes-file "${{ steps.changelog_reader.outputs.changes_file }}" \
-            ./build/libs/*.jar
+            ./build/libs/*.jar \
+            Modernity-GTNHAddon-BeCom.zip

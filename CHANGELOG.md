@@ -93,6 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Textures for the space machines and parts in both styles, and a rocket launch sound.
 - Milestone 1.0, polish: Italian, every string and the quest text. A test keeps Italian in step with English, key for
   key.
+- CI zips the Modernity add-on pack as `Modernity-GTNHAddon-BeCom.zip` on every build, and releases attach it next to
+  the jar.
 
 ### Changed
 
