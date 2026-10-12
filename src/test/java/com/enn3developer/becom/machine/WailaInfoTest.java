@@ -41,11 +41,17 @@ class WailaInfoTest {
 
     @Test
     void onlyAPlayerCloseByInTheSameDimensionIsLooking() {
-        assertTrue(WailaInfo.near(0, 12.5, 64, 10.5, 0, 10, 64, 10), "two blocks off");
-        assertTrue(WailaInfo.near(0, 18.9, 64, 10.5, 0, 10, 65, 10), "8.4 blocks off at eye level, with far reach");
-        assertTrue(WailaInfo.near(0, 10.5 + 11.9, 64, 10.5, 0, 10, 65, 10), "just within reach");
-        assertFalse(WailaInfo.near(0, 10.5 + 12.1, 64, 10.5, 0, 10, 65, 10), "just out of reach");
-        assertFalse(WailaInfo.near(0, 10.5, 64 + 14, 10.5, 0, 10, 64, 10), "straight above, out of reach");
-        assertFalse(WailaInfo.near(-1, 12.5, 64, 10.5, 0, 10, 64, 10), "the same spot in another dimension");
+        assertTrue(WailaInfo.near(5, 0, 12.5, 64, 10.5, 0, 10, 64, 10), "two blocks off");
+        assertTrue(WailaInfo.near(5, 0, 10.5 + 7.9, 64, 10.5, 0, 10, 65, 10), "just within reach");
+        assertFalse(WailaInfo.near(5, 0, 10.5 + 8.1, 64, 10.5, 0, 10, 65, 10), "just out of reach");
+        assertFalse(WailaInfo.near(5, 0, 10.5, 64 + 9, 10.5, 0, 10, 64, 10), "straight above, out of reach");
+        assertFalse(WailaInfo.near(5, -1, 12.5, 64, 10.5, 0, 10, 64, 10), "the same spot in another dimension");
+    }
+
+    @Test
+    void aFarReachingPlayerIsLookingFromFurther() {
+        // Two of Botania's Rings of Far Reach: 12 blocks, here to the face, 12.5 to the middle.
+        assertTrue(WailaInfo.near(12, 0, 23.0, 65.5 - 1.62, 10.5, 0, 10, 65, 10), "eyes 12.5 blocks from the middle");
+        assertFalse(WailaInfo.near(5, 0, 23.0, 65.5 - 1.62, 10.5, 0, 10, 65, 10), "out of reach without the rings");
     }
 }
