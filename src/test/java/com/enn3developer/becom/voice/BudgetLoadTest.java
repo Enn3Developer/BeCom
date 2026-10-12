@@ -39,6 +39,13 @@ class BudgetLoadTest {
     private static final int LISTENERS = 20;
     private static final int TICKS_PER_SECOND = 20;
     private static final int FRAMES_PER_SECOND = 50;
+    /** Timed survey runs: enough ticks that p99 isn't the slowest one, so one stray pause doesn't decide it. */
+    private static final int SURVEY_RUNS = 10;
+    /**
+     * How far a tick may run past the survey budget: the budget is checked between steps, and a step, one bearing or
+     * one link, takes a few microseconds, so half a millisecond leaves room for the clock and nothing more.
+     */
+    private static final long STEP_SLACK_NANOS = 500_000;
     private static final double EYES = 1.62;
     private static final double MAST = 24;
 
@@ -127,15 +134,22 @@ class BudgetLoadTest {
             Runtime.getRuntime()
                 .availableProcessors());
 
-        // Surveys: once as a warm-up for the JIT, then timed.
+        // Surveys: once as a warm-up for the JIT, then timed over several runs.
         long[][] times = new long[1][];
         surveyed(refs, ends, budget, times);
-        AntennaNetwork network = surveyed(refs, ends, budget, times);
-        long[] ticks = times[0].clone();
-        Arrays.sort(ticks);
+        AntennaNetwork network = null;
+        List<Long> timed = new ArrayList<>();
+        for (int run = 0; run < SURVEY_RUNS; run++) {
+            network = surveyed(refs, ends, budget, times);
+            for (long tick : times[0]) timed.add(tick);
+        }
+        long[] ticks = timed.stream()
+            .mapToLong(Long::longValue)
+            .sorted()
+            .toArray();
         long total = Arrays.stream(ticks)
             .sum();
-        double perSurvey = (double) total / refs.size();
+        double perSurvey = (double) total / (refs.size() * SURVEY_RUNS);
         long p99 = ticks[(int) Math.min(ticks.length - 1, Math.ceil(ticks.length * 0.99) - 1)];
         long max = ticks[ticks.length - 1];
         double sustained = t.surveySeconds() * TICKS_PER_SECOND * (double) budget / perSurvey;
@@ -144,8 +158,8 @@ class BudgetLoadTest {
             refs.size(),
             SPACING,
             ms(budget),
-            ticks.length,
-            ticks.length / (double) TICKS_PER_SECOND);
+            times[0].length,
+            times[0].length / (double) TICKS_PER_SECOND);
         line("  per tick: p99 %s, max %s; one T3 survey with its links: %s", ms(p99), ms(max), ms(perSurvey));
         line(
             "  the budget sustains about %.0f T3 antennas, each surveyed again every %d s",
@@ -310,7 +324,7 @@ class BudgetLoadTest {
         // beside a tick's 50 ms.
         assertEquals(PLAYERS - 1, heard, "every listener on the channel gets the frame");
         assertTrue(links > 0, "the antennas link up");
-        assertTrue(p99 <= budget + 1_000_000, "surveys keep to their budget: p99 " + ms(p99));
+        assertTrue(p99 <= budget + STEP_SLACK_NANOS, "surveys keep to their budget: p99 " + ms(p99));
         assertTrue(accessPerTick + directPerTick < 5_000_000, "access and direct links stay small beside a tick");
     }
 }
