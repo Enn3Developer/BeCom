@@ -195,6 +195,17 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         return CheckRecipeResultRegistry.SUCCESSFUL;
     }
 
+    // Whether the sky over the pad was open at the last look, taken once a second while a launch runs.
+    private boolean skyOpen = true;
+
+    /** A launch holds while anything covers the pad, drawing no power, and goes on once it's clear (DESIGN.md 9.1). */
+    @Override
+    public boolean onRunningTick(ItemStack stack) {
+        if (getBaseMetaTileEntity().getTimer() % TICKS_PER_SECOND == 0) skyOpen = openSky();
+        if (!skyOpen) return false;
+        return super.onRunningTick(stack);
+    }
+
     // A launch draws its power whatever the maintenance; its problems cost time instead (DESIGN.md 9.1).
     @Override
     protected long getActualEnergyUsage() {

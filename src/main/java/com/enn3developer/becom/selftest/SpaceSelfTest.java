@@ -157,6 +157,8 @@ final class SpaceSelfTest {
         steps.add(this::buildNether);
         steps.add(this::form);
         steps.add(this::startLaunch);
+        steps.add(this::coverLaunch);
+        steps.add(this::checkLaunchHeld);
         steps.add(this::checkLaunch);
         steps.add(this::checkNoSkyNoLaunch);
         steps.add(this::startDecay);
@@ -350,9 +352,31 @@ final class SpaceSelfTest {
             filled == 2 * fuel(),
             filled + " L of " + 2 * fuel());
         t.check("its screen counts one rocket waiting to launch (DESIGN.md 11.4)", pad.rocketsWaiting() == 1, "");
-        // GT looks for work every 5 s while idle; then the launch takes its 30 s.
+        // GT looks for work every 5 s while idle.
+        return 8 * SelfTest.TICKS_PER_SECOND;
+    }
+
+    private int launchHeldAt;
+
+    /** DESIGN.md 9.1: a block over the pad during a launch holds it. */
+    private int coverLaunch() {
+        t.check("the launch starts", pad.mMaxProgresstime > 0, "progress " + pad.mProgresstime);
+        launchHeldAt = pad.mProgresstime;
+        overworld.setBlock(SX + 2, Y + 3, SZ + 1, Blocks.stone);
+        return 3 * SelfTest.TICKS_PER_SECOND;
+    }
+
+    private int checkLaunchHeld() {
+        // The pad looks at the sky once a second, so it may run on for up to a second first.
+        t.check(
+            "a block over the pad during a launch holds it, and nothing launches",
+            pad.mMaxProgresstime > 0 && pad.mProgresstime - launchHeldAt <= SelfTest.TICKS_PER_SECOND
+                && becom.space.count(0) == 4,
+            "progress " + launchHeldAt + " then " + pad.mProgresstime);
+        overworld.setBlockToAir(SX + 2, Y + 3, SZ + 1);
+        // Cleared, the launch goes on for what's left of its 30 s.
         return BeComConfig.get()
-            .launchSeconds() * SelfTest.TICKS_PER_SECOND + 8 * SelfTest.TICKS_PER_SECOND;
+            .launchSeconds() * SelfTest.TICKS_PER_SECOND + 2 * SelfTest.TICKS_PER_SECOND;
     }
 
     private int fuel() {
