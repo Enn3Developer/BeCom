@@ -596,10 +596,14 @@ class RadioGroupTest {
         fixture.route(one, cat, RADIO);
         assertEquals(
             SignalLevel.MEDIUM,
-            shared.heardThrough(cat, 1, List.of(bob, dan), List.of(SignalLevel.LOW, SignalLevel.MEDIUM)));
+            shared
+                .heardThrough(cat, 1, List.of(carrier(bob, 7, SignalLevel.LOW), carrier(dan, 20, SignalLevel.MEDIUM))));
         assertEquals(
             SignalLevel.LOW,
-            shared.heardThrough(alice, 1, List.of(bob, dan), List.of(SignalLevel.LOW, SignalLevel.MEDIUM)));
+            shared.heardThrough(
+                alice,
+                1,
+                List.of(carrier(bob, 10, SignalLevel.LOW), carrier(dan, 0, SignalLevel.MEDIUM))));
     }
 
     @Test
@@ -621,12 +625,47 @@ class RadioGroupTest {
                 .transmitter(alice, 1)
                 .link(alice, walkie(bob, 7))
                 .build());
-        assertEquals(SignalLevel.LOW, shared.heardThrough(alice, 1, List.of(bob), List.of(SignalLevel.LOW)));
+        assertEquals(SignalLevel.LOW, shared.heardThrough(alice, 1, List.of(carrier(bob, 7, SignalLevel.LOW))));
         fixture.sent.clear();
         fixture.route(one, alice, RADIO);
         assertTrue(
             fixture.recipients()
                 .contains(bob));
+    }
+
+    @Test
+    void aStrongerSpeakerTakingADeviceGetsItsLevel() {
+        // Cat holds Bob's walkie at 7 dB when Alice keys up at 20: her first frame takes the walkie (D24's margin), so
+        // her level for Bob is the walkie's, though its hold on Cat hasn't run out.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 7))
+                .build());
+        fixture.route(one, cat, RADIO);
+        now += 10 * MS;
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 7))
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 20))
+                .build());
+        assertEquals(SignalLevel.MEDIUM, shared.heardThrough(alice, 1, List.of(carrier(bob, 20, SignalLevel.MEDIUM))));
+        // One no stronger than the margin doesn't.
+        assertEquals(SignalLevel.NONE, shared.heardThrough(alice, 1, List.of(carrier(bob, 9, SignalLevel.LOW))));
+        fixture.sent.clear();
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            fixture.recipients()
+                .contains(bob));
+    }
+
+    private static RadioRouting.Carrier carrier(UUID device, double snr, SignalLevel level) {
+        return new RadioRouting.Carrier(device, snr, level);
     }
 
     @Test

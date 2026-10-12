@@ -105,18 +105,19 @@ public final class RadioRouting {
         return speaker.equals(listeners.holder(player, channel));
     }
 
+    /** A device that could carry a speaker to a listener: its link from the speaker, and that link's level. */
+    public record Carrier(Object device, double snr, SignalLevel level) {}
+
     /**
      * Server thread: the level a listener hears {@code speaker} at, given the devices that could carry it to them in
-     * the order {@code route()} sends through them (their own walkie, walkies around them, loudspeakers) and each one's
-     * level. route() sends nothing through a device whose capture holds another speaker, so the first device that
-     * doesn't is the one they hear (DESIGN.md 13.5: that device's level).
+     * the order {@code route()} sends through them (their own walkie, walkies around them, loudspeakers). route()
+     * sends nothing through a device whose capture keeps another speaker, so the first device that would take this
+     * speaker's frame is the one they hear (DESIGN.md 13.5: that device's level).
      */
-    public SignalLevel heardThrough(UUID speaker, int channel, List<?> devices, List<SignalLevel> levels) {
+    public SignalLevel heardThrough(UUID speaker, int channel, List<Carrier> carriers) {
         long now = clock.getAsLong();
-        for (int i = 0; i < devices.size(); i++) {
-            // A hold that has run out is free: the next speaker's first frame takes the device.
-            Object holder = capture.activeHolder(devices.get(i), channel, now);
-            if (holder == null || holder.equals(speaker)) return levels.get(i);
+        for (Carrier carrier : carriers) {
+            if (capture.wouldAdmit(carrier.device(), channel, speaker, carrier.snr(), now)) return carrier.level();
         }
         return SignalLevel.NONE;
     }

@@ -546,13 +546,11 @@ public final class RadioService {
                 UUID id = listener.getUniqueID();
                 if (id.equals(speaker)) continue;
                 // The devices that can carry this speaker to them, in the order route() sends through them.
-                List<Object> devices = new ArrayList<>();
-                List<SignalLevel> deviceLevels = new ArrayList<>();
+                List<RadioRouting.Carrier> carriers = new ArrayList<>();
                 for (RadioSnapshot.Link link : tx.walkies()) {
                     if (link.holder()
                         .equals(id)) {
-                        devices.add(link.device());
-                        deviceLevels.add(levelOf(speaker, id));
+                        carriers.add(new RadioRouting.Carrier(link.device(), link.snr(), levelOf(speaker, id)));
                     }
                 }
                 for (RadioSnapshot.Link link : tx.walkies()) {
@@ -560,19 +558,22 @@ public final class RadioService {
                     if (holder != null && holder != listener
                         && holder.dimension == listener.dimension
                         && holder.getDistanceSqToEntity(listener) <= walkieSq) {
-                        devices.add(link.device());
-                        deviceLevels.add(levelOf(speaker, link.holder()));
+                        carriers
+                            .add(new RadioRouting.Carrier(link.device(), link.snr(), levelOf(speaker, link.holder())));
                     }
                 }
                 for (RadioSnapshot.Link link : tx.transceivers()) {
                     RadioSnapshot.Transceiver t = link.transceiver();
                     if (t.loudspeaker() && t.dimension() == listener.dimension
                         && listener.getDistanceSq(t.x(), t.y(), t.z()) <= loudSq) {
-                        devices.add(link.device());
-                        deviceLevels.add(levelOf(speaker, new NodeRef(t.dimension(), t.pos())));
+                        carriers.add(
+                            new RadioRouting.Carrier(
+                                link.device(),
+                                link.snr(),
+                                levelOf(speaker, new NodeRef(t.dimension(), t.pos()))));
                     }
                 }
-                SignalLevel level = routing.heardThrough(speaker, tx.channel(), devices, deviceLevels);
+                SignalLevel level = routing.heardThrough(speaker, tx.channel(), carriers);
                 Heard heard = new Heard(id, speaker);
                 Sent before = sent.get(heard);
                 if (level == SignalLevel.NONE && before == null) continue;

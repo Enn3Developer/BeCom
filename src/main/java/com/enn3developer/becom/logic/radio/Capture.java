@@ -62,13 +62,17 @@ public final class Capture<L> {
     }
 
     /**
-     * Who {@code listener} is holding on {@code channel} at {@code nowNanos}, by the same rule {@link #admit} uses:
-     * null once the hold has run out. {@link #holder} still answers after that, for the squelch tail.
+     * Whether {@link #admit} would let a frame from {@code speaker} at {@code snr} dB through to {@code listener} at
+     * {@code nowNanos}, without changing who it holds: its hold is free or run out, it holds this speaker, or the
+     * speaker is at least the margin stronger. Safe from any thread; the answer may be a frame old.
      */
-    public Object activeHolder(L listener, int channel, long nowNanos) {
+    public boolean wouldAdmit(L listener, int channel, Object speaker, double snr, long nowNanos) {
         State state = holders.get(new Key<>(listener, channel));
-        if (state == null || nowNanos - state.lastNanos > holdNanos) return null;
-        return state.speaker;
+        if (state == null) return true;
+        Object held = state.speaker;
+        return held == null || held.equals(speaker)
+            || nowNanos - state.lastNanos > holdNanos
+            || snr >= state.snr + margin;
     }
 
     /** Server thread: forgets a listener, on every channel. */

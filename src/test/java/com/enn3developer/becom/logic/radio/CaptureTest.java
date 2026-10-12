@@ -39,6 +39,19 @@ class CaptureTest {
     }
 
     @Test
+    void wouldAdmitAnswersLikeAdmitWithoutTakingTheListener() {
+        assertTrue(capture.wouldAdmit("ann", 1, "bob", 10, 0));
+        assertTrue(capture.admit("ann", 1, "bob", 10, 0));
+        assertTrue(capture.wouldAdmit("ann", 1, "bob", 1, 20 * MS));
+        assertFalse(capture.wouldAdmit("ann", 1, "cat", 12.9, 20 * MS));
+        assertTrue(capture.wouldAdmit("ann", 1, "cat", 13, 20 * MS));
+        assertTrue(capture.wouldAdmit("ann", 1, "cat", 8, 101 * MS));
+        // Asking took nothing: Bob still holds Ann against a weaker Cat.
+        assertEquals("bob", capture.holder("ann", 1));
+        assertFalse(capture.admit("ann", 1, "cat", 8, 40 * MS));
+    }
+
+    @Test
     void eachListenerAndChannelIsSeparate() {
         assertTrue(capture.admit("ann", 1, "bob", 20, 0));
         assertTrue(capture.admit("dan", 1, "cat", 8, 0));
