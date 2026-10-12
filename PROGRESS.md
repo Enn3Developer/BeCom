@@ -312,3 +312,192 @@ built if it fails there.
 | Modernity style of all of the above                                | done   |
 | Sound: walkie squelch tail                                         | done   |
 | English language entries                                           | done   |
+
+### Summary
+
+**Built.** Radio on top of 0.1's wired calls, end to end on the server:
+
+- The radio model of DESIGN.md 6.1: link budgets, free-space loss, knife-edge diffraction over the worst terrain
+  obstacle, cover below the surface on two bands, and a higher noise floor in worlds without a sky. Open ground under
+  both ends isn't an obstacle (X20), and neither is an end's own height-cache cell (X23).
+- The height cache: the highest point of each 4×4 column per dimension, 1 byte a cell in 32×32-chunk region files,
+  updated as chunks load and save, written with the world and dropped from memory after 10 minutes unused.
+- Antennas T1, T2 and T3: GT multiblocks on a frame-box mast over a casing base, powered by an energy hatch. Each
+  surveys 64 bearings around it when it forms and every 5 minutes, within the shared survey budget per tick, and
+  links to other antennas on VHF for radio and UHF for calls. Antennas bridge Pylon Heads and Line Terminals within
+  16 blocks, so calls cross between lines over UHF (X19). The antenna screen lists links and bridges and has the
+  owner's team lock.
+- Every radio link, between antennas, from a device to an antenna or direct, forms at Low and keeps its level with
+  4.1's hysteresis. One that falls below 4 dB cuts out at once; one between 4 and 6 dB holds at Low for 4.2's 3 s,
+  then drops, and comes back only at 6 (X22).
+- The Transceiver (MV, a channel and a loudspeaker), the Walkie-Talkie (IC2 battery that drains on standby,
+  receive and transmit, channel by screen or sneak + scroll, a TX light) and the Signal Analyzer (an overlay with SNR,
+  level, serving antenna and every loss on the link to it, once a second), with their recipes (X21).
+- Sixteen channels as GTNH Voice groups `becom:radio.1` to `16`, keyed by the `radio` activation on Caps Lock. Each
+  frame goes to the receiving devices the speaker reaches, directly or through antennas, at the better of the two.
+  Capture (D24) holds a device and each listener to one speaker, the strongest, with the configured margin and hold.
+  Frames reach walkie holders flat, players within 6 blocks of a receiving walkie positionally (D21), and players
+  around a Transceiver's loudspeaker positionally. Direct hearers (D17) get nothing from BeCom. A listener's audio
+  filter follows the level of the device they actually hear, and a squelch tail plays when a speaker lets go.
+- `/becom signal` for operators (X23), seven radio quests with BeCom's new Radio contact task, and the 0.2 tunables
+  in the config with their checks.
+- Line re-checks and antenna surveys share one per-tick budget, 0.1's known issue.
+
+**Tests.**
+
+- 276 unit and routing tests, all passing: 156 from 0.1 and 120 new. Logic: the radio model with DESIGN.md's worked
+  ranges (16), surveys (7), height regions (7) and the height cache (3), device-to-antenna and direct hops (6), the
+  antenna network with surveys, links, locks and bridges (9), the antenna mesh (5), capture (10), radio link levels
+  with hysteresis and the drop timer (4), tunables and their checks (6 more), the config file (1 more), link rules for
+  bridges (3 more), the wired topology with antennas (2 more). Data: the `becomFormat` key on machine and item NBT
+  (2), the walkie's charge and format (3). Client: levels for unknown radio and call frames (2). Server: the stop and
+  start handover between worlds (3). Routing: `becom:radio.N` through GTNH Voice's `RoutingContext` (31), covering
+  activation, channels, capture per device and per listener, dropouts, held speakers through dropped frames, direct
+  hearers, players without voice, walkie speakers, loudspeakers, contacts and which device sets a listener's level.
+- The self-test: 123 checks on a real dev server, 123 passing, 50 of them new. The sixteen radio groups, the six
+  recipes (the two assembler recipes' inputs make nothing else), all three antennas forming with a 4-frame mast and
+  surveying, one frame short not forming, two T1s linking on VHF and UHF at the model's SNR, the antenna screen's
+  links, bridges and owner-only lock, a call between two wired lines bridged onto linked antennas, a walkie heard
+  directly at 30 blocks and not on another channel, transmitting through a Transceiver and receiving on its
+  loudspeaker, 100 blocks out of direct reach and reached through antennas, the Signal Analyzer's antenna and
+  breakdown, a locked antenna refusing a stranger, walkie drain and a flat walkie switching off, a switched-off walkie
+  hearing nothing, the edge of range (Low at 78 blocks, held at 81 inside the hysteresis, dropped at 101, kept up
+  at 81 through the drop delay and dropped after it, by wall time, back at Low's threshold), an antenna saved by a
+  newer BeCom staying out of the network with its keys kept, the four new machine IDs, and the radio-contact quest
+  using BeCom's task type. CI runs it on every push to the branch.
+
+**Review.** Five rounds, each a design reviewer and a code reviewer side by side (D58): the milestone
+(`milestone/0.1-wired..b6d24f1`), then each batch of fixes in turn (`b6d24f1..14b2aab`, `14b2aab..9143a73`,
+`9143a73..2333824`, `2333824..bf08f42`), since most fixes touched GTNH Voice's network thread, the server's
+lifecycle or saved data. Each finding below was confirmed with a failing test, a self-test check or the code before it
+was fixed, unless it says otherwise.
+
+- First round, design review (2 major, 7 minor):
+  - Surveys, access and direct links stopped at the 6 dB range, so a link at the edge of range flickered between Low
+    and None: fixed, they reach as far as a link at Low holds (self-test, failing first; X22).
+  - Capture was per device, so a player could hear two speakers, one on their own walkie and one on a neighbour's:
+    fixed, a listener is held too (RadioGroupTest, failing first).
+  - Antenna, Transceiver and walkie NBT had no format version: fixed with `becomFormat` (BeComNbtTest; X16).
+  - The squelch tail reached players past 6 blocks and holders captured by another speaker: fixed (RadioGroupTest).
+  - The antenna screen capped UHF links at Medium, though calls over them reach Max, and the analyzer showed VHF
+    levels above Medium: fixed, VHF stops at Medium in both and UHF shows its own level.
+  - `/becom signal` being op-only and the own-cell skip weren't logged: logged (X23). V3's stopgap wasn't marked:
+    marked.
+  - The analyzer explains only the hop to the serving antenna: rejected, since 6.6 and 11.4 scope it to that antenna.
+    For a direct link it says no antenna is in reach, which stays a question for the owner (Known issues).
+- First round, code review (1 major, 6 minor): the edge-of-range gap above, also in the config check (TunablesTest,
+  failing first), and:
+  - a block placed on an antenna's head threw away its survey and links: fixed, only a change of spot, ground or
+    tier starts over, and a change of cover queues a fresh survey while the old links hold (AntennaNetworkTest);
+  - a radio contact was counted once per pair forever, so it was used up while the quest was still locked: fixed,
+    reported again after 60 s (RadioGroupTest); counting sends GTNH Voice dropped is VOICE.md V5;
+  - an unknown radio level played clean on the client: fixed, Medium (ClientLevelsTest);
+  - level packets looked players up one scan each: fixed with a map;
+  - the height cache saved before the world's final save, missing its last chunks: fixed, it saves at server stopped
+    (checked on a dev server: region files written after the last "Saving chunks").
+- Second round, design review (1 major, 6 minor): radio links between 4 and 6 dB never dropped, against 4.2's 3 s
+  below Low: fixed with a drop timer per pair (self-test and RadioLinkLevelTest, failing first). The squelch tail
+  followed the device's capture, not the listener's: fixed. A listener's level came from their own walkie even when
+  they heard a neighbour's: fixed (RadioGroupTest). An antenna saved by a newer BeCom still joined the network: fixed
+  (self-test, failing first). V5's text and X22's cost were incomplete: corrected. The evidence wasn't from a clean
+  head: the self-test was rerun on one.
+- Second round, code review (10 minor, 4 the same as design's): players hearing through dropped frames, and direct
+  hearers, lost their listener hold, so a second speaker could take them mid-sentence: fixed (RadioGroupTest, failing
+  first). A late world's stopped event could forget the next world's services in single-player: fixed
+  (BeComServerTest). The capture sweep could delete holds shorter than its own period, and capture state wasn't
+  volatile: fixed. An unknown call level played clean: fixed, Low (ClientLevelsTest).
+- Third round, design review (1 major, 5 minor): the level fix of round two read capture holds that had run out, so a
+  listener's level could come from a device they no longer heard: fixed (RadioGroupTest, failing first). The quest
+  text promised a grace the code doesn't give, the changelog said "every loss" and left out the drop, and X22's second
+  option changed DESIGN.md 17's step: corrected. The server's create and stop could interleave: fixed under one lock.
+  The squelch recipients are tested only through their inputs: rejected as a test gap, since fake players can't
+  receive packets; the tail is on the owner checklist.
+- Third round, code review (1 major, 3 minor): the major was the same as design's. Players without a voice session
+  were held by speakers, which steered the squelch tail and blocked a second speaker for them: fixed (RadioGroupTest,
+  failing first). A late stopped event reset the quest backend under a newer world: fixed (BeComServerTest). The
+  edge-drop self-test counted ticks against a wall-clock timer: fixed, it holds by wall time.
+- Fourth round, design review (3 minor) and code review (5 minor, 2 the same as design's), both "ready":
+  - The analyzer quest's new text said a link drops "within 3 seconds" below 6 dB; one between 4 and 6 holds for
+    the 3 s grace first. Fixed; RadioLinkLevelTest already pinned the code.
+  - The level fix still missed two cases: a speaker taking a device by the capture margin, and one waiting out the
+    last speaker's 100 ms hold. Either heard the start of an over at the client's fallback level. Fixed (two routing
+    tests, failing first, and a Capture test).
+  - The edge-drop rows started their clock a tick early and never checked that the link stayed up during the delay,
+    so a grace wired in the wrong unit passed. Fixed with a new row, which fails with the grace's "* 1000" removed.
+  - A world refused at start gets a stopped event with no stopping event, so stopped() could forget the next world's
+    services, and the quest reset ran outside the lock. Fixed: each server's events act only on the services made on
+    its own thread, and the reset runs under the lock (BeComServerTest, failing without the thread check; the height
+    cache still saved at shutdown, checked on a dev server).
+  - Also fixed from the notes: a self-test cut short by its world stopping kept running in the next one, and NaN or
+    Infinity in the config passed validation (TunablesTest, failing first).
+- Fifth round, design review (2 minor), "ready": the changelog still said radio links "drop after 3 s below Low":
+  fixed. And this summary wasn't written yet.
+- Fifth round, code review: running when this summary was first committed; its findings follow when it reports.
+
+**Deviations and GTNH Voice.** DEVIATIONS.md X19 to X23 are 0.2's: antennas take 15 bridges and route like a Router
+(X19), open ground isn't an obstacle (X20), one walkie per player with open Transceivers and the walkie's drain in 0.2
+(X21), surveys and direct links reaching where a link at Low still holds (X22), and `/becom signal` for operators with
+an end's own cell skipped (X23). X16 now covers the machines' and the walkie's NBT. None is a 16.2 fallback: Caps Lock
+is the only 0.2 assumption, and it waits on the owner. VOICE.md: V5 (whether a send went through) is new, with its
+stopgap of counting a contact on every send. V3's stopgap (BeCom stops sending past a device's range, GTNH Voice
+plays it with its own falloff) is in use from 0.2, and so is V1's 16 blocks for direct hearing.
+
+**Known issues.**
+
+- Nothing client-side has run: the push-to-talk key, the radio filters, the squelch tail, the walkie's TX light and
+  screen, the Transceiver and antenna screens, the analyzer's overlay and the textures compile and were reasoned
+  about, and the textures were looked at next to GT's, but no game client ran in the cloud. The owner checks below
+  cover them.
+- Caps Lock as a held key (16.2) is `blocked` until the owner tries it.
+- The Signal Analyzer explains the link to the serving antenna only. Near another walkie and no antenna, it says no
+  antenna is in reach, though the two can talk directly. Whether it should explain direct links is a question for
+  the owner.
+- The squelch tail's choice of players is tested through its inputs, not by receiving the packet.
+- A radio contact counts on every send, including sends GTNH Voice drops (VOICE.md V5).
+- Players between GTNH Voice's proximity range and 16 blocks of a speaker hear neither (V1), now on radio as well as
+  calls. A loudspeaker or a walkie's speaker plays with GTNH Voice's own falloff and stops at the device's range, so
+  it cuts off instead of fading out (V3).
+- Left for 0.3, which DESIGN.md 16 gives them to: walkies in Baubles slots (D14; for now they work from the
+  inventory), the antenna screen's coverage map, and weather loss (D26). Weather touches only UHF and satellite hops,
+  so radio channels don't miss it, but calls over UHF links between antennas ignore the rain until then.
+- X22's reach costs more than DESIGN.md 6.3 and 6.5 count: a T3 survey is 80 steps a bearing, about 5 KB and 5,120
+  height-cache reads.
+- From 0.1, still open: quest text shows default numbers (X14); the IC2 rubber GT-ERR-01 line in the boot log.
+
+**Owner checks.** Two players with voice chat, a GTNH 2.8 install with GTNH Voice 0.10.1 or newer, BeCom from this
+branch, and the Modernity add-on pack for the second look at the textures:
+
+1. Both players carry a charged walkie-talkie on channel 1, 50 blocks apart in the open. One holds Caps Lock and
+   talks: the other hears them narrow and noisy (the radio filter), and the speaker's walkie shows its red TX light
+   while they talk. When they let go, the listener hears a short burst of hiss (the squelch tail).
+2. Walk apart: past about 40 blocks the audio starts breaking up in bursts and sounds narrower. Past about 80 it
+   stops within 3 seconds, and comes back only a few blocks closer, at about 78.
+3. 16.2: Caps Lock works as a held key on each OS you have, macOS especially (it may report only toggles). If it
+   doesn't, rebind the key and tell the run: its fallback is another default key.
+4. Sneak and scroll with a walkie in hand: the channel changes (its tooltip shows it) and the hotbar doesn't move.
+   Right-click opens its screen: channel and power. A walkie on another channel hears nothing.
+5. A third player stands within 6 blocks of the listener: they hear the speaker too, from the listener's position.
+6. Build two Antenna T1s 60 blocks apart (hologram projector; 4 Steel Frame Boxes, 3x3 LV Machine Casings with an LV
+   Energy Hatch, 32 EU/t). Each screen shows "Surveyed" and the other antenna as a link. Players 20 blocks outside
+   each, 100 blocks apart, talk through them; without power to one antenna they can't.
+7. Hold a Signal Analyzer: the top-left overlay shows the SNR, level, serving antenna and biggest loss, once a second.
+   Stand behind a hill: terrain becomes the biggest loss. Go 10 blocks down a mine: cover does. `/becom signal`
+   prints the same breakdown and every antenna in reach.
+8. Place a powered Transceiver (32 EU/t) on channel 1. Stand within 2 blocks without a walkie and hold Caps Lock: the
+   walkie players hear you. Their speech plays from its loudspeaker for anyone within 16 blocks; its screen turns the
+   loudspeaker off and changes the channel.
+9. Two players talk at once on one channel: a listener hears only the stronger one, and the other takes over once the
+   first lets go.
+10. The antenna's owner ticks "Serve only my team" on its screen: a player outside the team loses that antenna; the
+    owner and their team keep it.
+11. A Telephone on a Line Terminal wrench-linked to one antenna (within 16 blocks) calls a Telephone on a terminal
+    linked to another antenna, through their UHF link.
+12. Leave a walkie switched on: its charge bar goes down; at empty it switches off. A GT battery buffer charges it.
+13. Look at the Antenna T1, T2 and T3 heads, the Transceiver, the walkie (TX light off and on) and the Signal
+    Analyzer next to GT's machines, in GT's style and with the Modernity add-on pack.
+14. The quest book's BeCom tab shows the seven radio quests; talking over the radio to another player completes "Over
+    and Out" for both.
+15. With a Signal Analyzer, stand 30 blocks from another player's walkie with no antenna built: the overlay says no
+    antenna is in reach, though the two walkies talk. Decide whether it should explain the direct link (Known issues).
+16. In single-player, open a world with a walkie, leave to the menu and open another world: the radio and the quest
+    book's BeCom tab work in the second one.
