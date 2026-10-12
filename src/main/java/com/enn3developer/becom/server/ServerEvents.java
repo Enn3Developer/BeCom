@@ -89,6 +89,7 @@ public final class ServerEvents {
         BeComServer becom = BeComServer.get();
         if (becom == null) return;
         becom.calls.logout(event.player.getUniqueID());
+        becom.radio.logout(event.player.getUniqueID());
         becom.links.forget(event.player.getUniqueID());
     }
 }

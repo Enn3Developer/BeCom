@@ -16,7 +16,9 @@ public final class VoiceSessions implements IVoiceSessionListener {
     @Override
     public void sessionStarted(@NotNull IVoiceSession session) {
         BeComServer becom = BeComServer.get();
-        if (becom != null) becom.calls.sessionStarted(session.getPlayerUuid());
+        if (becom == null) return;
+        becom.calls.sessionStarted(session.getPlayerUuid());
+        becom.radio.sessionStarted(session.getPlayerUuid());
     }
 
     @Override

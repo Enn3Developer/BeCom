@@ -6,5 +6,7 @@ package com.enn3developer.becom.quest;
  */
 public enum QuestTask {
     /** A call connects: everyone in it. */
-    FIRST_CALL
+    FIRST_CALL,
+    /** BeCom carries a radio frame from one player to another: the speaker and the listener (DESIGN.md 15.5). */
+    RADIO_CONTACT
 }

@@ -1,5 +1,8 @@
 package com.enn3developer.becom.server;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.WorldServer;
@@ -20,6 +23,8 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 public final class BeComServer {
 
     private static BeComServer instance;
+    // Work handed over from other threads, run at the start of the next server tick.
+    private static final Queue<Runnable> LATER = new ConcurrentLinkedQueue<>();
 
     public final MinecraftServer server;
     public final Tunables tunables;
@@ -29,6 +34,7 @@ public final class BeComServer {
     public final LinkService links;
     public final PhoneService phones;
     public final CallService calls;
+    public final RadioService radio;
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
@@ -56,6 +62,7 @@ public final class BeComServer {
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());
         this.calls = new CallService(server, network, phones, callGroup, tunables);
+        this.radio = new RadioService(server, tunables, antennas, heights);
     }
 
     /** The running server's BeCom, or null on a client or between servers. */
@@ -80,17 +87,27 @@ public final class BeComServer {
         instance.phones.attach(GlobalSavedData.get(DimensionManager.getWorld(0)));
         GtnhVoiceApi.groupManager()
             .registerGroup(instance.calls.group());
+        instance.radio.start();
     }
 
     public static void stop() {
+        LATER.clear();
         if (instance != null) {
             instance.calls.stop();
+            instance.radio.stop();
             instance.heights.saveAll();
         }
         instance = null;
     }
 
+    /** Runs {@code task} on the server thread at the start of the next tick; dropped if no server is running. */
+    public static void later(Runnable task) {
+        LATER.add(task);
+    }
+
     public void tick() {
+        Runnable task;
+        while ((task = LATER.poll()) != null) task.run();
         heights.tick();
         // DESIGN.md 6.5: surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
         // share it: up to half for them, the rest for surveys.
@@ -99,6 +116,7 @@ public final class BeComServer {
         network.tick(budget / 2);
         antennas.tick(Math.max(0, budget - (System.nanoTime() - start)), System::nanoTime);
         calls.tick();
+        radio.tick();
         if (network.currentTick() % 20 == 0) links.expire();
     }
 }

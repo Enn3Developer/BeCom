@@ -264,3 +264,22 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   costs what the formula says.
 - **To match the design:** drop the `floor` argument from `RadioModel.worstNuAlong` and `Survey.worstNu`, and lower the
   worked ranges.
+
+### X21: One walkie per player, open Transceivers, and walkie drain in 0.2
+
+- **Where:** 0.2, DESIGN.md 8.1, 11.3, 13.2, 16 (0.3's "battery drain"), D36
+- **Design says:** players join `becom:radio.N` while carrying a working walkie tuned to N; the Transceiver's screen
+  sets its channel and loudspeaker; walkies and phones drain their battery (D36), which DESIGN.md 16 lists under 0.3.
+- **Built:**
+  - A player talks and listens on one walkie: the first working one, the one in hand first, then the hotbar, then the
+    rest of the inventory. Other walkies switched on in the same inventory only drain their standby charge.
+  - Anyone can tune a Transceiver and switch its loudspeaker, from within 8 blocks of it.
+  - The walkie drains its battery from 0.2 on (1, 2 and 4 EU/t on standby, receiving and transmitting), and a flat one
+    switches off. Phones get theirs with the Mobile Phone in 0.3.
+  - The walkie's recipe takes GT's MV lithium battery, as GT's own MV tools do.
+- **Why:** a player carrying walkies on two channels would otherwise transmit on both at once, and the routing
+  snapshot holds one channel per speaker. Radio channels are public (DESIGN.md 12.2, D47), so a radio anyone can tune
+  matches them. The walkie's battery is part of it from the start (DESIGN.md 8: "MV battery"), so the walkie can't
+  ship in 0.2 without it.
+- **To match the design:** let `RadioService` hold several channels per speaker, and check ownership in
+  `TransceiverScreen`.

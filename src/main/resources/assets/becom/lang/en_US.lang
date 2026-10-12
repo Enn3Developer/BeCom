@@ -8,6 +8,9 @@ gt.blockmachines.becom.line_terminal.name=Line Terminal
 gt.blockmachines.becom.antenna_t1.name=Antenna T1 Head
 gt.blockmachines.becom.antenna_t2.name=Antenna T2 Head
 gt.blockmachines.becom.antenna_t3.name=Antenna T3 Head
+gt.blockmachines.becom.transceiver.name=Transceiver
+item.becom.walkie_talkie.name=Walkie-Talkie
+item.becom.signal_analyzer.name=Signal Analyzer
 
 # Machine tooltips
 becom.machine.pylon.type=Pylon
@@ -30,6 +33,8 @@ becom.machine.antenna.bridge=Wrench it to a Pylon Head or Line Terminal within %
 becom.machine.antenna.controller=Top of the mast
 becom.machine.antenna.mast=%s, in a mast below the head
 becom.machine.antenna.hatch=Any base casing
+becom.machine.transceiver.info=A radio on a block. Hold push-to-talk within reach to transmit through it; its loudspeaker plays its channel.
+becom.machine.transceiver.range=Reaches about %s blocks directly. Talk within %s blocks; the loudspeaker carries %s.
 
 # Scanner info
 becom.info.formed=Pylon height: %s
@@ -45,6 +50,8 @@ becom.info.too_much_cable=More than %s blocks of Phone Cable in all: a terminal 
 becom.info.phone_shared=Phone %s is on another terminal's cable too: a phone hangs off exactly one terminal
 becom.info.mast=Mast height: %s
 becom.info.locked=Locked to its owner's team
+becom.info.loudspeaker_on=Loudspeaker on
+becom.info.loudspeaker_off=Loudspeaker off
 
 # Linking
 becom.link.no_node=This node isn't ready yet. Try again in a moment.
@@ -119,6 +126,17 @@ becom.antenna.link=Antenna at %s, %s, %s, %s blocks. Radio %s, calls %s
 becom.antenna.bridge=Bridge to %s, %s, %s, %s blocks
 becom.antenna.no_links=No other antenna in reach yet.
 
+# Radios
+becom.group.radio=Radio %s
+becom.walkie.channel=Channel %s
+becom.walkie.on=Switched on
+becom.walkie.off=Switched off
+becom.walkie.power=Switched on
+becom.walkie.charge=%s / %s EU
+becom.walkie.help=Hold push-to-talk to transmit. Sneak and scroll to change channel.
+becom.transceiver.loudspeaker=Loudspeaker
+becom.analyzer.help=Hold it to see your radio signal: its strength, what serves you, and what costs the most.
+
 # Commands
 becom.command.usage=/becom calls | /becom hangup <id>
 becom.command.calls.none=No active calls.
@@ -148,4 +166,5 @@ betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two 
 # Quest tasks
 becom.task.name=BeCom
 becom.task.first_call=Make a phone call that connects.
+becom.task.radio_contact=Talk to someone over the radio, or hear someone on it.
 becom.world.refused=BeCom can't start this world: %s

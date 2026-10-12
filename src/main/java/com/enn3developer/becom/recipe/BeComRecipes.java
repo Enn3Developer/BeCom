@@ -7,6 +7,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 
 import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.machine.BeComMachines;
 
 import gregtech.api.enums.GTValues;
@@ -29,6 +30,8 @@ public final class BeComRecipes {
     private static final int PHONE_CABLE_CIRCUIT = 2;
     private static final int TELEPHONE_EUT = 30;
     private static final int TELEPHONE_SECONDS = 10;
+    private static final int HANDHELD_EUT = 120;
+    private static final int HANDHELD_SECONDS = 20;
 
     private BeComRecipes() {}
 
@@ -95,6 +98,41 @@ public final class BeComRecipes {
         antenna(BeComMachines.antennaT1, 1, Materials.LV, Materials.Tin, Materials.Steel);
         antenna(BeComMachines.antennaT2, 2, Materials.MV, Materials.Copper, Materials.Aluminium);
         antenna(BeComMachines.antennaT3, 3, Materials.HV, Materials.Gold, Materials.StainlessSteel);
+
+        // Transceiver: an MV hull with an emitter and a sensor, its circuits and cable, and a note block for the
+        // loudspeaker.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.transceiver.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "ENS", "CHC", "W W", 'E', ItemList.Emitter_MV, 'N', new ItemStack(Blocks.noteblock), 'S',
+                ItemList.Sensor_MV, 'C', OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'W',
+                OrePrefixes.cableGt01.get(Materials.Copper) });
+
+        // Signal Analyzer: it only listens, so a sensor and no emitter, behind a screen in an aluminium case.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Sensor_MV.get(1),
+                ItemList.Cover_Screen.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.MV, 1),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 4))
+            .itemOutputs(new ItemStack(BeComItems.signalAnalyzer))
+            .duration(HANDHELD_SECONDS * SECONDS)
+            .eut(HANDHELD_EUT)
+            .addTo(assemblerRecipes);
+
+        // Walkie-Talkie: emitter and sensor, its circuit and battery, in a polyethylene case. GT's own MV tools take
+        // the lithium battery.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Emitter_MV.get(1),
+                ItemList.Sensor_MV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.MV, 1),
+                ItemList.Battery_RE_MV_Lithium.get(1),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polyethylene, 2))
+            .itemOutputs(new ItemStack(BeComItems.walkieTalkie))
+            .duration(HANDHELD_SECONDS * SECONDS)
+            .eut(HANDHELD_EUT)
+            .addTo(assemblerRecipes);
     }
 
     private static final ItemList[] HULLS = { null, ItemList.Hull_LV, ItemList.Hull_MV, ItemList.Hull_HV };

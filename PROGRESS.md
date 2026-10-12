@@ -274,14 +274,14 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | doing  |
 | Antenna links on VHF and UHF, and bridges onto wired lines (7)       | doing  |
 | Antenna screen: links and team lock (11.4, 12.2)                     | doing  |
-| Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | todo   |
-| Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | todo   |
+| Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | doing  |
+| Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | doing  |
 | Push-to-talk key and the `radio` activation (11.1, 13.4)             | todo   |
 | Channels `becom:radio.1` to `16` (8.1, 13.1, 13.2)                   | doing  |
 | Capture effect (D24)                                                 | doing  |
 | Walkie speaker (D21)                                                 | doing  |
 | Radio audio filters per level (4.3, 13.5)                            | todo   |
-| Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | todo   |
+| Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | doing  |
 | `/becom signal` (6.6)                                                | todo   |
 | The 0.2 tunables in the config (17)                                  | done   |
 | Self-test rows for 0.2 (16.3)                                        | todo   |

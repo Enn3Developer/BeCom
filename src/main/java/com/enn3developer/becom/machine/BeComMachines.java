@@ -25,6 +25,7 @@ public final class BeComMachines {
     public static final int ANTENNA_T1_ID = 25004;
     public static final int ANTENNA_T2_ID = 25005;
     public static final int ANTENNA_T3_ID = 25006;
+    public static final int TRANSCEIVER_ID = 25007;
 
     public static MTEPylonHead pylonHead;
     public static MTEPylonHead repeaterHead;
@@ -33,6 +34,7 @@ public final class BeComMachines {
     public static MTEAntenna antennaT1;
     public static MTEAntenna antennaT2;
     public static MTEAntenna antennaT3;
+    public static MTETransceiver transceiver;
 
     private BeComMachines() {}
 
@@ -46,6 +48,7 @@ public final class BeComMachines {
         ids.put(ANTENNA_T1_ID, "becom.antenna_t1");
         ids.put(ANTENNA_T2_ID, "becom.antenna_t2");
         ids.put(ANTENNA_T3_ID, "becom.antenna_t3");
+        ids.put(TRANSCEIVER_ID, "becom.transceiver");
         return ids;
     }
 
@@ -92,5 +95,6 @@ public final class BeComMachines {
         antennaT1 = new MTEAntenna(ANTENNA_T1_ID, "becom.antenna_t1", "Antenna T1 Head", 1);
         antennaT2 = new MTEAntenna(ANTENNA_T2_ID, "becom.antenna_t2", "Antenna T2 Head", 2);
         antennaT3 = new MTEAntenna(ANTENNA_T3_ID, "becom.antenna_t3", "Antenna T3 Head", 3);
+        transceiver = new MTETransceiver(TRANSCEIVER_ID, "becom.transceiver", "Transceiver");
     }
 }

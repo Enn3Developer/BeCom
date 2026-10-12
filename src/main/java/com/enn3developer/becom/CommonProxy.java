@@ -2,6 +2,7 @@ package com.enn3developer.becom;
 
 import java.util.function.Supplier;
 
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -9,8 +10,10 @@ import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
+import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
@@ -39,6 +42,7 @@ public class CommonProxy {
     public void preInit(FMLPreInitializationEvent event) {
         BeComConfig.load(event.getSuggestedConfigurationFile());
         BeComBlocks.register();
+        BeComItems.register();
         BeComMachines.register();
         BeComPackets.register();
     }
@@ -115,6 +119,13 @@ public class CommonProxy {
     public void onWires(WireSyncPacket packet) {}
 
     public void onConfig(ConfigSyncPacket packet) {}
+
+    public void onAnalyzer(AnalyzerPacket packet) {}
+
+    /** Whether this client is transmitting on that walkie, for its TX light (DESIGN.md 11.3); never on a server. */
+    public boolean isTransmittingOn(ItemStack stack) {
+        return false;
+    }
 
     /** Signal bars for a screen (DESIGN.md 11.2); nothing to draw on a server. */
     public IDrawable signalBars(Supplier<SignalLevel> level) {

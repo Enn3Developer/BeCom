@@ -114,7 +114,7 @@ public final class RadioRouting {
                     .equals(player));
     }
 
-    void clear() {
+    public void clear() {
         snapshot = RadioSnapshot.EMPTY;
         chains.clear();
         keyed.clear();
