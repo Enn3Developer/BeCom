@@ -25,6 +25,9 @@ public final class BeComConfig {
     private static final String RADIO = "radio";
     private static final String ANTENNAS = "antennas";
     private static final String RADIOS = "radios";
+    private static final String PHONES = "phones";
+    private static final String VIDEO = "video";
+    private static final String ME = "me";
     private static final String QUESTS = "quests";
 
     // What this side acts on: the file's values while a server runs here, the server's on a client connected to one,
@@ -162,6 +165,47 @@ public final class BeComConfig {
         integer(config, v, RADIOS, "walkieReceiveDrain", "EU/t a Walkie-Talkie uses while receiving.");
         integer(config, v, RADIOS, "walkieTransmitDrain", "EU/t a Walkie-Talkie uses while transmitting.");
         integer(config, v, RADIOS, "analyzerRefreshSeconds", "Seconds between Signal Analyzer readings.");
+        integer(config, v, PHONES, "groupCallSize", 2, Tunables.MAX_GROUP_CALL, "Most phones in one call.");
+        integer(config, v, PHONES, "phoneBattery", "EU a Mobile Phone holds.");
+        integer(config, v, PHONES, "phoneStandbyDrain", "EU/t a phone uses switched on.");
+        integer(config, v, PHONES, "phoneCallDrain", "EU/t a phone uses in a call.");
+        dbl(config, v, PHONES, "weatherRainLoss", "dB rain costs calls and satellite hops.");
+        dbl(config, v, PHONES, "weatherStormLoss", "dB a thunderstorm costs them, rain included.");
+        integer(config, v, VIDEO, "videoPoseRate", 1, Tunables.MAX_POSE_RATE, "Front-camera updates a second.");
+        integer(
+            config,
+            v,
+            VIDEO,
+            "videoHeightMedium",
+            1,
+            Tunables.MAX_VIDEO_HEIGHT,
+            "Front camera's height at Medium.");
+        integer(config, v, VIDEO, "videoHeightHigh", 1, Tunables.MAX_VIDEO_HEIGHT, "Front camera's height at High.");
+        integer(config, v, VIDEO, "videoHeightMax", 1, Tunables.MAX_VIDEO_HEIGHT, "Front camera's height at Max.");
+        integer(config, v, VIDEO, "videoFpsMedium", "Front camera's frames a second at Medium; 0 for every frame.");
+        integer(config, v, VIDEO, "videoFpsHigh", "Front camera's frames a second at High; 0 for every frame.");
+        integer(config, v, VIDEO, "videoFpsMax", "Front camera's frames a second at Max; 0 for every frame.");
+        integer(config, v, VIDEO, "rearWidthHigh", 1, Tunables.MAX_REAR_WIDTH, "Rear camera's width at High.");
+        integer(config, v, VIDEO, "rearHeightHigh", 1, Tunables.MAX_REAR_HEIGHT, "Rear camera's height at High.");
+        integer(config, v, VIDEO, "rearFpsHigh", "Rear camera's frames a second at High.");
+        integer(config, v, VIDEO, "rearWidthMax", 1, Tunables.MAX_REAR_WIDTH, "Rear camera's width at Max.");
+        integer(config, v, VIDEO, "rearHeightMax", 1, Tunables.MAX_REAR_HEIGHT, "Rear camera's height at Max.");
+        integer(config, v, VIDEO, "rearFpsMax", "Rear camera's frames a second at Max.");
+        integer(
+            config,
+            v,
+            VIDEO,
+            "rearMaxBytes",
+            1,
+            Tunables.MAX_REAR_BYTES,
+            "Largest rear-camera frame a client sends.");
+        integer(config, v, VIDEO, "rearMaxFps", "Most rear-camera frames a client sends a second.");
+        integer(config, v, VIDEO, "videophonePower", "EU/t a Videophone draws.");
+        dbl(config, v, VIDEO, "videophoneRoom", "Blocks around a Videophone within which players are in its call.");
+        dbl(config, v, VIDEO, "videophoneLoudspeaker", "Blocks a Videophone's loudspeaker carries.");
+        integer(config, v, VIDEO, "videophoneEmptySeconds", "Seconds with nobody in the room before it hangs up.");
+        integer(config, v, ME, "meBridgePower", "EU/t an ME Bridge draws.");
+        integer(config, v, ME, "meBridgeChannels", 0, 1, "ME channels an ME Bridge uses.");
         v.put(
             "questlineEnabled",
             config.getBoolean(
@@ -205,7 +249,10 @@ public final class BeComConfig {
         Map.entry("surveySeconds", 1),
         Map.entry("antennaMastMin", 1),
         Map.entry("walkieBattery", 1),
-        Map.entry("analyzerRefreshSeconds", 1));
+        Map.entry("analyzerRefreshSeconds", 1),
+        Map.entry("phoneBattery", 1),
+        Map.entry("rearMaxFps", 1),
+        Map.entry("videophoneEmptySeconds", 1));
 
     private static void integer(Configuration config, Map<String, Object> values, String category, String key,
         String comment) {

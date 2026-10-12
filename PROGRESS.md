@@ -532,7 +532,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Video: rear camera (10.1)                                                    | todo   |
 | Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
 | Videophone (10.2, D42)                                                       | todo   |
-| The 0.3 tunables in the config (17)                                          | todo   |
+| The 0.3 tunables in the config (17)                                          | done   |
 | Self-test rows for 0.3 (16.3)                                                | todo   |
 
 ### Untested assumptions (DESIGN.md 16.2)

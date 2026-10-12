@@ -55,6 +55,24 @@ class TunablesTest {
     }
 
     @Test
+    void phoneAndVideoValuesMustMakeSense() throws Exception {
+        refused("groupCallSize", 1);
+        refused("groupCallSize", Tunables.MAX_GROUP_CALL + 1);
+        refused("phoneBattery", 0);
+        // A storm is rain and thunder: it can't cost less than the rain alone.
+        refused("weatherStormLoss", 2.0);
+        refused("videoPoseRate", 0);
+        refused("videoPoseRate", Tunables.MAX_POSE_RATE + 1);
+        refused("videoHeightMax", Tunables.MAX_VIDEO_HEIGHT + 1);
+        refused("rearWidthMax", 0);
+        refused("rearMaxBytes", Tunables.MAX_REAR_BYTES + 1);
+        refused("rearMaxFps", 0);
+        refused("videophoneEmptySeconds", 0);
+        refused("meBridgeChannels", 2);
+        assertDoesNotThrow(with("videoFpsMax", 0)::validate);
+    }
+
+    @Test
     void noCallAttemptsAtAllIsRefused() throws Exception {
         refused("callAttemptsPerMinute", 0);
     }

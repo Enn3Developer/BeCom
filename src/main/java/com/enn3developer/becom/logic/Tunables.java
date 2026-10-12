@@ -28,6 +28,16 @@ public record Tunables(
     double transceiverBudget, double walkieBudget, int transceiverPower, double loudspeakerRange, double talkRange,
     double walkieSpeakerRange, int captureHoldMillis, double captureMargin, int walkieBattery, int walkieStandbyDrain,
     int walkieReceiveDrain, int walkieTransmitDrain, int analyzerRefreshSeconds,
+    // Phones (DESIGN.md 6.1, 8.2, 11.2, D26, D36)
+    int groupCallSize, int phoneBattery, int phoneStandbyDrain, int phoneCallDrain, double weatherRainLoss,
+    double weatherStormLoss,
+    // Video (DESIGN.md 10.1, 10.2, 14)
+    int videoPoseRate, int videoHeightMedium, int videoHeightHigh, int videoHeightMax, int videoFpsMedium,
+    int videoFpsHigh, int videoFpsMax, int rearWidthHigh, int rearHeightHigh, int rearFpsHigh, int rearWidthMax,
+    int rearHeightMax, int rearFpsMax, int rearMaxBytes, int rearMaxFps, int videophonePower, double videophoneRoom,
+    double videophoneLoudspeaker, int videophoneEmptySeconds,
+    // ME (DESIGN.md 8.3)
+    int meBridgePower, int meBridgeChannels,
     // Quests (DESIGN.md 15.5)
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
@@ -39,6 +49,15 @@ public record Tunables(
     // range / step. Far past DESIGN.md's numbers (256 blocks, 64 bearings), these keep one survey or link bounded.
     public static final int MAX_RADIO_RANGE = 4096;
     public static final int MAX_BEARINGS = 1024;
+    // A call's every listener gets every speaker, and a group call's grid one tile each: past this, both stop being
+    // bounded. Video sizes stay within what a client draws and a packet carries.
+    public static final int MAX_GROUP_CALL = 16;
+    public static final int MAX_VIDEO_HEIGHT = 512;
+    public static final int MAX_REAR_WIDTH = 640;
+    public static final int MAX_REAR_HEIGHT = 360;
+    public static final int MAX_REAR_BYTES = 32_768;
+    // Poses go out at most once a server tick.
+    public static final int MAX_POSE_RATE = 20;
 
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;
@@ -107,6 +126,34 @@ public record Tunables(
         d.put("walkieReceiveDrain", 2);
         d.put("walkieTransmitDrain", 4);
         d.put("analyzerRefreshSeconds", 1);
+        d.put("groupCallSize", 8);
+        d.put("phoneBattery", 1_200_000);
+        d.put("phoneStandbyDrain", 4);
+        d.put("phoneCallDrain", 16);
+        d.put("weatherRainLoss", 3.0);
+        d.put("weatherStormLoss", 6.0);
+        d.put("videoPoseRate", 10);
+        d.put("videoHeightMedium", 48);
+        d.put("videoHeightHigh", 96);
+        d.put("videoHeightMax", 192);
+        d.put("videoFpsMedium", 5);
+        d.put("videoFpsHigh", 12);
+        // 0: every frame the client draws.
+        d.put("videoFpsMax", 0);
+        d.put("rearWidthHigh", 128);
+        d.put("rearHeightHigh", 72);
+        d.put("rearFpsHigh", 2);
+        d.put("rearWidthMax", 192);
+        d.put("rearHeightMax", 108);
+        d.put("rearFpsMax", 5);
+        d.put("rearMaxBytes", 8 * 1024);
+        d.put("rearMaxFps", 6);
+        d.put("videophonePower", 32);
+        d.put("videophoneRoom", 4.0);
+        d.put("videophoneLoudspeaker", 16.0);
+        d.put("videophoneEmptySeconds", 30);
+        d.put("meBridgePower", 512);
+        d.put("meBridgeChannels", 1);
         d.put("questlineEnabled", true);
         d.put("questlineRecheckSeconds", 60);
     }
@@ -198,6 +245,36 @@ public record Tunables(
         if (captureMargin < 0) throw invalid("captureMargin", captureMargin, "0 or more");
         if (walkieBattery < 1) throw invalid("walkieBattery", walkieBattery, "at least 1");
         if (analyzerRefreshSeconds < 1) throw invalid("analyzerRefreshSeconds", analyzerRefreshSeconds, "at least 1");
+        if (groupCallSize < 2 || groupCallSize > MAX_GROUP_CALL)
+            throw invalid("groupCallSize", groupCallSize, "2 to " + MAX_GROUP_CALL);
+        if (phoneBattery < 1) throw invalid("phoneBattery", phoneBattery, "at least 1");
+        if (phoneStandbyDrain < 0) throw invalid("phoneStandbyDrain", phoneStandbyDrain, "0 or more");
+        if (phoneCallDrain < 0) throw invalid("phoneCallDrain", phoneCallDrain, "0 or more");
+        if (weatherRainLoss < 0) throw invalid("weatherRainLoss", weatherRainLoss, "0 or more");
+        if (weatherStormLoss < weatherRainLoss)
+            throw invalid("weatherStormLoss", weatherStormLoss, "at least weatherRainLoss");
+        if (videoPoseRate < 1 || videoPoseRate > MAX_POSE_RATE)
+            throw invalid("videoPoseRate", videoPoseRate, "1 to " + MAX_POSE_RATE);
+        checkSize("videoHeightMedium", videoHeightMedium, MAX_VIDEO_HEIGHT);
+        checkSize("videoHeightHigh", videoHeightHigh, MAX_VIDEO_HEIGHT);
+        checkSize("videoHeightMax", videoHeightMax, MAX_VIDEO_HEIGHT);
+        if (videoFpsMedium < 0) throw invalid("videoFpsMedium", videoFpsMedium, "0 or more");
+        if (videoFpsHigh < 0) throw invalid("videoFpsHigh", videoFpsHigh, "0 or more");
+        if (videoFpsMax < 0) throw invalid("videoFpsMax", videoFpsMax, "0 or more");
+        checkSize("rearWidthHigh", rearWidthHigh, MAX_REAR_WIDTH);
+        checkSize("rearHeightHigh", rearHeightHigh, MAX_REAR_HEIGHT);
+        checkSize("rearWidthMax", rearWidthMax, MAX_REAR_WIDTH);
+        checkSize("rearHeightMax", rearHeightMax, MAX_REAR_HEIGHT);
+        if (rearFpsHigh < 0) throw invalid("rearFpsHigh", rearFpsHigh, "0 or more");
+        if (rearFpsMax < 0) throw invalid("rearFpsMax", rearFpsMax, "0 or more");
+        checkSize("rearMaxBytes", rearMaxBytes, MAX_REAR_BYTES);
+        if (rearMaxFps < 1) throw invalid("rearMaxFps", rearMaxFps, "at least 1");
+        if (videophonePower < 0) throw invalid("videophonePower", videophonePower, "0 or more");
+        if (videophoneRoom < 0) throw invalid("videophoneRoom", videophoneRoom, "0 or more");
+        if (videophoneLoudspeaker < 0) throw invalid("videophoneLoudspeaker", videophoneLoudspeaker, "0 or more");
+        if (videophoneEmptySeconds < 1) throw invalid("videophoneEmptySeconds", videophoneEmptySeconds, "at least 1");
+        if (meBridgePower < 0) throw invalid("meBridgePower", meBridgePower, "0 or more");
+        if (meBridgeChannels < 0 || meBridgeChannels > 1) throw invalid("meBridgeChannels", meBridgeChannels, "0 or 1");
     }
 
     /**
@@ -216,6 +293,10 @@ public record Tunables(
                     + MAX_RADIO_RANGE
                     + " blocks)");
         }
+    }
+
+    private static void checkSize(String key, int value, int max) {
+        if (value < 1 || value > max) throw invalid(key, value, "1 to " + max);
     }
 
     private static IllegalArgumentException invalid(String key, Object value, String rule) {
