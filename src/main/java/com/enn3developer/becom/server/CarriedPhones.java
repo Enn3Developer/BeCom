@@ -218,6 +218,21 @@ public final class CarriedPhones {
         if (shown.put(id, bars) != bars) BeComPackets.send(new PhoneStatusPacket(bars), player);
     }
 
+    /**
+     * The number of the phone {@code player} uses, after looking at their phones again unless this server already knows
+     * it in their hands: a phone used for the first time gets its number, and a copy of someone else's its own (X17),
+     * before a screen shows anything of it.
+     */
+    public int numberFor(EntityPlayerMP player, ItemStack stack) {
+        if (!ItemCarriedPhone.is(stack)) return -1;
+        int number = ItemCarriedPhone.number(stack);
+        PhoneRecord record = number < 0 ? null : phones.record(number);
+        boolean known = record != null && record.kind() == ((ItemCarriedPhone) stack.getItem()).kind()
+            && carriedBy(player.getUniqueID()).contains(number);
+        if (!known) refresh(player);
+        return ItemCarriedPhone.number(stack);
+    }
+
     /** Whether another online player carries {@code number} right now: then this one is a copy. */
     private boolean carriedByAnother(int number, UUID player) {
         UUID other = holders.get(number);
@@ -269,6 +284,7 @@ public final class CarriedPhones {
         carried.clear();
         service.clear();
         shown.clear();
+        selfTestPlayers.clear();
     }
 
     // endregion
@@ -287,7 +303,17 @@ public final class CarriedPhones {
             if (o instanceof EntityPlayerMP mp && mp.getUniqueID()
                 .equals(id)) return mp;
         }
+        for (EntityPlayerMP present : selfTestPlayers) if (present.getUniqueID()
+            .equals(id)) return present;
         return null;
+    }
+
+    // The self-test's fake players are in no player list; those it names count as online here, so a copy of one's
+    // phone is found as a copy.
+    private final List<EntityPlayerMP> selfTestPlayers = new ArrayList<>();
+
+    public void presentForSelfTest(EntityPlayerMP player) {
+        if (!selfTestPlayers.contains(player)) selfTestPlayers.add(player);
     }
 
     /** For the self-test: looks at a fake player's phones now, and drains a second's worth. */

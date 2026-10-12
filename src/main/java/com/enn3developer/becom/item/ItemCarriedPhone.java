@@ -155,13 +155,12 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     @Override
     public ModularPanel buildUI(PlayerInventoryGuiData data, PanelSyncManager sync, UISettings settings) {
         EntityPlayer player = data.getPlayer();
-        // A phone used for the first time gets its number now, so the screen has one to show.
+        // A phone used for the first time gets its number now, and a copy its own, so the screen shows its phone.
         BeComServer becom = player.worldObj.isRemote ? null : BeComServer.get();
         ItemStack stack = data.getUsedItemStack();
-        if (becom != null && player instanceof EntityPlayerMP mp
-            && is(stack)
-            && (number(stack) < 0 || becom.phones.record(number(stack)) == null)) becom.carried.refresh(mp);
-        int number = stack == null || !is(stack) ? -1 : number(stack);
+        int number;
+        if (becom != null && player instanceof EntityPlayerMP mp) number = becom.carried.numberFor(mp, stack);
+        else number = stack == null || !is(stack) ? -1 : number(stack);
         return PhoneScreen.build(new PhoneHandle.CarriedPhone(number), player, sync);
     }
 

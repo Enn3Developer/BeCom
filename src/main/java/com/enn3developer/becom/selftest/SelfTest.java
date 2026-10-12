@@ -1799,6 +1799,7 @@ public final class SelfTest {
         ItemStack phone = new ItemStack(BeComItems.mobilePhone);
         ElectricItem.manager.charge(phone, BeComItems.mobilePhone.getMaxCharge(phone), Integer.MAX_VALUE, true, false);
         player.inventory.mainInventory[0] = phone;
+        becom.carried.presentForSelfTest(player);
         becom.carried.refreshForSelfTest(player);
         return player;
     }
@@ -2079,6 +2080,7 @@ public final class SelfTest {
         Call call = becom.calls.book()
             .callOf(quin.getUniqueID());
         boolean answered = call != null && call.state() == Call.State.CONNECTED;
+        checkCopiedPhone(call);
         becom.calls.hangUp(olga);
         PhoneScreenActions.setPower(quin, new PhoneHandle.CarriedPhone(number), false);
         boolean off = !ItemCarriedPhone.on(phone) && !becom.carried.working()
@@ -2090,6 +2092,26 @@ public final class SelfTest {
         baubles.setInventorySlotContents(0, null);
         becom.carried.refreshForSelfTest(quin);
         return 1;
+    }
+
+    /**
+     * X17, DESIGN.md 12.2: a copy of Olga's phone in Pete's hands, opened during her call, opens on a number of its
+     * own, and her call shows to nobody but those in it.
+     */
+    private void checkCopiedPhone(Call call) {
+        ItemStack original = null;
+        for (ItemStack stack : olga.inventory.mainInventory) if (ItemCarriedPhone.is(stack)) original = stack;
+        FakePlayer pete = phonePlayer("BeComPete", 3, X0 - 19.5, phoneZ + 3.5);
+        ItemStack copy = original == null ? null : original.copy();
+        pete.inventory.mainInventory[0] = copy;
+        int bound = copy == null ? -1 : becom.carried.numberFor(pete, copy);
+        PhoneView seen = PhoneScreenActions.view(pete, new PhoneHandle.CarriedPhone(olgaNumber));
+        check(
+            "a copy of a phone opens on a number of its own, and its original's call shows to nobody else (X17)",
+            call != null && bound >= 0 && bound != olgaNumber && seen == PhoneView.EMPTY,
+            "opens on " + bound + ", Olga's is " + olgaNumber + ", shown " + seen.members());
+        pete.inventory.mainInventory[0] = null;
+        becom.carried.refreshForSelfTest(pete);
     }
 
     /** D26: rain costs calls and phones' service, where it falls. */

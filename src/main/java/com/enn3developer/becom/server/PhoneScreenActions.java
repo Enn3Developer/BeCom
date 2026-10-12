@@ -33,7 +33,9 @@ public final class PhoneScreenActions {
     public static PhoneView view(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
         int number = handle.number();
-        if (becom == null || number < 0) return PhoneView.EMPTY;
+        // A phone the player can't use shows nothing: one renumbered in their hands as a copy was another's, and its
+        // calls are private (DESIGN.md 12.2).
+        if (becom == null || number < 0 || !handle.usableBy(player)) return PhoneView.EMPTY;
         PhoneRecord record = becom.phones.record(number);
         if (record == null) return PhoneView.EMPTY;
         boolean manage = Ownership.mayManage(player, record.owner());
