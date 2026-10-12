@@ -493,4 +493,84 @@ class RadioGroupTest {
         assertTrue(!shared.listenerHeldBy(dan, 1, cat) && !shared.listenerHeldBy(bob, 1, cat));
         assertTrue(shared.listenerHeldBy(dan, 1, alice) && shared.listenerHeldBy(bob, 1, alice));
     }
+
+    @Test
+    void aBurstOfDroppedFramesDoesntHandAListenerToAnotherSpeaker() {
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        RadioSnapshot.Link catToDan = walkie(dan, 7);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, new RadioSnapshot.Link(bob, null, 7, 0, 0))
+                .transmitter(cat, 1)
+                .link(cat, catToDan)
+                .build());
+        fixture.route(one, alice, RADIO);
+        fixture.route(one, cat, RADIO);
+        // A burst on Alice's link to Bob: his walkie still holds her, but her frames don't get through.
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, new RadioSnapshot.Link(bob, null, 7, 1, 0))
+                .transmitter(cat, 1)
+                .link(cat, catToDan)
+                .build());
+        for (int i = 0; i < 6; i++) {
+            now += 20 * MS;
+            fixture.sent.clear();
+            fixture.route(one, alice, RADIO);
+            fixture.sent.clear();
+            fixture.route(one, cat, RADIO);
+            assertTrue(
+                !fixture.recipients()
+                    .contains(bob),
+                "frame " + i + ": Bob is still Alice's, mid-burst");
+        }
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, new RadioSnapshot.Link(bob, null, 7, 0, 1))
+                .transmitter(cat, 1)
+                .link(cat, catToDan)
+                .build());
+        now += 20 * MS;
+        fixture.sent.clear();
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            fixture.recipients()
+                .contains(bob),
+            "the burst ends and Bob hears Alice again");
+    }
+
+    @Test
+    void someoneHearingTheSpeakerInPersonDoesntHearASecondOneOnTheRadio() {
+        // Bob stands 12 blocks from Alice and hears her directly (D17); Cat reaches Dan's walkie, 5 blocks from Bob.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 12, 64, 0, 0);
+        UUID dan = fixture.player("dan", 17, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 20))
+                .link(alice, walkie(dan, 7))
+                .transmitter(cat, 1)
+                .link(cat, walkie(dan, 20))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            !fixture.recipients()
+                .contains(bob),
+            "Bob hears Alice in person, not on the radio");
+        now += 10 * MS;
+        fixture.sent.clear();
+        fixture.route(one, cat, RADIO);
+        assertTrue(
+            !fixture.recipients()
+                .contains(bob),
+            "and Cat, no stronger than Alice on Bob's walkie, doesn't take him");
+    }
 }

@@ -88,22 +88,29 @@ public final class RadioGroup implements IGroup {
         double fy = from == null ? 0 : from.getY();
         double fz = from == null ? 0 : from.getZ();
 
-        boolean[] walkieGot = receive(speaker, tx.walkies(), now);
-        boolean[] transceiverGot = receive(speaker, tx.transceivers(), now);
+        // A device holds the speaker even through a burst of dropped frames, and so do the players hearing them on
+        // it: otherwise a burst would hand them to the next speaker with no margin (D24). Only the send is skipped.
+        boolean[] walkieHeld = new boolean[tx.walkies().length];
+        boolean[] walkieGot = receive(speaker, tx.walkies(), now, walkieHeld);
+        boolean[] transceiverHeld = new boolean[tx.transceivers().length];
+        boolean[] transceiverGot = receive(speaker, tx.transceivers(), now, transceiverHeld);
 
         for (int i = 0; i < tx.walkies().length; i++) {
-            if (!walkieGot[i]) continue;
+            if (!walkieHeld[i]) continue;
             RadioSnapshot.Link link = tx.walkies()[i];
             UUID holder = link.holder();
-            if (holder.equals(speaker) || DirectHearing.hears(from, positions.get(holder), direct)) continue;
+            if (holder.equals(speaker)) continue;
+            // Hearing the speaker in person (D17) counts as hearing them, for the hold, though BeCom sends nothing.
+            if (!shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
+            if (!walkieGot[i] || DirectHearing.hears(from, positions.get(holder), direct)) continue;
             IVoiceSession session = sessions.get(holder);
-            if (session == null || !shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
+            if (session == null) continue;
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
             // VOICE.md V5: GTNH Voice doesn't say whether this send went through or a higher group had served them.
             shared.contact(speaker, holder, now);
         }
         for (int i = 0; i < tx.walkies().length; i++) {
-            if (!walkieGot[i]) continue;
+            if (!walkieHeld[i]) continue;
             UUID holder = tx.walkies()[i].holder();
             PlayerSnapshot at = positions.get(holder);
             if (at == null) continue;
@@ -119,11 +126,12 @@ public final class RadioGroup implements IGroup {
                 at.getZ(),
                 shared.walkieSpeakerRange,
                 tx.walkies()[i].snr(),
-                now);
+                now,
+                walkieGot[i]);
         }
         for (int i = 0; i < tx.transceivers().length; i++) {
             RadioSnapshot.Transceiver t = tx.transceivers()[i].transceiver();
-            if (!transceiverGot[i] || !t.loudspeaker()) continue;
+            if (!transceiverHeld[i] || !t.loudspeaker()) continue;
             playAround(
                 context,
                 speaker,
@@ -136,27 +144,33 @@ public final class RadioGroup implements IGroup {
                 t.z(),
                 shared.loudspeakerRange,
                 tx.transceivers()[i].snr(),
-                now);
+                now,
+                transceiverGot[i]);
         }
     }
 
-    private boolean[] receive(UUID speaker, RadioSnapshot.Link[] links, long now) {
+    /**
+     * Runs each receiving device through capture (D24) and then the dropout model: {@code held[i]} says the device
+     * holds this speaker, the result whether this frame got through to it.
+     */
+    private boolean[] receive(UUID speaker, RadioSnapshot.Link[] links, long now, boolean[] held) {
         boolean[] got = new boolean[links.length];
         for (int i = 0; i < links.length; i++) {
             RadioSnapshot.Link link = links[i];
-            got[i] = shared.capture.admit(link.device(), channel, speaker, link.snr(), now)
-                && !shared.drop(speaker, link);
+            held[i] = shared.capture.admit(link.device(), channel, speaker, link.snr(), now);
+            got[i] = held[i] && !shared.drop(speaker, link);
         }
         return got;
     }
 
     /**
      * Positional from a device to the players around it, minus the speaker, its holder, direct hearers and anyone
-     * already held by another speaker (D24). VOICE.md V3: GTNH Voice plays it with its own falloff, so BeCom can only
-     * stop sending past the device's range.
+     * already held by another speaker (D24). Players around a device holding the speaker keep hearing them for the
+     * hold even when this frame didn't get through ({@code send} false), or they hear the speaker in person. VOICE.md
+     * V3: GTNH Voice plays it with its own falloff, so BeCom can only stop sending past the device's range.
      */
     private void playAround(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct, UUID holder,
-        int dimension, double x, double y, double z, double range, double snr, long now) {
+        int dimension, double x, double y, double z, double range, double snr, long now, boolean send) {
         // VOICE.md V3
         double rangeSq = range * range;
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
@@ -169,9 +183,10 @@ public final class RadioGroup implements IGroup {
             double dy = p.getY() - y;
             double dz = p.getZ() - z;
             if (dx * dx + dy * dy + dz * dz > rangeSq) continue;
-            if (DirectHearing.hears(from, p, direct)) continue;
+            if (!shared.listeners.admit(id, channel, speaker, snr, now)) continue;
+            if (!send || DirectHearing.hears(from, p, direct)) continue;
             IVoiceSession session = sessions.get(id);
-            if (session == null || !shared.listeners.admit(id, channel, speaker, snr, now)) continue;
+            if (session == null) continue;
             context.sendTo(session, SourceState.POSITIONAL, x, y, z);
             // VOICE.md V5
             shared.contact(speaker, id, now);
