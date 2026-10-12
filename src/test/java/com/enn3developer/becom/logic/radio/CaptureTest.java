@@ -71,4 +71,12 @@ class CaptureTest {
         // Held at 20, not 7: Cat at 21 doesn't take over.
         assertFalse(capture.admit("bob", 1, "cat", 21, 10));
     }
+
+    @Test
+    void aHoldSetNearZeroIsntSweptBeforeTheServerReadsIt() {
+        Capture<String> capture = new Capture<>(0, 3);
+        capture.admit("bob", 1, "alice", 10, 0);
+        capture.sweep(1_000_000_000L);
+        assertEquals("alice", capture.holder("bob", 1));
+    }
 }

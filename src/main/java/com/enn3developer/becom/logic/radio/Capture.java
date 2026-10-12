@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class Capture<L> {
 
+    private static final long SWEEP_FLOOR_NANOS = 10_000_000_000L;
     private final long holdNanos;
     private final double margin;
     private final Map<Key<L>, State> holders = new ConcurrentHashMap<>();
@@ -24,11 +25,13 @@ public final class Capture<L> {
 
     private record Key<L> (L listener, int channel) {}
 
+    // Written by route() on the network thread and read by the server thread (holder()), so volatile: the server must
+    // see a whole state, not a field at a time.
     private static final class State {
 
-        Object speaker;
-        double snr;
-        long lastNanos;
+        volatile Object speaker;
+        volatile double snr;
+        volatile long lastNanos;
     }
 
     /**
@@ -66,8 +69,11 @@ public final class Capture<L> {
 
     /** Server thread: forgets holds whose last frame is long gone, so the map doesn't only grow. */
     public void sweep(long nowNanos) {
+        // Never sooner than ten seconds: the server reads holds after a speaker lets go, for the squelch tail, and a
+        // hold set near zero in the config mustn't sweep them before then.
+        long keep = Math.max(holdNanos * 100, SWEEP_FLOOR_NANOS);
         holders.values()
-            .removeIf(s -> nowNanos - s.lastNanos > holdNanos * 100);
+            .removeIf(s -> nowNanos - s.lastNanos > keep);
     }
 
     public int size() {
