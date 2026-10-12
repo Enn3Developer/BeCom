@@ -39,6 +39,7 @@ import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.gui.AntennaView;
+import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
@@ -2683,8 +2684,15 @@ public final class SelfTest {
         else wes.setPosition(X0 + 10.5, Y, z + 0.5);
     }
 
+    private FakePlayer xan;
+
     private int checkProfileSeen() {
         walkWes(true);
+        // Xan stands in the room too, with no voice: they couldn't hear or be heard, so they stay out of the call.
+        int z = phoneZ + VIDEOPHONE_DZ;
+        xan = roomPlayer("BeComXan", 2, X0 + 1.5, z + 1.5);
+        UUID x = xan.getUniqueID();
+        becom.calls.voiceForSelfTest(id -> !id.equals(x));
         return TICKS_PER_SECOND + 5;
     }
 
@@ -2694,6 +2702,20 @@ public final class SelfTest {
             "someone walking into the Videophone's room shows up on the other side, profile and all",
             tileOf(becom.video.plan(), m, w) != null && becom.video.profilesSent(w, m) == 1,
             "seen " + (tileOf(becom.video.plan(), m, w) != null) + ", profiles " + becom.video.profilesSent(w, m));
+        List<String> names = new ArrayList<>();
+        for (PhoneView.Member member : PhoneScreenActions.view(mona, new PhoneHandle.CarriedPhone(monaNumber))
+            .members()) names.add(member.name());
+        check(
+            "...and the other side's Call tab lists everyone in the room by name (DESIGN.md 11.2)",
+            names.containsAll(List.of("BeComVic", "BeComWes")) && names.size() == 2,
+            String.valueOf(names));
+        check(
+            "...but someone in the room with no voice stays out of the call",
+            becom.calls.book()
+                .callOf(xan.getUniqueID()) == null,
+            "");
+        becom.calls.voiceForSelfTest(id -> true);
+        xan.setPosition(X0 + 30.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
         walkWes(false);
         return TICKS_PER_SECOND + 5;
     }

@@ -582,9 +582,26 @@ public final class CallService implements CallBook.Listener {
         sendLoudspeakerLevels();
     }
 
+    /**
+     * Whoever stands around a Videophone is in its room, but nobody joins it without voice, who could neither hear nor
+     * be heard, nor while their own phone rings, which they couldn't answer from a call. Someone already in it stays
+     * through their voice's grace, as on any phone (DESIGN.md 10).
+     */
     private void updateRoom(int number, long now) {
         Videophone phone = videophones.get(number);
-        if (phone != null) book.setRoom(number, playersAround(phone, tunables.videophoneRoom()), now);
+        if (phone == null) return;
+        Call call = book.callOfPhone(number);
+        List<UUID> room = new ArrayList<>();
+        for (UUID player : playersAround(phone, tunables.videophoneRoom())) {
+            boolean inRoom = call != null && book.callOf(player) == call;
+            if (inRoom || hasVoice.test(player) && !ownPhoneRinging(player)) room.add(player);
+        }
+        book.setRoom(number, room, now);
+    }
+
+    private boolean ownPhoneRinging(UUID player) {
+        for (int number : carried.carriedBy(player)) if (isRinging(number)) return true;
+        return false;
     }
 
     /**
@@ -1087,7 +1104,7 @@ public final class CallService implements CallBook.Listener {
     public String nameOf(UUID id, String fallback) {
         String held = names.get(id);
         if (held != null) return held;
-        EntityPlayerMP online = player(id);
+        EntityPlayer online = playerOrPresent(id);
         if (online != null) return online.getCommandSenderName();
         String cached = UsernameCache.getLastKnownUsername(id);
         return cached != null ? cached : fallback;

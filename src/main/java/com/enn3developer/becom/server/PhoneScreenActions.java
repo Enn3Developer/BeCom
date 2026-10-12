@@ -49,11 +49,21 @@ public final class PhoneScreenActions {
             for (Call.Leg leg : call.legs()) {
                 if (leg == own || leg.state() == Call.Leg.State.LEFT) continue;
                 boolean talking = own.state() == Call.Leg.State.ACTIVE && leg.state() == Call.Leg.State.ACTIVE;
+                SignalLevel level = talking ? call.level(leg, own) : SignalLevel.NONE;
+                if (leg.speakerphone() && !leg.players()
+                    .isEmpty()) {
+                    // Everyone in a Videophone's room is in the call, each by name (DESIGN.md 11.2).
+                    String owner = becom.phones.name(leg.phone());
+                    for (UUID inRoom : leg.players()) {
+                        members.add(new PhoneView.Member(leg.phone(), becom.calls.nameOf(inRoom, owner), level, false));
+                    }
+                    continue;
+                }
                 members.add(
                     new PhoneView.Member(
                         leg.phone(),
                         nameOn(becom, leg),
-                        talking ? call.level(leg, own) : SignalLevel.NONE,
+                        level,
                         leg.state() == Call.Leg.State.RINGING));
             }
         } else if (handle instanceof PhoneHandle.Telephone) {
