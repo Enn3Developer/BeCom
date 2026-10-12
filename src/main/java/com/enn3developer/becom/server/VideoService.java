@@ -88,8 +88,8 @@ public final class VideoService {
         int posesDelivered;
     }
 
-    // How many times each person's profile went to each viewer, for the self-test.
-    private final Map<Pair, Integer> profilesSent = new HashMap<>();
+    // How many times each person's profile went to each viewer, kept only while the self-test asks.
+    private Map<Pair, Integer> profilesSent;
 
     private record Pair(UUID source, UUID viewer) {}
 
@@ -229,7 +229,7 @@ public final class VideoService {
     }
 
     private void sendProfile(UUID viewer, UUID source) {
-        profilesSent.merge(new Pair(source, viewer), 1, Integer::sum);
+        if (profilesSent != null) profilesSent.merge(new Pair(source, viewer), 1, Integer::sum);
         EntityPlayer player = calls.playerOrPresent(source);
         String name = calls.nameOf(source, "");
         String textures = "";
@@ -355,7 +355,7 @@ public final class VideoService {
         viewers.clear();
         sources.clear();
         links.clear();
-        profilesSent.clear();
+        profilesSent = null;
         rear.clear();
         videoReports.clear();
         plan = VideoPlan.EMPTY;
@@ -367,9 +367,14 @@ public final class VideoService {
         return link == null ? 0 : link.posesDelivered;
     }
 
-    /** How many times {@code source}'s profile has gone to {@code viewer}; for the self-test. */
+    /** From now on, counts each profile sent, for the self-test. */
+    public void logForSelfTest() {
+        if (profilesSent == null) profilesSent = new HashMap<>();
+    }
+
+    /** How many times {@code source}'s profile has gone to {@code viewer} since {@link #logForSelfTest}. */
     public int profilesSent(UUID source, UUID viewer) {
-        return profilesSent.getOrDefault(new Pair(source, viewer), 0);
+        return profilesSent == null ? 0 : profilesSent.getOrDefault(new Pair(source, viewer), 0);
     }
 
     /** How many of {@code source}'s rear pictures have gone to {@code viewer}; for the self-test. */

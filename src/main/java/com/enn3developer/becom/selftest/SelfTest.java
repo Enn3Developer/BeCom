@@ -2747,6 +2747,7 @@ public final class SelfTest {
     private FakePlayer xan;
 
     private int checkProfileSeen() {
+        becom.video.logForSelfTest();
         walkWes(true);
         // Xan stands in the room too, with no voice: they couldn't hear or be heard, so they stay out of the call.
         int z = phoneZ + VIDEOPHONE_DZ;
