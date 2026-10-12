@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -81,8 +82,9 @@ public final class VideoRenderer {
     private static final int TEXT = 0xFFE0E0E0;
     private static final int TALK_BORDER = 0xFF40E060;
     private static final int WINDOW_BACKGROUND = 0xC0000000;
-    // The corner window, in scaled GUI pixels.
+    // The corner window, in scaled GUI pixels, and at most this share of the screen's width.
     private static final int WINDOW_WIDTH = 96;
+    private static final int WINDOW_SHARE = 4;
     private static final int WINDOW_MARGIN = 4;
     private static final float SMALL_TEXT = 0.5f;
     private static final int SMALL_TILE = 48;
@@ -461,21 +463,42 @@ public final class VideoRenderer {
 
     // region Corner window
 
-    /** The small window in a corner during a video call (D44), unless the player hid it. */
+    /**
+     * The small window in a corner during a video call (D44), unless the player hid it: the people, or the rear picture
+     * with its sender in an inset, at most a quarter of the screen wide. A screen open over the game hides it, chat
+     * aside; the phone screen shows the call full size.
+     */
     @SubscribeEvent(priority = EventPriority.LOW)
     public void onOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.currentScreen != null && !(mc.currentScreen instanceof GuiChat)) return;
         if (!ClientVideo.windowShown() || ClientVideo.tiles()
             .isEmpty()) return;
-        int height = callHeight(WINDOW_WIDTH);
-        ClientConfig.Corner corner = ClientConfig.videoCorner();
         int screenWidth = event.resolution.getScaledWidth();
         int screenHeight = event.resolution.getScaledHeight();
-        int x = corner.right() ? screenWidth - WINDOW_MARGIN - WINDOW_WIDTH : WINDOW_MARGIN;
+        int width = Math.min(WINDOW_WIDTH, screenWidth / WINDOW_SHARE);
+        ClientVideo.Feed rear = freshRear();
+        int height = rear != null ? Math.round(width / REAR_ASPECT) : callHeight(width);
+        ClientConfig.Corner corner = ClientConfig.videoCorner();
+        int x = corner.right() ? screenWidth - WINDOW_MARGIN - width : WINDOW_MARGIN;
         int y = corner.bottom() ? screenHeight - WINDOW_MARGIN - height : WINDOW_MARGIN;
-        Gui.drawRect(x - 1, y - 1, x + WINDOW_WIDTH + 1, y + height + 1, WINDOW_BACKGROUND);
-        drawCall(x, y, WINDOW_WIDTH, height);
+        Gui.drawRect(x - 1, y - 1, x + width + 1, y + height + 1, WINDOW_BACKGROUND);
+        if (rear != null) {
+            drawRear(rear, x, y, width, height);
+            int inset = height / 2;
+            VideoStatePacket.Tile sender = tileOf(rear.id);
+            if (sender != null) drawTile(sender, x + width - inset, y + height - inset, inset);
+        } else {
+            drawCall(x, y, width, height);
+        }
         GL11.glColor4f(1, 1, 1, 1);
+    }
+
+    private static VideoStatePacket.Tile tileOf(java.util.UUID source) {
+        for (VideoStatePacket.Tile tile : ClientVideo.tiles()) if (tile.source()
+            .equals(source)) return tile;
+        return null;
     }
 
     /** The phone screen's video page (D44): the call as large as the page allows, or why there's none. */
