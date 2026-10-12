@@ -16,29 +16,29 @@ Branch `milestone/0.1-wired`, from `master`.
 
 | Item                                                   | Status |
 |--------------------------------------------------------|--------|
-| Machine ID check (14.1)                                | doing  |
-| Config and saved-data versions (14.2)                  | doing  |
+| Machine ID check (14.1)                                | done   |
+| Config and saved-data versions (14.2)                  | done   |
 | The self-test (16.3)                                   | done   |
-| Pylon (5.1)                                            | doing  |
-| Line Terminal (5.2)                                    | doing  |
-| Repeater (5.3)                                         | doing  |
-| Router (5.4)                                           | doing  |
-| Phone Cable (5.5)                                      | doing  |
-| Telephone (5.6)                                        | doing  |
-| Their recipes (3.1)                                    | doing  |
-| Numbers (8.2, D25)                                     | doing  |
-| Contacts (8.2, D25)                                    | doing  |
-| Phone screen (11.2)                                    | doing  |
-| `becom:call` routing (13.3)                            | doing  |
-| Line loss (5.7)                                        | doing  |
-| Levels (4.1)                                           | doing  |
-| Dropouts (4.2)                                         | doing  |
-| Call audio (4.3, 13.5)                                 | doing  |
-| Ownership (12.1)                                       | doing  |
-| Linking rules (12.2)                                   | doing  |
-| Block list (12.3)                                      | doing  |
-| Do-not-disturb (12.3)                                  | doing  |
-| Rate limit (12.3)                                      | doing  |
+| Pylon (5.1)                                            | done   |
+| Line Terminal (5.2)                                    | done   |
+| Repeater (5.3)                                         | done   |
+| Router (5.4)                                           | done   |
+| Phone Cable (5.5)                                      | done   |
+| Telephone (5.6)                                        | done   |
+| Their recipes (3.1)                                    | done   |
+| Numbers (8.2, D25)                                     | done   |
+| Contacts (8.2, D25)                                    | done   |
+| Phone screen (11.2)                                    | done   |
+| `becom:call` routing (13.3)                            | done   |
+| Line loss (5.7)                                        | done   |
+| Levels (4.1)                                           | done   |
+| Dropouts (4.2)                                         | done   |
+| Call audio (4.3, 13.5)                                 | done   |
+| Ownership (12.1)                                       | done   |
+| Linking rules (12.2)                                   | done   |
+| Block list (12.3)                                      | done   |
+| Do-not-disturb (12.3)                                  | done   |
+| Rate limit (12.3)                                      | done   |
 | Quest support: BeCom's task type (D50)                 | done   |
 | Quest support: the off switch (15.5)                   | done   |
 | CI runs on milestone branches, newer pushes cancel     | done   |
