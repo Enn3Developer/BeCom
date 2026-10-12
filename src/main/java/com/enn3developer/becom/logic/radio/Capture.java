@@ -37,6 +37,11 @@ public final class Capture<L> {
      */
     public boolean admit(L listener, int channel, Object speaker, double snr, long nowNanos) {
         State state = holders.computeIfAbsent(new Key<>(listener, channel), k -> new State());
+        if (speaker.equals(state.speaker) && state.lastNanos == nowNanos) {
+            // The same frame again, along another path: the listener's link is the strongest of them.
+            state.snr = Math.max(state.snr, snr);
+            return true;
+        }
         boolean free = state.speaker == null || nowNanos - state.lastNanos > holdNanos;
         if (!free && !state.speaker.equals(speaker) && snr < state.snr + margin) return false;
         state.speaker = speaker;

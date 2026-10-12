@@ -62,4 +62,13 @@ class CaptureTest {
         capture.sweep(10_001 * MS);
         assertEquals(1, capture.size());
     }
+
+    @Test
+    void oneFrameAlongSeveralPathsCountsItsStrongest() {
+        Capture<String> capture = new Capture<>(100, 3);
+        assertTrue(capture.admit("bob", 1, "alice", 20, 0));
+        assertTrue(capture.admit("bob", 1, "alice", 7, 0));
+        // Held at 20, not 7: Cat at 21 doesn't take over.
+        assertFalse(capture.admit("bob", 1, "cat", 21, 10));
+    }
 }

@@ -375,4 +375,63 @@ class RadioGroupTest {
                 .build());
         assertEquals(0, shared.chainCount());
     }
+
+    @Test
+    void aListenerHearsOneSpeakerWhicheverDeviceTheirAudioComesThrough() {
+        // D24 is per listener: Bob's own walkie holds Alice, Dan's walkie 4 blocks away is taken by Cat. Bob must not
+        // hear Cat through Dan's walkie while Alice has him.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 20))
+                .link(alice, walkie(dan, 7))
+                .transmitter(cat, 1)
+                .link(cat, walkie(dan, 20))
+                .link(cat, walkie(bob, 7))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            fixture.recipients()
+                .contains(bob));
+        now += 10 * MS;
+        fixture.sent.clear();
+        fixture.route(one, cat, RADIO);
+        assertTrue(
+            !fixture.recipients()
+                .contains(bob),
+            "Bob hears Alice, at 20 dB on his own walkie; Cat isn't 3 dB stronger anywhere he is");
+        // Dan heard Alice through Bob's walkie at 20 dB too, so Cat's 20 on his own walkie doesn't take him either.
+        assertTrue(
+            !fixture.recipients()
+                .contains(dan));
+    }
+
+    @Test
+    void aStrongerSpeakerTakesAListenerThroughANeighboursWalkie() {
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 7))
+                .transmitter(cat, 1)
+                .link(cat, walkie(dan, 20))
+                .build());
+        fixture.route(one, alice, RADIO);
+        now += 10 * MS;
+        fixture.sent.clear();
+        fixture.route(one, cat, RADIO);
+        // Cat reaches Bob only through Dan's walkie, 13 dB stronger than Alice on his own: he switches to Cat.
+        assertEquals(List.of(dan, bob), fixture.recipients());
+        now += 10 * MS;
+        fixture.sent.clear();
+        fixture.route(one, alice, RADIO);
+        assertTrue(fixture.sent.isEmpty(), "Bob's own walkie still has Alice, but Bob is Cat's now");
+    }
 }

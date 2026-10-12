@@ -34,7 +34,11 @@ public final class RadioRouting {
     final double loudspeakerRange;
     final DoubleSupplier random;
     final LongSupplier clock;
+    // D24 twice over: each receiving device holds one speaker, and so does each player, whichever devices their audio
+    // reaches them through. Without the second, a player whose own walkie holds one speaker hears another through a
+    // walkie or loudspeaker beside them.
     final Capture<Object> capture;
+    final Capture<UUID> listeners;
     private volatile RadioSnapshot snapshot = RadioSnapshot.EMPTY;
     private final Map<Pair, DropoutModel.Chain> chains = new ConcurrentHashMap<>();
     private final Map<UUID, Keyed> keyed = new ConcurrentHashMap<>();
@@ -53,6 +57,7 @@ public final class RadioRouting {
         this.random = random;
         this.clock = clock;
         this.capture = new Capture<>(holdNanos, margin);
+        this.listeners = new Capture<>(holdNanos, margin);
     }
 
     RadioSnapshot snapshot() {
@@ -101,10 +106,12 @@ public final class RadioRouting {
         keyed.values()
             .removeIf(k -> nowNanos - k.nanos() > maxNanos);
         capture.sweep(nowNanos);
+        listeners.sweep(nowNanos);
     }
 
     void forget(UUID player) {
         capture.forgetListener(player);
+        listeners.forgetListener(player);
         chains.keySet()
             .removeIf(pair -> pair.speaker.equals(player) || player.equals(pair.device));
         keyed.remove(player);
@@ -122,6 +129,7 @@ public final class RadioRouting {
         reported.clear();
         contacts.clear();
         capture.clear();
+        listeners.clear();
     }
 
     public int chainCount() {

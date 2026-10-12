@@ -18,7 +18,8 @@ import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
  * capture rule (D24) and the dropout model. Then, in this order, since GTNH Voice keeps the first send per player:
  * flat to walkie holders, positional from each walkie that got it to players within 6 blocks of its holder (D21),
  * positional from each Transceiver that got it to players within its loudspeaker range. Whoever hears the speaker
- * directly (D17) gets nothing from BeCom.
+ * directly (D17) gets nothing from BeCom, and each player hears one speaker at a time, whichever device it comes
+ * through (D24).
  * <p>
  * {@link #route} runs on GTNH Voice's network thread and reads only the snapshot, the routing context and the shared
  * concurrent state in {@link RadioRouting}.
@@ -92,10 +93,11 @@ public final class RadioGroup implements IGroup {
 
         for (int i = 0; i < tx.walkies().length; i++) {
             if (!walkieGot[i]) continue;
-            UUID holder = tx.walkies()[i].holder();
+            RadioSnapshot.Link link = tx.walkies()[i];
+            UUID holder = link.holder();
             if (holder.equals(speaker) || DirectHearing.hears(from, positions.get(holder), direct)) continue;
             IVoiceSession session = sessions.get(holder);
-            if (session == null) continue;
+            if (session == null || !shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
             shared.contact(speaker, holder);
         }
@@ -114,7 +116,9 @@ public final class RadioGroup implements IGroup {
                 at.getX(),
                 at.getY(),
                 at.getZ(),
-                shared.walkieSpeakerRange);
+                shared.walkieSpeakerRange,
+                tx.walkies()[i].snr(),
+                now);
         }
         for (int i = 0; i < tx.transceivers().length; i++) {
             RadioSnapshot.Transceiver t = tx.transceivers()[i].transceiver();
@@ -129,7 +133,9 @@ public final class RadioGroup implements IGroup {
                 t.x(),
                 t.y(),
                 t.z(),
-                shared.loudspeakerRange);
+                shared.loudspeakerRange,
+                tx.transceivers()[i].snr(),
+                now);
         }
     }
 
@@ -143,9 +149,14 @@ public final class RadioGroup implements IGroup {
         return got;
     }
 
-    /** Positional from a device to the players around it, minus the speaker, its holder and direct hearers. */
+    /**
+     * Positional from a device to the players around it, minus the speaker, its holder, direct hearers and anyone
+     * already held by another speaker (D24). VOICE.md V3: GTNH Voice plays it with its own falloff, so BeCom can only
+     * stop sending past the device's range.
+     */
     private void playAround(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct, UUID holder,
-        int dimension, double x, double y, double z, double range) {
+        int dimension, double x, double y, double z, double range, double snr, long now) {
+        // VOICE.md V3
         double rangeSq = range * range;
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         for (PlayerSnapshot p : context.getPositionSnapshot()
@@ -159,7 +170,7 @@ public final class RadioGroup implements IGroup {
             if (dx * dx + dy * dy + dz * dz > rangeSq) continue;
             if (DirectHearing.hears(from, p, direct)) continue;
             IVoiceSession session = sessions.get(id);
-            if (session == null) continue;
+            if (session == null || !shared.listeners.admit(id, channel, speaker, snr, now)) continue;
             context.sendTo(session, SourceState.POSITIONAL, x, y, z);
             shared.contact(speaker, id);
         }
