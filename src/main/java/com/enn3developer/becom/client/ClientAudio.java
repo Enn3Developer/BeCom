@@ -69,6 +69,6 @@ public final class ClientAudio {
     private static SignalLevel radioLevel(IPlaybackFrame frame) {
         String group = frame.groupName();
         if (group == null || !group.startsWith(RadioGroup.PREFIX)) return SignalLevel.NONE;
-        return ClientLevels.get(frame.sourceId(), group);
+        return ClientLevels.radio(frame.sourceId(), group);
     }
 }

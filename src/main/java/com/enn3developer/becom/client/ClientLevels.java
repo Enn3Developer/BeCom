@@ -29,6 +29,16 @@ public final class ClientLevels {
         return level == null ? SignalLevel.NONE : level;
     }
 
+    /**
+     * The level to filter a radio frame at. A frame can arrive before its level: the server tells levels once a
+     * second, and someone can walk up to a receiving walkie in between. Radios never sound better than Medium (D10),
+     * so that's what an unknown one plays at, never clean.
+     */
+    public static SignalLevel radio(UUID source, String group) {
+        SignalLevel level = get(source, group);
+        return level == SignalLevel.NONE ? SignalLevel.MEDIUM : level;
+    }
+
     /** The weakest level this player hears anyone at through {@code group}, or NONE when it hears no one. */
     public static SignalLevel weakest(String group) {
         SignalLevel weakest = null;
