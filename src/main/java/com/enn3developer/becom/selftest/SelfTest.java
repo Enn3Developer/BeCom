@@ -1987,7 +1987,10 @@ public final class SelfTest {
         return 1;
     }
 
-    /** D14: a phone being moved with the mouse stays in its call. */
+    /**
+     * D14, DESIGN.md 11.2: a phone being moved with the mouse stays in its call, and a ringing phone that leaves its
+     * player stops ringing for them, its notice included.
+     */
     private int checkPhoneMoves() {
         FakePlayer olga = phonePlayer("BeComOlga", 2, X0 - 19.5, phoneZ + 1.5);
         FakePlayer pete = phonePlayer("BeComPete", 3, X0 - 19.5, phoneZ + 3.5);
@@ -2011,6 +2014,16 @@ public final class SelfTest {
                 && becom.calls.book()
                     .callOf(olga.getUniqueID()) == call,
             call == null ? "no call" : call.state() + "");
+        becom.calls.hangUp(olga);
+        // Olga calls again, and Pete drops his ringing phone.
+        becom.calls.dialCarried(olga, olgaNumber, peteNumber);
+        boolean shown = becom.calls.noticeForSelfTest(pete.getUniqueID());
+        pete.inventory.mainInventory[0] = null;
+        becom.carried.refreshForSelfTest(pete);
+        check(
+            "...and a ringing phone that leaves its player stops ringing, its notice gone from their screen",
+            shown && !becom.calls.noticeForSelfTest(pete.getUniqueID()) && !becom.calls.isRinging(peteNumber),
+            "shown " + shown + ", still " + becom.calls.noticeForSelfTest(pete.getUniqueID()));
         becom.calls.hangUp(olga);
         return 1;
     }

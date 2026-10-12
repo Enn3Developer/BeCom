@@ -79,15 +79,19 @@ public final class CallService implements CallBook.Listener {
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
     // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
     private final Map<Integer, Long> ringingCarried = new HashMap<>();
+    // Who was shown each ringing carried phone's notice: it goes from their screen however the phone left them.
+    private final Map<Integer, UUID> notices = new HashMap<>();
     // Working Videophones, where they stand, and the tick each last reported in (DESIGN.md 10.2).
     private final Map<Integer, Videophone> videophones = new HashMap<>();
     // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
     private final Map<Heard, SignalLevel> loudspeakerLevels = new HashMap<>();
     // Players hearing a tone that stops by itself, and the tick it stops.
     private final Map<UUID, Long> toneStops = new HashMap<>();
-    // The last tone each player was played and the last thing they were told, kept only while the self-test asks.
+    // The last tone each player was played, the last thing they were told and whether a ringing notice shows for them,
+    // kept only while the self-test asks.
     private Map<UUID, TonePacket.Tone> toneLog;
     private Map<UUID, String> messageLog;
+    private Map<UUID, Boolean> noticeLog;
     private long ticks;
     private long publishedVersion = -1;
 
@@ -468,9 +472,12 @@ public final class CallService implements CallBook.Listener {
     }
 
     private void stopRinging(int number) {
-        if (ringingCarried.remove(number) == null) return;
-        EntityPlayerMP holder = player(carried.holderOf(number));
-        if (holder != null) BeComPackets.send(RingPacket.stop(), holder);
+        ringingCarried.remove(number);
+        UUID shown = notices.remove(number);
+        if (shown == null) return;
+        if (noticeLog != null) noticeLog.put(shown, false);
+        EntityPlayerMP mp = player(shown);
+        if (mp != null) BeComPackets.send(RingPacket.stop(), mp);
     }
 
     // endregion
@@ -675,12 +682,15 @@ public final class CallService implements CallBook.Listener {
         ringingCarried.put(leg.phone(), ticks);
         ringCarried(leg.phone());
         // The notice in the corner (DESIGN.md 11.2): who calls, and from which number.
-        EntityPlayerMP holder = player(carried.holderOf(leg.phone()));
+        UUID holder = carried.holderOf(leg.phone());
         Call.Leg ringer = call.legOf(leg.invitedBy());
         if (holder != null && ringer != null) {
             String name = ringer.player() != null ? nameOf(ringer.player(), phones.name(ringer.phone()))
                 : phones.name(ringer.phone());
-            BeComPackets.send(RingPacket.ringing(name, ringer.phone()), holder);
+            notices.put(leg.phone(), holder);
+            if (noticeLog != null) noticeLog.put(holder, true);
+            EntityPlayerMP mp = player(holder);
+            if (mp != null) BeComPackets.send(RingPacket.ringing(name, ringer.phone()), mp);
         }
     }
 
@@ -977,6 +987,7 @@ public final class CallService implements CallBook.Listener {
         handsetOf.clear();
         names.clear();
         ringingCarried.clear();
+        notices.clear();
         toneStops.clear();
         videophones.clear();
         loudspeakerLevels.clear();
@@ -1089,10 +1100,19 @@ public final class CallService implements CallBook.Listener {
         toneStops.put(player, ticks + BRIEF_TONE_TICKS);
     }
 
-    /** From now on, keeps the last tone each player was played and what they were told, for the self-test. */
+    /**
+     * From now on, keeps the last tone each player was played, what they were told and whether a ringing notice shows
+     * for them, for the self-test.
+     */
     public void logForSelfTest() {
         if (toneLog == null) toneLog = new HashMap<>();
         if (messageLog == null) messageLog = new HashMap<>();
+        if (noticeLog == null) noticeLog = new HashMap<>();
+    }
+
+    /** Whether a ringing notice shows for {@code player}, as far as the log since {@link #logForSelfTest} goes. */
+    public boolean noticeForSelfTest(UUID player) {
+        return noticeLog != null && noticeLog.getOrDefault(player, false);
     }
 
     /** The last tone {@code player} was played since {@link #logForSelfTest}, or null. */
