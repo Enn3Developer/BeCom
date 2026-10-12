@@ -1138,8 +1138,8 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 
 | Item                                                                                            | Status |
 |-------------------------------------------------------------------------------------------------|--------|
-| A final pass over the art: every texture in both styles, next to GT's (15.1, D32, D53)          | todo   |
-| A final pass over the sounds (15.2, D53)                                                        | todo   |
+| A final pass over the art: every texture in both styles, next to GT's (15.1, D32, D53)          | done   |
+| A final pass over the sounds (15.2, D53)                                                        | done   |
 | The Modernity add-on pack, zipped by CI as `Modernity-GTNHAddon-BeCom.zip` for releases (15.1)  | done   |
 | Italian: every string, the quest text included (15.3, 15.5)                                     | done   |
 | The GuideNH guide: the tiers, how signal works, reading the Signal Analyzer (15.4, D48)         | done   |
@@ -1173,5 +1173,5 @@ guide. It's on 1.0's owner checklist, with its fallback built if it fails there.
 |-------------------------------------------------------------------------------------------------|--------|
 | Italian language entries                                                                        | done   |
 | Guide pages in English and Italian                                                              | done   |
-| Textures in both styles, after the final pass                                                   | todo   |
-| Sounds, after the final pass                                                                    | todo   |
+| Textures in both styles, after the final pass                                                   | done   |
+| Sounds, after the final pass                                                                    | done   |
