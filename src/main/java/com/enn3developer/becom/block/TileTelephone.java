@@ -40,6 +40,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     private boolean ringing;
     private int ringTicks;
     private long settledAt = Long.MIN_VALUE;
+    private int settledIn;
 
     public int number() {
         return number;
@@ -131,8 +132,10 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         if (tooNew != null) return;
         // On the first tick after loading, and again if a mover carried this same tile object somewhere else.
         long here = BlockPos.pack(xCoord, yCoord, zCoord);
-        if (here != settledAt) {
+        int dimension = worldObj.provider.dimensionId;
+        if (here != settledAt || dimension != settledIn) {
             settledAt = here;
+            settledIn = dimension;
             settleAfterLoad();
         }
         if (!ringing) return;

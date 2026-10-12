@@ -61,23 +61,34 @@ public class CommonProxy {
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
         // A server acts on its own config file (DESIGN.md 14.2); a client in this JVM had the defaults or a server's.
         String problem = BeComConfig.fileProblem();
-        if (problem != null) {
-            // FML's own way to refuse a world: the message goes to the console on a dedicated server, and on a client
-            // to a screen that leads back to the menu. Throwing here instead would leave a client on "Loading world".
-            BeCom.LOG.error("BeCom config: {}", problem);
-            StartupQuery.notify(StatCollector.translateToLocalFormatted("becom.config.refused", problem));
-            StartupQuery.abort();
-        }
+        if (problem != null) refuseWorld("config: " + problem);
         BeComConfig.useFileValues();
         // Before worlds load, so each dimension's network loads with its world.
         BeComServer.create(event.getServer());
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
-        BeComServer.start();
+        try {
+            BeComServer.start();
+        } catch (IllegalStateException e) {
+            // Saved data BeCom won't overwrite (DESIGN.md 14.2).
+            refuseWorld(e.getMessage());
+        }
         event.registerServerCommand(new CommandBeCom());
         // CI's run-server job greps for this line: FML silently skips mod jars it can't read.
         BeCom.LOG.info("Better Communications {} started", Tags.VERSION);
+    }
+
+    /**
+     * Stops a world from starting, saying why. FML's own way (as for missing IDs): on a dedicated server the reason
+     * goes
+     * to the console; in single-player it shows on screen and leads back to the menu. Throwing from a server event
+     * instead leaves a single-player client on "Loading world", or back at the menu without a word.
+     */
+    private static void refuseWorld(String reason) {
+        BeCom.LOG.error("BeCom can't start this world: {}", reason);
+        StartupQuery.notify(StatCollector.translateToLocalFormatted("becom.world.refused", reason));
+        StartupQuery.abort();
     }
 
     public void serverStarted(FMLServerStartedEvent event) {

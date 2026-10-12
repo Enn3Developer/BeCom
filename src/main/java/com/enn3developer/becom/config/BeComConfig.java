@@ -1,6 +1,7 @@
 package com.enn3developer.becom.config;
 
 import java.io.File;
+import java.util.Map;
 
 import net.minecraftforge.common.config.Configuration;
 
@@ -161,6 +162,7 @@ public final class BeComConfig {
             fileProblem = null;
         } catch (IllegalArgumentException e) {
             fileProblem = e.getMessage() + " (in " + file.getName() + ")";
+            BeCom.LOG.warn("BeCom config: {}. A server won't start with it.", fileProblem);
         }
         if (config.hasChanged()) config.save();
         BeCom.LOG.info("Loaded config {}", file.getName());
@@ -171,12 +173,33 @@ public final class BeComConfig {
             .getDouble(def);
     }
 
+    // The smallest value each whole-number option makes sense with, as Tunables.validate checks; the file shows it.
+    private static final Map<String, Integer> MINIMUM = Map.of(
+        "pylonMinHeight",
+        1,
+        "pylonClearanceSeconds",
+        1,
+        "ringSeconds",
+        1,
+        "callAttemptsPerMinute",
+        1,
+        "questlineRecheckSeconds",
+        1);
+
     private static int integer(Configuration config, String category, String key, int def, String comment) {
-        return integer(config, category, key, def, 0, Integer.MAX_VALUE, comment);
+        return integer(config, category, key, def, MINIMUM.getOrDefault(key, 0), Integer.MAX_VALUE, comment);
     }
 
+    /** A whole number in [min, max]; a value outside is used at the nearest end, with a warning naming what was set. */
     private static int integer(Configuration config, String category, String key, int def, int min, int max,
         String comment) {
-        return config.getInt(key, category, def, min, max, comment);
+        // What the file says, read first: Configuration.get without a comment clears the comment getInt writes.
+        int written = config.get(category, key, def)
+            .getInt(def);
+        int value = config.getInt(key, category, def, min, max, comment);
+        if (written != value) {
+            BeCom.LOG.warn("BeCom config: {} is {}, outside {} to {}; using {}", key, written, min, max, value);
+        }
+        return value;
     }
 }

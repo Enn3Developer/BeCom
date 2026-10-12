@@ -124,4 +124,4 @@ betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two 
 # Quest tasks
 becom.task.name=BeCom
 becom.task.first_call=Make a phone call that connects.
-becom.config.refused=BeCom can't start this world: %s.
+becom.world.refused=BeCom can't start this world: %s

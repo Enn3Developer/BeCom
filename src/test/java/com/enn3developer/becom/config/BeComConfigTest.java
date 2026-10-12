@@ -34,7 +34,8 @@ class BeComConfigTest {
     @Test
     void aBadValueStopsOnlyAServerStartingWithIt(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        Files.write(file.toPath(), "wired {\n    I:pylonMinHeight=0\n}\n".getBytes());
+        // A rule no single option's range can hold: the tallest pylon below the shortest.
+        Files.write(file.toPath(), "wired {\n    I:pylonMinHeight=20\n    I:pylonMaxHeight=10\n}\n".getBytes());
         // Loading happens on every side, a client's included: it mustn't throw.
         assertDoesNotThrow(() -> BeComConfig.load(file));
         // A server about to use the file stops, naming the key.
@@ -60,6 +61,25 @@ class BeComConfigTest {
             Tunables.MAX_COLUMN,
             BeComConfig.get()
                 .pylonMaxHeight());
+    }
+
+    @Test
+    void zeroWhereAtLeastOneIsNeededIsClampedNotFatal(@TempDir File dir) throws Exception {
+        File file = new File(dir, "becom.cfg");
+        Files.write(file.toPath(), "calls {\n    I:ringSeconds=0\n}\nwired {\n    I:pylonMinHeight=0\n}\n".getBytes());
+        BeComConfig.load(file);
+        BeComConfig.useFileValues();
+        assertEquals(
+            1,
+            BeComConfig.get()
+                .ringSeconds());
+        assertEquals(
+            1,
+            BeComConfig.get()
+                .pylonMinHeight());
+        // The file shows the range the server holds the option to.
+        String text = new String(Files.readAllBytes(file.toPath()));
+        assertEquals(true, text.contains("range: 1 ~"), text);
     }
 
     @Test

@@ -222,10 +222,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 14.2, 17
 - **Design says:** pylons are 6 to 16 frames and Phone Cable reaches 32 blocks by default; DESIGN.md 17 gives no
   limits on the config values.
-- **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. The config file shows those ranges
-  and clamps values outside them. The other checks on the file (ordered level thresholds, a burst of at least one
-  voice frame, at least one call attempt a minute, a format this BeCom understands and so on) run when a server is
-  about to start with it. A bad file refuses the world through FML's own startup notice, naming the key: on the
+- **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. Every whole-number option shows its
+  range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value
+  outside it is used at the nearest end with a warning naming what was written. The checks no single range can hold
+  (ordered level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this
+  BeCom understands and so on) run when a server is about to start with the file. A bad file refuses the world through FML's own startup notice, naming the key: on the
   console for a dedicated server, and on screen in single-player, where the client's file is the server's, leading
   back to the menu. A client joining a server never acts on its own file, so a bad one doesn't stop it.
 - **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
