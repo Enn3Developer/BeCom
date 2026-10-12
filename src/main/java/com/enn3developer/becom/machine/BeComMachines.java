@@ -1,0 +1,84 @@
+package com.enn3developer.becom.machine;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.enn3developer.becom.logic.net.NodeKind;
+
+import gregtech.api.GregTechAPI;
+import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
+
+/**
+ * BeCom's GregTech machines and their IDs (D18, DESIGN.md 14.1). The range is one of the three fixed tunables. Every
+ * ID is checked before anything is registered, so another mod already using one stops the game with a clear error
+ * instead of two machines quietly sharing an ID and corrupting worlds.
+ */
+public final class BeComMachines {
+
+    public static final int FIRST_ID = 25000;
+    public static final int LAST_ID = 25199;
+
+    public static final int PYLON_HEAD_ID = 25000;
+    public static final int REPEATER_HEAD_ID = 25001;
+    public static final int ROUTER_HEAD_ID = 25002;
+    public static final int LINE_TERMINAL_ID = 25003;
+
+    public static MTEPylonHead pylonHead;
+    public static MTEPylonHead repeaterHead;
+    public static MTEPylonHead routerHead;
+    public static MTELineTerminal lineTerminal;
+
+    private BeComMachines() {}
+
+    /** Every ID BeCom registers, with the internal name of the machine that gets it. */
+    public static Map<Integer, String> ids() {
+        Map<Integer, String> ids = new LinkedHashMap<>();
+        ids.put(PYLON_HEAD_ID, "becom.pylon_head");
+        ids.put(REPEATER_HEAD_ID, "becom.repeater_head");
+        ids.put(ROUTER_HEAD_ID, "becom.router_head");
+        ids.put(LINE_TERMINAL_ID, "becom.line_terminal");
+        return ids;
+    }
+
+    /**
+     * Throws naming the first ID another mod already uses.
+     *
+     * @throws IllegalStateException when an ID is out of BeCom's range or taken
+     */
+    public static void checkIds() {
+        for (Map.Entry<Integer, String> entry : ids().entrySet()) {
+            int id = entry.getKey();
+            if (id < FIRST_ID || id > LAST_ID) {
+                throw new IllegalStateException(
+                    "BeCom machine " + entry
+                        .getValue() + " has ID " + id + ", outside BeCom's range " + FIRST_ID + "-" + LAST_ID);
+            }
+            IMetaTileEntity existing = GregTechAPI.METATILEENTITIES[id];
+            if (existing != null) {
+                throw new IllegalStateException(
+                    "BeCom needs GregTech machine ID " + id
+                        + " for "
+                        + entry.getValue()
+                        + ", but "
+                        + existing.getMetaName()
+                        + " ("
+                        + existing.getClass()
+                            .getName()
+                        + ") already uses it. Another mod took an ID in BeCom's range "
+                        + FIRST_ID
+                        + "-"
+                        + LAST_ID
+                        + "; BeCom stops here rather than let two machines share an ID.");
+            }
+        }
+    }
+
+    public static void register() {
+        checkIds();
+        BeComTextures.init();
+        pylonHead = new MTEPylonHead(PYLON_HEAD_ID, "becom.pylon_head", "Pylon Head", NodeKind.PYLON);
+        repeaterHead = new MTEPylonHead(REPEATER_HEAD_ID, "becom.repeater_head", "Repeater Head", NodeKind.REPEATER);
+        routerHead = new MTEPylonHead(ROUTER_HEAD_ID, "becom.router_head", "Router Head", NodeKind.ROUTER);
+        lineTerminal = new MTELineTerminal(LINE_TERMINAL_ID, "becom.line_terminal", "Line Terminal");
+    }
+}

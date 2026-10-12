@@ -8,14 +8,18 @@ import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
+import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppedEvent;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 
 @Mod(
     modid = BeCom.MODID,
     version = Tags.VERSION,
     name = "Better Communications",
     acceptedMinecraftVersions = "[1.7.10]",
-    dependencies = "required-after:gtnhvoice;required-after:gregtech")
+    dependencies = "required-after:gtnhvoice;required-after:gregtech;after:betterquesting")
 public class BeCom {
 
     public static final String MODID = "becom";
@@ -40,7 +44,27 @@ public class BeCom {
     }
 
     @Mod.EventHandler
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        proxy.serverAboutToStart(event);
+    }
+
+    @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         proxy.serverStarting(event);
+    }
+
+    @Mod.EventHandler
+    public void serverStarted(FMLServerStartedEvent event) {
+        proxy.serverStarted(event);
+    }
+
+    @Mod.EventHandler
+    public void serverStopping(FMLServerStoppingEvent event) {
+        proxy.serverStopping(event);
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event) {
+        proxy.serverStopped(event);
     }
 }
