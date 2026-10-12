@@ -22,11 +22,17 @@ public final class BeComMachines {
     public static final int REPEATER_HEAD_ID = 25001;
     public static final int ROUTER_HEAD_ID = 25002;
     public static final int LINE_TERMINAL_ID = 25003;
+    public static final int ANTENNA_T1_ID = 25004;
+    public static final int ANTENNA_T2_ID = 25005;
+    public static final int ANTENNA_T3_ID = 25006;
 
     public static MTEPylonHead pylonHead;
     public static MTEPylonHead repeaterHead;
     public static MTEPylonHead routerHead;
     public static MTELineTerminal lineTerminal;
+    public static MTEAntenna antennaT1;
+    public static MTEAntenna antennaT2;
+    public static MTEAntenna antennaT3;
 
     private BeComMachines() {}
 
@@ -37,6 +43,9 @@ public final class BeComMachines {
         ids.put(REPEATER_HEAD_ID, "becom.repeater_head");
         ids.put(ROUTER_HEAD_ID, "becom.router_head");
         ids.put(LINE_TERMINAL_ID, "becom.line_terminal");
+        ids.put(ANTENNA_T1_ID, "becom.antenna_t1");
+        ids.put(ANTENNA_T2_ID, "becom.antenna_t2");
+        ids.put(ANTENNA_T3_ID, "becom.antenna_t3");
         return ids;
     }
 
@@ -80,5 +89,8 @@ public final class BeComMachines {
         repeaterHead = new MTEPylonHead(REPEATER_HEAD_ID, "becom.repeater_head", "Repeater Head", NodeKind.REPEATER);
         routerHead = new MTEPylonHead(ROUTER_HEAD_ID, "becom.router_head", "Router Head", NodeKind.ROUTER);
         lineTerminal = new MTELineTerminal(LINE_TERMINAL_ID, "becom.line_terminal", "Line Terminal");
+        antennaT1 = new MTEAntenna(ANTENNA_T1_ID, "becom.antenna_t1", "Antenna T1 Head", 1);
+        antennaT2 = new MTEAntenna(ANTENNA_T2_ID, "becom.antenna_t2", "Antenna T2 Head", 2);
+        antennaT3 = new MTEAntenna(ANTENNA_T3_ID, "becom.antenna_t3", "Antenna T3 Head", 3);
     }
 }

@@ -18,6 +18,14 @@ public final class BeComTextures {
     public static final IIconContainer ROUTER_HEAD_GLOW = icon("OVERLAY_ROUTER_HEAD_GLOW");
     public static final IIconContainer LINE_TERMINAL = icon("OVERLAY_LINE_TERMINAL");
     public static final IIconContainer LINE_TERMINAL_GLOW = icon("OVERLAY_LINE_TERMINAL_GLOW");
+    public static final IIconContainer ANTENNA_T1 = icon("OVERLAY_ANTENNA_T1");
+    public static final IIconContainer ANTENNA_T1_GLOW = icon("OVERLAY_ANTENNA_T1_GLOW");
+    public static final IIconContainer ANTENNA_T2 = icon("OVERLAY_ANTENNA_T2");
+    public static final IIconContainer ANTENNA_T2_GLOW = icon("OVERLAY_ANTENNA_T2_GLOW");
+    public static final IIconContainer ANTENNA_T3 = icon("OVERLAY_ANTENNA_T3");
+    public static final IIconContainer ANTENNA_T3_GLOW = icon("OVERLAY_ANTENNA_T3_GLOW");
+    public static final IIconContainer TRANSCEIVER = icon("OVERLAY_TRANSCEIVER");
+    public static final IIconContainer TRANSCEIVER_GLOW = icon("OVERLAY_TRANSCEIVER_GLOW");
 
     private BeComTextures() {}
 

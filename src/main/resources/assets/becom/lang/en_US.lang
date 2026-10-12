@@ -5,6 +5,9 @@ gt.blockmachines.becom.pylon_head.name=Pylon Head
 gt.blockmachines.becom.repeater_head.name=Repeater Head
 gt.blockmachines.becom.router_head.name=Router Head
 gt.blockmachines.becom.line_terminal.name=Line Terminal
+gt.blockmachines.becom.antenna_t1.name=Antenna T1 Head
+gt.blockmachines.becom.antenna_t2.name=Antenna T2 Head
+gt.blockmachines.becom.antenna_t3.name=Antenna T3 Head
 
 # Machine tooltips
 becom.machine.pylon.type=Pylon
@@ -20,6 +23,13 @@ becom.machine.pylon.frames=Steel Frame Box, in a column below the head
 becom.machine.power=Uses %s EU/t at %s while working
 becom.machine.terminal.info=Where a telephone line starts or ends. Links to one Pylon Head and serves exactly one phone.
 becom.machine.terminal.cable=Reaches its phone through up to %s blocks of Phone Cable
+becom.machine.antenna.type=Antenna
+becom.machine.antenna.info=Serves radios in range and repeats all 16 radio channels. Links to other antennas on its own, and carries calls between lines bridged onto them.
+becom.machine.antenna.range=Reaches about %s blocks to Low on open ground (%s dB link budget). Height and hills matter.
+becom.machine.antenna.bridge=Wrench it to a Pylon Head or Line Terminal within %s blocks to bridge that line, %s bridges at most
+becom.machine.antenna.controller=Top of the mast
+becom.machine.antenna.mast=%s, in a mast below the head
+becom.machine.antenna.hatch=Any base casing
 
 # Scanner info
 becom.info.formed=Pylon height: %s
@@ -33,6 +43,8 @@ becom.info.no_phone=No phone on the cable
 becom.info.too_many_phones=%s phones on the cable: a terminal serves exactly one
 becom.info.too_much_cable=More than %s blocks of Phone Cable in all: a terminal takes no more
 becom.info.phone_shared=Phone %s is on another terminal's cable too: a phone hangs off exactly one terminal
+becom.info.mast=Mast height: %s
+becom.info.locked=Locked to its owner's team
 
 # Linking
 becom.link.no_node=This node isn't ready yet. Try again in a moment.
@@ -44,10 +56,10 @@ becom.link.not_yours=Only an owner of either end, or their team, can unlink this
 becom.link.blocked=Something solid is in the way of the line.
 becom.link.refused.same_node=That's the same node.
 becom.link.refused.already_linked=Those are already linked.
-becom.link.refused.incompatible=A Line Terminal links only to a Pylon Head.
-becom.link.refused.not_formed=Both pylons need a complete structure first.
+becom.link.refused.incompatible=These two can't be linked. Lines run over Pylon Heads, and an antenna bridges a Pylon Head or a Line Terminal.
+becom.link.refused.not_formed=Both need a complete structure first.
 becom.link.refused.no_free_slot=One of them has no free link slot.
-becom.link.refused.too_far=Too far: %s blocks, at most %s for these pylons.
+becom.link.refused.too_far=Too far: %s blocks, at most %s for these two.
 
 # Calls
 becom.group.call=Call
@@ -94,6 +106,18 @@ becom.phone.dnd=Do not disturb
 becom.phone.hidden=Hide from contacts
 becom.phone.blocked=Blocked players
 becom.phone.not_owner=Only the owner or their team can change these.
+
+# Antenna screen
+becom.antenna.title=Antenna T%s
+becom.antenna.status=%s, mast %s, reaches about %s blocks. %s
+becom.antenna.unformed=Incomplete structure
+becom.antenna.surveyed=Surveyed.
+becom.antenna.surveying=Surveying...
+becom.antenna.owner=Owner: %s
+becom.antenna.lock=Serve only my team
+becom.antenna.link=Antenna at %s, %s, %s, %s blocks. Radio %s, calls %s
+becom.antenna.bridge=Bridge to %s, %s, %s, %s blocks
+becom.antenna.no_links=No other antenna in reach yet.
 
 # Commands
 becom.command.usage=/becom calls | /becom hangup <id>

@@ -89,5 +89,25 @@ public final class BeComRecipes {
             new Object[] { "CYC", "THT", "C C", 'C', OrePrefixes.circuit.get(Materials.LV), 'Y',
                 BeComMachines.pylonHead.getStackForm(1), 'T', OrePrefixes.cableGt01.get(Materials.Tin), 'H',
                 ItemList.Hull_LV });
+
+        // Antenna heads (DESIGN.md 3.1): a hull of the tier with an emitter to transmit and a sensor to receive, the
+        // tier's circuits and cable, and two long rods for the elements.
+        antenna(BeComMachines.antennaT1, 1, Materials.LV, Materials.Tin, Materials.Steel);
+        antenna(BeComMachines.antennaT2, 2, Materials.MV, Materials.Copper, Materials.Aluminium);
+        antenna(BeComMachines.antennaT3, 3, Materials.HV, Materials.Gold, Materials.StainlessSteel);
+    }
+
+    private static final ItemList[] HULLS = { null, ItemList.Hull_LV, ItemList.Hull_MV, ItemList.Hull_HV };
+    private static final ItemList[] EMITTERS = { null, ItemList.Emitter_LV, ItemList.Emitter_MV, ItemList.Emitter_HV };
+    private static final ItemList[] SENSORS = { null, ItemList.Sensor_LV, ItemList.Sensor_MV, ItemList.Sensor_HV };
+
+    private static void antenna(gregtech.api.metatileentity.MetaTileEntity head, int tier, Materials circuit,
+        Materials cable, Materials rod) {
+        GTModHandler.addCraftingRecipe(
+            head.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "RER", "CHC", "TST", 'R', OrePrefixes.stickLong.get(rod), 'E', EMITTERS[tier], 'C',
+                OrePrefixes.circuit.get(circuit), 'H', HULLS[tier], 'T', OrePrefixes.cableGt01.get(cable), 'S',
+                SENSORS[tier] });
     }
 }

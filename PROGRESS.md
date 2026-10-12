@@ -271,9 +271,9 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Radio model: link budget, knife-edge terrain, cover, noise (6.1)     | doing  |
 | Surveys (6.3) within the survey budget (6.5)                         | doing  |
 | Direct links between radios (6.4)                                    | doing  |
-| Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | todo   |
+| Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | doing  |
 | Antenna links on VHF and UHF, and bridges onto wired lines (7)       | doing  |
-| Antenna screen: links and team lock (11.4, 12.2)                     | todo   |
+| Antenna screen: links and team lock (11.4, 12.2)                     | doing  |
 | Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | todo   |
 | Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | todo   |
 | Push-to-talk key and the `radio` activation (11.1, 13.4)             | todo   |
