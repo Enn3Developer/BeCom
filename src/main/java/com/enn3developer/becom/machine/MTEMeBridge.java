@@ -50,6 +50,9 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     // BeCom's keys from a newer BeCom: kept as they were, and the bridge left alone (X16).
     private NBTTagCompound tooNew;
+    // The NBT key AE2 saves the bridge's node under.
+    private static final String PROXY = "proxy";
+
     private AENetworkProxy proxy;
     private boolean working;
     private boolean registered;
@@ -92,7 +95,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public AENetworkProxy getProxy() {
         if (proxy == null) {
-            proxy = new AENetworkProxy(this, "proxy", getStackForm(1), true);
+            proxy = new AENetworkProxy(this, PROXY, getStackForm(1), true);
             if (BeComConfig.get()
                 .meBridgeChannels() > 0) proxy.setFlags(GridFlags.REQUIRE_CHANNEL);
             proxy.setValidSides(EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)));
@@ -311,7 +314,9 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             return;
         }
         tooNew = null;
-        getProxy().readFromNBT(nbt);
+        // A bridge placed from an item that kept some of its data, its paint or a cover, has no node saved: AE2 would
+        // read the missing one as AE player 0's and drop the placer GT just gave it. GT's own ME hatches check too.
+        if (nbt.hasKey(PROXY)) getProxy().readFromNBT(nbt);
     }
 
     // endregion

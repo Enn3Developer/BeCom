@@ -584,8 +584,11 @@ public final class SelfTest {
 
     /** Places a machine the way {@code player} placing its item does. */
     private <T extends IMetaTileEntity> T placeAs(T machine, int x, int y, int z, FakePlayer player) {
+        return placeAs(machine, machine.getStackForm(1), x, y, z, player);
+    }
+
+    private <T extends IMetaTileEntity> T placeAs(T machine, ItemStack stack, int x, int y, int z, FakePlayer player) {
         world.getChunkFromBlockCoords(x, z);
-        ItemStack stack = machine.getStackForm(1);
         ((ItemBlock) stack.getItem()).placeBlockAt(stack, player, world, x, y, z, 1, 0.5f, 0.5f, 0.5f, 0);
         TileEntity tile = world.getTileEntity(x, y, z);
         return (T) ((IGregTechTileEntity) tile).getMetaTileEntity();
@@ -2245,11 +2248,31 @@ public final class SelfTest {
 
     private int placeMeBridges() {
         int z = phoneZ + ME_DZ;
-        meBridge = place(BeComMachines.meBridge, X0 + 7, Y, z);
+        // Each from an item that kept some data, as a bridge broken with an upgrade in it does: its AE2 owner is still
+        // whoever places it.
+        meBridge = placeAs(BeComMachines.meBridge, keptStack(BeComMachines.meBridge), X0 + 7, Y, z, owner);
         powered.add(meBridge.getBaseMetaTileEntity());
-        strangerBridge = placeAs(BeComMachines.meBridge, X0 + 6, Y + 1, z, stranger);
+        strangerBridge = placeAs(BeComMachines.meBridge, keptStack(BeComMachines.meBridge), X0 + 6, Y + 1, z, stranger);
         powered.add(strangerBridge.getBaseMetaTileEntity());
         return SETTLE_TICKS;
+    }
+
+    /** A machine's item carrying the data GT keeps on one broken with an upgrade in it. */
+    private static ItemStack keptStack(IMetaTileEntity machine) {
+        ItemStack stack = machine.getStackForm(1);
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setByte("mOtherUpgrades", (byte) 1);
+        stack.setTagCompound(tag);
+        return stack;
+    }
+
+    private static boolean ownedBy(MTEMeBridge bridge, FakePlayer player) {
+        appeng.api.networking.IGridNode node = bridge.getProxy()
+            .getNode();
+        return node != null && node.getPlayerID() == AEApi.instance()
+            .registries()
+            .players()
+            .getID(player.getGameProfile());
     }
 
     private int linkMe() {
@@ -2289,6 +2312,10 @@ public final class SelfTest {
             "...one placed by a player the network's security doesn't let build stays out of it",
             !strangerBridge.meOnline(),
             "online in ME " + strangerBridge.meOnline());
+        check(
+            "...each bridge's AE2 owner is whoever placed it, from an item that kept some data too",
+            ownedBy(meBridge, owner) && ownedBy(strangerBridge, stranger),
+            "");
         IGregTechTileEntity strangers = strangerBridge.getBaseMetaTileEntity();
         powered.remove(strangers);
         world.setBlockToAir(strangers.getXCoord(), strangers.getYCoord(), strangers.getZCoord());
