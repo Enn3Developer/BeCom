@@ -427,7 +427,8 @@ public final class CallService implements CallBook.Listener {
 
     /**
      * The Phone key (DESIGN.md 11.1, D34): answers the player's ringing phone, or with sneak rejects it; hangs up
-     * during a call; otherwise opens the screen of the first phone they carry.
+     * during a call; otherwise opens the screen of the first phone they carry. A ringing phone is one they carry, or a
+     * Telephone or Videophone close enough to answer: within its cord, or in its room.
      */
     public void phoneKey(EntityPlayerMP player, boolean sneaking) {
         int ringing = ringingFor(player);
@@ -441,6 +442,7 @@ public final class CallService implements CallBook.Listener {
             hangUp(player);
             return;
         }
+        if (answerNear(player, sneaking)) return;
         Carried.Slot slot = Carried.first(player, ItemCarriedPhone::is);
         if (slot == null || !PhoneScreenActions.mayOpenScreen(player)) return;
         if (slot.inventory() == player.inventory) {
@@ -450,6 +452,27 @@ public final class CallService implements CallBook.Listener {
             GuiFactories.playerInventory()
                 .openFromBaubles(player, slot.index());
         }
+    }
+
+    /** Answers, or with sneak turns down, a ringing Telephone or Videophone the player is close enough to answer. */
+    private boolean answerNear(EntityPlayerMP player, boolean sneaking) {
+        double roomSq = tunables.videophoneRoom() * tunables.videophoneRoom();
+        for (Call call : new ArrayList<>(book.calls())) {
+            for (Call.Leg leg : call.ringingLegs()) {
+                int phone = leg.phone();
+                TileTelephone telephone = phones.telephone(phone);
+                Videophone videophone = kindOf(phone) == PhoneKind.VIDEOPHONE ? videophone(phone) : null;
+                boolean near = telephone != null && telephone.withinCord(player) || videophone != null
+                    && player.dimension == videophone.dimension()
+                    && player.getDistanceSq(videophone.centerX(), videophone.centerY(), videophone.centerZ()) <= roomSq;
+                if (!near) continue;
+                if (sneaking) book.reject(phone);
+                else if (telephone != null) takeHandset(player, telephone);
+                else answerVideophone(player, phone);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

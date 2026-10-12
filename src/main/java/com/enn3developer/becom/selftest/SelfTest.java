@@ -1976,10 +1976,18 @@ public final class SelfTest {
                 + unanswered
                 + ", told "
                 + becom.calls.lastMessageForSelfTest(n));
-        // Nell talks to the Telephone, and Mona calls her.
+        // Nell talks to the Telephone, answered with the Phone key, and Mona calls her.
         becom.calls.dialCarried(nell, nellNumber, phoneTelephone.number());
         standBy(stranger, phoneTelephone);
-        becom.calls.takeHandset(stranger, phoneTelephone);
+        becom.calls.phoneKey(stranger, false);
+        Call keyed = becom.calls.book()
+            .callOf(n);
+        check(
+            "the Phone key answers a ringing Telephone within its cord (DESIGN.md 11.1)",
+            keyed != null && keyed.state() == Call.State.CONNECTED
+                && Integer.valueOf(phoneTelephone.number())
+                    .equals(becom.calls.handsetOf(s)),
+            keyed == null ? "no call" : keyed.state() + ", handset " + becom.calls.handsetOf(s));
         CallBook.DialResult busy = becom.calls.dialCarried(mona, monaNumber, nellNumber);
         busyTone = busy == CallBook.DialResult.BUSY ? becom.calls.lastToneForSelfTest(m) : null;
         becom.calls.hangUp(nell);
@@ -2624,18 +2632,20 @@ public final class SelfTest {
         return 5;
     }
 
-    /** DESIGN.md 16, 0.3's second "Done when": a Mobile Phone calls the Videophone, and Vic answers at its screen. */
+    /**
+     * DESIGN.md 16, 0.3's second "Done when": a Mobile Phone calls the Videophone, and Vic answers with the Phone key.
+     */
     private int startVideoCall() {
         int z = phoneZ + VIDEOPHONE_DZ;
         vic.setPosition(X0 + 2.5, Y, z + 0.5);
         becom.calls.presentForSelfTest(mona);
         becom.carried.refreshForSelfTest(mona);
         CallBook.DialResult result = becom.calls.dialCarried(mona, monaNumber, videophone.number());
-        PhoneScreenActions.pickUp(vic, new PhoneHandle.Videophone(videophone));
+        becom.calls.phoneKey(vic, false);
         Call call = becom.calls.book()
             .callOfPhone(videophone.number());
         check(
-            "a Mobile Phone calls the Videophone and Vic answers at its screen",
+            "a Mobile Phone calls the Videophone and Vic answers with the Phone key, standing in its room",
             result == CallBook.DialResult.RINGING && call != null
                 && call.state() == Call.State.CONNECTED
                 && call.legOf(vic.getUniqueID()) != null,
