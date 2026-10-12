@@ -507,8 +507,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Design says:** a call's best path is found again only when a node, a link or an access level changes.
 - **Built:** the call graph solves each starting point's best paths once and keeps them until the network changes, as
   the design says. On top of that, the list of phones a phone can reach, which its screen's contacts and a
-  Telephone's pick-up read, is kept a second per phone. That list can be up to a second old: a phone that just came into reach shows a second late, and
-  one that just went out of reach still shows, though dialling it checks the path again and is refused.
+  Telephone's pick-up read, is kept a second per phone. That list can be up to a second old:
+  - a phone that just came into reach shows a second late, and one that just went out of reach still shows, though
+    dialling it checks the path again and is refused;
+  - a Telephone picked up in that second can ring the one phone it knew of when another has just come into reach,
+    instead of opening the dialer, or ring one that has just gone out of reach, which plays the unreachable tone.
 - **Why:** an open phone screen asks for its contacts every tick, and the list is a lookup for every phone in reach
   and every carried phone switched on. Kept a second, a screen costs one list a second. Carried phones' service
   changes about once a second anyway, as they move.

@@ -259,10 +259,12 @@ public final class SelfTest {
         steps.add(this::checkPhoneMoves);
         steps.add(this::checkBaublePhone);
         steps.add(this::checkTwoRinging);
-        steps.add(this::checkContactsAgain);
         steps.add(this::dialWhileRinging);
         steps.add(this::checkDialWhileRinging);
         steps.add(this::checkNoticeMoved);
+        steps.add(this::startContacts);
+        for (int i = 1; i < TICKS_PER_SECOND; i++) steps.add(this::viewContacts);
+        steps.add(this::checkContacts);
         steps.add(this::checkHandsetFirst);
         steps.add(this::checkNoCord);
         steps.add(this::startRain);
@@ -2124,10 +2126,12 @@ public final class SelfTest {
     private int rexOther = -1;
     private FakePlayer tia;
     private int tiaNumber = -1;
+    private int contactSearches;
 
     /**
      * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest, and the Phone key answers
-     * that one; pressed again it hangs up, and the other's notice shows again, as it does when the latest stops.
+     * that one; pressed again it hangs up, and the other's notice shows again, as it does when the latest stops. Sneak
+     * + the key in a call turns the other down and keeps the call.
      */
     private int checkTwoRinging() {
         rex = phonePlayer("BeComRex", 5, X0 - 19.5, phoneZ + 0.5);
@@ -2176,28 +2180,18 @@ public final class SelfTest {
             "when the latest of two phones ringing for a player stops, the other's notice shows again",
             shown && becom.calls.isRinging(first) && !becom.calls.isRinging(other),
             "shown " + shown + ", the first ringing " + becom.calls.isRinging(first));
-        becom.calls.hangUp(tia);
-        // A phone screen asks for its view every tick; its contacts are a path search per phone in reach.
-        int searches = becom.calls.reachableSearchesForSelfTest();
-        for (int i = 0; i < TICKS_PER_SECOND; i++)
-            PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
-        int more = becom.calls.reachableSearchesForSelfTest() - searches;
+        becom.calls.dialCarried(sid, sidNumber, other);
+        becom.calls.phoneKey(rex, false);
+        becom.calls.phoneKey(rex, true);
+        call = becom.calls.book()
+            .callOf(r);
+        answered = call == null ? null : call.legOf(r);
         check(
-            "a phone screen open for a second finds its contacts once, not every tick (X32)",
-            more == 1,
-            more + " searches");
-        return TICKS_PER_SECOND;
-    }
-
-    private int checkContactsAgain() {
-        int searches = becom.calls.reachableSearchesForSelfTest();
-        for (int i = 0; i < TICKS_PER_SECOND; i++)
-            PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
-        int more = becom.calls.reachableSearchesForSelfTest() - searches;
-        check(
-            "...and finds them again a second later, so a change shows within a second (X32)",
-            more == 1,
-            more + " searches");
+            "...in a call on one, sneak + the Phone key turns the other down and keeps the call (D34)",
+            answered != null && answered.phone() == other && !becom.calls.isRinging(first),
+            (answered == null ? "no call" : "in the call on " + answered.phone()) + ", the first ringing "
+                + becom.calls.isRinging(first));
+        becom.calls.hangUp(rex);
         return 1;
     }
 
@@ -2239,6 +2233,33 @@ public final class SelfTest {
         becom.calls.hangUp(tia);
         pete.inventory.mainInventory[1] = null;
         becom.carried.refreshForSelfTest(pete);
+        return 1;
+    }
+
+    // A phone screen asks for its view every tick; its contacts are a path search per phone in reach (X32).
+    private int startContacts() {
+        contactSearches = becom.calls.reachableSearchesForSelfTest();
+        PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
+        return 1;
+    }
+
+    private int viewContacts() {
+        PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
+        return 1;
+    }
+
+    private int checkContacts() {
+        int second = becom.calls.reachableSearchesForSelfTest() - contactSearches;
+        PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
+        int again = becom.calls.reachableSearchesForSelfTest() - contactSearches - second;
+        check(
+            "a phone screen open for a second, asking every tick, finds its contacts once (X32)",
+            second == 1,
+            second + " searches");
+        check(
+            "...and finds them again a second later, so a change shows within a second (X32)",
+            again == 1,
+            again + "");
         return 1;
     }
 
