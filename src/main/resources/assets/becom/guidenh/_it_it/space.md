@@ -69,8 +69,8 @@ Metti un <ItemLink id="becom:rocket_radio_receiver" showIcon="left">Ricevitore r
 un razzo di Galacticraft fermo su una piattaforma di lancio di Galacticraft, su una luna, un pianeta o una stazione
 spaziale. Il razzo diventa lì un'antenna T1, con una portata di circa 64 blocchi, e il collegamento di quel mondo con i
 satelliti dell'Overworld, al livello Alto. Il razzo ha una stiva solo se è costruito con dei bauli, e conta solo finché
-il suo chunk è caricato. Un razzo su cui voli tu arriva come oggetto nel suo Parachest: piazzalo su una piattaforma e
-mettici dentro il ricevitore.
+il suo chunk è caricato. Un razzo su cui voli tu arriva come oggetto nella sua Cassa del razzo: piazzalo su una
+piattaforma e mettici dentro il ricevitore.
 
 Il collegamento vuole almeno 5 satelliti sopra l'Overworld, e una chiamata che ci passa non va meglio del salto ai
 satelliti dal lato dell'Overworld: i telefoni sotto il cielo aperto dell'Overworld, e le reti con una parabola,
