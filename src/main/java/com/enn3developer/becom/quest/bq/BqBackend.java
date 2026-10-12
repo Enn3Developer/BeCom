@@ -100,9 +100,19 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     @Override
     public void tick() {
         if (questline == null || !enabled()) return;
+        ticks++;
+        // A reload takes BeCom's quests with their progress, and the copy is all that brings it back: keep it fresh,
+        // so at most a second of progress is lost (writing a handful of quests' progress is cheap).
+        if (ticks % TICKS_PER_SECOND == 0) {
+            try {
+                copyProgress();
+            } catch (Throwable t) {
+                BeCom.LOG.error("Couldn't copy the progress of BeCom's quests", t);
+            }
+        }
         int every = BeComConfig.get()
             .questlineRecheckSeconds() * TICKS_PER_SECOND;
-        if (every <= 0 || ++ticks % every != 0) return;
+        if (every <= 0 || ticks % every != 0) return;
         recheckNow();
     }
 

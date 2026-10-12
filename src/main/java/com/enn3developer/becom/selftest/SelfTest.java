@@ -1,5 +1,6 @@
 package com.enn3developer.becom.selftest;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -15,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.world.WorldServer;
@@ -78,6 +80,8 @@ public final class SelfTest {
     private static final int Z0 = 30_000;
     private static final int Y = 210;
     private static final int GROUP_GAP = 80;
+    private static final int TICKS_PER_SECOND = 20;
+    private static final String RELOAD_DATABASE = "becom_selftest_reload";
     // Enough for every machine to tick, form, scan its cable and send heartbeats, with the 2 s offline window.
     private static final int SETTLE_TICKS = 60;
     private static final int TALLEST_STACK = 11;
@@ -90,6 +94,7 @@ public final class SelfTest {
     private final WorldServer world;
     private final FakePlayer owner;
     private final FakePlayer stranger;
+    private boolean fakePlacedOwnerless;
     private final List<Step> steps = new ArrayList<>();
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
     private int index;
@@ -148,6 +153,7 @@ public final class SelfTest {
         steps.add(this::switchRepeaterOff);
         steps.add(this::checkRepeaterOff);
         steps.add(this::checkQuests);
+        steps.add(this::checkQuestReload);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -448,7 +454,17 @@ public final class SelfTest {
     private TileTelephone telephone(int x, int y, int z) {
         world.setBlock(x, y, z, BeComBlocks.telephone);
         BeComBlocks.telephone.onBlockPlacedBy(world, x, y, z, owner, new ItemStack(BeComBlocks.telephone));
-        return (TileTelephone) world.getTileEntity(x, y, z);
+        TileTelephone tile = (TileTelephone) world.getTileEntity(x, y, z);
+        // A fake player, like a machine placing blocks, never owns a phone (X6). The self-test's owner stands in for
+        // the real player who would place it.
+        PhoneRecord record = becom.phones.record(tile.number());
+        if (record != null && record.owner() == null) {
+            fakePlacedOwnerless = true;
+            record.setOwner(owner.getUniqueID(), owner.getCommandSenderName());
+        } else {
+            fakePlacedOwnerless = false;
+        }
+        return tile;
     }
 
     private int formAndLink() {
@@ -626,6 +642,7 @@ public final class SelfTest {
         standBy(owner, start);
         standBy(stranger, end);
 
+        check("a Telephone placed by a fake player has no owner of its own", fakePlacedOwnerless, "");
         check("picking up takes the handset", calls.takeHandset(owner, start) == CallService.Pickup.TAKEN, "");
         CallBook.DialResult result = calls.dial(owner, a, b);
         check(
@@ -767,9 +784,22 @@ public final class SelfTest {
         questProbe = UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000aa");
         Object task = invoke(quests, "firstTask", QuestTask.FIRST_CALL);
         check("the first-call quest uses BeCom's task type", task != null, "");
-        if (task != null) invoke(task, "setComplete", questProbe);
+        // A database to reload, saved by BQ itself without BeCom's quests: what a pack's DefaultQuests looks like.
         quests.removeQuestlineForTest();
-        check("removing it, as a DefaultQuests reload does, takes it out", !quests.questlinePresent(), "");
+        command("/bq_admin default save " + RELOAD_DATABASE);
+        quests.recheckNow();
+        // Progress made now reaches BeCom's copy within a second; the reload comes after that.
+        Object back = invoke(quests, "firstTask", QuestTask.FIRST_CALL);
+        if (back != null) invoke(back, "setComplete", questProbe);
+        return 2 * TICKS_PER_SECOND;
+    }
+
+    /** DESIGN.md 16.2: the questline comes back after BQ's own reload, the one that wipes anything not in the file. */
+    private int checkQuestReload() {
+        BeComQuests.QuestBackend quests = BeComQuests.backend();
+        if (!cpw.mods.fml.common.Loader.isModLoaded(BeComQuests.BQ_MODID)) return 1;
+        command("/bq_admin default load " + RELOAD_DATABASE);
+        check("BQ's /bq_admin default load takes BeCom's questline out", !quests.questlinePresent(), "");
         quests.recheckNow();
         check("the periodic check puts it back", quests.questlinePresent(), "");
         Object back = invoke(quests, "firstTask", QuestTask.FIRST_CALL);
@@ -777,7 +807,24 @@ public final class SelfTest {
             "...with players' progress",
             back != null && Boolean.TRUE.equals(invoke(back, "isComplete", questProbe)),
             "");
+        deleteTree(
+            new File(
+                cpw.mods.fml.common.Loader.instance()
+                    .getConfigDir(),
+                "betterquesting/saved_quests/" + RELOAD_DATABASE));
         return 1;
+    }
+
+    private static void command(String line) {
+        MinecraftServer server = MinecraftServer.getServer();
+        server.getCommandManager()
+            .executeCommand(server, line);
+    }
+
+    private static void deleteTree(File file) {
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) deleteTree(child);
+        if (file.exists() && !file.delete()) BeCom.LOG.warn(PREFIX + "couldn't delete {}", file);
     }
 
     /** BQ classes stay out of this class's signature, so it loads without BQ. */
