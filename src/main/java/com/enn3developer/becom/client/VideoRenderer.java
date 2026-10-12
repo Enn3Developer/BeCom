@@ -92,6 +92,9 @@ public final class VideoRenderer {
     // The picture's share of a box that also holds the people; a Videophone's screen keeps a border.
     private static final float REAR_SHARE = 0.65f;
     private static final float SCREEN_HALF = 7f / 16f;
+    // On the face, a tile's name bar takes this share of it, and text this share of the bar or of the tile's width.
+    private static final float FACE_NAME_BAR = 0.16f;
+    private static final float FACE_TEXT = 0.8f;
     private static final float SCREEN_OUT = 0.5f + 0.002f;
     private static final double SCREEN_RANGE = 64;
 
@@ -375,26 +378,36 @@ public final class VideoRenderer {
         tess.draw();
     }
 
+    /**
+     * What a tile says over its picture, or null over a moving one: the camera's off, the signal is too weak and the
+     * picture froze, or the first picture hasn't come yet.
+     */
+    private static String labelOf(VideoStatePacket.Tile tile, ClientVideo.Feed feed) {
+        boolean live = tile.level()
+            .atLeast(SignalLevel.MEDIUM);
+        if (!tile.front()) return StatCollector.translateToLocal("becom.video.camera_off");
+        if (feed != null && feed.drawn) return live ? null : StatCollector.translateToLocal("becom.video.weak_signal");
+        return StatCollector.translateToLocal(live ? "becom.video.connecting" : "becom.video.weak_signal");
+    }
+
+    /** Whether a tile shows its last picture under a shade: frozen at Low. */
+    private static boolean frozen(VideoStatePacket.Tile tile, ClientVideo.Feed feed) {
+        return tile.front() && feed != null
+            && feed.drawn
+            && !tile.level()
+                .atLeast(SignalLevel.MEDIUM);
+    }
+
     /** One person: their picture, frozen with "weak signal" at Low, their name, and a border while they talk. */
     private static void drawTile(VideoStatePacket.Tile tile, int x, int y, int size) {
         Minecraft mc = Minecraft.getMinecraft();
         ClientVideo.Feed feed = ClientVideo.existing(tile.source());
         Gui.drawRect(x, y, x + size, y + size, TILE_BACKGROUND);
-        boolean live = tile.level()
-            .atLeast(SignalLevel.MEDIUM);
-        boolean drawn = feed != null && feed.drawn;
-        String label = null;
-        if (!tile.front()) {
-            label = StatCollector.translateToLocal("becom.video.camera_off");
-        } else if (drawn) {
+        String label = labelOf(tile, feed);
+        if (tile.front() && feed != null && feed.drawn) {
             if (feed.frame != null) drawFramebuffer(feed.frame, x, y, size);
             else drawDirect(feed, x, y, size);
-            if (!live) {
-                Gui.drawRect(x, y, x + size, y + size, FROZEN_SHADE);
-                label = StatCollector.translateToLocal("becom.video.weak_signal");
-            }
-        } else {
-            label = StatCollector.translateToLocal(live ? "becom.video.connecting" : "becom.video.weak_signal");
+            if (frozen(tile, feed)) Gui.drawRect(x, y, x + size, y + size, FROZEN_SHADE);
         }
         float textScale = size < SMALL_TILE ? SMALL_TEXT : 1f;
         FontRenderer font = mc.fontRenderer;
@@ -649,20 +662,61 @@ public final class VideoRenderer {
         float cell = side / Math.max(cols, rows);
         float left = -cell * cols / 2, top = cell * rows / 2;
         for (int i = 0; i < n; i++) {
-            ClientVideo.Feed feed = ClientVideo.existing(
-                tiles.get(i)
-                    .source());
-            if (feed == null || feed.frame == null || !feed.drawn) continue;
+            VideoStatePacket.Tile tile = tiles.get(i);
+            ClientVideo.Feed feed = ClientVideo.existing(tile.source());
             float x0 = left + i % cols * cell, y1 = top - i / cols * cell;
-            Framebuffer frame = feed.frame;
-            frame.bindFramebufferTexture();
-            float u = frame.framebufferWidth / (float) frame.framebufferTextureWidth;
-            float v = frame.framebufferHeight / (float) frame.framebufferTextureHeight;
-            tess.startDrawingQuads();
-            faceQuad(tess, x0, y1 - cell, x0 + cell, y1, 0, 0, u, v, SCREEN_OUT + 0.001f);
-            tess.draw();
-            frame.unbindFramebufferTexture();
+            if (tile.front() && feed != null && feed.frame != null && feed.drawn) {
+                Framebuffer frame = feed.frame;
+                frame.bindFramebufferTexture();
+                float u = frame.framebufferWidth / (float) frame.framebufferTextureWidth;
+                float v = frame.framebufferHeight / (float) frame.framebufferTextureHeight;
+                tess.startDrawingQuads();
+                faceQuad(tess, x0, y1 - cell, x0 + cell, y1, 0, 0, u, v, SCREEN_OUT + 0.001f);
+                tess.draw();
+                frame.unbindFramebufferTexture();
+            }
+            faceLabels(tile, feed, x0, y1, cell);
         }
+    }
+
+    /** A tile's shade, label and name on the face, as {@link #drawTile} draws them in a screen. */
+    private static void faceLabels(VideoStatePacket.Tile tile, ClientVideo.Feed feed, float x0, float y1, float cell) {
+        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+        Tessellator tess = Tessellator.instance;
+        float z = SCREEN_OUT + 0.002f;
+        float bar = cell * FACE_NAME_BAR;
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, 1, 0);
+        tess.startDrawingQuads();
+        if (frozen(tile, feed)) {
+            tess.setColorRGBA_I(FROZEN_SHADE & 0xFFFFFF, FROZEN_SHADE >>> 24);
+            faceQuad(tess, x0, y1 - cell, x0 + cell, y1, 0, 0, 0, 0, z);
+        }
+        tess.setColorRGBA_I(NAME_BAR & 0xFFFFFF, NAME_BAR >>> 24);
+        faceQuad(tess, x0, y1 - cell, x0 + cell, y1 - cell + bar, 0, 0, 0, 0, z);
+        tess.draw();
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        // The font draws downwards from its top, the face counts up: flipped, its quads face away, so no culling.
+        GL11.glDisable(GL11.GL_CULL_FACE);
+        String label = labelOf(tile, feed);
+        if (label != null) faceText(font, label, x0 + cell / 2, y1 - cell / 2, bar * FACE_TEXT, cell, z + 0.001f);
+        String name = feed != null ? feed.name : tile.name();
+        faceText(font, name, x0 + cell / 2, y1 - cell + bar / 2, bar * FACE_TEXT, cell, z + 0.001f);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glColor4f(1, 1, 1, 1);
+    }
+
+    /** Text on the face centred on (x, y), {@code height} blocks tall, or smaller to fit {@code width}. */
+    private static void faceText(FontRenderer font, String text, float x, float y, float height, float width, float z) {
+        int textWidth = font.getStringWidth(text);
+        float scale = height / font.FONT_HEIGHT;
+        if (textWidth * scale > width * FACE_TEXT) scale = width * FACE_TEXT / textWidth;
+        GL11.glPushMatrix();
+        GL11.glTranslatef(x, y, z);
+        GL11.glScalef(scale, -scale, scale);
+        font.drawString(text, -textWidth / 2, -font.FONT_HEIGHT / 2, TEXT);
+        GL11.glPopMatrix();
     }
 
     /** A quad on the face from (x0, y0) to (x1, y1), its texture from (u0, v0) at the bottom left to (u1, v1). */
