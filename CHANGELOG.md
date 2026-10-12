@@ -91,6 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seven space quests, with four new task types: Portal Relay pair, First satellite, Five satellites and Call between
   dimensions.
 - Textures for the space machines and parts in both styles, and a rocket launch sound.
+- Milestone 1.0, polish: Italian, every string and the quest text. A test keeps Italian in step with English, key for
+  key.
 
 ### Changed
 
