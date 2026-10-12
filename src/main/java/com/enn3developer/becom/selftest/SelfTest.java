@@ -114,30 +114,30 @@ public final class SelfTest {
 
     private static final String PREFIX = "BeCom self-test: ";
     // Far from spawn, high above the terrain, and laid out so separate test groups are out of each other's span.
-    private static final int X0 = 30_000;
-    private static final int Z0 = 30_000;
-    private static final int Y = 210;
+    static final int X0 = 30_000;
+    static final int Z0 = 30_000;
+    static final int Y = 210;
     private static final int GROUP_GAP = 80;
-    private static final int TICKS_PER_SECOND = 20;
+    static final int TICKS_PER_SECOND = 20;
     private static final String RELOAD_DATABASE = "becom_selftest_reload";
     // Enough for every machine to tick, form, scan its cable and send heartbeats, with the 2 s offline window.
-    private static final int SETTLE_TICKS = 60;
+    static final int SETTLE_TICKS = 60;
     private static final int TALLEST_STACK = 11;
-    private static final double EPS = 1e-6;
+    static final double EPS = 1e-6;
 
     private static SelfTest running;
 
     private final BeComServer becom;
     private final ICommandSender sender;
     private final WorldServer world;
-    private final FakePlayer owner;
+    final FakePlayer owner;
     private final FakePlayer stranger;
     private boolean fakePlacedOwnerless;
     private final List<Step> steps = new ArrayList<>();
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
-    // The chunks it builds in. An autosave queues every chunk no player watches for unloading, so these are loaded
-    // again after every tick's save, before the next tick unloads anything.
-    private final Set<ChunkCoordIntPair> keepLoaded = new HashSet<>();
+    // The chunks it builds in, in each world. An autosave queues every chunk no player watches for unloading, so these
+    // are loaded again after every tick's save, before the next tick unloads anything.
+    private final Map<WorldServer, Set<ChunkCoordIntPair>> keepLoaded = new java.util.HashMap<>();
     private int index;
     private long edgeHoldStart;
     private boolean edgeDroppedEarly;
@@ -199,7 +199,7 @@ public final class SelfTest {
     }
 
     @FunctionalInterface
-    private interface Step {
+    interface Step {
 
         /** Runs the step; returns how many ticks to wait before the next. */
         int run() throws Exception;
@@ -214,6 +214,13 @@ public final class SelfTest {
         this.stranger = FakePlayerFactory
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000002"), "BeComStranger"));
         BeComQuests.recordForSelfTest();
+        // Satellites an earlier run left in orbit would give every radio and phone here a sky hop (DESIGN.md 9.1),
+        // stronger than the links the checks before 0.4's measure.
+        for (int dimension : new ArrayList<>(
+            becom.space.counts()
+                .keySet()))
+            becom.space.satellitesForSelfTest()
+                .clear(dimension);
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::formAndLink);
@@ -295,6 +302,7 @@ public final class SelfTest {
         steps.add(this::checkProfileResent);
         steps.add(this::checkVideoSwitches);
         steps.add(this::checkVideoEnded);
+        steps.addAll(new SpaceSelfTest(this, becom).steps());
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -318,8 +326,21 @@ public final class SelfTest {
     }
 
     private void keepLoaded(int cx, int cz) {
-        world.theChunkProviderServer.loadChunk(cx, cz);
-        keepLoaded.add(new ChunkCoordIntPair(cx, cz));
+        keepLoaded(world, cx, cz);
+    }
+
+    /** Loads a chunk of any world and keeps it loaded, and that world ticking, while the self-test runs. */
+    void keepLoaded(WorldServer in, int cx, int cz) {
+        // A world loaded long ago with nobody in it has stopped ticking its tile entities; they tick again next tick.
+        in.resetUpdateEntityTick();
+        in.theChunkProviderServer.loadChunk(cx, cz);
+        keepLoaded.computeIfAbsent(in, w -> new HashSet<>())
+            .add(new ChunkCoordIntPair(cx, cz));
+    }
+
+    /** Tops a machine's power up every tick, a test power supply. */
+    void power(IGregTechTileEntity tile) {
+        powered.add(tile);
     }
 
     private void step() {
@@ -327,8 +348,12 @@ public final class SelfTest {
         // With no players in it, a world stops ticking entities and tile entities after a minute, and the self-test's
         // players are fake: without this, every machine it built would stop at 1200 ticks.
         world.resetUpdateEntityTick();
-        for (ChunkCoordIntPair chunk : keepLoaded)
-            world.theChunkProviderServer.loadChunk(chunk.chunkXPos, chunk.chunkZPos);
+        for (Map.Entry<WorldServer, Set<ChunkCoordIntPair>> kept : keepLoaded.entrySet()) {
+            kept.getKey()
+                .resetUpdateEntityTick();
+            for (ChunkCoordIntPair chunk : kept.getValue())
+                kept.getKey().theChunkProviderServer.loadChunk(chunk.chunkXPos, chunk.chunkZPos);
+        }
         // A test power supply: the line's machines are topped up every tick. Taking power from a real cable is
         // checked on its own, through the call GT cables make.
         for (IGregTechTileEntity tile : powered) {
@@ -358,14 +383,14 @@ public final class SelfTest {
 
     // region Reporting
 
-    private void log(String line) {
+    void log(String line) {
         BeCom.LOG.info(PREFIX + line);
         if (!(sender instanceof net.minecraft.server.MinecraftServer)) {
             sender.addChatMessage(new ChatComponentText(PREFIX + line));
         }
     }
 
-    private void check(String name, boolean ok, String detail) {
+    void check(String name, boolean ok, String detail) {
         if (ok) {
             passed++;
             log("PASS " + name);
@@ -374,12 +399,12 @@ public final class SelfTest {
         }
     }
 
-    private void fail(String name, String detail) {
+    void fail(String name, String detail) {
         failed++;
         log("FAIL " + name + (detail == null || detail.isEmpty() ? "" : ": " + detail));
     }
 
-    private void near(String name, double expected, double actual) {
+    void near(String name, double expected, double actual) {
         check(name, Math.abs(expected - actual) < EPS, "expected " + expected + ", got " + actual);
     }
 
@@ -499,7 +524,7 @@ public final class SelfTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static boolean hasCraftingRecipe(ItemStack output) {
+    static boolean hasCraftingRecipe(ItemStack output) {
         for (IRecipe recipe : (List<IRecipe>) CraftingManager.getInstance()
             .getRecipeList()) {
             ItemStack out = recipe.getRecipeOutput();
@@ -1087,8 +1112,9 @@ public final class SelfTest {
             "the radio-contact quest uses BeCom's task type",
             invoke(quests, "firstTask", QuestTask.RADIO_CONTACT) != null,
             "");
-        for (QuestTask kind : new QuestTask[] { QuestTask.VIDEO_CALL, QuestTask.MOBILE_CALL,
-            QuestTask.ME_BRIDGE_CALL }) {
+        for (QuestTask kind : new QuestTask[] { QuestTask.VIDEO_CALL, QuestTask.MOBILE_CALL, QuestTask.ME_BRIDGE_CALL,
+            QuestTask.PORTAL_RELAY_PAIR, QuestTask.FIRST_SATELLITE, QuestTask.FIVE_SATELLITES,
+            QuestTask.CALL_BETWEEN_DIMENSIONS }) {
             check(
                 "the " + kind.name()
                     .toLowerCase(Locale.ROOT)
@@ -1178,7 +1204,7 @@ public final class SelfTest {
     }
 
     /** The assembler makes {@code item} at voltage tier {@code tier}, and its inputs make nothing else there. */
-    private void checkAssemblerOnly(net.minecraft.item.Item item, int tier) {
+    void checkAssemblerOnly(net.minecraft.item.Item item, int tier) {
         GTRecipe ours = null;
         for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
             for (ItemStack out : recipe.mOutputs) if (out != null && out.getItem() == item) ours = recipe;
