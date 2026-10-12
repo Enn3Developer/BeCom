@@ -41,8 +41,6 @@ public final class CallService implements CallBook.Listener {
     private static final long MILLIS_PER_SECOND = 1000L;
     // How often handset cords are checked: often enough that walking off hangs up within a quarter second.
     private static final int CORD_CHECK_TICKS = 5;
-    // GTNH Voice's frame length (its client-side VoiceFormat.FRAME_MILLIS), which the burst model counts in.
-    private static final double FRAME_MILLIS = 20;
 
     private final MinecraftServer server;
     private final NetworkService network;
@@ -63,7 +61,7 @@ public final class CallService implements CallBook.Listener {
         this.phones = phones;
         this.group = group;
         this.levels = tunables.levelScale();
-        this.dropouts = tunables.dropoutModel(FRAME_MILLIS);
+        this.dropouts = tunables.dropoutModel(Tunables.FRAME_MILLIS);
         this.book = new CallBook(
             levels,
             tunables.callAttemptsPerMinute(),

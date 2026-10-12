@@ -126,14 +126,10 @@ public final class BeComConfig {
     }
 
     private static void validate(Tunables t) {
-        t.levelScale();
-        t.dropoutModel(1);
-        if (t.pylonMinHeight() < 1 || t.pylonMaxHeight() < t.pylonMinHeight()) {
-            throw new IllegalStateException(
-                "BeCom config: pylon heights must satisfy 1 <= pylonMinHeight <= pylonMaxHeight, got "
-                    + t.pylonMinHeight()
-                    + " and "
-                    + t.pylonMaxHeight());
+        try {
+            t.validate();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("BeCom config: " + e.getMessage(), e);
         }
     }
 

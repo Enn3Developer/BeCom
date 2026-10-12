@@ -534,7 +534,7 @@ public final class SelfTest {
             cut.name());
 
         LevelScale levels = t.levelScale();
-        DropoutModel dropouts = t.dropoutModel(20);
+        DropoutModel dropouts = t.dropoutModel(Tunables.FRAME_MILLIS);
         double width = becom.network.graph()
             .width(repeaterLine.phoneStart.number(), repeaterLine.phoneEnd.number());
         near("300-block line with a repeater: weakest stretch 30 - 0.08 x 150 = 18 dB", 18, width);

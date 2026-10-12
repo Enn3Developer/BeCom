@@ -17,6 +17,9 @@ public record Tunables(
     // Quests (DESIGN.md 15.5)
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
+    /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
+    public static final int FRAME_MILLIS = 20;
+
     /** The values DESIGN.md 17 starts from. */
     public static Tunables defaults() {
         return new Tunables(
@@ -47,6 +50,44 @@ public record Tunables(
             5,
             true,
             60);
+    }
+
+    /**
+     * Refuses values that would crash the server at start or make it do something every tick, naming the config key.
+     *
+     * @throws IllegalArgumentException for the first such value
+     */
+    public void validate() {
+        try {
+            levelScale();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("levelLow, levelMedium, levelHigh, levelMax: " + e.getMessage(), e);
+        }
+        try {
+            dropoutModel(FRAME_MILLIS);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                "dropoutMaxLoss, dropoutFullLossSnr, dropoutCleanSnr, dropoutMeanBurstMillis (at least one "
+                    + FRAME_MILLIS
+                    + " ms voice frame): "
+                    + e.getMessage(),
+                e);
+        }
+        if (pylonMinHeight < 1) throw invalid("pylonMinHeight", pylonMinHeight, "at least 1");
+        if (pylonMaxHeight < pylonMinHeight) throw invalid("pylonMaxHeight", pylonMaxHeight, "at least pylonMinHeight");
+        if (pylonSpanFactor <= 0) throw invalid("pylonSpanFactor", pylonSpanFactor, "more than 0");
+        if (pylonClearanceSeconds < 1) throw invalid("pylonClearanceSeconds", pylonClearanceSeconds, "at least 1");
+        if (lineLossPerBlock < 0) throw invalid("lineLossPerBlock", lineLossPerBlock, "0 or more");
+        if (dropAfterSeconds < 0) throw invalid("dropAfterSeconds", dropAfterSeconds, "0 or more");
+        if (directHearingRange < 0) throw invalid("directHearingRange", directHearingRange, "0 or more");
+        if (ringSeconds < 1) throw invalid("ringSeconds", ringSeconds, "at least 1");
+        if (callAttemptsPerMinute < 1) throw invalid("callAttemptsPerMinute", callAttemptsPerMinute, "at least 1");
+        if (questlineRecheckSeconds < 1)
+            throw invalid("questlineRecheckSeconds", questlineRecheckSeconds, "at least 1");
+    }
+
+    private static IllegalArgumentException invalid(String key, Object value, String rule) {
+        return new IllegalArgumentException(key + " is " + value + ", but must be " + rule);
     }
 
     public LevelScale levelScale() {
