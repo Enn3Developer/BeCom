@@ -267,7 +267,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 
 | Item                                                                 | Status |
 |----------------------------------------------------------------------|--------|
-| Height cache (6.2)                                                   | doing  |
+| Height cache (6.2)                                                   | done   |
 | Radio model: link budget, knife-edge terrain, cover, noise (6.1)     | doing  |
 | Surveys (6.3) within the survey budget (6.5)                         | doing  |
 | Direct links between radios (6.4)                                    | doing  |

@@ -28,6 +28,7 @@ import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.net.WiredTopology;
+import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
@@ -56,14 +57,16 @@ public final class NetworkService {
     private long tick;
     private long version;
     private long nextClearanceTick;
-    // Re-checks walk lines through the world, so each tick gets a slice: half of what DESIGN.md 6.5 gives surveys.
-    private static final long RECHECK_BUDGET_NANOS = 1_000_000;
     private final Sweep<Recheck> recheck = new Sweep<>();
+    private final AntennaNetwork antennas;
+    private long antennasVersion = -1;
     private CallGraph graph;
     private long graphVersion = -1;
 
-    public NetworkService(Tunables tunables) {
+    /** @param antennas where calls find the UHF links between antennas (DESIGN.md 7) */
+    public NetworkService(Tunables tunables, AntennaNetwork antennas) {
         this.tunables = tunables;
+        this.antennas = antennas;
         this.rules = new LinkRules(tunables.pylonSpanFactor(), tunables.wrenchLinkDistance());
         this.line = tunables.lineModel();
         this.nextClearanceTick = (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
@@ -224,7 +227,8 @@ public final class NetworkService {
 
     /** Goes up on every change that can move a path: nodes, links, clearance, power, attachments. */
     public long version() {
-        boolean changed = seenModelVersions.size() != models.size();
+        boolean changed = seenModelVersions.size() != models.size() || antennas.version() != antennasVersion;
+        antennasVersion = antennas.version();
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
             Long seen = seenModelVersions.put(
                 entry.getKey(),
@@ -253,6 +257,16 @@ public final class NetworkService {
                     segment.snr(),
                     CallGraph.HopKind.LINE);
             }
+            // Calls travel between antennas on UHF (DESIGN.md 7), once both are working.
+            antennas.forEachUhfLink(dimension, (a, b, snr) -> {
+                if (working(dimension, a) && working(dimension, b)) {
+                    builder.twoWay(
+                        new CallGraph.NodeVertex(dimension, a),
+                        new CallGraph.NodeVertex(dimension, b),
+                        snr,
+                        CallGraph.HopKind.RADIO);
+                }
+            });
         }
         Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
         for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);
@@ -353,7 +367,8 @@ public final class NetworkService {
 
     // region Ticking and wires
 
-    public void tick() {
+    /** One server tick; line re-checks get at most {@code recheckBudgetNanos} of it. */
+    public void tick(long recheckBudgetNanos) {
         tick++;
         if (tick % TICKS_PER_SECOND == 0) {
             expireOffline();
@@ -364,7 +379,7 @@ public final class NetworkService {
             // A round still running from last time finishes first rather than piling up.
             if (recheck.isEmpty()) queueRecheck();
         }
-        recheck.run(this::recheck, System::nanoTime, RECHECK_BUDGET_NANOS);
+        recheck.run(this::recheck, System::nanoTime, recheckBudgetNanos);
     }
 
     private void expireOffline() {

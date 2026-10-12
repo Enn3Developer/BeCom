@@ -1,6 +1,8 @@
 package com.enn3developer.becom.server;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraftforge.event.world.ChunkDataEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 import com.enn3developer.becom.config.BeComConfig;
@@ -36,7 +38,28 @@ public final class ServerEvents {
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         BeComServer becom = BeComServer.get();
-        if (becom != null && !event.world.isRemote) becom.network.worldUnloaded(event.world);
+        if (becom == null || event.world.isRemote) return;
+        becom.network.worldUnloaded(event.world);
+        becom.heights.worldUnloaded(event.world);
+    }
+
+    @SubscribeEvent
+    public void onWorldSave(WorldEvent.Save event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null) becom.heights.worldSaved(event.world);
+    }
+
+    /** DESIGN.md 6.2: the height cache follows chunks as they load and as they save. */
+    @SubscribeEvent
+    public void onChunkLoad(ChunkEvent.Load event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null) becom.heights.chunkChanged(event.world, event.getChunk());
+    }
+
+    @SubscribeEvent
+    public void onChunkSave(ChunkDataEvent.Save event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null) becom.heights.chunkChanged(event.world, event.getChunk());
     }
 
     @SubscribeEvent

@@ -8,6 +8,8 @@ import net.minecraftforge.common.DimensionManager;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.GlobalSavedData;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.radio.AntennaNetwork;
+import com.enn3developer.becom.logic.radio.Terrain;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 
@@ -21,6 +23,8 @@ public final class BeComServer {
 
     public final MinecraftServer server;
     public final Tunables tunables;
+    public final HeightCaches heights;
+    public final AntennaNetwork antennas;
     public final NetworkService network;
     public final LinkService links;
     public final PhoneService phones;
@@ -29,7 +33,21 @@ public final class BeComServer {
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
         this.tunables = tunables;
-        this.network = new NetworkService(tunables);
+        this.heights = new HeightCaches();
+        this.antennas = new AntennaNetwork(tunables, new AntennaNetwork.Dimensions() {
+
+            @Override
+            public Terrain terrain(int dimension) {
+                return heights.terrain(dimension);
+            }
+
+            @Override
+            public boolean noSky(int dimension) {
+                WorldServer world = DimensionManager.getWorld(dimension);
+                return world != null && world.provider.hasNoSky;
+            }
+        }, Ownership::sameTeam);
+        this.network = new NetworkService(tunables, antennas);
         this.links = new LinkService(network, tunables);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
@@ -65,12 +83,21 @@ public final class BeComServer {
     }
 
     public static void stop() {
-        if (instance != null) instance.calls.stop();
+        if (instance != null) {
+            instance.calls.stop();
+            instance.heights.saveAll();
+        }
         instance = null;
     }
 
     public void tick() {
-        network.tick();
+        heights.tick();
+        // DESIGN.md 6.5: surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
+        // share it: up to half for them, the rest for surveys.
+        long budget = (long) (tunables.surveyBudgetMillis() * 1_000_000);
+        long start = System.nanoTime();
+        network.tick(budget / 2);
+        antennas.tick(Math.max(0, budget - (System.nanoTime() - start)), System::nanoTime);
         calls.tick();
         if (network.currentTick() % 20 == 0) links.expire();
     }

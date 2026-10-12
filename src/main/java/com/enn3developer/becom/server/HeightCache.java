@@ -28,6 +28,9 @@ public final class HeightCache implements Terrain {
     private final File dir;
     private final int seaLevel;
     private final Map<Long, HeightRegion> regions = new HashMap<>();
+    // When each region was last read or written, on the caller's clock, so idle ones can leave memory.
+    private final Map<Long, Long> lastUsed = new HashMap<>();
+    private long now;
 
     /** @param dir where this dimension's region files go; null keeps the cache in memory only */
     public HeightCache(File dir, int seaLevel) {
@@ -50,7 +53,13 @@ public final class HeightCache implements Terrain {
             region = load(rx, rz);
             regions.put(key, region);
         }
+        lastUsed.put(key, now);
         return region;
+    }
+
+    /** Sets the clock regions' use is measured on; the server's tick. */
+    public void setNow(long now) {
+        this.now = now;
     }
 
     private HeightRegion load(int rx, int rz) {
@@ -106,6 +115,21 @@ public final class HeightCache implements Terrain {
                 BeCom.LOG.warn("Couldn't save height cache region {}", file, e);
             }
         }
+    }
+
+    /**
+     * Drops saved regions nobody has touched for {@code idle} on the clock, so a long-running server that explored far
+     * doesn't keep every region it ever saw in memory. They load again from disk when needed.
+     */
+    public void evict(long idle) {
+        if (dir == null) return;
+        regions.entrySet()
+            .removeIf(entry -> {
+                boolean evict = !entry.getValue()
+                    .dirty() && now - lastUsed.getOrDefault(entry.getKey(), now) > idle;
+                if (evict) lastUsed.remove(entry.getKey());
+                return evict;
+            });
     }
 
     public int regionsLoaded() {

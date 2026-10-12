@@ -32,7 +32,9 @@ public final class CallGraph {
     /** What a hop is, for anything that cares which kinds of hop a path crossed. */
     public enum HopKind {
         LINE,
-        CABLE
+        CABLE,
+        /** A UHF link between two antennas (DESIGN.md 7). */
+        RADIO
     }
 
     private final Map<Object, Integer> index;
