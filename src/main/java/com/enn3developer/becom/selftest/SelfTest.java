@@ -2665,6 +2665,17 @@ public final class SelfTest {
             "node " + node + ", node data to keep " + proxy + ", kept " + written.hasKey(MTEMeBridge.PROXY));
         IGregTechTileEntity tile = newerBridge.getBaseMetaTileEntity();
         world.setBlockToAir(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
+        // An ME charger offers an ME Phone its power a little at a time, and keeps whatever the phone hands back.
+        ItemStack newerPhone = new ItemStack(BeComItems.mePhone);
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setInteger(BeComNbt.KEY, ItemCarriedPhone.FORMAT + 1);
+        newerPhone.setTagCompound(tag);
+        double offered = BeComItems.mePhone.getAEMaxPower(new ItemStack(BeComItems.mePhone));
+        double handedBack = BeComItems.mePhone.injectAEPower(newerPhone, offered);
+        check(
+            "...and an ME Phone saved by a newer BeCom takes no AE power, so a charger loses none to it (X16)",
+            handedBack == offered && BeComItems.mePhone.getAECurrentPower(newerPhone) == 0,
+            handedBack + " AE of " + offered + " handed back");
         return 1;
     }
 

@@ -60,6 +60,8 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     @Override
     public double injectAEPower(ItemStack stack, double amount) {
+        // One a newer BeCom saved keeps its charge as it was (X16): a charger keeps the power it would have lost.
+        if (isTooNew(stack)) return amount;
         double stored = getAECurrentPower(stack);
         double taken = Math.min(amount, getAEMaxPower(stack) - stored);
         setPower(stack, stored + taken);
