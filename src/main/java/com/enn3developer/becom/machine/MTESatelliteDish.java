@@ -25,10 +25,11 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
+import com.enn3developer.becom.gui.DishView;
+import com.enn3developer.becom.gui.ViewSync;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
@@ -297,54 +298,71 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     // region Screen
 
     /**
-     * What the screen and a scanner say (DESIGN.md 11.4): the satellites over this dimension, the hop up to them, and
-     * what the dish is linked to.
+     * What the screen and a scanner show (DESIGN.md 9.2): the satellites over this dimension, the hop up to them, its
+     * maintenance problems and what it's linked to. Built on the server only: the view sync never asks for it on a
+     * client.
      */
-    private List<String> status() {
-        List<String> lines = new ArrayList<>();
+    private DishView view() {
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (becom == null || tile == null) return lines;
+        if (becom == null || tile == null) return DishView.EMPTY;
         int dimension = tile.getWorld().provider.dimensionId;
         Tunables t = becom.tunables;
         int satellites = becom.space.count(dimension);
-        lines.add(StatCollector.translateToLocalFormatted("becom.info.satellites", satellites));
-        if (!mMachine) return lines;
-        if (!sky) {
+        double snr = becom.space.sky()
+            .snr(satellites) - loss();
+        NetworkModel model = becom.network.model(dimension);
+        NetNode node = model == null ? null : model.node(pos());
+        String linked = node == null || node.links()
+            .isEmpty() ? ""
+                : BlockPos.toString(
+                    node.links()
+                        .iterator()
+                        .next());
+        return new DishView(
+            mMachine,
+            satellites,
+            sky,
+            becom.space.skyHops(dimension),
+            t.satellitesLow(),
+            snr,
+            t.levelScale()
+                .levelOf(snr),
+            problems(),
+            t.dishMaintenanceLoss(),
+            linked);
+    }
+
+    /** The view's lines, in the language of whoever reads them: the client's on the screen. */
+    private static List<String> lines(DishView view) {
+        List<String> lines = new ArrayList<>();
+        lines.add(StatCollector.translateToLocalFormatted("becom.info.satellites", view.satellites()));
+        if (!view.formed()) return lines;
+        if (!view.sky()) {
             lines.add(StatCollector.translateToLocal("becom.info.no_sky"));
-        } else if (!becom.space.skyHops(dimension)) {
-            lines.add(StatCollector.translateToLocalFormatted("becom.dish.too_few", t.satellitesLow()));
+        } else if (!view.enough()) {
+            lines.add(StatCollector.translateToLocalFormatted("becom.dish.too_few", view.satellitesLow()));
         } else {
-            double snr = becom.space.sky()
-                .snr(satellites) - loss();
             lines.add(
                 StatCollector.translateToLocalFormatted(
                     "becom.dish.hop",
-                    String.format(Locale.ROOT, "%.1f", snr),
+                    String.format(Locale.ROOT, "%.1f", view.snr()),
                     StatCollector.translateToLocal(
-                        "becom.level." + t.levelScale()
-                            .levelOf(snr)
+                        "becom.level." + view.level()
                             .name()
                             .toLowerCase(Locale.ROOT))));
         }
-        if (problems() > 0) {
+        if (view.problems() > 0) {
             lines.add(
                 StatCollector.translateToLocalFormatted(
                     "becom.dish.problems",
-                    problems(),
-                    String.format(Locale.ROOT, "%.0f", problems() * t.dishMaintenanceLoss())));
+                    view.problems(),
+                    String.format(Locale.ROOT, "%.0f", view.problems() * view.problemLoss())));
         }
-        NetworkModel model = becom.network.model(dimension);
-        NetNode node = model == null ? null : model.node(pos());
-        if (node == null || node.links()
-            .isEmpty()) {
-            lines.add(StatCollector.translateToLocal("becom.dish.unlinked"));
-        } else {
-            long other = node.links()
-                .iterator()
-                .next();
-            lines.add(StatCollector.translateToLocalFormatted("becom.dish.linked", BlockPos.toString(other)));
-        }
+        lines.add(
+            view.linked()
+                .isEmpty() ? StatCollector.translateToLocal("becom.dish.unlinked")
+                    : StatCollector.translateToLocalFormatted("becom.dish.linked", view.linked()));
         return lines;
     }
 
@@ -354,10 +372,14 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
             @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
-                StringSyncValue status = new StringSyncValue(() -> String.join("\n", status()));
-                sync.syncValue("becomDish", status);
+                ViewSync<DishView> view = new ViewSync<>(
+                    MTESatelliteDish.this::view,
+                    DishView::write,
+                    DishView::read,
+                    DishView.EMPTY);
+                sync.syncValue("becomDish", view);
                 return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(status::getValue)
+                    IKey.dynamic(() -> String.join("\n", lines(view.view())))
                         .asWidget()
                         .marginBottom(2)
                         .fullWidth());
@@ -417,7 +439,8 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         List<String> info = new ArrayList<>();
         if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
         info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        info.addAll(status());
+        // GT's scanner reads on the server and sends its text as it is.
+        info.addAll(lines(view()));
         return info.toArray(new String[0]);
     }
 

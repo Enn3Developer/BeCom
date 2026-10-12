@@ -24,12 +24,12 @@ import org.jetbrains.annotations.NotNull;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
-import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.gui.LaunchPadView;
+import com.enn3developer.becom.gui.ViewSync;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.space.Satellites;
@@ -78,9 +78,6 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     private static final int FULL_EFFICIENCY = 10_000;
     private static final int EFFICIENCY_PER_PROBLEM = 1_000;
     private static final float LAUNCH_VOLUME = 4.0f;
-    // What the screen shows of each dimension's satellites: name, count and ticks to the next fall, one per line.
-    private static final String FIELD = "\t";
-    private static final String LINE = "\n";
 
     private static final IStructureDefinition<MTELaunchPad> STRUCTURE = StructureDefinition.<MTELaunchPad>builder()
         .addShape(PIECE_PAD, transpose(new String[][] { { "CC~CC", "CCCCC", "CCCCC", "CCCCC", "CCCCC" } }))
@@ -248,43 +245,38 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         return rockets;
     }
 
-    /** Each dimension's satellites, for the screen: its name, how many, and ticks until the next comes down. */
-    private String orbit() {
+    /**
+     * What its screen shows: the rockets waiting, and each dimension's satellites, its name, how many and the ticks
+     * until the next comes down. Built on the server only: the view sync never asks for it on a client.
+     */
+    private LaunchPadView view() {
         BeComServer becom = BeComServer.get();
-        if (becom == null) return "";
-        StringBuilder text = new StringBuilder();
+        if (becom == null) return LaunchPadView.EMPTY;
+        List<LaunchPadView.Orbit> orbits = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : becom.space.counts()
             .entrySet()) {
-            if (text.length() > 0) text.append(LINE);
-            text.append(becom.space.dimensionName(entry.getKey()))
-                .append(FIELD)
-                .append(entry.getValue())
-                .append(FIELD)
-                .append(becom.space.untilNextDown(entry.getKey()));
+            orbits.add(
+                new LaunchPadView.Orbit(
+                    becom.space.dimensionName(entry.getKey()),
+                    entry.getValue(),
+                    becom.space.untilNextDown(entry.getKey())));
         }
-        return text.toString();
+        return new LaunchPadView(rocketsWaiting(), orbits);
     }
 
-    /** The orbit text as the client shows it, each dimension on a line. */
-    private static String showOrbit(String orbit) {
-        if (orbit == null || orbit.isEmpty()) return StatCollector.translateToLocal("becom.launch_pad.orbit_none");
+    /** The orbits as the client shows them, each dimension on a line, in the client's language. */
+    private static String showOrbits(LaunchPadView view) {
+        if (view.orbits()
+            .isEmpty()) return StatCollector.translateToLocal("becom.launch_pad.orbit_none");
         StringBuilder text = new StringBuilder(StatCollector.translateToLocal("becom.launch_pad.orbit"));
-        for (String line : orbit.split(LINE)) {
-            String[] fields = line.split(FIELD);
-            if (fields.length != 3) continue;
-            double days;
-            try {
-                days = Long.parseLong(fields[2]) / (double) Satellites.DAY_TICKS;
-            } catch (NumberFormatException e) {
-                continue;
-            }
-            text.append(LINE)
+        for (LaunchPadView.Orbit orbit : view.orbits()) {
+            text.append('\n')
                 .append(
                     StatCollector.translateToLocalFormatted(
                         "becom.launch_pad.dimension",
-                        fields[0],
-                        fields[1],
-                        String.format("%.1f", days)));
+                        orbit.dimension(),
+                        orbit.satellites(),
+                        String.format("%.1f", orbit.untilNextDown() / (double) Satellites.DAY_TICKS)));
         }
         return text.toString();
     }
@@ -295,19 +287,24 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
 
             @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
-                StringSyncValue orbit = new StringSyncValue(MTELaunchPad.this::orbit);
-                IntSyncValue queue = new IntSyncValue(MTELaunchPad.this::rocketsWaiting);
-                sync.syncValue("becomOrbit", orbit);
-                sync.syncValue("becomQueue", queue);
+                ViewSync<LaunchPadView> view = new ViewSync<>(
+                    MTELaunchPad.this::view,
+                    LaunchPadView::write,
+                    LaunchPadView::read,
+                    LaunchPadView.EMPTY);
+                sync.syncValue("becomPad", view);
                 return super.createTerminalTextWidget(sync, parent)
                     .child(
                         IKey.dynamic(
-                            () -> StatCollector.translateToLocalFormatted("becom.launch_pad.queue", queue.getValue()))
+                            () -> StatCollector.translateToLocalFormatted(
+                                "becom.launch_pad.queue",
+                                view.view()
+                                    .rocketsWaiting()))
                             .asWidget()
                             .marginBottom(2)
                             .fullWidth())
                     .child(
-                        IKey.dynamic(() -> showOrbit(orbit.getValue()))
+                        IKey.dynamic(() -> showOrbits(view.view()))
                             .asWidget()
                             .marginBottom(2)
                             .fullWidth());

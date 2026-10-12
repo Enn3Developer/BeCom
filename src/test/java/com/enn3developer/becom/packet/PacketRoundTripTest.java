@@ -16,6 +16,8 @@ import net.minecraft.network.PacketBuffer;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.gui.AntennaView;
+import com.enn3developer.becom.gui.DishView;
+import com.enn3developer.becom.gui.LaunchPadView;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.Coverage;
@@ -178,5 +180,23 @@ class PacketRoundTripTest {
         assertArrayEquals(vhf, read.vhfMap());
         assertArrayEquals(uhf, read.uhfMap());
         assertEquals("Alice", read.owner());
+    }
+
+    @Test
+    void launchPadView() {
+        LaunchPadView view = new LaunchPadView(
+            3,
+            List.of(new LaunchPadView.Orbit("Overworld", 37, 1_234_567L), new LaunchPadView.Orbit("Moon", 5, 0)));
+        PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
+        view.write(buf);
+        assertEquals(view, LaunchPadView.read(buf));
+    }
+
+    @Test
+    void dishView() {
+        DishView view = new DishView(true, 37, true, true, 5, 16.0, SignalLevel.MEDIUM, 1, 2.0, "(1, 64, -3)");
+        PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
+        view.write(buf);
+        assertEquals(view, DishView.read(buf));
     }
 }
