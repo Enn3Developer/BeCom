@@ -29,6 +29,7 @@ import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.AntennaScreen;
@@ -213,6 +214,7 @@ public final class SelfTest {
         // Four seconds of evaluations with the link at 5.8 dB, inside the hysteresis but below Low.
         for (int i = 0; i < 16; i++) steps.add(this::holdEdge);
         steps.add(this::checkEdgeDrop);
+        steps.add(this::checkNewerAntenna);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -1540,6 +1542,35 @@ public final class SelfTest {
                     .transmission(hank.getUniqueID()),
                 iris.getUniqueID()) != null,
             "");
+        return 1;
+    }
+
+    /** X16: an antenna whose BeCom keys a newer BeCom wrote is left alone, its keys kept. */
+    private int checkNewerAntenna() {
+        NBTTagCompound saved = new NBTTagCompound();
+        antennaT2.saveNBTData(saved);
+        saved.setInteger(BeComNbt.KEY, MTEAntenna.FORMAT + 1);
+        saved.setString("becomFromTheFuture", "kept");
+        becom.network.removeNode(world, pos(antennaT2));
+        antennaT2.loadNBTData(saved);
+        boolean formed = antennaT2.refreshStructure();
+        becom.links.forget(owner.getUniqueID());
+        antennaT2.onWrenchRightClick(ForgeDirection.NORTH, ForgeDirection.NORTH, owner, 0.5f, 0.5f, 0.5f, null);
+        NBTTagCompound written = new NBTTagCompound();
+        antennaT2.saveNBTData(written);
+        check(
+            "an antenna saved by a newer BeCom stays out of the network and keeps its keys",
+            antennaT2.isTooNew() && !formed
+                && becom.network.model(world)
+                    .node(pos(antennaT2)) == null
+                && "kept".equals(written.getString("becomFromTheFuture"))
+                && written.getInteger(BeComNbt.KEY) == MTEAntenna.FORMAT + 1,
+            "formed " + formed);
+        // Back to this BeCom's format, for whatever runs after.
+        NBTTagCompound current = new NBTTagCompound();
+        current.setInteger(BeComNbt.KEY, MTEAntenna.FORMAT);
+        antennaT2.loadNBTData(current);
+        antennaT2.refreshStructure();
         return 1;
     }
 

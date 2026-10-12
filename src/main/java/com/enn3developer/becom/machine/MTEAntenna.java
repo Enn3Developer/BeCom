@@ -13,6 +13,7 @@ import java.util.UUID;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -294,6 +295,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     /** Runs the structure check now and tells the networks; the self-test calls this directly. */
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
+        // Left alone: no node, no formed state, no bridges written for it here (X16).
+        if (tooNew != null) return false;
         checkStructure(true, tile);
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
@@ -337,6 +340,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         BeComServer becom = BeComServer.get();
         if (becom == null || !tile.isServerSide()) return false;
+        if (tooNew != null) {
+            player.addChatComponentMessage(new ChatComponentTranslation("becom.info.too_new"));
+            return true;
+        }
         refreshStructure();
         becom.links
             .wrench(player, tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
