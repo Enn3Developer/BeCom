@@ -36,7 +36,10 @@ import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.SpaceService;
+import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
+import com.gtnewhorizon.structurelib.alignment.enumerable.Flip;
+import com.gtnewhorizon.structurelib.alignment.enumerable.Rotation;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
@@ -107,6 +110,13 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     @Override
     public IStructureDefinition<MTELaunchPad> getStructureDefinition() {
         return STRUCTURE;
+    }
+
+    @Override
+    protected IAlignmentLimits getInitialAlignmentLimits() {
+        // A floor under open sky: the controller faces sideways from the pad's edge, never turned on its side.
+        return (direction, rotation, flip) -> direction.offsetY == 0 && rotation == Rotation.NORMAL
+            && flip == Flip.NONE;
     }
 
     @Override
