@@ -143,7 +143,13 @@ public final class AntennaNetwork {
      */
     public void seen(NodeRef ref, int tier, RadioHops.End end, boolean locked, UUID owner) {
         Antenna antenna = antennas.computeIfAbsent(ref, Antenna::new);
-        boolean changed = antenna.end == null || !antenna.end.equals(end) || antenna.tier != tier;
+        boolean changed = antenna.end == null || !samePlace(antenna.end, end) || antenna.tier != tier;
+        if (!changed && antenna.end.depth() != end.depth()) {
+            // A block on the head or taken off it: only its cover changed. The survey and links hold until a fresh
+            // survey brings the links up to date, so a block placed and broken again can't take the antenna down.
+            antenna.end = end;
+            queue(antenna);
+        }
         if (antenna.locked != locked || !working(antenna)) version++;
         antenna.locked = locked;
         antenna.owner = owner;
@@ -161,6 +167,11 @@ public final class AntennaNetwork {
             dropLinks(ref);
             queue(antenna);
         }
+    }
+
+    /** Whether two ends stand at the same spot on the same ground; their cover may differ. */
+    private static boolean samePlace(RadioHops.End a, RadioHops.End b) {
+        return a.x() == b.x() && a.y() == b.y() && a.z() == b.z() && a.ground() == b.ground();
     }
 
     /** The antenna was broken or lost its structure. */
@@ -276,7 +287,7 @@ public final class AntennaNetwork {
 
         /** Does one step; true once the survey is finished or no longer wanted. */
         boolean step() {
-            if (antennas.get(target.ref) != target || !target.end.equals(from)) {
+            if (antennas.get(target.ref) != target || !samePlace(target.end, from)) {
                 // Broken or changed since it was queued; a changed antenna has queued a fresh survey.
                 return true;
             }
@@ -304,8 +315,10 @@ public final class AntennaNetwork {
             if (antennas.get(other.ref) != other || other.end == null) return;
             double budget = Math.min(target.budget, other.budget);
             if (from.distanceTo(other.end) > tunables.rangeToLow(budget)) return;
-            RadioModel.Losses onVhf = hops.direct(terrain, from, other.end, budget, vhf, 0, noSky);
-            RadioModel.Losses onUhf = hops.direct(terrain, from, other.end, budget, uhf, 0, noSky);
+            // The head's latest end: same spot as when the survey started, but its cover may have changed since.
+            RadioHops.End here = target.end;
+            RadioModel.Losses onVhf = hops.direct(terrain, here, other.end, budget, vhf, 0, noSky);
+            RadioModel.Losses onUhf = hops.direct(terrain, here, other.end, budget, uhf, 0, noSky);
             double low = tunables.levelLow();
             // Only links at Low or better exist (DESIGN.md 7).
             if (onVhf.snr() < low && onUhf.snr() < low) return;

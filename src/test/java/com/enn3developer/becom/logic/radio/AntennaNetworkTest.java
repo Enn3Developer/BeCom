@@ -205,4 +205,38 @@ class AntennaNetworkTest {
             network.antenna(a)
                 .survey() != first);
     }
+
+    @Test
+    void aBlockOnTheHeadChangesItsCoverButKeepsItsSurveyAndLinks() {
+        NodeRef a = at(0, 0);
+        NodeRef b = at(100, 0);
+        run(2, List.of(a, b), 2);
+        Survey before = network.antenna(a)
+            .survey();
+        // Someone puts a block on the head: one block of cover, same spot.
+        RadioHops.End covered = head(a);
+        covered = new RadioHops.End(covered.x(), covered.y(), covered.z(), 1, covered.ground());
+        network.seen(a, 2, covered, false, owner);
+        assertTrue(
+            network.antenna(a)
+                .survey() == before,
+            "the survey stays until a new one is done");
+        assertNotNull(
+            network.links(DIM)
+                .get(AntennaNetwork.LinkKey.of(a.pos(), b.pos())));
+        // The cover counts in device links straight away, and a new survey brings the links up to date.
+        network.tick(Long.MAX_VALUE, () -> clock);
+        assertTrue(
+            network.antenna(a)
+                .survey() != before);
+        assertNotNull(
+            network.links(DIM)
+                .get(AntennaNetwork.LinkKey.of(a.pos(), b.pos())));
+        assertEquals(
+            1,
+            network.antenna(a)
+                .end()
+                .depth(),
+            1e-9);
+    }
 }
