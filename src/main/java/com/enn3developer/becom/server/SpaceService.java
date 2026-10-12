@@ -63,6 +63,15 @@ public final class SpaceService {
         satellites.launch(dimension, now(), lifetime);
     }
 
+    /**
+     * Sets how many satellites orbit over {@code dimension}, for testing (DESIGN.md 12.3): the ones there come down,
+     * and {@code count} fresh ones go up, each with its own lifetime.
+     */
+    public void set(int dimension, int count) {
+        satellites.clear(dimension);
+        for (int i = 0; i < count; i++) launch(dimension);
+    }
+
     /** How many satellites orbit over {@code dimension}. */
     public int count(int dimension) {
         return satellites.count(dimension);

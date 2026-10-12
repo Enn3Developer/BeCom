@@ -42,6 +42,19 @@ class SatellitesTest {
     }
 
     @Test
+    void clearingADimensionLeavesTheOthers() {
+        Satellites satellites = new Satellites();
+        satellites.launch(OVERWORLD, 0, 100);
+        satellites.launch(MOON, 0, 100);
+        long before = satellites.version();
+        satellites.clear(OVERWORLD);
+        assertEquals(0, satellites.count(OVERWORLD));
+        assertEquals(1, satellites.count(MOON));
+        assertEquals(Map.of(MOON, 1), satellites.counts());
+        assertTrue(satellites.version() > before);
+    }
+
+    @Test
     void decayOnlyCountsAsAChangeWhenOneComesDown() {
         Satellites satellites = new Satellites();
         satellites.launch(OVERWORLD, 0, 100);

@@ -3,6 +3,7 @@ package com.enn3developer.becom.command;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.command.CommandBase;
@@ -24,13 +25,15 @@ import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.RadioService;
 
 /**
- * {@code /becom}: the admin commands from DESIGN.md 12.3 (list and hang up calls), the signal breakdown of DESIGN.md
- * 6.6, and in the development environment only, the self-test (DESIGN.md 16.3).
+ * {@code /becom}: the admin commands from DESIGN.md 12.3 (list and hang up calls, set a dimension's satellites), the
+ * signal breakdown of DESIGN.md 6.6, and in the development environment only, the self-test (DESIGN.md 16.3).
  */
 public final class CommandBeCom extends CommandBase {
 
     private static final int ADMIN_LEVEL = 2;
     private static final int SELFTEST_LEVEL = 4;
+    // The most satellites the test command puts over a dimension: far past Max, short of a list that slows a save.
+    private static final int MAX_TEST_SATELLITES = 1000;
 
     @Override
     public String getCommandName() {
@@ -61,6 +64,7 @@ public final class CommandBeCom extends CommandBase {
             case "calls" -> listCalls(sender, becom);
             case "hangup" -> hangUp(sender, becom, args);
             case "signal" -> signal(sender, becom);
+            case "satellites" -> satellites(sender, becom, args);
             case "selftest" -> {
                 if (!devEnvironment() || !sender.canCommandSenderUseCommand(SELFTEST_LEVEL, "becom")) {
                     throw new WrongUsageException("becom.command.usage");
@@ -112,6 +116,30 @@ public final class CommandBeCom extends CommandBase {
         becom.calls.book()
             .endByAdmin(call);
         sender.addChatMessage(new ChatComponentTranslation("becom.command.hangup.done", id));
+    }
+
+    /**
+     * DESIGN.md 12.3: sets how many satellites orbit over a dimension, for testing; with no numbers, lists each
+     * dimension's.
+     */
+    private static void satellites(ICommandSender sender, BeComServer becom, String[] args) {
+        if (args.length == 1) {
+            if (becom.space.counts()
+                .isEmpty()) {
+                sender.addChatMessage(new ChatComponentTranslation("becom.command.satellites.none"));
+            }
+            for (Map.Entry<Integer, Integer> entry : becom.space.counts()
+                .entrySet()) {
+                sender.addChatMessage(
+                    new ChatComponentTranslation("becom.command.satellites.entry", entry.getKey(), entry.getValue()));
+            }
+            return;
+        }
+        if (args.length != 3) throw new WrongUsageException("becom.command.usage");
+        int dimension = parseInt(sender, args[1]);
+        int count = parseIntBounded(sender, args[2], 0, MAX_TEST_SATELLITES);
+        becom.space.set(dimension, count);
+        sender.addChatMessage(new ChatComponentTranslation("becom.command.satellites.set", dimension, count));
     }
 
     /**
@@ -236,7 +264,8 @@ public final class CommandBeCom extends CommandBase {
     @SuppressWarnings("rawtypes")
     public List addTabCompletionOptions(ICommandSender sender, String[] args) {
         if (args.length != 1) return null;
-        return devEnvironment() ? getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "selftest")
-            : getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal");
+        return devEnvironment()
+            ? getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "selftest")
+            : getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites");
     }
 }

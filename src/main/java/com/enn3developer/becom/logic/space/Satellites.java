@@ -61,6 +61,12 @@ public final class Satellites {
         return lost;
     }
 
+    /** Takes down every satellite over {@code dimension} at once: the admin command's reset (DESIGN.md 12.3). */
+    public void clear(int dimension) {
+        if (satellites.removeIf(satellite -> satellite.dimension() == dimension)) version++;
+        counts.remove(dimension);
+    }
+
     /** How many satellites orbit over {@code dimension}. */
     public int count(int dimension) {
         return counts.getOrDefault(dimension, 0);

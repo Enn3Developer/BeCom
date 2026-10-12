@@ -225,7 +225,10 @@ key.becom.radio=Radio push-to-talk
 key.becom.phone=Phone
 
 # Commands
-becom.command.usage=/becom calls | /becom hangup <id> | /becom signal
+becom.command.usage=/becom calls | /becom hangup <id> | /becom signal | /becom satellites [<dimension> <count>]
+becom.command.satellites.none=No satellites in orbit.
+becom.command.satellites.entry=Dimension %s: %s satellites
+becom.command.satellites.set=Dimension %s now has %s satellites, each with a fresh lifetime.
 becom.command.calls.none=No active calls.
 becom.command.calls.entry=Call %s, %s: %s
 becom.command.hangup.none=No call %s.
