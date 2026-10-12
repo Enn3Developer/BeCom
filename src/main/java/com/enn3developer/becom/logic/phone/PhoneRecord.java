@@ -104,6 +104,11 @@ public final class PhoneRecord {
         return true;
     }
 
+    /** Puts back a block read from saved data, past the cap if that's how it was saved. */
+    public void restoreBlock(UUID player, String name) {
+        blocked.put(player, name == null ? "" : name);
+    }
+
     public boolean unblock(UUID player) {
         return blocked.remove(player) != null;
     }

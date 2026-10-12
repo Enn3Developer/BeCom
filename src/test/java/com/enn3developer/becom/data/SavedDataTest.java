@@ -3,15 +3,19 @@ package com.enn3developer.becom.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.util.Random;
 import java.util.UUID;
 
+import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
@@ -245,5 +249,126 @@ class SavedDataTest {
         assertNull(
             read.phones()
                 .get(123_456));
+    }
+
+    @Test
+    void aFileCutShortStopsTheLoadInsteadOfStartingEmpty(@TempDir File dir) throws Exception {
+        // Written whole, then cut short, as a crash mid-save would leave it.
+        StorageFixture fixture = new StorageFixture(dir);
+        NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
+        data.model()
+            .add(new NetNode(BlockPos.pack(1, 64, 1), NodeKind.PYLON, null));
+        NBTTagCompound root = new NBTTagCompound();
+        NBTTagCompound inner = new NBTTagCompound();
+        data.writeToNBT(inner);
+        root.setTag("data", inner);
+        File file = fixture.file(NetworkSavedData.NAME);
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            CompressedStreamTools.writeCompressed(root, out);
+        }
+        assertEquals(
+            data.model()
+                .size(),
+            NetworkSavedData.load(fixture.storage(), file, "test")
+                .model()
+                .size());
+        // Cut short inside the compressed stream. (Cut later, the NBT reader fails by building a crash report, which
+        // needs FML and can't run in a unit test; on a server it throws, and MapStorage swallows it just the same.)
+        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+        java.nio.file.Files.write(file.toPath(), java.util.Arrays.copyOf(bytes, 12));
+        IllegalStateException e = assertThrows(
+            IllegalStateException.class,
+            () -> NetworkSavedData.load(fixture.storage(), file, "test"));
+        assertTrue(
+            e.getMessage()
+                .contains("couldn't read"),
+            e.getMessage());
+    }
+
+    @Test
+    void noFileIsANewWorld(@TempDir File dir) {
+        StorageFixture fixture = new StorageFixture(dir);
+        File file = fixture.file(GlobalSavedData.NAME);
+        net.minecraft.world.storage.MapStorage storage = fixture.storage();
+        GlobalSavedData data = GlobalSavedData.load(storage, file);
+        assertEquals(
+            0,
+            data.phones()
+                .size());
+        // A second load from the same storage, after the first save, isn't mistaken for an unreadable file.
+        file.getParentFile()
+            .mkdirs();
+        assertTrue(GlobalSavedData.load(storage, file) == data);
+    }
+
+    @Test
+    void aBlockListLongerThanThisBeComAllowsLoadsWhole() {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        PhoneRecord record = data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        NBTTagCompound phone = nbt.getTagList("phones", 10)
+            .getCompoundTagAt(0);
+        NBTTagList blocked = new NBTTagList();
+        for (int i = 0; i < PhoneRecord.MAX_BLOCKED + 20; i++) {
+            NBTTagCompound entry = new NBTTagCompound();
+            UUID id = UUID.randomUUID();
+            entry.setLong("playerMost", id.getMostSignificantBits());
+            entry.setLong("playerLeast", id.getLeastSignificantBits());
+            entry.setString("name", "p" + i);
+            blocked.appendTag(entry);
+        }
+        phone.setTag("blocked", blocked);
+        GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertEquals(
+            PhoneRecord.MAX_BLOCKED + 20,
+            read.phones()
+                .get(record.number())
+                .blocked()
+                .size());
+    }
+
+    @Test
+    void anUnknownHistoryDirectionMeansANewerBeComSavedIt() {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        PhoneRecord record = data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        record.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.MISSED, null));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        nbt.getTagList("phones", 10)
+            .getCompoundTagAt(0)
+            .getTagList("history", 10)
+            .getCompoundTagAt(0)
+            .setString("dir", "REJECTED");
+        GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+        assertFalse(read.isDirty());
+    }
+
+    @Test
+    void moreLinksThanAKindHasSlotsMeansANewerBeComSavedIt() {
+        NBTTagCompound nbt = new NBTTagCompound();
+        NBTTagList nodes = new NBTTagList();
+        long hub = BlockPos.pack(0, 64, 0);
+        NBTTagCompound pylon = node(hub, NodeKind.PYLON);
+        NBTTagList links = new NBTTagList();
+        for (int i = 1; i <= 3; i++) {
+            long other = BlockPos.pack(10 * i, 64, 0);
+            nodes.appendTag(node(other, NodeKind.PYLON));
+            NBTTagCompound link = new NBTTagCompound();
+            link.setLong("pos", other);
+            links.appendTag(link);
+        }
+        pylon.setTag("links", links);
+        nodes.appendTag(pylon);
+        nbt.setTag("nodes", nodes);
+        NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+        assertFalse(read.isDirty());
     }
 }

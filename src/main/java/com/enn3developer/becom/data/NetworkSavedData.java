@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSavedData;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
 import com.enn3developer.becom.logic.net.NetNode;
@@ -26,8 +27,8 @@ public final class NetworkSavedData extends WorldSavedData {
     private final NetworkModel model = new NetworkModel();
     private long savedVersion;
     private NBTTagCompound tooNewData;
-    // A node kind this BeCom doesn't know, which means a newer BeCom saved the file.
-    private String unknownKind;
+    // What this BeCom found it doesn't understand, which means a newer BeCom saved the file.
+    private String notUnderstood;
     private boolean read;
 
     public NetworkSavedData(String name) {
@@ -40,19 +41,22 @@ public final class NetworkSavedData extends WorldSavedData {
      * @throws IllegalStateException when the saved data is newer than this BeCom understands
      */
     public static NetworkSavedData get(World world) {
-        NetworkSavedData data = (NetworkSavedData) world.perWorldStorage.loadData(NetworkSavedData.class, NAME);
-        String what = "the network of dimension " + world.provider.dimensionId;
-        File file = file(world);
+        return load(world.perWorldStorage, file(world), "the network of dimension " + world.provider.dimensionId);
+    }
+
+    /** Loads the data from {@code storage}, whose file is {@code file}; {@link #get} for a world. */
+    static NetworkSavedData load(MapStorage storage, File file, String what) {
+        NetworkSavedData data = (NetworkSavedData) storage.loadData(NetworkSavedData.class, NAME);
         if (data == null) {
             data = new NetworkSavedData(NAME);
             // Nothing on disk to read: a new world. Counts as read, so a later get() after the first save is fine.
             data.read = true;
-            world.perWorldStorage.setData(NAME, data);
+            storage.setData(NAME, data);
         } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
             data.tooNewData = new NBTTagCompound();
             throw SavedDataFormat.couldNotRead(what, file);
         }
-        if (data.unknownKind != null) throw SavedDataFormat.unknownKind(what, data.unknownKind);
+        if (data.notUnderstood != null) throw SavedDataFormat.notUnderstood(what, data.notUnderstood);
         if (data.tooNewData != null) {
             throw SavedDataFormat.newerThanUnderstood(what, SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
@@ -88,9 +92,9 @@ public final class NetworkSavedData extends WorldSavedData {
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
-        read = true;
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
             tooNewData = (NBTTagCompound) nbt.copy();
+            read = true;
             return;
         }
         // Format 1 is the first; later formats upgrade from here.
@@ -101,8 +105,7 @@ public final class NetworkSavedData extends WorldSavedData {
             String name = nodes.getCompoundTagAt(i)
                 .getString("kind");
             if (kindOf(name) == null) {
-                unknownKind = name;
-                tooNewData = (NBTTagCompound) nbt.copy();
+                notUnderstood(nbt, "a node kind it doesn't know, \"" + name + "\"");
                 return;
             }
         }
@@ -126,10 +129,13 @@ public final class NetworkSavedData extends WorldSavedData {
                     .getLong("pos");
                 NetNode a = model.node(pos);
                 NetNode b = model.node(other);
-                // Never more links than slots, whatever the file says.
-                if (b != null && (model.linked(pos, other) || a.hasFreeSlot() && b.hasFreeSlot())) {
-                    model.link(pos, other);
+                if (b == null || model.linked(pos, other)) continue;
+                // More links than a kind has slots: a newer BeCom with more slots wrote this.
+                if (!a.hasFreeSlot() || !b.hasFreeSlot()) {
+                    notUnderstood(nbt, "a " + a.kind() + " with more links than this BeCom gives it");
+                    return;
                 }
+                model.link(pos, other);
             }
         }
         NBTTagList blocked = nbt.getTagList("blocked", Constants.NBT.TAG_COMPOUND);
@@ -140,6 +146,14 @@ public final class NetworkSavedData extends WorldSavedData {
             if (model.linked(a, b)) model.setBlocked(a, b, true);
         }
         savedVersion = model.version();
+        // Last: anything thrown above leaves the data unread, and so never saved over the file.
+        read = true;
+    }
+
+    private void notUnderstood(NBTTagCompound nbt, String detail) {
+        notUnderstood = detail;
+        tooNewData = (NBTTagCompound) nbt.copy();
+        read = true;
     }
 
     private static NodeKind kindOf(String name) {

@@ -48,12 +48,16 @@ public final class SavedDataFormat {
                 + " delete it to start with none.");
     }
 
-    public static IllegalStateException unknownKind(String what, String kind) {
+    /**
+     * Data in a format this BeCom knows, holding something it doesn't: a kind, a value or more of something than it
+     * allows, which only a newer BeCom writes.
+     */
+    public static IllegalStateException notUnderstood(String what, String detail) {
         return new IllegalStateException(
             "BeCom found " + what
-                + " holding a kind it doesn't know, \""
-                + kind
-                + "\", saved by a newer BeCom. Stopping instead of dropping it and saving over the file: update BeCom,"
+                + " holding "
+                + detail
+                + ", saved by a newer BeCom. Stopping instead of dropping it and saving over the file: update BeCom,"
                 + " or restore a backup made with this version.");
     }
 

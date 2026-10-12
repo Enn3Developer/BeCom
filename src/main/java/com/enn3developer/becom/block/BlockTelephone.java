@@ -108,6 +108,10 @@ public class BlockTelephone extends BlockContainer {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp)
             || !(world.getTileEntity(x, y, z) instanceof TileTelephone tile)) return true;
+        if (tile.isTooNew()) {
+            player.addChatComponentMessage(new ChatComponentTranslation("becom.phone.too_new"));
+            return true;
+        }
         ensureNumber(becom, world, tile);
         claimIfOwnerless(becom, tile, player);
         if (player.isSneaking()) {

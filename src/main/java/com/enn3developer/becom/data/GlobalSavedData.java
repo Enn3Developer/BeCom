@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSavedData;
+import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
 import com.enn3developer.becom.BeCom;
@@ -28,8 +29,8 @@ public final class GlobalSavedData extends WorldSavedData {
     private final PhoneRegistry phones = new PhoneRegistry();
     private long savedVersion;
     private NBTTagCompound tooNewData;
-    // A phone kind this BeCom doesn't know, which means a newer BeCom saved the file.
-    private String unknownKind;
+    // What this BeCom found it doesn't understand, which means a newer BeCom saved the file.
+    private String notUnderstood;
     private boolean read;
 
     public GlobalSavedData(String name) {
@@ -38,19 +39,25 @@ public final class GlobalSavedData extends WorldSavedData {
 
     /** @throws IllegalStateException when the saved data is newer than this BeCom understands */
     public static GlobalSavedData get(World world) {
-        GlobalSavedData data = (GlobalSavedData) world.mapStorage.loadData(GlobalSavedData.class, NAME);
-        File file = world.getSaveHandler()
-            .getMapFileFromName(NAME);
+        return load(
+            world.mapStorage,
+            world.getSaveHandler()
+                .getMapFileFromName(NAME));
+    }
+
+    /** Loads the registry from {@code storage}, whose file is {@code file}; {@link #get} for the Overworld. */
+    static GlobalSavedData load(MapStorage storage, File file) {
+        GlobalSavedData data = (GlobalSavedData) storage.loadData(GlobalSavedData.class, NAME);
         if (data == null) {
             data = new GlobalSavedData(NAME);
             // Nothing on disk to read: a new world. Counts as read, so a later get() after the first save is fine.
             data.read = true;
-            world.mapStorage.setData(NAME, data);
+            storage.setData(NAME, data);
         } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
             data.tooNewData = new NBTTagCompound();
             throw SavedDataFormat.couldNotRead("the phone registry", file);
         }
-        if (data.unknownKind != null) throw SavedDataFormat.unknownKind("the phone registry", data.unknownKind);
+        if (data.notUnderstood != null) throw SavedDataFormat.notUnderstood("the phone registry", data.notUnderstood);
         if (data.tooNewData != null) {
             throw SavedDataFormat
                 .newerThanUnderstood("the phone registry", SavedDataFormat.versionOf(data.tooNewData), FORMAT);
@@ -79,22 +86,29 @@ public final class GlobalSavedData extends WorldSavedData {
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
-        read = true;
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
             tooNewData = (NBTTagCompound) nbt.copy();
+            read = true;
             return;
         }
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
-        // Phone kinds are added without a format bump (PhoneKind): one this BeCom doesn't know means a newer BeCom
-        // saved
-        // the file. Dropping those phones would free their numbers for reuse (D12), so keep the file untouched.
+        // Phone kinds and history directions are added without a format bump: one this BeCom doesn't know means a newer
+        // BeCom saved the file. Dropping those phones would free their numbers for reuse (D12), so keep it untouched.
         for (int i = 0; i < list.tagCount(); i++) {
-            String kind = list.getCompoundTagAt(i)
-                .getString("kind");
+            NBTTagCompound phone = list.getCompoundTagAt(i);
+            String kind = phone.getString("kind");
             if (kindOf(kind) == null) {
-                unknownKind = kind;
-                tooNewData = (NBTTagCompound) nbt.copy();
+                notUnderstood(nbt, "a phone kind it doesn't know, \"" + kind + "\"");
                 return;
+            }
+            NBTTagList history = phone.getTagList("history", Constants.NBT.TAG_COMPOUND);
+            for (int j = 0; j < history.tagCount(); j++) {
+                String dir = history.getCompoundTagAt(j)
+                    .getString("dir");
+                if (directionOf(dir) == null) {
+                    notUnderstood(nbt, "a call history entry it doesn't know, \"" + dir + "\"");
+                    return;
+                }
             }
         }
         for (int i = 0; i < list.tagCount(); i++) {
@@ -102,6 +116,22 @@ public final class GlobalSavedData extends WorldSavedData {
             if (record != null && phones.get(record.number()) == null) phones.restore(record);
         }
         savedVersion = phones.version();
+        // Last: anything thrown above leaves the data unread, and so never saved over the file.
+        read = true;
+    }
+
+    private void notUnderstood(NBTTagCompound nbt, String detail) {
+        notUnderstood = detail;
+        tooNewData = (NBTTagCompound) nbt.copy();
+        read = true;
+    }
+
+    private static PhoneRecord.Direction directionOf(String name) {
+        try {
+            return PhoneRecord.Direction.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override
@@ -141,18 +171,15 @@ public final class GlobalSavedData extends WorldSavedData {
         for (int i = 0; i < blocked.tagCount(); i++) {
             NBTTagCompound entry = blocked.getCompoundTagAt(i);
             UUID player = readUuid(entry, "player");
-            if (player != null) record.block(player, entry.getString("name"));
+            // As saved, even past this BeCom's cap: a newer one may allow more, and the list isn't this BeCom's to cut.
+            if (player != null) record.restoreBlock(player, entry.getString("name"));
         }
         NBTTagList history = tag.getTagList("history", Constants.NBT.TAG_COMPOUND);
         // Saved newest first; added oldest first so the newest ends up on top again.
         for (int i = history.tagCount() - 1; i >= 0; i--) {
             NBTTagCompound entry = history.getCompoundTagAt(i);
-            PhoneRecord.Direction direction;
-            try {
-                direction = PhoneRecord.Direction.valueOf(entry.getString("dir"));
-            } catch (IllegalArgumentException e) {
-                continue;
-            }
+            PhoneRecord.Direction direction = directionOf(entry.getString("dir"));
+            if (direction == null) continue;
             record.addHistory(
                 new PhoneRecord.HistoryEntry(
                     entry.getLong("time"),

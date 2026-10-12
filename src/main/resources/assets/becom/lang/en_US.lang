@@ -59,6 +59,7 @@ becom.call.dropped=The call dropped: the signal was too weak.
 becom.phone.holding_other=You're already holding another handset.
 becom.phone.in_use=Someone else is using this phone.
 becom.phone.too_far=Step up to the phone to pick up the handset.
+becom.phone.too_new=This Telephone was saved by a newer BeCom. Update BeCom to use it.
 
 # Levels
 becom.level.none=None
