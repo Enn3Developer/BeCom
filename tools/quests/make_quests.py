@@ -170,7 +170,8 @@ QUESTS = [
         "name": "Reading the Air",
         "desc": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna "
         "serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs "
-        "6 dB for Low and 12 for Medium; one that falls below 6 drops within 3 seconds.",
+        "6 dB for Low and 12 for Medium. Below 4 it cuts out at once; between 4 and 6 it holds for 3 seconds, "
+        "then drops.",
         "icon": ("becom:signal_analyzer", 0),
         "pre": ["antenna_t1"],
         "tasks": [("item", "becom:signal_analyzer", 0, 1)],
