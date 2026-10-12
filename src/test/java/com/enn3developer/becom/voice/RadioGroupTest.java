@@ -628,4 +628,22 @@ class RadioGroupTest {
             fixture.recipients()
                 .contains(bob));
     }
+
+    @Test
+    void aPlayerWithoutVoiceIsntHeldByAnyone() {
+        // Pat stands by Bob's walkie but has no voice session: they hear nothing, so nothing holds them.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID pat = fixture.player("pat", 104, 64, 0, 0);
+        fixture.sessions.remove(pat);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .link(alice, walkie(pat, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertTrue(!shared.listenerHeldBy(pat, 1, alice));
+        assertTrue(shared.listenerHeldBy(bob, 1, alice));
+    }
 }

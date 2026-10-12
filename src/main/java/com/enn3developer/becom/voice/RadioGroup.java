@@ -100,11 +100,12 @@ public final class RadioGroup implements IGroup {
             RadioSnapshot.Link link = tx.walkies()[i];
             UUID holder = link.holder();
             if (holder.equals(speaker)) continue;
+            // Without voice they hear nothing, so nobody holds them.
+            IVoiceSession session = sessions.get(holder);
+            if (session == null) continue;
             // Hearing the speaker in person (D17) counts as hearing them, for the hold, though BeCom sends nothing.
             if (!shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
             if (!walkieGot[i] || DirectHearing.hears(from, positions.get(holder), direct)) continue;
-            IVoiceSession session = sessions.get(holder);
-            if (session == null) continue;
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
             // VOICE.md V5: GTNH Voice doesn't say whether this send went through or a higher group had served them.
             shared.contact(speaker, holder, now);
@@ -183,10 +184,10 @@ public final class RadioGroup implements IGroup {
             double dy = p.getY() - y;
             double dz = p.getZ() - z;
             if (dx * dx + dy * dy + dz * dz > rangeSq) continue;
-            if (!shared.listeners.admit(id, channel, speaker, snr, now)) continue;
-            if (!send || DirectHearing.hears(from, p, direct)) continue;
             IVoiceSession session = sessions.get(id);
             if (session == null) continue;
+            if (!shared.listeners.admit(id, channel, speaker, snr, now)) continue;
+            if (!send || DirectHearing.hears(from, p, direct)) continue;
             context.sendTo(session, SourceState.POSITIONAL, x, y, z);
             // VOICE.md V5
             shared.contact(speaker, id, now);
