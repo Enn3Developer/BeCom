@@ -2,6 +2,7 @@ package com.enn3developer.becom;
 
 import java.util.function.Supplier;
 
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
@@ -23,6 +24,7 @@ import com.enn3developer.becom.server.VoiceSessions;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.StartupQuery;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -58,6 +60,14 @@ public class CommonProxy {
 
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
         // A server acts on its own config file (DESIGN.md 14.2); a client in this JVM had the defaults or a server's.
+        String problem = BeComConfig.fileProblem();
+        if (problem != null) {
+            // FML's own way to refuse a world: the message goes to the console on a dedicated server, and on a client
+            // to a screen that leads back to the menu. Throwing here instead would leave a client on "Loading world".
+            BeCom.LOG.error("BeCom config: {}", problem);
+            StartupQuery.notify(StatCollector.translateToLocalFormatted("becom.config.refused", problem));
+            StartupQuery.abort();
+        }
         BeComConfig.useFileValues();
         // Before worlds load, so each dimension's network loads with its world.
         BeComServer.create(event.getServer());

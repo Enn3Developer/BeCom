@@ -65,8 +65,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 12.1
 - **Design says:** a phone's owner is its first user.
 - **Built:** for the Telephone block, placing it counts as first use: the placer owns it and names it in contacts. A
-  Telephone placed by a machine has no owner until the first player uses it, who then owns it. A copy of a Telephone
-  (made with a world editor, say) belongs to the original's owner (X17). Machines' fake players never own one.
+  Telephone placed by a machine has no owner until the first player uses it, who then owns it. So does one whose
+  number isn't in the registry at all (pasted from another world, a copy of a phone since broken, or every phone after
+  the registry file is deleted): it gets a fresh number with blank settings on first use, owned by whoever used it.
+  A copy of a Telephone whose original still has its record belongs to the original's owner (X17). Machines' fake
+  players never own one, so the self-test can't check a claim.
 - **Why:** a block has a placer; waiting for the first pickup would leave a fresh phone ownerless and nameless.
 - **To match the design:** register the owner on the first pickup in `CallService.takeHandset` instead.
 
@@ -189,7 +192,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   never given a number, and tells whoever uses it to update BeCom.
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
-  a backup, or delete the file to start with none. A Telephone's data comes with its chunk, while the server is
+  a backup, or delete the file to start with none (for the phone registry, every Telephone then goes to the first
+  player who uses it, X6). A Telephone's data comes with its chunk, while the server is
   already running, where stopping would only crash it. Leaving it alone protects it unless a player breaks it: then
   the newer data is lost with the block, and its number stays reserved, since this BeCom can't see which it was.
 - **To match the design:** start empty and log instead of stopping, accepting the overwrite; for the Telephone,
@@ -220,8 +224,10 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   limits on the config values.
 - **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. The config file shows those ranges
   and clamps values outside them. The other checks on the file (ordered level thresholds, a burst of at least one
-  voice frame, at least one call attempt a minute and so on) run when a server starts with it and stop it with the
-  key's name; a client never checks its own file, since it doesn't use it.
+  voice frame, at least one call attempt a minute, a format this BeCom understands and so on) run when a server is
+  about to start with it. A bad file refuses the world through FML's own startup notice, naming the key: on the
+  console for a dedicated server, and on screen in single-player, where the client's file is the server's, leading
+  back to the menu. A client joining a server never acts on its own file, so a bad one doesn't stop it.
 - **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
   make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
   code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.

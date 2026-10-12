@@ -39,6 +39,11 @@ public final class BeComConfig {
         tunables = values;
     }
 
+    /** What's wrong with the config file, for a server about to start with it, or null. */
+    public static String fileProblem() {
+        return fileProblem;
+    }
+
     /**
      * A server starting here, dedicated or integrated, uses the config file's values.
      *
@@ -65,13 +70,13 @@ public final class BeComConfig {
             Integer.MAX_VALUE,
             "Format of this file. Don't change it by hand.");
         if (version > FORMAT_VERSION) {
-            throw new IllegalStateException(
-                "BeCom's config " + file
-                    + " has format "
-                    + version
-                    + ", newer than this BeCom understands ("
-                    + FORMAT_VERSION
-                    + "). Update BeCom, or remove the file to start from the defaults.");
+            // Refused when a server starts with it, like any other problem with the file; left untouched meanwhile.
+            fileProblem = "the file has format " + version
+                + ", newer than this BeCom understands ("
+                + FORMAT_VERSION
+                + "). Update BeCom, or remove the file to start from the defaults";
+            fileValues = Tunables.defaults();
+            return;
         }
         config.get(GENERAL, "formatVersion", FORMAT_VERSION)
             .set(FORMAT_VERSION);

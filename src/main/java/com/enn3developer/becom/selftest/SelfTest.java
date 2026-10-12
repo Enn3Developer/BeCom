@@ -749,6 +749,7 @@ public final class SelfTest {
                 .isPresent());
 
         checkMovedPhone(end.zCoord);
+        checkCarriedTile(end.zCoord);
 
         // As after a restart: the off-hook bit was saved with the chunk, but nobody holds the handset any more.
         end.setOffHook(true);
@@ -838,6 +839,26 @@ public final class SelfTest {
         world.removeTileEntity(X0 + 7, y, z);
         world.setBlockToAir(X0 + 7, y, z);
         registry().remove(number);
+    }
+
+    /** A mover that keeps the tile object re-seats it elsewhere: the Telephone settles again at its new spot. */
+    private void checkCarriedTile(int z) {
+        int y = Y + 1;
+        TileTelephone tile = telephone(X0 + 13, y, z);
+        int number = tile.number();
+        tile.updateEntity();
+        world.removeTileEntity(X0 + 13, y, z);
+        world.setBlockToAir(X0 + 13, y, z);
+        world.setBlock(X0 + 15, y, z, BeComBlocks.telephone);
+        tile.validate();
+        world.setTileEntity(X0 + 15, y, z, tile);
+        tile.updateEntity();
+        PhoneRecord record = registry().get(number);
+        check(
+            "a Telephone carried as the same tile settles at its new spot",
+            record != null && record.pos() == BlockPos.pack(X0 + 15, y, z),
+            record == null ? "freed" : BlockPos.toString(record.pos()));
+        world.setBlockToAir(X0 + 15, y, z);
     }
 
     private TileTelephone placeSaved(NBTTagCompound saved, int x, int y, int z) {

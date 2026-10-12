@@ -69,4 +69,19 @@ class BeComConfigTest {
         BeComConfig.useFileValues();
         assertEquals(Tunables.defaults(), BeComConfig.get());
     }
+
+    @Test
+    void aNewerFileIsLeftAloneAndRefusedOnlyWhenAServerStarts(@TempDir File dir) throws Exception {
+        File file = new File(dir, "becom.cfg");
+        String newer = "general {\n    I:formatVersion=99\n}\nwired {\n    I:pylonMaxHeight=12\n}\n";
+        Files.write(file.toPath(), newer.getBytes());
+        assertDoesNotThrow(() -> BeComConfig.load(file));
+        assertEquals(
+            true,
+            BeComConfig.fileProblem()
+                .contains("newer"));
+        assertThrows(IllegalStateException.class, BeComConfig::useFileValues);
+        // Never rewritten by a BeCom that doesn't understand it.
+        assertEquals(newer, new String(Files.readAllBytes(file.toPath())));
+    }
 }

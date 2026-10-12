@@ -181,7 +181,7 @@ public final class GlobalSavedData extends WorldSavedData {
         }
         NBTTagList history = tag.getTagList("history", Constants.NBT.TAG_COMPOUND);
         // Saved newest first and kept in that order, all of it: a newer BeCom may keep more than this one does, and
-        // the next call trims it as usual.
+        // the history then rolls at that length (PhoneRecord.addHistory).
         for (int i = 0; i < history.tagCount(); i++) {
             NBTTagCompound entry = history.getCompoundTagAt(i);
             PhoneRecord.Direction direction = directionOf(entry.getString("dir"));
