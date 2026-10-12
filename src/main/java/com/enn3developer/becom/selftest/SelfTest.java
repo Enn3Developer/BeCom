@@ -259,6 +259,7 @@ public final class SelfTest {
         steps.add(this::checkCoverage);
         steps.add(this::checkMeRegistration);
         steps.add(this::buildMe);
+        steps.add(this::placeMeBridges);
         steps.add(this::linkMe);
         steps.add(this::checkMe);
         steps.add(this::checkVideophoneRegistration);
@@ -570,9 +571,14 @@ public final class SelfTest {
 
     @SuppressWarnings("unchecked")
     private <T extends IMetaTileEntity> T place(T machine, int x, int y, int z) {
+        return placeAs(machine, x, y, z, owner);
+    }
+
+    /** Places a machine the way {@code player} placing its item does. */
+    private <T extends IMetaTileEntity> T placeAs(T machine, int x, int y, int z, FakePlayer player) {
         world.getChunkFromBlockCoords(x, z);
         ItemStack stack = machine.getStackForm(1);
-        ((ItemBlock) stack.getItem()).placeBlockAt(stack, owner, world, x, y, z, 1, 0.5f, 0.5f, 0.5f, 0);
+        ((ItemBlock) stack.getItem()).placeBlockAt(stack, player, world, x, y, z, 1, 0.5f, 0.5f, 0.5f, 0);
         TileEntity tile = world.getTileEntity(x, y, z);
         return (T) ((IGregTechTileEntity) tile).getMetaTileEntity();
     }
@@ -2077,9 +2083,12 @@ public final class SelfTest {
     // region ME (0.3)
 
     // A small ME network north of the phone area: a creative cell powers a controller with a security station and a
-    // wireless access point beside it, and glass cable runs to the ME Bridge, wrench-linked to the phone antenna.
+    // wireless access point beside it, and glass cable runs to the ME Bridge, wrench-linked to the phone antenna. The
+    // owner places the security station, so the network is secured, and their bridge joins it once its security is up;
+    // a stranger's bridge on the same cable doesn't.
     private static final int ME_DZ = 8;
     private MTEMeBridge meBridge;
+    private MTEMeBridge strangerBridge;
     private TileEntity meSecurity;
     private TileEntity meWireless;
     private FakePlayer odo;
@@ -2099,7 +2108,10 @@ public final class SelfTest {
     private int buildMe() {
         int z = phoneZ + ME_DZ;
         for (int x = X0 + 2; x <= X0 + 9; x++) {
-            for (int dz = -3; dz <= 2; dz++) world.setBlockToAir(x, Y, z + dz);
+            for (int dz = -3; dz <= 2; dz++) {
+                world.setBlockToAir(x, Y, z + dz);
+                world.setBlockToAir(x, Y + 1, z + dz);
+            }
         }
         IBlocks blocks = AEApi.instance()
             .definitions()
@@ -2118,13 +2130,10 @@ public final class SelfTest {
             blocks.controller()
                 .maybeBlock()
                 .get());
-        world.setBlock(
-            X0 + 5,
-            Y,
-            z + 1,
-            blocks.security()
-                .maybeBlock()
-                .get());
+        ItemStack security = blocks.security()
+            .maybeStack(1)
+            .get();
+        ((ItemBlock) security.getItem()).placeBlockAt(security, owner, world, X0 + 5, Y, z + 1, 1, 0.5f, 0.5f, 0.5f, 0);
         world.setBlock(
             X0 + 5,
             Y,
@@ -2154,9 +2163,16 @@ public final class SelfTest {
                 ForgeDirection.UNKNOWN,
                 owner);
         }
+        // AE2 boots a new network over a few ticks, and its security only after a second of them.
+        return SETTLE_TICKS;
+    }
+
+    private int placeMeBridges() {
+        int z = phoneZ + ME_DZ;
         meBridge = place(BeComMachines.meBridge, X0 + 7, Y, z);
         powered.add(meBridge.getBaseMetaTileEntity());
-        // AE2 boots a new network over a few ticks.
+        strangerBridge = placeAs(BeComMachines.meBridge, X0 + 6, Y + 1, z, stranger);
+        powered.add(strangerBridge.getBaseMetaTileEntity());
         return SETTLE_TICKS;
     }
 
@@ -2190,9 +2206,16 @@ public final class SelfTest {
         int z = phoneZ + ME_DZ;
         // 16.2: the fallback is a bridge holding a linked terminal, if this fails.
         check(
-            "the ME Bridge joins an ME network on ME cable, the way GT's ME hatches do",
+            "the ME Bridge joins a secured ME network on ME cable, placed by its owner, the way GT's ME hatches do",
             meBridge.meOnline() && meBridge.isWorking(),
             "online in ME " + meBridge.meOnline() + ", working " + meBridge.isWorking() + ", " + meDetail(z));
+        check(
+            "...one placed by a player the network's security doesn't let build stays out of it",
+            !strangerBridge.meOnline(),
+            "online in ME " + strangerBridge.meOnline());
+        IGregTechTileEntity strangers = strangerBridge.getBaseMetaTileEntity();
+        powered.remove(strangers);
+        world.setBlockToAir(strangers.getXCoord(), strangers.getYCoord(), strangers.getZCoord());
         odo = mePlayer("BeComOdo", 0, X0 + 5.5, z - 6.5);
         pia = mePlayer("BeComPia", 1, X0 + 8.5, z - 6.5);
         odoNumber = ItemCarriedPhone.number(odo.inventory.mainInventory[0]);
