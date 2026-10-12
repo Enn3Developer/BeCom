@@ -300,12 +300,26 @@ public final class NetworkService {
             .changed();
         models.get(b.dimension())
             .changed();
+        saveNow(a.dimension());
+        saveNow(b.dimension());
     }
 
     /** Unpairs two Portal Relays paired with each other. */
     public void unpair(NodeRef a, NodeRef b) {
         forgetPartner(a, b);
         forgetPartner(b, a);
+        saveNow(a.dimension());
+        saveNow(b.dimension());
+    }
+
+    /**
+     * Writes a dimension's network to disk now. A pair's two halves live in two dimensions' files, which Minecraft
+     * saves at different times: a far side loaded for a pairing unloads, and saves, at once, while the near side waits
+     * for the next autosave. Saving both together leaves no window where a crash keeps only one half.
+     */
+    private static void saveNow(int dimension) {
+        WorldServer world = DimensionManager.getWorld(dimension);
+        if (world != null) world.perWorldStorage.saveAllData();
     }
 
     /** The relay at {@code ref} forgets {@code partner}, if it's loaded and paired with it. */

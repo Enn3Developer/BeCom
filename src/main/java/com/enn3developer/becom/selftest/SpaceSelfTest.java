@@ -24,6 +24,7 @@ import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
@@ -130,6 +131,7 @@ final class SpaceSelfTest {
     private TileTelephone relayPhoneOverworld;
     private TileTelephone relayPhoneNether;
     private LinkService.Outcome paired;
+    private boolean pairSaved;
     private boolean twilightPlaced;
     private boolean personalPlaced;
     private EntityTier1Rocket rocket;
@@ -323,6 +325,10 @@ final class SpaceSelfTest {
             becom.links.forget(owner.getUniqueID());
             becom.links.wrench(owner, overworld, pos(relayOverworld));
             paired = becom.links.wrench(owner, nether, pos(relayNether));
+            pairSaved = !NetworkSavedData.get(overworld)
+                .isDirty()
+                && !NetworkSavedData.get(nether)
+                    .isDirty();
         }
         for (WorldServer w : new WorldServer[] { overworld, moon, nether }) {
             if (w == null) continue;
@@ -725,6 +731,7 @@ final class SpaceSelfTest {
             paired == LinkService.Outcome.LINKED && relayNether.ref()
                 .equals(becom.network.partnerOf(relayOverworld.ref())),
             String.valueOf(paired));
+        t.check("...and both halves of the pair are on disk at once, each in its dimension's file", pairSaved, "");
         t.check(
             "...completing Portal Relay pair for whoever linked them (DESIGN.md 15.5)",
             BeComQuests.reportedForSelfTest(QuestTask.PORTAL_RELAY_PAIR, owner.getUniqueID()),
