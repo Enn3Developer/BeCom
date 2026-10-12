@@ -32,6 +32,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.call.CallHistory;
+import com.enn3developer.becom.logic.call.CallQuests;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
@@ -709,8 +710,7 @@ public final class CallService implements CallBook.Listener {
                 .join(player, group);
             tone(player, TonePacket.Tone.NONE);
         }
-        BeComQuests.complete(QuestTask.FIRST_CALL, players);
-        callQuests(call);
+        completeQuests(call);
         // Levels now, not at the next whole second: until a direction has a level it gets no route, and "hello?" is
         // lost.
         book.evaluate(call, now(), quality);
@@ -756,30 +756,20 @@ public final class CallService implements CallBook.Listener {
         publish();
     }
 
-    /**
-     * The quests a call completes as it connects (DESIGN.md 15.5): Mobile call for everyone in it on a Mobile Phone,
-     * ME Bridge call for each ME Phone's user whose path to another phone of the call goes through an ME Bridge.
-     */
-    private void callQuests(Call call) {
-        List<UUID> mobile = new ArrayList<>();
-        List<UUID> bridged = new ArrayList<>();
-        List<Call.Leg> active = call.activeLegs();
+    /** The quest tasks a call completes as it connects or a phone joins it (DESIGN.md 15.5). */
+    private void completeQuests(Call call) {
         CallGraph graph = network.graph();
-        for (Call.Leg leg : active) {
-            PhoneKind kind = kindOf(leg.phone());
-            if (kind == PhoneKind.MOBILE) mobile.addAll(leg.players());
-            if (kind != PhoneKind.ME_PHONE) continue;
-            for (Call.Leg other : active) {
-                if (other == leg) continue;
-                if (graph.hops(entriesOf(leg.phone()), entriesOf(other.phone()))
-                    .contains(CallGraph.HopKind.ME_BRIDGE)) {
-                    bridged.addAll(leg.players());
-                    break;
-                }
-            }
-        }
-        if (!mobile.isEmpty()) BeComQuests.complete(QuestTask.MOBILE_CALL, mobile);
-        if (!bridged.isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, bridged);
+        CallQuests.Done done = CallQuests.of(
+            call,
+            this::kindOf,
+            (from, to) -> graph.hops(entriesOf(from), entriesOf(to))
+                .contains(CallGraph.HopKind.ME_BRIDGE));
+        if (!done.firstCall()
+            .isEmpty()) BeComQuests.complete(QuestTask.FIRST_CALL, done.firstCall());
+        if (!done.mobileCall()
+            .isEmpty()) BeComQuests.complete(QuestTask.MOBILE_CALL, done.mobileCall());
+        if (!done.meBridgeCall()
+            .isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, done.meBridgeCall());
     }
 
     /** A phone added to a call stopped ringing unanswered: whoever added it hears why (DESIGN.md 11.2). */
