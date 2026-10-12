@@ -273,6 +273,10 @@ public final class SelfTest {
         steps.add(this::checkVideophonePower);
         steps.add(this::startVideoCall);
         steps.add(this::checkVideoCall);
+        steps.add(this::checkProfileSeen);
+        steps.add(this::checkProfileGone);
+        steps.add(this::checkProfileAgain);
+        steps.add(this::checkProfileResent);
         steps.add(this::checkVideoSwitches);
         steps.add(this::checkVideoEnded);
     }
@@ -2598,6 +2602,50 @@ public final class SelfTest {
                     .level(m, v),
             monaSeen + " / " + vicSeen);
         return 1;
+    }
+
+    /**
+     * DESIGN.md 10.1: a person seen again gets their profile sent again, since the viewer's client let go of it. Wes
+     * walks into the Videophone's room during the video call, out of it, and back in.
+     */
+    private void walkWes(boolean in) {
+        int z = phoneZ + VIDEOPHONE_DZ;
+        if (in) wes.setPosition(X0 - 1.5, Y, z - 2.5);
+        else wes.setPosition(X0 + 10.5, Y, z + 0.5);
+    }
+
+    private int checkProfileSeen() {
+        walkWes(true);
+        return TICKS_PER_SECOND + 5;
+    }
+
+    private int checkProfileGone() {
+        UUID m = mona.getUniqueID(), w = wes.getUniqueID();
+        check(
+            "someone walking into the Videophone's room shows up on the other side, profile and all",
+            tileOf(becom.video.plan(), m, w) != null && becom.video.profilesSent(w, m) == 1,
+            "seen " + (tileOf(becom.video.plan(), m, w) != null) + ", profiles " + becom.video.profilesSent(w, m));
+        walkWes(false);
+        return TICKS_PER_SECOND + 5;
+    }
+
+    private boolean wesWentOut;
+
+    private int checkProfileAgain() {
+        wesWentOut = tileOf(becom.video.plan(), mona.getUniqueID(), wes.getUniqueID()) == null;
+        walkWes(true);
+        return TICKS_PER_SECOND + 5;
+    }
+
+    private int checkProfileResent() {
+        UUID m = mona.getUniqueID(), w = wes.getUniqueID();
+        check(
+            "...and walking out and back in, their profile goes again, since the other side let go of it",
+            wesWentOut && tileOf(becom.video.plan(), m, w) != null && becom.video.profilesSent(w, m) == 2,
+            "out " + wesWentOut + ", profiles " + becom.video.profilesSent(w, m));
+        walkWes(false);
+        // Out of the room again before the rear camera's checks, which need a call of two.
+        return TICKS_PER_SECOND + 5;
     }
 
     private static VideoPlan.Tile tileOf(VideoPlan plan, UUID viewer, UUID source) {

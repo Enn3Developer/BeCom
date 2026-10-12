@@ -88,6 +88,9 @@ public final class VideoService {
         int posesDelivered;
     }
 
+    // How many times each person's profile went to each viewer, for the self-test.
+    private final Map<Pair, Integer> profilesSent = new HashMap<>();
+
     private record Pair(UUID source, UUID viewer) {}
 
     public VideoService(CallService calls, Tunables tunables) {
@@ -185,6 +188,10 @@ public final class VideoService {
     /** Sends {@code viewer} their state if it changed, and the profiles of anyone new they see. */
     private void sync(UUID viewer) {
         Viewer known = viewers.computeIfAbsent(viewer, v -> new Viewer());
+        // Their client lets go of a profile as soon as its person is out of sight, so one coming back needs it again.
+        Set<UUID> seen = new HashSet<>();
+        for (VideoPlan.Tile tile : plan.tilesOf(viewer)) seen.add(tile.source());
+        known.profiles.retainAll(seen);
         List<VideoStatePacket.Tile> tiles = new ArrayList<>();
         for (VideoPlan.Tile tile : plan.tilesOf(viewer)) {
             tiles.add(
@@ -222,6 +229,7 @@ public final class VideoService {
     }
 
     private void sendProfile(UUID viewer, UUID source) {
+        profilesSent.merge(new Pair(source, viewer), 1, Integer::sum);
         EntityPlayer player = calls.playerOrPresent(source);
         String name = calls.nameOf(source, "");
         String textures = "";
@@ -347,6 +355,7 @@ public final class VideoService {
         viewers.clear();
         sources.clear();
         links.clear();
+        profilesSent.clear();
         rear.clear();
         videoReports.clear();
         plan = VideoPlan.EMPTY;
@@ -356,6 +365,11 @@ public final class VideoService {
     public int posesDelivered(UUID source, UUID viewer) {
         Link link = links.get(new Pair(source, viewer));
         return link == null ? 0 : link.posesDelivered;
+    }
+
+    /** How many times {@code source}'s profile has gone to {@code viewer}; for the self-test. */
+    public int profilesSent(UUID source, UUID viewer) {
+        return profilesSent.getOrDefault(new Pair(source, viewer), 0);
     }
 
     /** How many of {@code source}'s rear pictures have gone to {@code viewer}; for the self-test. */
