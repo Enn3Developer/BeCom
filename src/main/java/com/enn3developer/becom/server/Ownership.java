@@ -4,6 +4,9 @@ import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraftforge.common.util.FakePlayer;
+
+import com.enn3developer.becom.logic.OwnerRule;
 
 import gregtech.common.misc.spaceprojects.SpaceProjectManager;
 
@@ -27,10 +30,13 @@ public final class Ownership {
         return leaderA.equals(leaderB);
     }
 
-    /** Whether {@code player} may act as the owner of something owned by {@code owner}. No owner means anyone. */
+    /**
+     * Whether {@code player} may act as the owner of something owned by {@code owner} (OwnerRule): the owner, their
+     * team or an operator. Nothing with no owner is open to everyone.
+     */
     public static boolean mayManage(EntityPlayer player, UUID owner) {
-        if (owner == null) return true;
-        if (sameTeam(player.getUniqueID(), owner)) return true;
-        return player instanceof EntityPlayerMP mp && mp.canCommandSenderUseCommand(OP_LEVEL, "becom");
+        boolean operator = player instanceof EntityPlayerMP mp && !(player instanceof FakePlayer)
+            && mp.canCommandSenderUseCommand(OP_LEVEL, "becom");
+        return OwnerRule.mayManage(player.getUniqueID(), owner, operator, Ownership::sameTeam);
     }
 }

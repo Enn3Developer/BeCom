@@ -47,12 +47,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** a head can have up to 15 links, so "wrench on a linked head" alone can't say which link to cut.
 - **To match the design:** nothing, unless the owner wants a different gesture.
 
-### X5: Operators may always unlink
+### X5: Operators may always unlink, and alone manage what has no owner
 
 - **Where:** 0.1, DESIGN.md 12.2, D37
 - **Design says:** only the owner of either end, or their team, can unlink.
-- **Built:** also server operators (permission level 2), so a griefed or orphaned network can be repaired.
-- **Why:** admins have no other way to undo a link in 0.1.
+- **Built:** also server operators (permission level 2), so a griefed or orphaned network can be repaired. A machine
+  with no owner (placed by automation, which GT records no owner for) can be unlinked only by an operator, or through
+  the owner of the other end.
+- **Why:** admins have no other way to undo a link in 0.1. The first version let anyone manage what had no owner,
+  which the 0.1 design review pointed out opened those links, and ownerless phones' settings, to everyone.
 - **To match the design:** remove the operator check in `Ownership.mayManage`.
 
 ### X6: A Telephone's owner is whoever placed it
@@ -60,7 +63,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 12.1
 - **Design says:** a phone's owner is its first user.
 - **Built:** for the Telephone block, placing it counts as first use: the placer owns it and names it in contacts. A
-  Telephone whose number was lost (copied by a world editor, say) gets a fresh number with no owner.
+  Telephone placed by a machine, or whose number was lost (copied by a world editor, say) and renewed, has no owner
+  until the first player uses it, who then owns it. Machines' fake players never own one.
 - **Why:** a block has a placer; waiting for the first pickup would leave a fresh phone ownerless and nameless.
 - **To match the design:** register the owner on the first pickup in `CallService.takeHandset` instead.
 

@@ -13,6 +13,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.FakePlayer;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
 import com.enn3developer.becom.BeCom;
@@ -93,8 +94,10 @@ public class BlockTelephone extends BlockContainer {
         if (world.isRemote) return;
         BeComServer becom = BeComServer.get();
         if (becom == null || !(world.getTileEntity(x, y, z) instanceof TileTelephone tile)) return;
-        PhoneRecord record = becom.phones
-            .registerTelephone(world, BlockPos.pack(x, y, z), placer instanceof EntityPlayer player ? player : null);
+        PhoneRecord record = becom.phones.registerTelephone(
+            world,
+            BlockPos.pack(x, y, z),
+            placer instanceof EntityPlayer player && !(placer instanceof FakePlayer) ? player : null);
         tile.setNumber(record.number());
     }
 
@@ -106,6 +109,7 @@ public class BlockTelephone extends BlockContainer {
         if (becom == null || !(player instanceof EntityPlayerMP mp)
             || !(world.getTileEntity(x, y, z) instanceof TileTelephone tile)) return true;
         ensureNumber(becom, world, tile);
+        claimIfOwnerless(becom, tile, player);
         if (player.isSneaking()) {
             GuiFactories.tileEntity()
                 .open(player, tile);
@@ -138,6 +142,18 @@ public class BlockTelephone extends BlockContainer {
         tile.setNumber(
             becom.phones.registerTelephone(world, pos, null)
                 .number());
+    }
+
+    /**
+     * A phone's owner is its first user (DESIGN.md 12.1): a Telephone that has none, because a machine placed it or its
+     * number had to be renewed, goes to the first real player who uses it. Fake players never claim one.
+     */
+    static void claimIfOwnerless(BeComServer becom, TileTelephone tile, EntityPlayer player) {
+        PhoneRecord record = becom.phones.record(tile.number());
+        if (record == null || record.owner() != null || player instanceof FakePlayer) return;
+        record.setOwner(player.getUniqueID(), player.getCommandSenderName());
+        becom.phones.registry()
+            .changed();
     }
 
     @Override
