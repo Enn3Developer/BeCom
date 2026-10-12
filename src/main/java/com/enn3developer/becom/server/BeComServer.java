@@ -31,6 +31,9 @@ public final class BeComServer {
     private static final Queue<Runnable> LATER = new ConcurrentLinkedQueue<>();
 
     public final MinecraftServer server;
+    // The server's own thread: Minecraft fires every lifecycle event of a server on it, so an event on another thread
+    // belongs to another server.
+    private final Thread thread;
     public final Tunables tunables;
     public final HeightCaches heights;
     public final AntennaNetwork antennas;
@@ -42,6 +45,7 @@ public final class BeComServer {
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
+        this.thread = Thread.currentThread();
         this.tunables = tunables;
         this.heights = new HeightCaches();
         this.antennas = new AntennaNetwork(tunables, new AntennaNetwork.Dimensions() {
@@ -74,7 +78,13 @@ public final class BeComServer {
         return instance;
     }
 
-    /** Makes BeCom's services for a server about to start, before its worlds load. */
+    /** This thread's server, or null when the current one belongs to another thread. */
+    private static BeComServer mine() {
+        BeComServer current = instance;
+        return current != null && current.thread == Thread.currentThread() ? current : null;
+    }
+
+    /** Makes BeCom's services for a server about to start, before its worlds load, on its server thread. */
     public static synchronized BeComServer create(MinecraftServer server) {
         instance = new BeComServer(server, BeComConfig.get());
         return instance;
@@ -86,12 +96,13 @@ public final class BeComServer {
      * server early if it was saved by a newer BeCom (DESIGN.md 14.2).
      */
     public static void start() {
-        if (instance == null) return;
-        for (WorldServer world : DimensionManager.getWorlds()) instance.network.worldLoaded(world);
-        instance.phones.attach(GlobalSavedData.get(DimensionManager.getWorld(0)));
+        BeComServer becom = mine();
+        if (becom == null) return;
+        for (WorldServer world : DimensionManager.getWorlds()) becom.network.worldLoaded(world);
+        becom.phones.attach(GlobalSavedData.get(DimensionManager.getWorld(0)));
         GtnhVoiceApi.groupManager()
-            .registerGroup(instance.calls.group());
-        instance.radio.start();
+            .registerGroup(becom.calls.group());
+        becom.radio.start();
     }
 
     /**
@@ -99,28 +110,29 @@ public final class BeComServer {
      * until {@link #stopped}, so the height cache follows the chunks the final world save writes.
      */
     public static synchronized void stop() {
+        BeComServer becom = mine();
+        if (becom == null) return;
         LATER.clear();
-        stopping = instance;
-        if (instance != null) {
-            instance.calls.stop();
-            instance.radio.stop();
-        }
+        stopping = becom;
+        becom.calls.stop();
+        becom.radio.stop();
     }
 
     /**
      * The worlds are saved and unloaded: the height cache's last regions go to disk, and BeCom forgets the server. In
-     * single-player the next world can start while the last one's stopped handlers still run, so only the server
-     * that was stopping is forgotten, never a newer one.
-     *
-     * @return false when a newer server has already started, so its state must be left alone
+     * single-player the next world can start while the last one's stopped handlers still run, and a world refused at
+     * start gets no stopping event, so only this thread's server is forgotten, never a newer one.
+     * {@code whenForgotten} runs under the same lock once it is, so the next server's start comes after it: for
+     * state shared between servers.
      */
-    public static synchronized boolean stopped() {
-        BeComServer old = stopping != null ? stopping : instance;
-        stopping = null;
-        if (old != null) old.heights.saveAll();
-        if (instance != old) return false;
+    public static synchronized void stopped(Runnable whenForgotten) {
+        BeComServer old = stopping != null && stopping.thread == Thread.currentThread() ? stopping : mine();
+        if (old == stopping) stopping = null;
+        if (old == null) return;
+        old.heights.saveAll();
+        if (instance != old) return;
         instance = null;
-        return true;
+        whenForgotten.run();
     }
 
     /** Runs {@code task} on the server thread at the start of the next tick; dropped if no server is running. */
