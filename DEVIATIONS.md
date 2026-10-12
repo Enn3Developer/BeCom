@@ -381,15 +381,20 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
       answer it;
     - otherwise opens the screen of the first phone they carry: held, then inventory, then bauble slots. A phone being
       moved with the mouse still counts as carried.
-  - When two carried phones ring for a player, the notice and the key name the latest to ring. A notice hidden while
-    they're in a call shows again when the call ends.
+  - A ringing phone's notice shows while its player is free to answer it, for the latest of their phones to ring,
+    which is the one the key answers. While they're in a call or hold a handset, where the key hangs up instead, the
+    notice goes and the phone rings on out loud; the notice comes back when they're free. A ringing phone that changes
+    hands takes its notice to whoever has it.
   - Someone holding a Telephone's handset can't dial or answer on a phone they carry, and is told to put the handset
     down first.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
   A ringing or dialling phone is busy with the call already. Hanging up comes before answering because a call has to
-  end before another can be answered. A carried phone's call made while holding a handset would end when the cord
-  pulls the handset back.
-- **To match the design:** none of these contradicts it; they fill in what it leaves open.
+  end before another can be answered, there being no call waiting in v1, and a notice that said the key answers would
+  be wrong while it hangs up. A carried phone's call made while holding a handset would end when the cord pulls the
+  handset back.
+- **To match the design:** D34 has incoming calls show a notice; here it waits while its player is in another call or
+  holds a handset. Show it then too, with key hints saying the key hangs up. The rest fills in what the design leaves
+  open.
 
 ### X27: The ME Phone's power, linking and range check
 

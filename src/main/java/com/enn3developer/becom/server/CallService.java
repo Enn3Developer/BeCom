@@ -81,10 +81,12 @@ public final class CallService implements CallBook.Listener {
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
     // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
     private final Map<Integer, Long> ringingCarried = new HashMap<>();
-    // Each ringing carried phone's notice and who was shown it: it goes from their screen however the phone left them.
-    // A client shows one notice, the latest; when it goes, another phone still ringing for them shows again.
+    // Each ringing carried phone's notice and whose phone it is: it goes from their screen however the phone left them.
+    // A client shows one notice: the latest ringing for its player, while they're free to answer it.
     private final Map<Integer, Notice> notices = new HashMap<>();
     private long noticesShown;
+    // The phone whose notice each player's screen shows now.
+    private final Map<UUID, Integer> shownNotices = new HashMap<>();
     // Working Videophones, where they stand, and the tick each last reported in (DESIGN.md 10.2).
     private final Map<Integer, Videophone> videophones = new HashMap<>();
     // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
@@ -211,6 +213,7 @@ public final class CallService implements CallBook.Listener {
         handsetOf.put(id, phone);
         names.put(id, player.getCommandSenderName());
         telephone.setOffHook(true);
+        showNotice(id);
         if (ringingHere) {
             book.answer(id, phone, now());
             return Pickup.ANSWERED;
@@ -227,6 +230,7 @@ public final class CallService implements CallBook.Listener {
         if (telephone != null) telephone.setOffHook(false);
         // Leaving a call clicks as they leave it; with no call, the click is here.
         if (!book.hangUp(player)) tone(player, TonePacket.Tone.HANG_UP);
+        showNotice(player);
         // After the call ends, so its history still has the name.
         names.remove(player);
     }
@@ -241,6 +245,7 @@ public final class CallService implements CallBook.Listener {
         if (holder != null) {
             // Leaving the call clicked already.
             if (!inCall) tone(holder, TonePacket.Tone.HANG_UP);
+            showNotice(holder);
             // After the call ends, so its history still has the name.
             names.remove(holder);
         }
@@ -432,12 +437,13 @@ public final class CallService implements CallBook.Listener {
     /** A ringing carried phone's notice: whose screen shows it, what it says, and in which order it came. */
     private record Notice(int phone, UUID holder, RingPacket packet, long order) {}
 
-    /** The latest notice shown to {@code holder} that is still up, or null. */
+    /** The latest notice of a phone ringing for {@code holder} that they still carry, or null. */
     private Notice latestNotice(UUID holder) {
         Notice latest = null;
         for (Notice notice : notices.values()) {
             if (notice.holder()
-                .equals(holder) && (latest == null || notice.order() > latest.order())) latest = notice;
+                .equals(holder) && holder.equals(carried.holderOf(notice.phone()))
+                && (latest == null || notice.order() > latest.order())) latest = notice;
         }
         return latest;
     }
@@ -558,13 +564,24 @@ public final class CallService implements CallBook.Listener {
     private void stopRinging(int number) {
         ringingCarried.remove(number);
         Notice gone = notices.remove(number);
-        if (gone == null) return;
-        // Another phone still ringing for them, and not in a call they'd have to leave to answer it, shows again.
-        Notice next = latestNotice(gone.holder());
-        if (next != null && book.callOf(gone.holder()) != null) next = null;
-        if (noticeLog != null) noticeLog.put(gone.holder(), next != null);
-        EntityPlayerMP mp = player(gone.holder());
-        if (mp != null) BeComPackets.send(next != null ? next.packet() : RingPacket.stop(), mp);
+        // Another phone still ringing for them shows instead.
+        if (gone != null) showNotice(gone.holder());
+    }
+
+    /**
+     * Puts on {@code holder}'s screen the notice they should see: the latest of their phones ringing, unless they're in
+     * a call or hold a handset, where the Phone key hangs up instead of answering (DESIGN.md 11.1). The phone rings on.
+     */
+    private void showNotice(UUID holder) {
+        boolean busy = book.callOf(holder) != null || handsetOf.containsKey(holder);
+        Notice wanted = busy ? null : latestNotice(holder);
+        Integer shown = shownNotices.get(holder);
+        if (wanted == null ? shown == null : shown != null && shown == wanted.phone()) return;
+        if (wanted == null) shownNotices.remove(holder);
+        else shownNotices.put(holder, wanted.phone());
+        if (noticeLog != null) noticeLog.put(holder, wanted != null);
+        EntityPlayerMP mp = player(holder);
+        if (mp != null) BeComPackets.send(wanted != null ? wanted.packet() : RingPacket.stop(), mp);
     }
 
     // endregion
@@ -793,9 +810,7 @@ public final class CallService implements CallBook.Listener {
                 : phones.name(ringer.phone());
             RingPacket packet = RingPacket.ringing(name, ringer.phone());
             notices.put(leg.phone(), new Notice(leg.phone(), holder, packet, ++noticesShown));
-            if (noticeLog != null) noticeLog.put(holder, true);
-            EntityPlayerMP mp = player(holder);
-            if (mp != null) BeComPackets.send(packet, mp);
+            showNotice(holder);
         }
     }
 
@@ -813,6 +828,7 @@ public final class CallService implements CallBook.Listener {
             GtnhVoiceApi.groupManager()
                 .join(player, group);
             tone(player, TonePacket.Tone.NONE);
+            showNotice(player);
         }
         completeQuests(call);
         // Levels now, not at the next whole second: until a direction has a level it gets no route, and "hello?" is
@@ -903,12 +919,10 @@ public final class CallService implements CallBook.Listener {
         tone(player, tone);
         if (reason == CallBook.EndReason.NO_ANSWER) tell(player, "becom.call.no_answer");
         if (reason == CallBook.EndReason.DROPPED) tell(player, "becom.call.dropped");
-        // A phone of theirs that kept ringing through the call, its notice hidden, shows it again.
-        Notice waiting = book.callOf(player) == null ? latestNotice(player) : null;
-        if (waiting != null && noticeLog != null) noticeLog.put(player, true);
+        // A phone of theirs that kept ringing through the call shows its notice again.
+        showNotice(player);
         EntityPlayerMP mp = player(player);
         if (mp == null) return;
-        if (waiting != null) BeComPackets.send(waiting.packet(), mp);
         for (UUID other : others) {
             if (!other.equals(player)) BeComPackets.send(new LevelPacket(other, CallGroup.NAME, SignalLevel.NONE), mp);
         }
@@ -963,6 +977,7 @@ public final class CallService implements CallBook.Listener {
         for (UUID player : joined) {
             GtnhVoiceApi.groupManager()
                 .join(player, group);
+            showNotice(player);
         }
         if (call.state() == Call.State.CONNECTED) BeComQuests.complete(QuestTask.FIRST_CALL, new ArrayList<>(joined));
         // Newcomers hear and are heard at the levels the speakerphone already has.
@@ -1003,6 +1018,21 @@ public final class CallService implements CallBook.Listener {
             }
         }
         for (int number : new ArrayList<>(ringingCarried.keySet())) ringCarried(number);
+        // A ringing phone that changed hands takes its notice along, and whoever got busy or free some other way,
+        // dialling out say, sees the right notice by the next tick.
+        if (!notices.isEmpty() || !shownNotices.isEmpty()) {
+            Set<UUID> holders = new HashSet<>(shownNotices.keySet());
+            for (Map.Entry<Integer, Notice> entry : notices.entrySet()) {
+                Notice notice = entry.getValue();
+                UUID carrier = carried.holderOf(notice.phone());
+                if (carrier != null && !carrier.equals(notice.holder())) {
+                    notice = new Notice(notice.phone(), carrier, notice.packet(), notice.order());
+                    entry.setValue(notice);
+                }
+                holders.add(notice.holder());
+            }
+            for (UUID holder : holders) showNotice(holder);
+        }
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
             reachable.values()
@@ -1088,6 +1118,7 @@ public final class CallService implements CallBook.Listener {
         names.clear();
         ringingCarried.clear();
         notices.clear();
+        shownNotices.clear();
         reachable.clear();
         toneStops.clear();
         videophones.clear();

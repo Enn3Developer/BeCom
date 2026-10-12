@@ -260,6 +260,9 @@ public final class SelfTest {
         steps.add(this::checkBaublePhone);
         steps.add(this::checkTwoRinging);
         steps.add(this::checkContactsAgain);
+        steps.add(this::dialWhileRinging);
+        steps.add(this::checkDialWhileRinging);
+        steps.add(this::checkNoticeMoved);
         steps.add(this::checkHandsetFirst);
         steps.add(this::checkNoCord);
         steps.add(this::startRain);
@@ -2115,13 +2118,18 @@ public final class SelfTest {
 
     private FakePlayer sid;
     private int sidNumber = -1;
+    private FakePlayer rex;
+    private int rexFirst = -1;
+    private int rexOther = -1;
+    private FakePlayer tia;
+    private int tiaNumber = -1;
 
     /**
      * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest, and the Phone key answers
      * that one; pressed again it hangs up, and the other's notice shows again, as it does when the latest stops.
      */
     private int checkTwoRinging() {
-        FakePlayer rex = phonePlayer("BeComRex", 5, X0 - 19.5, phoneZ + 0.5);
+        rex = phonePlayer("BeComRex", 5, X0 - 19.5, phoneZ + 0.5);
         ItemStack second = new ItemStack(BeComItems.mobilePhone);
         ElectricItem.manager
             .charge(second, BeComItems.mobilePhone.getMaxCharge(second), Integer.MAX_VALUE, true, false);
@@ -2129,6 +2137,8 @@ public final class SelfTest {
         becom.carried.refreshForSelfTest(rex);
         int first = ItemCarriedPhone.number(rex.inventory.mainInventory[0]);
         int other = ItemCarriedPhone.number(second);
+        rexFirst = first;
+        rexOther = other;
         sid = phonePlayer("BeComSid", 6, X0 - 19.5, phoneZ + 2.5);
         sidNumber = ItemCarriedPhone.number(sid.inventory.mainInventory[0]);
         UUID r = rex.getUniqueID();
@@ -2155,8 +2165,8 @@ public final class SelfTest {
             becom.calls.noticeForSelfTest(r),
             "");
         becom.calls.hangUp(olga);
-        FakePlayer tia = phonePlayer("BeComTia", 7, X0 - 19.5, phoneZ + 3.5);
-        int tiaNumber = ItemCarriedPhone.number(tia.inventory.mainInventory[0]);
+        tia = phonePlayer("BeComTia", 7, X0 - 19.5, phoneZ + 3.5);
+        tiaNumber = ItemCarriedPhone.number(tia.inventory.mainInventory[0]);
         becom.calls.dialCarried(tia, tiaNumber, first);
         becom.calls.dialCarried(sid, sidNumber, other);
         becom.calls.hangUp(sid);
@@ -2190,6 +2200,47 @@ public final class SelfTest {
         return 1;
     }
 
+    /** Rex dials out from one phone while the other rings: in a call, he sees no notice he couldn't answer. */
+    private int dialWhileRinging() {
+        becom.calls.dialCarried(tia, tiaNumber, rexFirst);
+        becom.calls.dialCarried(rex, rexOther, sidNumber);
+        return 1;
+    }
+
+    private int checkDialWhileRinging() {
+        UUID r = rex.getUniqueID();
+        boolean hidden = !becom.calls.noticeForSelfTest(r);
+        becom.calls.answerCarried(sid, sidNumber);
+        becom.calls.hangUp(rex);
+        check(
+            "a player who dials out while their other phone rings sees no notice during the call, and again after it",
+            hidden && becom.calls.isRinging(rexFirst) && becom.calls.noticeForSelfTest(r),
+            "hidden " + hidden + ", shown after " + becom.calls.noticeForSelfTest(r));
+        // The ringing phone changes hands: Rex puts it down and Pete picks it up, Pete's look coming first.
+        FakePlayer pete = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000d3"), "BeComPete"));
+        pete.inventory.mainInventory[1] = rex.inventory.mainInventory[0];
+        rex.inventory.mainInventory[0] = null;
+        becom.carried.refreshForSelfTest(pete);
+        becom.carried.refreshForSelfTest(rex);
+        return 1;
+    }
+
+    private int checkNoticeMoved() {
+        FakePlayer pete = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000d3"), "BeComPete"));
+        boolean rexSees = becom.calls.noticeForSelfTest(rex.getUniqueID());
+        boolean peteSees = becom.calls.noticeForSelfTest(pete.getUniqueID());
+        check(
+            "a ringing phone that changes hands takes its notice to whoever has it now",
+            !rexSees && peteSees && becom.calls.isRinging(rexFirst),
+            "Rex sees it " + rexSees + ", Pete sees it " + peteSees);
+        becom.calls.hangUp(tia);
+        pete.inventory.mainInventory[1] = null;
+        becom.carried.refreshForSelfTest(pete);
+        return 1;
+    }
+
     private FakePlayer uma;
     private TileTelephone umaTelephone;
 
@@ -2218,12 +2269,18 @@ public final class SelfTest {
         becom.calls.dialCarried(sid, sidNumber, umaNumber);
         taken = becom.calls.takeHandset(uma, umaTelephone);
         boolean answered = becom.calls.answerCarried(uma, umaNumber);
+        boolean hidden = !becom.calls.noticeForSelfTest(u);
         check(
             "...nor answer it when it rang before they picked the handset up",
             taken == CallService.Pickup.TAKEN && !answered && becom.calls.isRinging(umaNumber),
             taken + ", answered " + answered + ", ringing " + becom.calls.isRinging(umaNumber));
         becom.calls.phoneKey(uma, false);
         boolean down = becom.calls.handsetOf(u) == null && becom.calls.isRinging(umaNumber);
+        boolean shownAgain = becom.calls.noticeForSelfTest(u);
+        check(
+            "...its notice goes while they hold the handset, and comes back as the key puts it down (DESIGN.md 11.2)",
+            hidden && shownAgain,
+            "hidden " + hidden + ", shown again " + shownAgain);
         becom.calls.phoneKey(uma, false);
         Call call = becom.calls.book()
             .callOf(u);
