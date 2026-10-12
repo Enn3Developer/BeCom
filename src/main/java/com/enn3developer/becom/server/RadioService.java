@@ -823,6 +823,18 @@ public final class RadioService {
         publish(null);
     }
 
+    /**
+     * Stands in for {@code speaker} pressing push-to-talk: the publish a press makes, which works out their radio and
+     * any other whose transmitter changed, and leaves the rest as they were.
+     */
+    public void pressForSelfTest(UUID speaker) {
+        routing.keyed(speaker, channelOf(speaker), System.nanoTime());
+        Set<UUID> pressed = new HashSet<>();
+        keys(System.nanoTime(), pressed);
+        pressed.add(speaker);
+        publish(pressed);
+    }
+
     // endregion
 
     // region World

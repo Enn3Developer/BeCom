@@ -257,6 +257,7 @@ public final class SelfTest {
         steps.add(this::checkDirect);
         steps.add(this::checkTransceiver);
         steps.add(this::checkLoudspeaker);
+        steps.add(this::checkPress);
         steps.add(this::keyThroughAntennas);
         steps.add(this::checkThroughAntennas);
         steps.add(this::keyLocked);
@@ -1650,6 +1651,44 @@ public final class SelfTest {
             heard != null && heard.transceiver()
                 .loudspeaker(),
             "");
+        return 1;
+    }
+
+    /**
+     * DESIGN.md 6.4: a press of push-to-talk works out the pressing radio, and any keyed radio whose transmitter
+     * changed
+     * since, and leaves the others' links as they were until the next whole second.
+     */
+    private int checkPress() {
+        becom.radio.keyForSelfTest(alice.getUniqueID());
+        becom.radio.keyForSelfTest(bob.getUniqueID());
+        becom.radio.publishForSelfTest();
+        RadioSnapshot.Link aliceToBob = linkTo(
+            becom.radio.published()
+                .transmission(alice.getUniqueID()),
+            bob.getUniqueID());
+        // Bob walks 10 blocks towards Alice, and his walkie is looked at again; then Carol, on another channel,
+        // presses.
+        bob.setPosition(X0 + 20.5, Y, DIRECT_Z + 0.5);
+        becom.radio.refreshForSelfTest(bob);
+        becom.radio.pressForSelfTest(carol.getUniqueID());
+        RadioSnapshot published = becom.radio.published();
+        RadioSnapshot.Link bobToAlice = linkTo(published.transmission(bob.getUniqueID()), alice.getUniqueID());
+        String moved = "a press works out again a keyed radio that moved: Bob, 20 blocks from Alice now";
+        if (bobToAlice == null) fail(moved, "no link");
+        else near(
+            moved,
+            BeComConfig.get()
+                .walkieBudget() - RadioModel.distanceLoss(20),
+            bobToAlice.snr());
+        RadioSnapshot.Link aliceToBobNow = linkTo(published.transmission(alice.getUniqueID()), bob.getUniqueID());
+        check(
+            "...and leaves Alice's, whose radio didn't change, as it was until the next whole second",
+            aliceToBob != null && aliceToBobNow == aliceToBob,
+            aliceToBob + " then " + aliceToBobNow);
+        bob.setPosition(X0 + 30.5, Y, DIRECT_Z + 0.5);
+        becom.radio.refreshForSelfTest(bob);
+        becom.radio.publishForSelfTest();
         return 1;
     }
 
