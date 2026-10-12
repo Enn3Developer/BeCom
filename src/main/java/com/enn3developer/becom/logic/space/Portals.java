@@ -1,5 +1,7 @@
 package com.enn3developer.becom.logic.space;
 
+import java.util.Set;
+
 /**
  * What the Portal Relay knows about portals (DESIGN.md 9.4, 9.5, D22, D46): the kinds it works at, how it tells the
  * Twilight Forest's and Personal Space's portals and worlds by class name, so neither mod is a dependency, and which
@@ -21,6 +23,10 @@ public final class Portals {
     public static final String PERSONAL_PORTAL = "me.eigenraven.personalspace.block.PortalBlock";
     public static final String TWILIGHT_WORLD = "twilightforest.world.WorldProviderTwilightForest";
     public static final String PERSONAL_WORLD = "me.eigenraven.personalspace.world.PersonalWorldProvider";
+    /** Personal Space's portal tile, which keeps the dimension its portal leads to. */
+    public static final String PERSONAL_PORTAL_TILE = "me.eigenraven.personalspace.block.PortalTileEntity";
+    /** Where a Personal Space portal leads when its tile can't be read, as from a Personal Space BeCom doesn't know. */
+    public static final int UNKNOWN_DIMENSION = Integer.MIN_VALUE;
 
     public static final int OVERWORLD = 0;
     public static final int NETHER = -1;
@@ -74,8 +80,9 @@ public final class Portals {
      * Whether relays at these two spots stand on the two sides of one portal (DESIGN.md 9.4). Through a Nether or a
      * Twilight Forest portal, one relay's spot, scaled by the two worlds' movement factors the way Minecraft scales a
      * portal trip, lands within that portal's search of the other's, one way or the other. Each relay stands within
-     * {@code reach} of some block of its portal, which may be the far end of a wide one. The End, and each personal
-     * dimension, is reached at one place, so any of their portals will do.
+     * {@code reach} of some block of its portal, which may be the far end of a wide one. The End and each personal
+     * dimension are reached at one place, so where their portals stand doesn't matter; {@link #leadsInto} checks that
+     * a Personal Space portal leads into the far relay's dimension.
      *
      * @param factorA the movement factor of relay A's world: 8 for the Nether, 1 for most
      */
@@ -88,6 +95,17 @@ public final class Portals {
         boolean toB = near(xA * ratio, zA * ratio, xB, zB, search + slack * (1 + ratio));
         boolean toA = near(xB / ratio, zB / ratio, xA, zA, search + slack * (1 + 1 / ratio));
         return toB || toA;
+    }
+
+    /**
+     * Whether a pair of this kind goes through a portal into {@code farDimension} (DESIGN.md 9.4): each personal
+     * dimension has portals of its own, so the Overworld relay must stand by one that leads into the far relay's.
+     * {@code personalTargets} are the dimensions the Personal Space portals by the Overworld relay lead to. Every other
+     * kind leads where {@link #pairKind} says.
+     */
+    public static boolean leadsInto(Kind kind, Set<Integer> personalTargets, int farDimension) {
+        if (kind != Kind.PERSONAL_SPACE) return true;
+        return personalTargets.contains(farDimension) || personalTargets.contains(UNKNOWN_DIMENSION);
     }
 
     private static boolean near(double x, double z, int toX, int toZ, double within) {

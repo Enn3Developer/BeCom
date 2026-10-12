@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
 /** DESIGN.md 9.4 and 9.5: the portals a relay works at, and the dimensions a pair joins. */
@@ -82,6 +84,19 @@ class PortalsTest {
     void theEndAndAPersonalDimensionAreReachedAtOnePlace() {
         assertTrue(Portals.sameLink(Portals.Kind.END, 1, 5000, -3000, 1, 0, 0, 4));
         assertTrue(Portals.sameLink(Portals.Kind.PERSONAL_SPACE, 1, 5000, -3000, 1, 0, 0, 4));
+    }
+
+    @Test
+    void aPersonalSpacePairGoesThroughAPortalIntoTheFarRelaysDimension() {
+        // Each personal dimension has portals of its own: the Overworld relay's must lead into the far relay's.
+        assertTrue(Portals.leadsInto(Portals.Kind.PERSONAL_SPACE, Set.of(180, 181), 180));
+        assertFalse(Portals.leadsInto(Portals.Kind.PERSONAL_SPACE, Set.of(181), 180));
+        assertFalse(Portals.leadsInto(Portals.Kind.PERSONAL_SPACE, Set.of(), 180));
+        // A portal tile BeCom can't read leads anywhere, as before it read them.
+        assertTrue(Portals.leadsInto(Portals.Kind.PERSONAL_SPACE, Set.of(Portals.UNKNOWN_DIMENSION), 180));
+        // The other kinds don't look at Personal Space portals.
+        assertTrue(Portals.leadsInto(Portals.Kind.NETHER, Set.of(), -1));
+        assertTrue(Portals.leadsInto(Portals.Kind.END, Set.of(181), 1));
     }
 
     @Test

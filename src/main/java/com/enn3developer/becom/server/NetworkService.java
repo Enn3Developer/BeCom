@@ -66,6 +66,8 @@ public final class NetworkService {
     private final Set<NodeRef> receivers = new HashSet<>();
     // Each working Portal Relay, and the kinds of portal in its reach (DESIGN.md 9.4).
     private final Map<NodeRef, Set<Portals.Kind>> relays = new HashMap<>();
+    // Where the Personal Space portals by each relay lead, at its last look, working or not.
+    private final Map<NodeRef, Set<Integer>> personalTargets = new HashMap<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
     private final Map<Integer, Long> wiresSent = new HashMap<>();
     private long tick;
@@ -132,6 +134,8 @@ public final class NetworkService {
         receivers.removeIf(ref -> ref.dimension() == dimension);
         relays.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
+        personalTargets.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
         wiresSent.remove(dimension);
         version++;
     }
@@ -184,6 +188,7 @@ public final class NetworkService {
         meBridges.remove(ref);
         dishes.remove(ref);
         relays.remove(ref);
+        personalTargets.remove(ref);
         version++;
     }
 
@@ -264,6 +269,18 @@ public final class NetworkService {
         heartbeat(world, pos);
         Set<Portals.Kind> before = relays.put(new NodeRef(world.provider.dimensionId, pos), portals);
         if (!portals.equals(before)) version++;
+    }
+
+    /** A Portal Relay looked again at where the Personal Space portals in its reach lead. */
+    public void personalTargets(World world, long pos, Set<Integer> targets) {
+        NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
+        Set<Integer> before = targets.isEmpty() ? personalTargets.remove(ref) : personalTargets.put(ref, targets);
+        if (!targets.equals(before == null ? Set.of() : before)) version++;
+    }
+
+    /** Where the Personal Space portals by the relay at {@code ref} lead, at its last look. */
+    public Set<Integer> personalTargetsOf(NodeRef ref) {
+        return personalTargets.getOrDefault(ref, Set.of());
     }
 
     /** A Portal Relay lost its power, or every portal in its reach. */
@@ -479,6 +496,9 @@ public final class NetworkService {
             Set<Portals.Kind> atB = relays.get(b);
             if (portal == null || !entry.getValue()
                 .contains(portal) || atB == null || !atB.contains(portal)) continue;
+            NodeRef overworld = a.dimension() == Portals.OVERWORLD ? a : b;
+            NodeRef far = overworld == a ? b : a;
+            if (!Portals.leadsInto(portal, personalTargetsOf(overworld), far.dimension())) continue;
             pairs.add(new Gateways.RelayPair(a.dimension(), a.pos(), b.dimension(), b.pos()));
         }
         return pairs;

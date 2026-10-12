@@ -3,6 +3,7 @@ package com.enn3developer.becom.selftest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
@@ -806,6 +807,17 @@ final class SpaceSelfTest {
             personalPlaced && relayPersonal.look()
                 .contains(Portals.Kind.PERSONAL_SPACE),
             "placed " + personalPlaced + ", " + relayPersonal.portals());
+        // A player links a Personal Space portal to their dimension; the self-test can't make one, so it sets the
+        // portal's tile the way linking does.
+        boolean linked = personalPlaced && linkPersonalPortal(SX + 62, Y, RELAY_Z, PERSONAL_DIMENSION);
+        relayPersonal.look();
+        t.check(
+            "...and reads where it leads, so it pairs only with a relay in that personal dimension (DESIGN.md 9.4)",
+            linked && relayPersonal.personalTargets()
+                .equals(Set.of(PERSONAL_DIMENSION))
+                && becom.network.personalTargetsOf(relayPersonal.ref())
+                    .equals(Set.of(PERSONAL_DIMENSION)),
+            "linked " + linked + ", leads to " + relayPersonal.personalTargets());
         if (twilight != null) {
             t.check(
                 "relays by Twilight Forest portals on both sides pair into the Twilight Forest, a High hop, "
@@ -1036,6 +1048,29 @@ final class SpaceSelfTest {
             }
         }
         ((BlockPortal) Blocks.portal).func_150000_e(world, x + 1, y + 1, z);
+    }
+
+    // A personal dimension's id as Personal Space numbers them; no world needs to exist for a portal to name it.
+    private static final int PERSONAL_DIMENSION = 180;
+
+    /** Links the Personal Space portal at a spot to {@code dimension}, as its owner linking it would. */
+    private boolean linkPersonalPortal(int x, int y, int z, int dimension) {
+        TileEntity tile = overworld.getTileEntity(x, y, z);
+        if (tile == null || !Portals.PERSONAL_PORTAL_TILE.equals(
+            tile.getClass()
+                .getName()))
+            return false;
+        try {
+            tile.getClass()
+                .getField("active")
+                .setBoolean(tile, true);
+            tile.getClass()
+                .getField("targetDimId")
+                .setInt(tile, dimension);
+            return true;
+        } catch (ReflectiveOperationException e) {
+            return false;
+        }
     }
 
     /** Places the block of class {@code name} from another mod, if it's installed; false when it isn't. */

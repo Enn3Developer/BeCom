@@ -585,8 +585,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Nether), within the 128 blocks Minecraft searches for the far Nether portal, or the 616 Twilight Forest may put its
   far portal off: it looks 200 blocks around, and moves a new portal up to 600 blocks out of a biome the player can't
   enter yet. Each relay may stand by the far end of the widest portal, 21 blocks across for the Nether and 15 for the
-  Twilight Forest. Any End or personal dimension portal will do, since each of those dimensions is reached at one
-  place.
+  Twilight Forest. Any End portal will do, since the End is reached at one place. A personal dimension has portals of
+  its own, so the Overworld relay must stand by one that leads into the far relay's dimension, which BeCom reads from
+  the portal's tile.
 - **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
   ends.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.

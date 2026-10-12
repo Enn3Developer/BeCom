@@ -164,6 +164,12 @@ public final class LinkService {
             tell(player, "becom.link.refused.relay_portal");
             return Outcome.REFUSED;
         }
+        NodeRef overworld = firstRef.dimension() == Portals.OVERWORLD ? firstRef : secondRef;
+        NodeRef far = overworld == firstRef ? secondRef : firstRef;
+        if (!Portals.leadsInto(portal, network.personalTargetsOf(overworld), far.dimension())) {
+            tell(player, "becom.link.refused.relay_portal");
+            return Outcome.REFUSED;
+        }
         if (taken(firstRef, first) || taken(secondRef, second)) {
             tell(player, "becom.link.refused.relay_paired");
             return Outcome.REFUSED;

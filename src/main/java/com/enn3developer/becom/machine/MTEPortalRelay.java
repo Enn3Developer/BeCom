@@ -2,8 +2,10 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -13,11 +15,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.logic.Tunables;
@@ -59,6 +63,8 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     private boolean registered;
     // The kinds of portal in reach at the last look, once a second.
     private Set<Portals.Kind> portals = EnumSet.noneOf(Portals.Kind.class);
+    // Where the Personal Space portals in reach lead, at the last look.
+    private Set<Integer> personalTargets = Set.of();
 
     public MTEPortalRelay(int id, String name, String regionalName) {
         super(id, name, regionalName, TIER, 0, (String) null);
@@ -89,6 +95,11 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     /** The kinds of portal in its reach at the last look. */
     public Set<Portals.Kind> portals() {
         return portals;
+    }
+
+    /** The dimensions the Personal Space portals in its reach lead to, at the last look. */
+    public Set<Integer> personalTargets() {
+        return personalTargets;
     }
 
     public NodeRef ref() {
@@ -132,6 +143,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             .relayPortalDistance();
         int r = (int) Math.floor(reach);
         Set<Portals.Kind> found = EnumSet.noneOf(Portals.Kind.class);
+        Set<Integer> targets = new HashSet<>();
         for (int dx = -r; dx <= r; dx++) {
             for (int dy = -r; dy <= r; dy++) {
                 for (int dz = -r; dz <= r; dz++) {
@@ -142,12 +154,55 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
                     if (y < 0 || y >= world.getHeight() || !world.blockExists(x, y, z)) continue;
                     Portals.Kind kind = kindOf(world.getBlock(x, y, z));
                     if (kind != null) found.add(kind);
+                    if (kind == Portals.Kind.PERSONAL_SPACE) {
+                        Integer target = personalTarget(world.getTileEntity(x, y, z));
+                        if (target != null) targets.add(target);
+                    }
                 }
             }
         }
         // The same set while nothing changed, so the network sees no change.
         if (!found.equals(portals)) portals = found;
+        if (!targets.equals(personalTargets)) {
+            personalTargets = Set.copyOf(targets);
+            BeComServer becom = BeComServer.get();
+            if (becom != null) becom.network.personalTargets(world, ref().pos(), personalTargets);
+        }
         return portals;
+    }
+
+    // Personal Space's portal tile, read by name since Personal Space isn't a dependency (DESIGN.md 9.4).
+    private static Class<?> personalTile;
+    private static Field personalActive;
+    private static Field personalTarget;
+    private static boolean personalUnreadable;
+
+    /**
+     * The dimension a Personal Space portal's tile leads to, or null while it isn't linked. One BeCom can't read leads
+     * anywhere, as every Personal Space portal did before relays read them.
+     */
+    static Integer personalTarget(TileEntity tile) {
+        if (tile == null || !Portals.PERSONAL_PORTAL_TILE.equals(
+            tile.getClass()
+                .getName()))
+            return null;
+        try {
+            if (personalTile != tile.getClass()) {
+                personalActive = tile.getClass()
+                    .getField("active");
+                personalTarget = tile.getClass()
+                    .getField("targetDimId");
+                personalTile = tile.getClass();
+            }
+            return personalActive.getBoolean(tile) ? personalTarget.getInt(tile) : null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            if (!personalUnreadable) {
+                personalUnreadable = true;
+                BeCom.LOG
+                    .warn("Can't read where a Personal Space portal leads, so relays take any as leading anywhere", e);
+            }
+            return Portals.UNKNOWN_DIMENSION;
+        }
     }
 
     /** The kind of portal a block is: vanilla's by their blocks, the others by class name (DESIGN.md 9.4). */
