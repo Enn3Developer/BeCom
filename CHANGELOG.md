@@ -25,3 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/becom calls` and `/becom hangup` for operators, and `/becom selftest` in the development environment.
 - Generated textures in GT's style and a Modernity add-on pack, and synthesized call tones, ringtone and hang-up click,
   the handset's in stereo so they sit at the ear.
+- Milestone 0.2, radio: Antennas T1 to T3 (multiblocks on a frame-box mast over a casing base), the Transceiver, the
+  Walkie-Talkie and the Signal Analyzer, with GregTech recipes.
+- A radio simulation from DESIGN.md 6: link budgets, knife-edge diffraction over terrain from a height cache filled
+  as chunks load and save, cover below the surface, and a higher noise floor without a sky. Antennas survey the land
+  around them within a per-tick budget and link to each other on VHF for radio and UHF for calls.
+- Sixteen radio channels through GTNH Voice's `becom:radio.1` to `becom:radio.16` groups, with a push-to-talk key
+  (Caps Lock), direct links between radios, paths through antennas, the capture effect, players around a receiving
+  walkie hearing it, Transceiver loudspeakers, radio audio filtered by level, and a squelch tail.
+- Antennas bridge wired lines within 16 blocks and carry calls between them over UHF, so a Telephone can call across
+  linked antennas.
+- Antenna screen with its links, bridges and a team lock; Transceiver and walkie screens; sneak + scroll to change a
+  walkie's channel; walkie battery drain, and a flat walkie switching off.
+- The Signal Analyzer's overlay and `/becom signal`: SNR, level, the serving antenna and every loss.
+- Seven radio quests, completed by BeCom's new Radio contact task among others.
+- Line re-checks now share the survey budget per tick with antenna surveys.
