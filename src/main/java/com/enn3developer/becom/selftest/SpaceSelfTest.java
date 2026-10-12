@@ -455,6 +455,16 @@ final class SpaceSelfTest {
             pad.mMaxProgresstime > 0 && pad.mProgresstime - launchHeldAt <= SelfTest.TICKS_PER_SECOND
                 && becom.space.count(0) == 4,
             "progress " + launchHeldAt + " then " + pad.mProgresstime);
+        t.check(
+            "...and while it holds, the pad goes dark and its screen says something covers it",
+            pad.held() && !pad.getBaseMetaTileEntity()
+                .isActive()
+                && pad.screenView()
+                    .held(),
+            "held " + pad.held()
+                + ", lit "
+                + pad.getBaseMetaTileEntity()
+                    .isActive());
         overworld.setBlockToAir(SX + 2, Y + 3, SZ + 1);
         // Cleared, the launch goes on for what's left of its 30 s.
         return BeComConfig.get()

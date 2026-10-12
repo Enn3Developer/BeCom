@@ -186,6 +186,7 @@ class PacketRoundTripTest {
     void launchPadView() {
         LaunchPadView view = new LaunchPadView(
             3,
+            true,
             List.of(new LaunchPadView.Orbit("Overworld", 37, 1_234_567L), new LaunchPadView.Orbit("Moon", 5, 0)));
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);

@@ -161,6 +161,7 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     @Override
     public @NotNull CheckRecipeResult checkProcessing() {
         if (!openSky()) return SimpleCheckRecipeResult.ofFailure("becom_no_sky");
+        skyOpen = true;
         Tunables t = BeComConfig.get();
         ItemStack rocket = null;
         for (ItemStack stack : getStoredInputs()) {
@@ -201,6 +202,18 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         if (getBaseMetaTileEntity().getTimer() % TICKS_PER_SECOND == 0) skyOpen = openSky();
         if (!skyOpen) return false;
         return super.onRunningTick(stack);
+    }
+
+    /** Whether a launch is under way but on hold, with something covering the pad. */
+    public boolean held() {
+        return mMaxProgresstime > 0 && !skyOpen;
+    }
+
+    @Override
+    public void onPostTick(IGregTechTileEntity tile, long tick) {
+        super.onPostTick(tile, tick);
+        // GT lights a machine with work under way, and its screen calls it running: one on hold is neither.
+        if (tile.isServerSide() && held()) tile.setActive(false);
     }
 
     // A launch draws its power whatever the maintenance; its problems cost time instead (DESIGN.md 9.1).
@@ -246,10 +259,11 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     }
 
     /**
-     * What its screen shows: the rockets waiting, and each dimension's satellites, its name, how many and the ticks
-     * until the next comes down. Built on the server only: the view sync never asks for it on a client.
+     * What its screen shows: the rockets waiting, a launch on hold, and each dimension's satellites, its name, how
+     * many and the ticks until the next comes down. Built on the server only: the view sync never asks for it on a
+     * client.
      */
-    private LaunchPadView view() {
+    public LaunchPadView screenView() {
         BeComServer becom = BeComServer.get();
         if (becom == null) return LaunchPadView.EMPTY;
         List<LaunchPadView.Orbit> orbits = new ArrayList<>();
@@ -261,7 +275,13 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
                     entry.getValue(),
                     becom.space.untilNextDown(entry.getKey())));
         }
-        return new LaunchPadView(rocketsWaiting(), orbits);
+        return new LaunchPadView(rocketsWaiting(), held(), orbits);
+    }
+
+    /** The rockets waiting, and a launch on hold, as the client shows them. */
+    private static String showQueue(LaunchPadView view) {
+        String queue = StatCollector.translateToLocalFormatted("becom.launch_pad.queue", view.rocketsWaiting());
+        return view.held() ? queue + "\n" + StatCollector.translateToLocal("becom.launch_pad.held") : queue;
     }
 
     /** The orbits as the client shows them, each dimension on a line, in the client's language. */
@@ -288,21 +308,16 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
             @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
                 ViewSync<LaunchPadView> view = new ViewSync<>(
-                    MTELaunchPad.this::view,
+                    MTELaunchPad.this::screenView,
                     LaunchPadView::write,
                     LaunchPadView::read,
                     LaunchPadView.EMPTY);
                 sync.syncValue("becomPad", view);
-                return super.createTerminalTextWidget(sync, parent)
-                    .child(
-                        IKey.dynamic(
-                            () -> StatCollector.translateToLocalFormatted(
-                                "becom.launch_pad.queue",
-                                view.view()
-                                    .rocketsWaiting()))
-                            .asWidget()
-                            .marginBottom(2)
-                            .fullWidth())
+                return super.createTerminalTextWidget(sync, parent).child(
+                    IKey.dynamic(() -> showQueue(view.view()))
+                        .asWidget()
+                        .marginBottom(2)
+                        .fullWidth())
                     .child(
                         IKey.dynamic(() -> showOrbits(view.view()))
                             .asWidget()

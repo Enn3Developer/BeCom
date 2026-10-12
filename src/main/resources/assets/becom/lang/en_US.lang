@@ -74,6 +74,7 @@ becom.dish.problems=%s maintenance problems: -%s dB
 becom.dish.unlinked=Not linked: wrench it to an antenna, a Pylon Head or a Line Terminal
 becom.dish.linked=Linked to %s
 becom.launch_pad.queue=Rockets waiting to launch: %s
+becom.launch_pad.held=On hold: something covers the pad. The launch goes on once the sky is clear.
 becom.launch_pad.orbit=Satellites in orbit:
 becom.launch_pad.orbit_none=No satellites in orbit yet.
 becom.launch_pad.dimension=%s: %s, the next comes down in %s days
