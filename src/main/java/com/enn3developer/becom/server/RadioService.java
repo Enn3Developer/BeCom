@@ -584,9 +584,9 @@ public final class RadioService {
     }
 
     /**
-     * The squelch tail (DESIGN.md 13.6, 15.2) at every device that was holding a transmission that just ended, for the
-     * players who were hearing it there: around a walkie within the walkie speaker's range (D21), around a loudspeaker
-     * within its own.
+     * The squelch tail (DESIGN.md 13.6, 15.2) for the players who were hearing a transmission that just ended: at
+     * each device that held it, to the players within the walkie speaker's range of a walkie (D21) or a loudspeaker's
+     * of a Transceiver who were hearing that speaker, through it or another device.
      */
     private void squelch(UUID speaker) {
         RadioSnapshot.Transmission tx = published.transmission(speaker);
@@ -596,6 +596,8 @@ public final class RadioService {
             EntityPlayerMP holder = player(link.holder());
             if (holder == null) continue;
             playAround(
+                speaker,
+                tx.channel(),
                 holder.dimension,
                 holder.posX,
                 holder.posY + EYE_HEIGHT,
@@ -605,15 +607,16 @@ public final class RadioService {
         for (RadioSnapshot.Link link : tx.transceivers()) {
             RadioSnapshot.Transceiver t = link.transceiver();
             if (!t.loudspeaker() || !routing.deviceHeldBy(link.device(), tx.channel(), speaker)) continue;
-            playAround(t.dimension(), t.x(), t.y(), t.z(), tunables.loudspeakerRange());
+            playAround(speaker, tx.channel(), t.dimension(), t.x(), t.y(), t.z(), tunables.loudspeakerRange());
         }
     }
 
-    private void playAround(int dimension, double x, double y, double z, double range) {
+    private void playAround(UUID speaker, int channel, int dimension, double x, double y, double z, double range) {
         S29PacketSoundEffect sound = new S29PacketSoundEffect(SQUELCH, x, y, z, SQUELCH_VOLUME, 1.0f);
         for (EntityPlayerMP player : players()) {
             if (player.dimension != dimension || player.getDistanceSq(x, y, z) > range * range) continue;
             if (player instanceof FakePlayer || player.playerNetServerHandler == null) continue;
+            if (!routing.listenerHeldBy(player.getUniqueID(), channel, speaker)) continue;
             player.playerNetServerHandler.sendPacket(sound);
         }
     }

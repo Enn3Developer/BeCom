@@ -470,4 +470,27 @@ class RadioGroupTest {
         fixture.route(one, alice, RADIO);
         assertNotNull(shared.pollContact());
     }
+
+    @Test
+    void tellsWhichSpeakerEachListenerHears() {
+        // Dan's walkie holds Cat, but Dan and Bob hear Alice: Cat's squelch tail is for neither of them.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 20))
+                .link(alice, walkie(dan, 7))
+                .transmitter(cat, 1)
+                .link(cat, walkie(dan, 20))
+                .build());
+        fixture.route(one, alice, RADIO);
+        now += 10 * MS;
+        fixture.route(one, cat, RADIO);
+        assertTrue(shared.deviceHeldBy(dan, 1, cat));
+        assertTrue(!shared.listenerHeldBy(dan, 1, cat) && !shared.listenerHeldBy(bob, 1, cat));
+        assertTrue(shared.listenerHeldBy(dan, 1, alice) && shared.listenerHeldBy(bob, 1, alice));
+    }
 }

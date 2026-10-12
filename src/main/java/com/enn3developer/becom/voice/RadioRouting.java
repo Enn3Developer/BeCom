@@ -96,6 +96,13 @@ public final class RadioRouting {
         contacts.add(contact);
     }
 
+    /**
+     * Server thread: whether {@code player} was last hearing {@code speaker} on {@code channel}, through any device.
+     */
+    public boolean listenerHeldBy(UUID player, int channel, UUID speaker) {
+        return speaker.equals(listeners.holder(player, channel));
+    }
+
     /** Server thread: whether a receiving device's capture is held by {@code speaker} on {@code channel}. */
     public boolean deviceHeldBy(Object device, int channel, UUID speaker) {
         return speaker.equals(capture.holder(device, channel));
