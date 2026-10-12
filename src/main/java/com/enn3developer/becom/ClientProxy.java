@@ -16,6 +16,7 @@ import com.enn3developer.becom.client.ClientLevels;
 import com.enn3developer.becom.client.ClientPhone;
 import com.enn3developer.becom.client.ClientRadio;
 import com.enn3developer.becom.client.ClientWires;
+import com.enn3developer.becom.client.CoverageMapDrawer;
 import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
 import com.enn3developer.becom.client.SignalBars;
@@ -139,6 +140,17 @@ public class ClientProxy extends CommonProxy {
     @Override
     public IDrawable signalBars(Supplier<SignalLevel> level) {
         return (context, x, y, width, height, theme) -> SignalBars.draw(x, y + height, level.get());
+    }
+
+    @Override
+    public IDrawable coverageMap(Supplier<byte[]> map, Supplier<SignalLevel> cap) {
+        return (context, x, y, width, height, theme) -> CoverageMapDrawer
+            .draw(x, y, width, height, map.get(), cap.get());
+    }
+
+    @Override
+    public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
+        return (context, x, y, width, height, theme) -> CoverageMapDrawer.legend(x, y, width, height, cap.get());
     }
 
     @Override

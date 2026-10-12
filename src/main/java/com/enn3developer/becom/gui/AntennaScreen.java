@@ -21,6 +21,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -37,11 +38,13 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
  * The antenna screen (DESIGN.md 11.4, 12.2): its state, its links to other antennas on each band, its bridges onto
- * wired lines, and the team lock its owner can set. The coverage map joins it in 0.3, as DESIGN.md 16 plans.
+ * wired lines, the team lock its owner can set, and its coverage map (DESIGN.md 6.6) on either band.
  */
 public final class AntennaScreen {
 
-    private static final int WIDTH = 220;
+    private static final int LIST_WIDTH = 220;
+    private static final int MAP_SIZE = 96;
+    private static final int WIDTH = LIST_WIDTH + MAP_SIZE + 6;
     private static final int HEIGHT = 170;
     private static final int ROWS = 7;
     private static final int ROW_HEIGHT = 11;
@@ -61,9 +64,13 @@ public final class AntennaScreen {
         Supplier<AntennaView> view = viewSync::view;
 
         ModularPanel panel = new ModularPanel("becom_antenna").size(WIDTH, HEIGHT);
-        Flow column = Flow.column()
+        Flow sides = Flow.row()
             .sizeRel(1f)
             .padding(6, 6, 6, 6)
+            .childPadding(6);
+        Flow column = Flow.column()
+            .width(LIST_WIDTH - 12)
+            .heightRel(1f)
             .childPadding(2);
         column.child(
             IKey.dynamic(
@@ -89,7 +96,7 @@ public final class AntennaScreen {
                 .widthRel(1f)
                 .height(10));
         column.child(
-            new ToggleButton().size(WIDTH - 12, 14)
+            new ToggleButton().size(LIST_WIDTH - 12, 14)
                 .overlay(IKey.lang("becom.antenna.lock"))
                 .value(
                     new BoolValue.Dynamic(
@@ -115,8 +122,50 @@ public final class AntennaScreen {
                     .height(ROW_HEIGHT));
         }
         column.child(pager(page, size));
-        panel.child(column);
+        sides.child(column);
+        sides.child(coverage(view));
+        panel.child(sides);
         return panel;
+    }
+
+    /** The coverage map, VHF for radio channels or UHF for calls, with its key; the band is the viewer's choice. */
+    private static Flow coverage(Supplier<AntennaView> view) {
+        boolean[] calls = { false };
+        Supplier<SignalLevel> cap = () -> calls[0] ? SignalLevel.MAX : SignalLevel.MEDIUM;
+        Flow map = Flow.column()
+            .width(MAP_SIZE)
+            .heightRel(1f)
+            .childPadding(2);
+        map.child(
+            IKey.dynamic(
+                () -> StatCollector.translateToLocalFormatted(
+                    "becom.antenna.coverage",
+                    view.get()
+                        .mapRange()))
+                .asWidget()
+                .width(MAP_SIZE)
+                .height(10));
+        map.child(
+            BeCom.proxy.coverageMap(
+                () -> calls[0] ? view.get()
+                    .uhfMap()
+                    : view.get()
+                        .vhfMap(),
+                cap)
+                .asWidget()
+                .size(MAP_SIZE, MAP_SIZE));
+        map.child(
+            BeCom.proxy.coverageLegend(cap)
+                .asWidget()
+                .size(MAP_SIZE, 4));
+        map.child(
+            new ToggleButton().size(MAP_SIZE, 14)
+                .overlay(
+                    IKey.dynamic(
+                        () -> StatCollector.translateToLocal(
+                            calls[0] ? "becom.antenna.coverage_calls" : "becom.antenna.coverage_radio")))
+                .value(new BoolValue.Dynamic(() -> calls[0], on -> calls[0] = on)));
+        return map;
     }
 
     private static String status(AntennaView view) {
@@ -249,6 +298,8 @@ public final class AntennaScreen {
         }
         UUID owner = antenna.owner();
         String ownerName = owner == null ? "-" : UsernameCache.getLastKnownUsername(owner);
+        byte[] vhfMap = known == null ? null : becom.antennas.coverage(known, becom.antennas.vhf());
+        byte[] uhfMap = known == null ? null : becom.antennas.coverage(known, becom.antennas.uhf());
         return new AntennaView(
             antenna.tier(),
             antenna.mMachine,
@@ -260,6 +311,9 @@ public final class AntennaScreen {
             Ownership.mayManage(player, owner),
             ownerName == null ? "-" : ownerName,
             links,
-            bridges);
+            bridges,
+            (int) Math.round(t.rangeToHold(t.antennaBudget(antenna.tier()))),
+            vhfMap == null ? new byte[0] : vhfMap,
+            uhfMap == null ? new byte[0] : uhfMap);
     }
 }

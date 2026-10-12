@@ -51,6 +51,7 @@ import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
+import com.enn3developer.becom.logic.radio.Coverage;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.MTEAntenna;
@@ -233,6 +234,7 @@ public final class SelfTest {
         steps.add(this::checkPhoneDrain);
         steps.add(this::startRain);
         steps.add(this::checkRain);
+        steps.add(this::checkCoverage);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -1894,6 +1896,20 @@ public final class SelfTest {
             becom.carried.serviceOf(monaNumber)
                 .best());
         clearWeather();
+        return 1;
+    }
+
+    /** DESIGN.md 6.6, 11.4: the antenna screen's coverage map, on both bands, strongest at the antenna. */
+    private int checkCoverage() {
+        AntennaView view = AntennaScreen.view(phoneAntenna, owner);
+        int cells = Coverage.CELLS * Coverage.CELLS;
+        int middle = (Coverage.CELLS / 2) * Coverage.CELLS + Coverage.CELLS / 2;
+        boolean strongest = view.uhfMap().length == cells;
+        for (int i = 0; strongest && i < cells; i++) strongest = view.uhfMap()[i] <= view.uhfMap()[middle];
+        check(
+            "the antenna screen draws a coverage map on each band, strongest at the antenna",
+            view.vhfMap().length == cells && strongest,
+            view.vhfMap().length + " and " + view.uhfMap().length + " cells");
         return 1;
     }
 

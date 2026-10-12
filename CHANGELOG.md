@@ -51,3 +51,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, which now lists everyone in the
   call with their signal bars, and has power and silent mode for carried phones.
 - Rain and thunderstorms weaken calls between antennas and phones' service where they fall: 3 dB in rain, 6 in a storm.
+- The antenna screen draws a coverage map: the level a player standing on the ground would get around the antenna,
+  for radio channels or for calls.

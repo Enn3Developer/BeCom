@@ -6,12 +6,15 @@ import java.util.List;
 
 import net.minecraft.network.PacketBuffer;
 
+import com.enn3developer.becom.logic.radio.Coverage;
+
 /**
  * What the antenna screen shows (DESIGN.md 11.4): its state, its links to other antennas on each band, its bridges
- * onto wired lines, and the team lock. Built on the server, formatted on the client.
+ * onto wired lines, the team lock, and its coverage map on each band. Built on the server, formatted on the client.
  */
 public record AntennaView(int tier, boolean formed, boolean working, int mast, int range, boolean surveyed,
-    boolean locked, boolean mayManage, String owner, List<Link> links, List<Bridge> bridges) {
+    boolean locked, boolean mayManage, String owner, List<Link> links, List<Bridge> bridges, int mapRange,
+    byte[] vhfMap, byte[] uhfMap) {
 
     // A dimension rarely has more antennas in reach than this; the screen lists the strongest.
     public static final int MAX_LINKS = 64;
@@ -28,7 +31,12 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         false,
         "",
         Collections.emptyList(),
-        Collections.emptyList());
+        Collections.emptyList(),
+        0,
+        new byte[0],
+        new byte[0]);
+
+    private static final int MAP_SIZE = Coverage.CELLS * Coverage.CELLS;
 
     /** A link to another antenna: where, how far, and its SNR on each band (negative infinity below Low). */
     public record Link(int x, int y, int z, int distance, double vhf, double uhf) {}
@@ -66,6 +74,21 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             buf.writeInt(bridge.z);
             buf.writeInt(bridge.distance);
         }
+        buf.writeShort(mapRange);
+        writeMap(buf, vhfMap);
+        writeMap(buf, uhfMap);
+    }
+
+    private static void writeMap(PacketBuffer buf, byte[] map) {
+        int length = map == null ? 0 : Math.min(map.length, MAP_SIZE);
+        buf.writeShort(length);
+        if (length > 0) buf.writeBytes(map, 0, length);
+    }
+
+    private static byte[] readMap(PacketBuffer buf) {
+        byte[] map = new byte[Math.max(0, Math.min(buf.readShort(), MAP_SIZE))];
+        buf.readBytes(map);
+        return map;
     }
 
     public static AntennaView read(PacketBuffer buf) {
@@ -95,7 +118,24 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         for (int i = 0; i < count; i++) {
             bridges.add(new Bridge(buf.readInt(), buf.readShort(), buf.readInt(), buf.readInt()));
         }
-        return new AntennaView(tier, formed, working, mast, range, surveyed, locked, mayManage, owner, links, bridges);
+        int mapRange = buf.readShort();
+        byte[] vhfMap = readMap(buf);
+        byte[] uhfMap = readMap(buf);
+        return new AntennaView(
+            tier,
+            formed,
+            working,
+            mast,
+            range,
+            surveyed,
+            locked,
+            mayManage,
+            owner,
+            links,
+            bridges,
+            mapRange,
+            vhfMap,
+            uhfMap);
     }
 
     private static final int MAX_NAME = 64;

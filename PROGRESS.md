@@ -523,7 +523,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Phone screen for carried phones: power, silent mode, everyone in a call (11.2) | done |
 | Group calls of up to 8 (8.2, 10.1)                                           | done   |
 | Weather loss on UHF links (6.1, D26)                                         | done   |
-| Coverage map in the antenna screen (6.6, 11.4)                               | todo   |
+| Coverage map in the antenna screen (6.6, 11.4)                               | done   |
 | Battery drain for phones (D36, 11.3)                                         | done   |
 | Signal bars while holding a phone or in a call (11.2)                        | done   |
 | ME Phone (8.3, D13)                                                          | todo   |

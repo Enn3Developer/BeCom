@@ -76,6 +76,7 @@ public final class AntennaNetwork {
         private boolean queued;
         private boolean wasWorking;
         private boolean rains;
+        private CoverageMaps coverage;
 
         Antenna(NodeRef ref) {
             this.ref = ref;
@@ -110,6 +111,9 @@ public final class AntennaNetwork {
             return survey;
         }
     }
+
+    /** An antenna's coverage maps on both bands, for the survey they were worked out from. */
+    private record CoverageMaps(Survey survey, byte[] vhf, byte[] uhf) {}
 
     /** The working antennas of one dimension, numbered, with the VHF links radio channels travel (DESIGN.md 7). */
     public record Mesh(List<Antenna> antennas, AntennaMesh vhf) {
@@ -530,6 +534,27 @@ public final class AntennaNetwork {
         if (antenna.locked && !sameTeam.test(user, antenna.owner)) return null;
         if (antenna.end.distanceTo(device) > tunables.rangeToHold(antenna.budget)) return null;
         return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, weather, noSky);
+    }
+
+    /**
+     * An antenna's coverage map on {@code band} (DESIGN.md 6.6, {@link Coverage}): worked out once per survey, so a
+     * screen asking every second costs nothing more. Null before its first survey.
+     */
+    public byte[] coverage(Antenna antenna, Band band) {
+        if (antenna.survey == null || antenna.end == null) return null;
+        CoverageMaps maps = antenna.coverage;
+        if (maps == null || maps.survey() != antenna.survey) {
+            int dimension = antenna.ref.dimension();
+            Terrain terrain = dimensions.terrain(dimension);
+            boolean noSky = dimensions.noSky(dimension);
+            double range = tunables.rangeToHold(antenna.budget);
+            maps = new CoverageMaps(
+                antenna.survey,
+                Coverage.of(hops, antenna.survey, antenna.end, antenna.budget, terrain, vhf, noSky, range),
+                Coverage.of(hops, antenna.survey, antenna.end, antenna.budget, terrain, uhf, noSky, range));
+            antenna.coverage = maps;
+        }
+        return band.equals(uhf) ? maps.uhf() : maps.vhf();
     }
 
     public Band vhf() {

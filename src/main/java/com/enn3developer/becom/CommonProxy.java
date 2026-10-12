@@ -139,4 +139,14 @@ public class CommonProxy {
     public IDrawable signalBars(Supplier<SignalLevel> level) {
         return IDrawable.EMPTY;
     }
+
+    /** An antenna's coverage map for its screen, drawn only on the client (DESIGN.md 6.6). */
+    public IDrawable coverageMap(Supplier<byte[]> map, Supplier<SignalLevel> cap) {
+        return IDrawable.EMPTY;
+    }
+
+    /** The coverage map's colour key, Low up to {@code cap}. */
+    public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
+        return IDrawable.EMPTY;
+    }
 }
