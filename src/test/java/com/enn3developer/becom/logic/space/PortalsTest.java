@@ -61,10 +61,21 @@ class PortalsTest {
     }
 
     @Test
-    void aTwilightForestPairStandsAtTheSameSpot() {
-        // The Twilight Forest keeps the Overworld's scale.
+    void aWideNetherPortalsFarEndCounts() {
+        // A portal 21 blocks wide: the search finds one end of it, and the relay stands by the other.
+        assertTrue(Portals.sameLink(Portals.Kind.NETHER, 1, 800, 0, 8, 250, 0, 4));
+        assertFalse(Portals.sameLink(Portals.Kind.NETHER, 1, 800, 0, 8, 260, 0, 4));
+    }
+
+    @Test
+    void aTwilightForestPairStandsWhereTwilightForestPutsTheFarPortal() {
+        // The Twilight Forest keeps the Overworld's scale, but looks 200 blocks around for the far portal.
         assertTrue(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 600, 500, 4));
-        assertFalse(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 700, 500, 4));
+        assertTrue(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 700, 500, 4));
+        // A new portal moved out of a biome the player can't enter yet: up to 600 blocks, then built within 16.
+        assertTrue(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 0, 0, 1, 616, 0, 4));
+        assertTrue(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 616, -616, 1, 0, 0, 4));
+        assertFalse(Portals.sameLink(Portals.Kind.TWILIGHT_FOREST, 1, 500, 500, 1, 1200, 500, 4));
     }
 
     @Test

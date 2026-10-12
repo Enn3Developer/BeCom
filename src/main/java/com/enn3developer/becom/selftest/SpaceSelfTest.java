@@ -311,9 +311,13 @@ final class SpaceSelfTest {
         return 5;
     }
 
+    // Where the Twilight Forest's relay stands from the Overworld one: further than Minecraft looks for a Nether
+    // portal, as far as Twilight Forest may put a new portal it moved out of a biome the player can't enter yet.
+    private static final int TWILIGHT_DX = 300;
+
     /**
      * DESIGN.md 9.4, D46: relays at the Twilight Forest's and the End's portals, on both sides. The Twilight Forest
-     * keeps the Overworld's coordinates, so its relay stands where the Overworld one's portal leads.
+     * keeps the Overworld's coordinates, so its relay stands near where the Overworld one's portal leads.
      */
     private int buildTwilightAndEnd() {
         twilight = null;
@@ -331,13 +335,14 @@ final class SpaceSelfTest {
         if (twilight == null) {
             t.fail("the Twilight Forest loads in the dev server", "no dimension has its world provider");
         } else {
-            for (int cx = (SX + 8) >> 4; cx <= (SX + 72) >> 4; cx++) {
+            int x = SX + 40 + TWILIGHT_DX;
+            for (int cx = (x - 32) >> 4; cx <= (x + 32) >> 4; cx++) {
                 for (int cz = (RELAY_Z - 32) >> 4; cz <= (RELAY_Z + 32) >> 4; cz++) t.keepLoaded(twilight, cx, cz);
             }
-            clear(twilight, SX + 32, Y - 2, RELAY_Z - 4, SX + 48, Y + 4, RELAY_Z + 4);
-            forgetNodes(twilight, SX + 32, RELAY_Z - 4, SX + 48, RELAY_Z + 4);
-            relayTwilightFar = relay(twilight, SX + 40, Y, RELAY_Z);
-            placeByClass(twilight, SX + 42, Y, RELAY_Z, Portals.TWILIGHT_PORTAL);
+            clear(twilight, x - 8, Y - 2, RELAY_Z - 4, x + 8, Y + 4, RELAY_Z + 4);
+            forgetNodes(twilight, x - 8, RELAY_Z - 4, x + 8, RELAY_Z + 4);
+            relayTwilightFar = relay(twilight, x, Y, RELAY_Z);
+            placeByClass(twilight, x + 2, Y, RELAY_Z, Portals.TWILIGHT_PORTAL);
         }
         // The End: any of its portals will do, so an Overworld relay by an End portal far from a stronghold counts.
         relayEnd = relay(overworld, SX + 100, Y, RELAY_Z);
@@ -803,7 +808,9 @@ final class SpaceSelfTest {
             "placed " + personalPlaced + ", " + relayPersonal.portals());
         if (twilight != null) {
             t.check(
-                "relays at a Twilight Forest portal on both sides pair into the Twilight Forest, a High hop",
+                "relays by Twilight Forest portals on both sides pair into the Twilight Forest, a High hop, "
+                    + TWILIGHT_DX
+                    + " blocks apart as Twilight Forest may put a new portal",
                 pairedTwilight == LinkService.Outcome.LINKED && relayTwilightFar.isWorking()
                     && Math.abs(
                         becom.network.graph()

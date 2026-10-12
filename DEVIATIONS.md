@@ -582,8 +582,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Nether portal for the Nether, an End portal for the End, and the Twilight Forest's or Personal Space's own portal
   for theirs. "Opposite sides of a portal" is checked when they pair: through the Nether or the Twilight Forest, one
   relay must stand where its portal leads, its coordinates scaled the way Minecraft scales a trip (an eighth in the
-  Nether) and within the 128 blocks Minecraft searches for the far portal. Any End or personal dimension portal will
-  do, since each of those dimensions is reached at one place.
+  Nether), within the 128 blocks Minecraft searches for the far Nether portal, or the 616 Twilight Forest may put its
+  far portal off: it looks 200 blocks around, and moves a new portal up to 600 blocks out of a biome the player can't
+  enter yet. Each relay may stand by the far end of the widest portal, 21 blocks across for the Nether and 15 for the
+  Twilight Forest. Any End or personal dimension portal will do, since each of those dimensions is reached at one
+  place.
 - **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
   ends.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.
