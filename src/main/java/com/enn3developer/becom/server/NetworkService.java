@@ -343,7 +343,7 @@ public final class NetworkService {
             NodeRef bridge = entry.getKey();
             if (!working(bridge.dimension(), bridge.pos())) continue;
             builder.twoWay(
-                new CallGraph.MeVertex(entry.getValue()),
+                new CallGraph.MeVertex(entry.getValue(), bridge.dimension()),
                 new CallGraph.NodeVertex(bridge.dimension(), bridge.pos()),
                 Double.POSITIVE_INFINITY,
                 CallGraph.HopKind.ME_BRIDGE);

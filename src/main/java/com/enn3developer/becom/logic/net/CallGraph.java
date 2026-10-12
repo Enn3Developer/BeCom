@@ -24,8 +24,11 @@ public final class CallGraph {
     /** A phone, by number. */
     public record PhoneVertex(int number) {}
 
-    /** An ME network, by the id the server gives its grid while it lives (DESIGN.md 8.3). */
-    public record MeVertex(int grid) {}
+    /**
+     * An ME network in one dimension, by the id the server gives its grid while it lives (DESIGN.md 8.3). An ME
+     * network spanning dimensions is a vertex in each, so calls cross dimensions only the ways DESIGN.md 9.5 lists.
+     */
+    public record MeVertex(int grid, int dimension) {}
 
     /**
      * The satellites over a dimension (DESIGN.md 9.1): devices under its open sky and its Satellite Dishes join them,

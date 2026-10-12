@@ -522,3 +522,18 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   and every carried phone switched on. Kept a second, a screen costs one list a second. Carried phones' service
   changes about once a second anyway, as they move.
 - **To match the design:** keep the list until the network or a carried phone's service changes, instead of a second.
+
+### X33: An ME network joins calls only within each dimension
+
+- **Where:** 0.4, DESIGN.md 8.3, 9.5, D45
+- **Design says:** ME phones on the same ME network call each other at Max, and an ME Bridge joins its ME network to a
+  BeCom network (8.3). Calls cross dimensions only through satellites and Portal Relays, and every other dimension has
+  no link in v1 (9.5).
+- **Built:** an ME network is one call vertex per dimension it spans. ME Phones on one network call each other at
+  Max within a dimension, and an ME Bridge joins the part of its ME network in its own dimension. An ME network that
+  spans dimensions through a Quantum Network Bridge carries no calls between them.
+- **Why:** 0.3 made each ME network one vertex whatever its dimension, which joined any two dimensions it spans, the
+  ones 9.5 keeps unreachable included (0.3's known issue from the code review, m6). For such a network, 8.3 and 9.5
+  can't both hold. 9.5 is the more specific rule, and AE2 itself checks an ME Phone's range in its holder's dimension.
+- **To match the design:** decide which rule wins. If ME should carry calls between dimensions, make the ME vertex one
+  per network again, and accept that it reaches the Deep Dark and the rest.

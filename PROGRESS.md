@@ -885,7 +885,7 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 | Satellite Dish: structure, links to other dishes and planets, maintenance (9.2, 3.2, D40)       | todo   |
 | Rocket Radio Receiver: a T1 antenna and an uplink in a landed rocket (9.3, D28, 14)             | todo   |
 | Portal Relay: portals, pairing through a portal, a High hop (9.4, D22, D46)                     | todo   |
-| Calls between dimensions, and ME Bridges across dimensions (9.5, 0.3's known issue)             | todo   |
+| Calls between dimensions, and ME Bridges across dimensions (9.5, 0.3's known issue)             | doing  |
 | The 0.4 tunables in the config (17)                                                             | done   |
 | Self-test rows for 0.4 (16.3)                                                                   | todo   |
 

@@ -99,11 +99,15 @@ public final class BeComServer {
         this.radio = new RadioService(server, tunables, antennas, heights);
         this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
         // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
-        // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge.
+        // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2
+        // checks the range in the holder's dimension, so that's the part of the network it joins.
         carried.setAccess(PhoneKind.ME_PHONE, (holder, stack) -> {
             IGrid grid = MeAccess.gridInRange(((ItemMePhone) stack.getItem()).getEncryptionKey(stack), holder);
             if (grid == null) return List.of();
-            return List.of(new CallGraph.Entry(new CallGraph.MeVertex(meGrids.idOf(grid)), Double.POSITIVE_INFINITY));
+            return List.of(
+                new CallGraph.Entry(
+                    new CallGraph.MeVertex(meGrids.idOf(grid), holder.dimension),
+                    Double.POSITIVE_INFINITY));
         });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
         this.video = new VideoService(calls, tunables);
