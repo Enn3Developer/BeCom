@@ -112,6 +112,21 @@ def click():
     return fade(signal / np.max(np.abs(signal)) * 0.7, 0.002)
 
 
+def squelch():
+    """The squelch tail: a short burst of band-limited hiss as a radio's receiver closes after a transmission."""
+    rng = np.random.default_rng(11)
+    x = t(0.2)
+    noise = rng.normal(0, 1, len(x))
+    spectrum = np.fft.rfft(noise)
+    freqs = np.fft.rfftfreq(len(noise), 1 / RATE)
+    # The same band as a radio channel at Medium (DESIGN.md 4.3), so it sounds like the channel it closes.
+    spectrum[(freqs < 300) | (freqs > 3400)] = 0
+    hiss = np.fft.irfft(spectrum, len(noise))
+    envelope = np.minimum(1, x / 0.004) * np.exp(-x / 0.06)
+    signal = hiss * envelope
+    return fade(signal / np.max(np.abs(signal)) * 0.5, 0.004)
+
+
 # Sounds heard "at the ear", with no place in the world: the handset's tones and click, and the owner-only buzz.
 # Minecraft plays them at (0, 0, 0) with no attenuation, and OpenAL pans a mono source toward its position, so these
 # are written in stereo, which OpenAL never pans. Sounds that come from a block, like the ring, stay mono.
@@ -125,6 +140,7 @@ SOUNDS = {
     "phone/ring": ringtone,
     "phone/buzz": buzz,
     "phone/hangup": click,
+    "radio/squelch": squelch,
 }
 
 

@@ -5,5 +5,6 @@
   "tone.unreachable": { "category": "player", "sounds": [ "tone/unreachable" ] },
   "phone.ring": { "category": "block", "sounds": [ "phone/ring" ] },
   "phone.buzz": { "category": "player", "sounds": [ "phone/buzz" ] },
-  "phone.hangup": { "category": "player", "sounds": [ "phone/hangup" ] }
+  "phone.hangup": { "category": "player", "sounds": [ "phone/hangup" ] },
+  "radio.squelch": { "category": "player", "sounds": [ "radio/squelch" ] }
 }

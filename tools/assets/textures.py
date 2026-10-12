@@ -19,6 +19,8 @@ from PIL import Image
 SIZE = 16
 JAR = os.path.join("src", "main", "resources", "assets", "becom", "textures", "blocks")
 PACK = os.path.join("resourcepacks", "modernity", "assets", "becom", "textures", "blocks")
+JAR_ITEMS = os.path.join("src", "main", "resources", "assets", "becom", "textures", "items")
+PACK_ITEMS = os.path.join("resourcepacks", "modernity", "assets", "becom", "textures", "items")
 
 # Roles a pixel can play. Palettes give each a colour; anything without a role is transparent.
 DEFAULT = {
@@ -35,6 +37,10 @@ DEFAULT = {
     "L": (64, 255, 64),  # lamp, lit (glow layers only)
     "k": (8, 8, 8),  # socket hole
     "r": (150, 150, 150),  # socket rim
+    "g": (40, 60, 44),  # display, dark
+    "G": (120, 200, 120),  # display, digits
+    "t": (90, 16, 16),  # TX lamp, off
+    "T": (255, 60, 50),  # TX lamp, lit
 }
 MODERNITY = {
     "o": (34, 33, 30),
@@ -50,6 +56,10 @@ MODERNITY = {
     "L": (40, 220, 240),  # LED, lit
     "k": (14, 13, 12),
     "r": (160, 154, 140),
+    "g": (24, 40, 46),  # display, dark
+    "G": (110, 210, 230),  # display, digits
+    "t": (80, 30, 24),
+    "T": (250, 110, 70),
 }
 LIT = {"L"}
 
@@ -153,11 +163,100 @@ def line_terminal():
     return c
 
 
+def antenna_head(tier):
+    """On a plate like the other heads: a dipole on its mast, waves going out on both sides, a pip per tier."""
+
+    def draw():
+        c = Canvas()
+        c.panel(1, 1, 14, 14)
+        c.lamp(7, 3, 2, 1)
+        c.rect(7, 4, 8, 10, "s")
+        c.rect(4, 5, 11, 5, "h")
+        for x in (3, 12):
+            c.rect(x, 4, x, 8, "h")
+        for x in (5, 10):
+            c.rect(x, 7, x, 9, "s")
+        c.rect(4, 11, 11, 11, "d")
+        for n in range(tier):
+            px = 8 - tier + 2 * n
+            c.rect(px, 12, px, 12, "h")
+        return c
+
+    return draw
+
+
+def transceiver():
+    """A radio set: speaker grille, channel display, tuning knob and an on-air lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    for y in range(4, 12, 2):
+        for x in range(3, 8, 2):
+            c.set(x, y, "k")
+            c.set(x + 1, y + 1, "d")
+    c.rect(9, 3, 12, 6, "o")
+    c.rect(10, 4, 11, 5, "g")
+    c.set(10, 4, "G")
+    c.set(11, 5, "G")
+    c.rect(9, 9, 10, 10, "r")
+    c.set(10, 10, "s")
+    c.lamp(12, 9, 1, 2)
+    c.rect(9, 12, 12, 12, "s")
+    return c
+
+
 OVERLAYS = {
     "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
     "OVERLAY_ROUTER_HEAD": router_head,
     "OVERLAY_LINE_TERMINAL": line_terminal,
+    "OVERLAY_ANTENNA_T1": antenna_head(1),
+    "OVERLAY_ANTENNA_T2": antenna_head(2),
+    "OVERLAY_ANTENNA_T3": antenna_head(3),
+    "OVERLAY_TRANSCEIVER": transceiver,
+}
+
+
+def walkie(transmitting):
+    """A walkie-talkie: antenna, body, grille, a small display, the side push-to-talk button and its TX lamp."""
+    c = Canvas()
+    c.rect(10, 0, 10, 4, "o")
+    c.set(10, 0, "s")
+    c.panel(4, 4, 11, 15)
+    c.rect(3, 7, 3, 9, "m")
+    c.set(3, 9, "d")
+    for y in (7, 9):
+        for x in (6, 8):
+            c.set(x, y, "k")
+            c.set(x + 1, y, "s")
+    c.rect(6, 11, 9, 12, "g")
+    c.set(7, 11, "G")
+    c.set(8, 12, "G")
+    c.rect(8, 5, 9, 5, "T" if transmitting else "t")
+    c.rect(6, 14, 9, 14, "s")
+    return c
+
+
+def signal_analyzer():
+    """A handheld meter: a screen with signal bars, buttons, and a short antenna."""
+    c = Canvas()
+    c.rect(11, 0, 11, 2, "o")
+    c.panel(3, 2, 12, 15)
+    c.rect(5, 4, 10, 9, "g")
+    for i, h in enumerate((1, 2, 3, 4)):
+        x = 5 + i + (i // 2)
+        c.rect(x, 9 - h, x, 8, "G")
+    c.set(10, 5, "G")
+    for x in (5, 8):
+        c.rect(x, 11, x + 1, 12, "r")
+        c.set(x + 1, 12, "s")
+    c.rect(5, 14, 10, 14, "d")
+    return c
+
+
+ITEMS = {
+    "walkie_talkie": lambda: walkie(False),
+    "walkie_talkie_tx": lambda: walkie(True),
+    "signal_analyzer": signal_analyzer,
 }
 
 # Block textures for BeCom's own models: base colour, shade, and highlight per style.
@@ -245,6 +344,9 @@ def generate():
         written.append(save(bakelite(style, True), root, "telephone_handset.png"))
         written.append(save(dial(style), root, "telephone_dial.png"))
         written.append(save(cable(style), root, "phone_cable.png"))
+    for root, palette in ((JAR_ITEMS, DEFAULT), (PACK_ITEMS, MODERNITY)):
+        for name, draw in ITEMS.items():
+            written.append(save(draw().render(palette), root, name + ".png"))
     return written
 
 
@@ -268,6 +370,7 @@ def preview(out_dir, casings):
             rows.append(row)
         rows.append(
             [bakelite(style, False), bakelite(style, True), dial(style), cable(style)]
+            + [draw().render(palette) for draw in ITEMS.values()]
         )
     width = max(len(r) for r in rows) * (SIZE + 2)
     sheet = Image.new("RGBA", (width, len(rows) * (SIZE + 2)), (255, 0, 255, 255))

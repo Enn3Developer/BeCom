@@ -302,10 +302,10 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 
 | Item                                                               | Status |
 |--------------------------------------------------------------------|--------|
-| Antenna T1, T2, T3 head overlays and glows                         | todo   |
-| Transceiver overlay and glow                                       | todo   |
-| Walkie-Talkie icon, with its TX light                              | todo   |
-| Signal Analyzer icon                                               | todo   |
-| Modernity style of all of the above                                | todo   |
-| Sound: walkie squelch tail                                         | todo   |
+| Antenna T1, T2, T3 head overlays and glows                         | done   |
+| Transceiver overlay and glow                                       | done   |
+| Walkie-Talkie icon, with its TX light                              | done   |
+| Signal Analyzer icon                                               | done   |
+| Modernity style of all of the above                                | done   |
+| Sound: walkie squelch tail                                         | done   |
 | English language entries                                           | todo   |
