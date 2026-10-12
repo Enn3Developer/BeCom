@@ -35,6 +35,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.TileTelephone;
+import com.enn3developer.becom.block.WailaTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.data.NetworkSavedData;
@@ -242,7 +243,6 @@ public final class SelfTest {
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) steps.add(() -> powerFrom(side));
         steps.add(this::checkPower);
         steps.add(this::checkStructuresAndLines);
-        steps.add(this::askWaila);
         steps.add(this::checkWaila);
         steps.add(this::checkCall);
         steps.add(this::switchRepeaterOff);
@@ -880,20 +880,14 @@ public final class SelfTest {
             .linked(pos(autoA), pos(autoB));
     }
 
-    private List<String> firstWailaLook = List.of();
-
     /** WAILA asks for a machine's lines on the server thread (DESIGN.md 16.4), so they come with the first look. */
-    private int askWaila() {
-        firstWailaLook = wailaLines(repeaterLine.start);
-        return 2;
-    }
-
     private int checkWaila() {
+        List<String> terminal = wailaLines(repeaterLine.start);
         check(
             "WAILA's first look at a Line Terminal gets its lines",
-            firstWailaLook.contains(StatCollector.translateToLocal("becom.info.online")) && firstWailaLook.contains(
+            terminal.contains(StatCollector.translateToLocal("becom.info.online")) && terminal.contains(
                 StatCollector.translateToLocalFormatted("becom.info.phone", repeaterLine.phoneStart.number())),
-            firstWailaLook.toString());
+            terminal.toString());
         List<String> phone = wailaLines(repeaterLine.phoneStart);
         check(
             "and the Telephone's number",
@@ -948,8 +942,9 @@ public final class SelfTest {
         looker.setPosition(phone.xCoord + 2.5, phone.yCoord, phone.zCoord + 0.5);
         looker.dimension = phone.getWorldObj().provider.dimensionId;
         NBTTagCompound tag = new NBTTagCompound();
-        phone.waila()
-            .write(tag, looker, phone.getWorldObj(), phone.xCoord, phone.yCoord, phone.zCoord);
+        // Through the provider WAILA took by IMC, as WAILA asks it; the IMC row checks WAILA is there.
+        if (cpw.mods.fml.common.Loader.isModLoaded("Waila")) new WailaTelephone()
+            .getNBTData(looker, phone, tag, phone.getWorldObj(), phone.xCoord, phone.yCoord, phone.zCoord);
         List<String> tip = new ArrayList<>();
         InfoLines.read(tag, tip);
         return tip;
@@ -1656,8 +1651,7 @@ public final class SelfTest {
 
     /**
      * DESIGN.md 6.4: a press of push-to-talk works out the pressing radio, and any keyed radio whose transmitter
-     * changed
-     * since, and leaves the others' links as they were until the next whole second.
+     * changed since, and leaves the others' links as they were until the next whole second.
      */
     private int checkPress() {
         becom.radio.keyForSelfTest(alice.getUniqueID());
@@ -1667,8 +1661,7 @@ public final class SelfTest {
             becom.radio.published()
                 .transmission(alice.getUniqueID()),
             bob.getUniqueID());
-        // Bob walks 10 blocks towards Alice, and his walkie is looked at again; then Carol, on another channel,
-        // presses.
+        // Bob walks 10 blocks towards Alice and his walkie is looked at again. Then Carol presses, on another channel.
         bob.setPosition(X0 + 20.5, Y, DIRECT_Z + 0.5);
         becom.radio.refreshForSelfTest(bob);
         becom.radio.pressForSelfTest(carol.getUniqueID());
