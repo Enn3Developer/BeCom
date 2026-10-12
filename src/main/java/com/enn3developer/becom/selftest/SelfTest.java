@@ -2130,6 +2130,15 @@ public final class SelfTest {
             answered == null ? "nothing answered" : "answered " + answered.phone() + ", first " + first);
         becom.calls.hangUp(rex);
         becom.calls.hangUp(sid);
+        // A phone screen asks for its view every tick; its contacts are a path search per phone in reach.
+        int searches = becom.calls.reachableSearchesForSelfTest();
+        for (int i = 0; i < TICKS_PER_SECOND; i++)
+            PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
+        int more = becom.calls.reachableSearchesForSelfTest() - searches;
+        check(
+            "a phone screen open for a second finds its contacts once, not every tick (DESIGN.md 14)",
+            more <= 1,
+            more + " searches");
         return 1;
     }
 

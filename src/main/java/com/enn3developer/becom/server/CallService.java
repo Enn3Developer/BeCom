@@ -270,9 +270,34 @@ public final class CallService implements CallBook.Listener {
             .width(entriesOf(from), entriesOf(to));
     }
 
-    /** The phones {@code phone} can reach at Low or better, other than itself: on lines, and carried ones. */
+    /** A phone's reachable phones, and the tick they were found. */
+    private record Reachable(long tick, List<Integer> phones) {}
+
+    // Each phone's reachable phones, kept a second: an open phone screen asks for its contacts every tick, and each
+    // answer is a path search per phone in reach (DESIGN.md 14: path finding re-runs only when something changes).
+    private final Map<Integer, Reachable> reachable = new HashMap<>();
+    private int reachableSearches;
+
+    /**
+     * The phones {@code phone} can reach at Low or better, other than itself: on lines, and carried ones. Found at most
+     * once a second per phone.
+     */
     public List<Integer> reachableFrom(int phone) {
-        List<Integer> reachable = new ArrayList<>();
+        Reachable known = reachable.get(phone);
+        if (known != null && ticks - known.tick() < TICKS_PER_SECOND) return known.phones();
+        List<Integer> found = List.copyOf(searchReachable(phone));
+        reachable.put(phone, new Reachable(ticks, found));
+        return found;
+    }
+
+    /** How many times reachable phones were searched for; for the self-test. */
+    public int reachableSearchesForSelfTest() {
+        return reachableSearches;
+    }
+
+    private List<Integer> searchReachable(int phone) {
+        reachableSearches++;
+        List<Integer> found = new ArrayList<>();
         double low = levels.threshold(SignalLevel.LOW);
         List<CallGraph.Entry> own = entriesOf(phone);
         CallGraph graph = network.graph();
@@ -282,14 +307,14 @@ public final class CallService implements CallBook.Listener {
             if (entry.getValue() < low || record == null) continue;
             // An unpowered or unloaded Videophone can't be called (D11).
             if (record.kind() == PhoneKind.VIDEOPHONE && !videophoneWorking(entry.getKey())) continue;
-            reachable.add(entry.getKey());
+            found.add(entry.getKey());
         }
         for (int other : carried.working()) {
             if (other != phone && phones.record(other) != null && graph.width(own, entriesOf(other)) >= low) {
-                reachable.add(other);
+                found.add(other);
             }
         }
-        return reachable;
+        return found;
     }
 
     /**
@@ -961,6 +986,8 @@ public final class CallService implements CallBook.Listener {
         for (int number : new ArrayList<>(ringingCarried.keySet())) ringCarried(number);
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
+            reachable.values()
+                .removeIf(known -> ticks - known.tick() >= TICKS_PER_SECOND);
             updateVideophones(now);
             book.evaluate(now, quality);
             // SNR moves dropout rates even when no level changes, so the snapshot is rebuilt every evaluation.
@@ -1042,6 +1069,7 @@ public final class CallService implements CallBook.Listener {
         names.clear();
         ringingCarried.clear();
         notices.clear();
+        reachable.clear();
         toneStops.clear();
         videophones.clear();
         loudspeakerLevels.clear();
