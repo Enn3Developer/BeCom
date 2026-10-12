@@ -122,6 +122,11 @@ public final class CallService implements CallBook.Listener {
         int phone = telephone.number();
         UUID id = player.getUniqueID();
         if (handsets.containsKey(phone) || handsetOf.containsKey(id) || book.callOf(id) != null) return Pickup.REFUSED;
+        // Taken from further than the cord reaches, the handset would hang up again on the next cord check.
+        if (!telephone.withinCord(player)) {
+            tell(player, "becom.phone.too_far");
+            return Pickup.REFUSED;
+        }
         Call call = book.callOfPhone(phone);
         boolean ringingHere = call != null && call.state() == Call.State.RINGING
             && call.caller()

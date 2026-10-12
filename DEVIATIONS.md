@@ -94,6 +94,7 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 5.6
 - **Design says:** you can move 1 block away; further than that hangs up.
 - **Built:** the call hangs up once the player's feet are more than 1.5 blocks from the phone's block, measured from
-  its sides, checked 4 times a second.
+  its sides, checked 4 times a second. The handset can only be taken from within that reach, so picking up from
+  across the room doesn't hang up again a moment later.
 - **Why:** "1 block away" from a player standing next to the phone, allowing for the player's own half-block width.
 - **To match the design:** `TileTelephone.CORD_REACH`.
