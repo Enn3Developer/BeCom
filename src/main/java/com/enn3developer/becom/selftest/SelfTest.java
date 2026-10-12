@@ -205,7 +205,15 @@ public final class SelfTest {
         int run() throws Exception;
     }
 
+    // GregTech's weather hazards as the config set them, for when the self-test ends.
+    private final boolean rainExplosions = GregTechAPI.sMachineRainExplosions;
+    private final boolean thunderExplosions = GregTechAPI.sMachineThunderExplosions;
+    private final boolean fireExplosions = GregTechAPI.sMachineFireExplosions;
+
     private SelfTest(BeComServer becom, ICommandSender sender) {
+        // It makes it rain over machines it builds under open sky, and GregTech sets any machine left in the rain on
+        // fire or blows it up at random: one gone in the middle of a check fails rows that have nothing to do with it.
+        weatherHazards(false, false, false);
         this.becom = becom;
         this.sender = sender;
         this.world = DimensionManager.getWorld(0);
@@ -319,10 +327,21 @@ public final class SelfTest {
         if (running == null) return;
         // One cut short by its world stopping must not carry on in the next world, against the old one's services.
         if (running.becom != BeComServer.get()) {
+            running.restoreWeatherHazards();
             running = null;
             return;
         }
         running.step();
+    }
+
+    private static void weatherHazards(boolean rain, boolean thunder, boolean fire) {
+        GregTechAPI.sMachineRainExplosions = rain;
+        GregTechAPI.sMachineThunderExplosions = thunder;
+        GregTechAPI.sMachineFireExplosions = fire;
+    }
+
+    private void restoreWeatherHazards() {
+        weatherHazards(rainExplosions, thunderExplosions, fireExplosions);
     }
 
     private void keepLoaded(int cx, int cz) {
@@ -377,6 +396,7 @@ public final class SelfTest {
 
     private void finish() {
         log(passed + " passed, " + failed + " failed");
+        restoreWeatherHazards();
         running = null;
         becom.server.initiateShutdown();
     }
@@ -441,6 +461,15 @@ public final class SelfTest {
                 .byName(CallGroup.NAME) == becom.calls.group(),
             "byName returned " + GtnhVoiceApi.groupManager()
                 .byName(CallGroup.NAME));
+        check(
+            "GregTech's rain, thunderstorm and fire explosions are off while the self-test makes it rain on its machines",
+            !GregTechAPI.sMachineRainExplosions && !GregTechAPI.sMachineThunderExplosions
+                && !GregTechAPI.sMachineFireExplosions,
+            "rain " + GregTechAPI.sMachineRainExplosions
+                + ", thunder "
+                + GregTechAPI.sMachineThunderExplosions
+                + ", fire "
+                + GregTechAPI.sMachineFireExplosions);
         check(
             "config holds DESIGN.md 17's defaults",
             BeComConfig.get()
