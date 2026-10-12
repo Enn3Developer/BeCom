@@ -78,7 +78,8 @@ public final class BeComServer {
         network.tick();
         calls.tick();
         if (network.currentTick() % 20 == 0) links.expire();
-        if (network.currentTick() % PHONE_CHECK_TICKS == 0) phoneCheck.add(
+        // A round still running finishes before the next is queued.
+        if (network.currentTick() % PHONE_CHECK_TICKS == 0 && phoneCheck.isEmpty()) phoneCheck.add(
             new ArrayList<>(
                 phones.registry()
                     .all()));

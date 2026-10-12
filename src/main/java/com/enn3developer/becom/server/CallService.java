@@ -51,6 +51,8 @@ public final class CallService implements CallBook.Listener {
     private final CallBook book;
     private final Map<Integer, UUID> handsets = new HashMap<>();
     private final Map<UUID, Integer> handsetOf = new HashMap<>();
+    // The name each handset holder had as they took it: their calls' history and screens name them by it.
+    private final Map<UUID, String> names = new HashMap<>();
     private long ticks;
     private long publishedVersion = -1;
 
@@ -149,6 +151,7 @@ public final class CallService implements CallBook.Listener {
         }
         handsets.put(phone, id);
         handsetOf.put(id, phone);
+        names.put(id, player.getCommandSenderName());
         telephone.setOffHook(true);
         if (ringingHere) {
             book.answer(id, phone, now());
@@ -167,6 +170,8 @@ public final class CallService implements CallBook.Listener {
         EntityPlayerMP mp = player(player);
         if (mp != null) tone(mp, TonePacket.Tone.HANG_UP);
         book.hangUp(player);
+        // After the call ends, so its history still has the name.
+        names.remove(player);
     }
 
     /** A Telephone was broken or removed: its call ends and its handset is let go. */
@@ -174,6 +179,7 @@ public final class CallService implements CallBook.Listener {
         UUID holder = handsets.remove(phone);
         if (holder != null) {
             handsetOf.remove(holder);
+            names.remove(holder);
             EntityPlayerMP mp = player(holder);
             if (mp != null) tone(mp, TonePacket.Tone.HANG_UP);
         }
@@ -403,6 +409,7 @@ public final class CallService implements CallBook.Listener {
         }
         handsets.clear();
         handsetOf.clear();
+        names.clear();
         group.clear();
     }
 
@@ -438,8 +445,10 @@ public final class CallService implements CallBook.Listener {
         return record == null ? null : record.kind();
     }
 
-    /** A player's name: online, else the last one Forge saw, else {@code fallback}. */
+    /** A player's name: as they took their handset, else online, else the last one Forge saw, else {@code fallback}. */
     public String nameOf(UUID id, String fallback) {
+        String held = names.get(id);
+        if (held != null) return held;
         EntityPlayerMP online = player(id);
         if (online != null) return online.getCommandSenderName();
         String cached = UsernameCache.getLastKnownUsername(id);

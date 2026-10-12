@@ -82,6 +82,35 @@ public final class PhoneService {
         return !(tile instanceof TileTelephone phone && phone.number() == record.number());
     }
 
+    /**
+     * Makes {@code tile} the home of its number again if the Telephone moved (a frame or a dolly carries its saved
+     * number along without breaking it). A copy whose original still stands with the number is left alone; it gets a
+     * number of its own on first use. Returns whether the record now points at {@code tile}.
+     */
+    public boolean relocate(TileTelephone tile) {
+        int number = tile.number();
+        PhoneRecord record = number < 0 ? null : registry().get(number);
+        if (record == null || record.kind() != PhoneKind.TELEPHONE) return false;
+        World world = tile.getWorldObj();
+        long pos = BlockPos.pack(tile.xCoord, tile.yCoord, tile.zCoord);
+        if (record.dimension() == world.provider.dimensionId && record.pos() == pos) return true;
+        // The original still stands with the number: this is a copy.
+        if (telephone(number) != null) return false;
+        // Its old spot isn't loaded, so there's no telling; a move happens with both spots loaded, so this is most
+        // likely a copy, and a copy gets its own number on first use.
+        if (!isLoaded(record)) return false;
+        record.setLocation(world.provider.dimensionId, pos);
+        registry().changed();
+        return true;
+    }
+
+    private static boolean isLoaded(PhoneRecord record) {
+        WorldServer world = DimensionManager.getWorld(record.dimension());
+        long pos = record.pos();
+        return world != null && world.getChunkProvider()
+            .chunkExists(BlockPos.x(pos) >> 4, BlockPos.z(pos) >> 4);
+    }
+
     /** The name the contacts list and history show for a phone: its owner's. */
     public String name(int number) {
         PhoneRecord record = registry().get(number);

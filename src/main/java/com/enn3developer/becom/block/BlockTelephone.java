@@ -136,13 +136,12 @@ public class BlockTelephone extends BlockContainer {
     }
 
     /**
-     * A Telephone whose number the registry lost (copied with a world editor, or placed by a machine) gets a fresh
-     * one, so no two phones share a number.
+     * A Telephone whose number the registry lost, or a copy of one (made with a world editor, say), gets a fresh
+     * number, so no two phones share one. A Telephone that was moved keeps its number (PhoneService.relocate).
      */
     static void ensureNumber(BeComServer becom, World world, TileTelephone tile) {
         long pos = BlockPos.pack(tile.xCoord, tile.yCoord, tile.zCoord);
-        PhoneRecord record = tile.number() < 0 ? null : becom.phones.record(tile.number());
-        if (record != null && record.dimension() == world.provider.dimensionId && record.pos() == pos) return;
+        if (becom.phones.relocate(tile)) return;
         tile.setNumber(
             becom.phones.registerTelephone(world, pos, null)
                 .number());

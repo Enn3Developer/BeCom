@@ -739,11 +739,54 @@ public final class SelfTest {
         becom.checkPhone(ghost);
         check("a number whose Telephone is gone is freed", registry().get(ghost.number()) == null, "");
 
+        checkMovedPhone(end.zCoord);
+
         // As after a restart: the off-hook bit was saved with the chunk, but nobody holds the handset any more.
         end.setOffHook(true);
         end.releaseStaleHandset();
         check("a handset nobody holds goes back on the hook when the phone loads", !end.offHook(), "");
         return 1;
+    }
+
+    /**
+     * A Telephone carried elsewhere (a frame or a dolly moves its tile entity without breaking it) keeps its number;
+     * a copy of one that still stands doesn't take it.
+     */
+    private void checkMovedPhone(int z) {
+        int y = Y + 1;
+        TileTelephone first = telephone(X0 + 5, y, z);
+        int number = first.number();
+        NBTTagCompound saved = new NBTTagCompound();
+        first.writeToNBT(saved);
+        world.removeTileEntity(X0 + 5, y, z);
+        world.setBlockToAir(X0 + 5, y, z);
+        TileTelephone moved = placeSaved(saved, X0 + 7, y, z);
+        moved.settleAfterLoad();
+        PhoneRecord record = registry().get(number);
+        becom.checkPhone(record);
+        check(
+            "a Telephone that was moved keeps its number",
+            record != null && registry().get(number) == record && record.pos() == BlockPos.pack(X0 + 7, y, z),
+            record == null ? "freed" : BlockPos.toString(record.pos()));
+        TileTelephone copy = placeSaved(saved, X0 + 9, y, z);
+        copy.settleAfterLoad();
+        check(
+            "a copy of a Telephone that still stands doesn't take its number",
+            record != null && record.pos() == BlockPos.pack(X0 + 7, y, z),
+            "");
+        world.setBlockToAir(X0 + 9, y, z);
+        world.setBlockToAir(X0 + 7, y, z);
+    }
+
+    private TileTelephone placeSaved(NBTTagCompound saved, int x, int y, int z) {
+        world.setBlock(x, y, z, BeComBlocks.telephone);
+        NBTTagCompound nbt = (NBTTagCompound) saved.copy();
+        nbt.setInteger("x", x);
+        nbt.setInteger("y", y);
+        nbt.setInteger("z", z);
+        TileTelephone tile = (TileTelephone) world.getTileEntity(x, y, z);
+        tile.readFromNBT(nbt);
+        return tile;
     }
 
     /** Puts a fake player on the floor right next to a Telephone, within its cord. */
