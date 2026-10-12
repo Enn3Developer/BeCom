@@ -39,8 +39,8 @@ Branch `milestone/0.1-wired`, from `master`.
 | Block list (12.3)                                      | doing  |
 | Do-not-disturb (12.3)                                  | doing  |
 | Rate limit (12.3)                                      | doing  |
-| Quest support: BeCom's task type (D50)                 | todo   |
-| Quest support: the off switch (15.5)                   | todo   |
+| Quest support: BeCom's task type (D50)                 | done   |
+| Quest support: the off switch (15.5)                   | done   |
 | CI runs on milestone branches, newer pushes cancel     | done   |
 | CI's run-server job runs the self-test                 | todo   |
 
@@ -55,7 +55,7 @@ Branch `milestone/0.1-wired`, from `master`.
 
 | Item                    | Status |
 |-------------------------|--------|
-| The LV quests           | todo   |
+| The LV quests           | done   |
 
 ### Assets (DESIGN.md 15)
 
