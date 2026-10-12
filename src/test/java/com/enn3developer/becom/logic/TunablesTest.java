@@ -1,6 +1,7 @@
 package com.enn3developer.becom.logic;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,5 +70,22 @@ class TunablesTest {
     @Test
     void levelThresholdsMustRise() throws Exception {
         refused("levelMedium", 30.0);
+    }
+
+    @Test
+    void roundTripsThroughAMapByName() throws Exception {
+        Tunables changed = with("pylonSpanFactor", 5.0);
+        assertEquals(changed, Tunables.fromMap(changed.toMap()));
+    }
+
+    @Test
+    void missingOrMistypedValuesKeepTheirDefaults() {
+        java.util.Map<String, Object> values = new java.util.HashMap<>(
+            Tunables.defaults()
+                .toMap());
+        values.remove("ringSeconds");
+        values.put("lineBudget", "loud");
+        values.put("notAKey", 3);
+        assertEquals(Tunables.defaults(), Tunables.fromMap(values));
     }
 }

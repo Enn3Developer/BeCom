@@ -9,7 +9,7 @@ import com.enn3developer.becom.logic.Tunables;
 
 /**
  * BeCom's Forge config file (DESIGN.md 14.2): every tunable from DESIGN.md 17 except the three kept fixed, read once at
- * startup. Clients never act on their own copy; whatever they need comes from the server.
+ * startup. Only a server acts on it; clients get the server's values when they log in.
  */
 public final class BeComConfig {
 
@@ -22,7 +22,10 @@ public final class BeComConfig {
     private static final String CALLS = "calls";
     private static final String QUESTS = "quests";
 
+    // What this side acts on: the file's values while a server runs here, the server's on a client connected to one,
+    // and the defaults on a client that isn't (DESIGN.md 14.2: clients never use their own file).
     private static volatile Tunables tunables = Tunables.defaults();
+    private static volatile Tunables fileValues = Tunables.defaults();
 
     private BeComConfig() {}
 
@@ -30,9 +33,19 @@ public final class BeComConfig {
         return tunables;
     }
 
-    /** For tests and the self-test: replaces the loaded values. */
+    /** Replaces the values this side acts on: what a server sent this client, or a test's. */
     public static void set(Tunables values) {
         tunables = values;
+    }
+
+    /** A server starting here, dedicated or integrated, uses the config file's values. */
+    public static void useFileValues() {
+        tunables = fileValues;
+    }
+
+    /** A client back from a server forgets the server's values. */
+    public static void useDefaults() {
+        tunables = Tunables.defaults();
     }
 
     public static void load(File file) {
@@ -58,7 +71,7 @@ public final class BeComConfig {
             .set(FORMAT_VERSION);
 
         Tunables d = Tunables.defaults();
-        tunables = new Tunables(
+        Tunables loaded = new Tunables(
             dbl(config, SIGNAL, "levelLow", d.levelLow(), "SNR in dB a link needs for Low."),
             dbl(config, SIGNAL, "levelMedium", d.levelMedium(), "SNR in dB a link needs for Medium."),
             dbl(config, SIGNAL, "levelHigh", d.levelHigh(), "SNR in dB a link needs for High."),
@@ -120,7 +133,8 @@ public final class BeComConfig {
                 "questlineRecheckSeconds",
                 d.questlineRecheckSeconds(),
                 "Seconds between checks that the tab is there."));
-        validate(tunables);
+        validate(loaded);
+        fileValues = loaded;
         if (config.hasChanged()) config.save();
         BeCom.LOG.info("Loaded config {}", file.getName());
     }

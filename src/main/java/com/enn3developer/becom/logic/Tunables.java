@@ -90,6 +90,47 @@ public record Tunables(
         return new IllegalArgumentException(key + " is " + value + ", but must be " + rule);
     }
 
+    /** Every value by its name, for sending to clients (DESIGN.md 14.2). Doubles, ints and booleans only. */
+    public java.util.Map<String, Object> toMap() {
+        java.util.Map<String, Object> values = new java.util.LinkedHashMap<>();
+        try {
+            for (java.lang.reflect.RecordComponent c : Tunables.class.getRecordComponents()) {
+                values.put(
+                    c.getName(),
+                    c.getAccessor()
+                        .invoke(this));
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+        return values;
+    }
+
+    /**
+     * The values in {@code values}, by name; any missing or of the wrong type keep their default. Values sent by a
+     * server are checked like a config file's.
+     */
+    public static Tunables fromMap(java.util.Map<String, Object> values) {
+        Tunables d = defaults();
+        java.lang.reflect.RecordComponent[] components = Tunables.class.getRecordComponents();
+        Object[] args = new Object[components.length];
+        Class<?>[] types = new Class<?>[components.length];
+        try {
+            for (int i = 0; i < components.length; i++) {
+                types[i] = components[i].getType();
+                Object value = values.get(components[i].getName());
+                Object fallback = components[i].getAccessor()
+                    .invoke(d);
+                args[i] = value != null && fallback.getClass()
+                    .isInstance(value) ? value : fallback;
+            }
+            return Tunables.class.getDeclaredConstructor(types)
+                .newInstance(args);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public LevelScale levelScale() {
         return new LevelScale(levelLow, levelMedium, levelHigh, levelMax, levelHysteresis);
     }

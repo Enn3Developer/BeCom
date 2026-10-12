@@ -12,12 +12,15 @@ import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.ClientAudio;
 import com.enn3developer.becom.client.ClientLevels;
 import com.enn3developer.becom.client.ClientWires;
+import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
 import com.enn3developer.becom.client.SignalBars;
 import com.enn3developer.becom.client.TelephoneRenderer;
 import com.enn3developer.becom.client.ToneSounds;
 import com.enn3developer.becom.client.WireRenderer;
+import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
@@ -68,6 +71,16 @@ public class ClientProxy extends CommonProxy {
             ClientLevels.clear();
             ClientWires.clear();
             ToneSounds.stop();
+            BeComConfig.useDefaults();
+            MachineTooltips.forget();
+        });
+    }
+
+    @Override
+    public void onConfig(ConfigSyncPacket packet) {
+        mainThread.add(() -> {
+            BeComConfig.set(packet.tunables());
+            MachineTooltips.forget();
         });
     }
 

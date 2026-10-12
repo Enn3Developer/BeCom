@@ -25,6 +25,7 @@ public final class BeComPackets {
         CHANNEL.registerMessage(LevelPacket.Handler.class, LevelPacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(TonePacket.Handler.class, TonePacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(WireSyncPacket.Handler.class, WireSyncPacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(ConfigSyncPacket.Handler.class, ConfigSyncPacket.class, id++, Side.CLIENT);
     }
 
     public static void send(IMessage message, EntityPlayerMP player) {

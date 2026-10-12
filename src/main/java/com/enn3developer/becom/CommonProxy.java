@@ -11,6 +11,7 @@ import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.packet.BeComPackets;
+import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
@@ -56,6 +57,8 @@ public class CommonProxy {
     }
 
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        // A server acts on its own config file (DESIGN.md 14.2); a client in this JVM had the defaults or a server's.
+        BeComConfig.useFileValues();
         // Before worlds load, so each dimension's network loads with its world.
         BeComServer.create(event.getServer());
     }
@@ -89,6 +92,8 @@ public class CommonProxy {
     public void onTone(TonePacket packet) {}
 
     public void onWires(WireSyncPacket packet) {}
+
+    public void onConfig(ConfigSyncPacket packet) {}
 
     /** Signal bars for a screen (DESIGN.md 11.2); nothing to draw on a server. */
     public IDrawable signalBars(Supplier<SignalLevel> level) {

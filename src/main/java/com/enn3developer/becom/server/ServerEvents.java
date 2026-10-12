@@ -3,6 +3,9 @@ package com.enn3developer.becom.server;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.world.WorldEvent;
 
+import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.packet.BeComPackets;
+import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.selftest.SelfTest;
 
@@ -39,7 +42,10 @@ public final class ServerEvents {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         BeComServer becom = BeComServer.get();
-        if (becom != null && event.player instanceof EntityPlayerMP player) becom.network.sendWires(player);
+        if (becom == null || !(event.player instanceof EntityPlayerMP player)) return;
+        // The server's rules for the client's tooltips and holograms (DESIGN.md 14.2).
+        BeComPackets.send(new ConfigSyncPacket(BeComConfig.get()), player);
+        becom.network.sendWires(player);
     }
 
     @SubscribeEvent
