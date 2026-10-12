@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The ME Phone and the ME Bridge: an ME Phone linked to an ME network at a Security Terminal has service at Max inside
   that network's wireless range, calls other ME Phones on it directly, and any other phone through an ME Bridge,
   which joins the ME network on ME cable and is wrench-linked to a Pylon Head, a Line Terminal or an antenna.
+- An ME network carries calls only within each dimension it spans: a Quantum Network Bridge carries none between them.
 - The Videophone, an MV speakerphone for wired networks on a Line Terminal's Phone Cable: everyone within 4 blocks is
   in its call, which plays from its loudspeaker to everyone within 16 blocks, and it hangs up by itself 30 s after
   the last person walks off.
@@ -101,12 +102,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a page each for the wired network, antennas, radios, phones, and space and other dimensions. Each quest ends with
   a link to its page, and holding GuideNH's key over a BeCom item or quest opens it. Without GuideNH, the links show
   their label alone.
-
-### Changed
-
-- A radio frame finds the players around each receiving walkie and Transceiver loudspeaker by 16-block cells instead
-  of looking at every player, so a crowded channel costs GTNH Voice's thread a quarter of what it did.
 - Three big quests offer their coins as a choice: First call against two Pylon Heads, Radio contact against a
   Walkie-Talkie, Five satellites against a Satellite Rocket. A choice keeps only the options whose items are installed.
-- An ME network now joins calls only within each dimension it spans, so a Quantum Network Bridge no longer carries
-  calls between dimensions.
