@@ -302,8 +302,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** stopping at the 6 dB range cut every link to None the moment it crossed it, so links at the edge of range
   flickered once a second, which 4.1's hysteresis exists to prevent (found by both 0.2 reviews; the self-test checks
   a walkie link holding at 81 blocks, then dropping after 3 s there).
-- **To match the design:** keep 64 steps and give up hysteresis at the edge of range, or lengthen the survey step to
-  5 blocks so 64 steps reach as far.
+- **To match the design:** keep 64 steps and give up hysteresis at the edge of range. Lengthening the survey step to
+  5 blocks would keep 64 steps reaching as far, but trades this departure for another: DESIGN.md 17 sets the step at
+  4 blocks.
 
 ### X23: `/becom signal` is for operators, and an end's own cell isn't terrain
 

@@ -31,12 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as chunks load and save, cover below the surface, and a higher noise floor without a sky. Antennas survey the land
   around them within a per-tick budget and link to each other on VHF for radio and UHF for calls.
 - Sixteen radio channels through GTNH Voice's `becom:radio.1` to `becom:radio.16` groups, with a push-to-talk key
-  (Caps Lock), direct links between radios, paths through antennas, the capture effect, players around a receiving
-  walkie hearing it, Transceiver loudspeakers, radio audio filtered by level, and a squelch tail.
+  (Caps Lock), direct links between radios, paths through antennas, the capture effect per listener, players around
+  a receiving walkie hearing it, Transceiver loudspeakers, radio audio filtered by level, and a squelch tail. Radio
+  links keep their level with the same hysteresis as calls, and drop after 3 s below Low like them.
 - Antennas bridge wired lines within 16 blocks and carry calls between them over UHF, so a Telephone can call across
   linked antennas.
 - Antenna screen with its links, bridges and a team lock; Transceiver and walkie screens; sneak + scroll to change a
   walkie's channel; walkie battery drain, and a flat walkie switching off.
-- The Signal Analyzer's overlay and `/becom signal`: SNR, level, the serving antenna and every loss.
+- The Signal Analyzer's overlay and `/becom signal`: SNR, level, the serving antenna and every loss on the link to it.
 - Seven radio quests, completed by BeCom's new Radio contact task among others.
 - Line re-checks now share the survey budget per tick with antenna surveys.
