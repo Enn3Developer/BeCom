@@ -13,6 +13,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.logic.phone.Cord;
+import com.enn3developer.becom.server.BeComServer;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -32,6 +33,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     private int number = -1;
     private boolean ringing;
     private int ringTicks;
+    private boolean hookChecked;
 
     public int number() {
         return number;
@@ -62,6 +64,17 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         worldObj.setBlockMetadataWithNotify(xCoord, yCoord, zCoord, meta, 3);
     }
 
+    /**
+     * Puts the handset back if nobody holds it. The off-hook bit is saved with the chunk, but who holds a handset
+     * isn't, so after a restart or a crash a phone could otherwise show its handset missing with nobody holding it.
+     * Runs on the first tick after the phone loads; the self-test calls it directly.
+     */
+    public void releaseStaleHandset() {
+        if (!offHook()) return;
+        BeComServer becom = BeComServer.get();
+        if (becom == null || number < 0 || becom.calls.holderOf(number) == null) setOffHook(false);
+    }
+
     /** Whether {@code player} is still within the handset's cord. */
     public boolean withinCord(EntityPlayer player) {
         if (worldObj == null || player.worldObj != worldObj || player.isDead) return false;
@@ -76,7 +89,12 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
 
     @Override
     public void updateEntity() {
-        if (worldObj.isRemote || !ringing) return;
+        if (worldObj.isRemote) return;
+        if (!hookChecked) {
+            hookChecked = true;
+            releaseStaleHandset();
+        }
+        if (!ringing) return;
         if (ringTicks++ % RING_PERIOD_TICKS == 0) {
             worldObj.playSoundEffect(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5, BeCom.MODID + ":phone.ring", 1.0f, 1.0f);
         }

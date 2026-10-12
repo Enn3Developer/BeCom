@@ -1,6 +1,7 @@
 package com.enn3developer.becom.packet;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraftforge.common.util.FakePlayer;
 
 import com.enn3developer.becom.BeCom;
 
@@ -27,6 +28,8 @@ public final class BeComPackets {
     }
 
     public static void send(IMessage message, EntityPlayerMP player) {
+        // A fake player (a machine using an item or block) has no connection to send to.
+        if (player instanceof FakePlayer || player.playerNetServerHandler == null) return;
         CHANNEL.sendTo(message, player);
     }
 

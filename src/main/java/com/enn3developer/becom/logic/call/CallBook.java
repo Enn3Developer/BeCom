@@ -221,37 +221,53 @@ public final class CallBook {
     }
 
     /**
-     * Re-evaluates every direction of every connected call (DESIGN.md 4.1: once a second): its SNR, its level with
-     * hysteresis and the phones' caps, and whether it has been too weak for too long.
+     * Re-evaluates every call (DESIGN.md 4.1: once a second): each direction of a connected call, and whether a ringing
+     * call still has a path.
      */
     public void evaluate(long nowMillis, Quality quality) {
-        for (Call call : new ArrayList<>(calls.values())) {
-            if (call.state() != Call.State.CONNECTED) continue;
-            boolean dropped = false;
-            for (Call.Leg speaker : call.legs()) {
-                if (speaker.player() == null) continue;
-                for (Call.Leg hearer : call.legs()) {
-                    if (hearer == speaker || hearer.player() == null) continue;
-                    Call.LinkState link = call.link(
-                        new Call.Direction(speaker.player(), hearer.player()),
-                        levels.threshold(SignalLevel.LOW),
-                        dropGraceMillis);
-                    double snr = quality.snr(call, speaker, hearer);
-                    link.snr = snr;
-                    SignalLevel raw = levels.next(link.rawLevel, snr);
-                    link.rawLevel = raw;
-                    SignalLevel capped = SignalLevel.min(raw, quality.cap(call, speaker, hearer));
-                    if (!link.evaluated || capped != link.level) {
-                        link.level = capped;
-                        link.evaluated = true;
-                        version++;
-                        listener.levelChanged(call, speaker.player(), hearer.player(), capped);
-                    }
-                    if (link.dropTimer.update(snr, nowMillis)) dropped = true;
-                }
+        for (Call call : new ArrayList<>(calls.values())) evaluate(call, nowMillis, quality);
+    }
+
+    /**
+     * Re-evaluates one call. Connected: each direction's SNR, its level with hysteresis and the phones' caps, and
+     * whether it has been too weak for too long. Ringing: it ends once the path falls out of Low, past the hysteresis,
+     * rather than ringing on for the full timeout over a line that's gone. The call service also runs this the moment
+     * a call connects, so its first words aren't lost waiting for the next second.
+     */
+    public void evaluate(Call call, long nowMillis, Quality quality) {
+        if (call.state() == Call.State.RINGING) {
+            Call.Leg callee = call.legs()
+                .get(1);
+            if (levels.next(SignalLevel.LOW, quality.snr(call, call.caller(), callee)) == SignalLevel.NONE) {
+                end(call, EndReason.DROPPED);
             }
-            if (dropped) end(call, EndReason.DROPPED);
+            return;
         }
+        if (call.state() != Call.State.CONNECTED) return;
+        boolean dropped = false;
+        for (Call.Leg speaker : call.legs()) {
+            if (speaker.player() == null) continue;
+            for (Call.Leg hearer : call.legs()) {
+                if (hearer == speaker || hearer.player() == null) continue;
+                Call.LinkState link = call.link(
+                    new Call.Direction(speaker.player(), hearer.player()),
+                    levels.threshold(SignalLevel.LOW),
+                    dropGraceMillis);
+                double snr = quality.snr(call, speaker, hearer);
+                link.snr = snr;
+                SignalLevel raw = levels.next(link.rawLevel, snr);
+                link.rawLevel = raw;
+                SignalLevel capped = SignalLevel.min(raw, quality.cap(call, speaker, hearer));
+                if (!link.evaluated || capped != link.level) {
+                    link.level = capped;
+                    link.evaluated = true;
+                    version++;
+                    listener.levelChanged(call, speaker.player(), hearer.player(), capped);
+                }
+                if (link.dropTimer.update(snr, nowMillis)) dropped = true;
+            }
+        }
+        if (dropped) end(call, EndReason.DROPPED);
     }
 
     private void end(Call call, EndReason reason) {

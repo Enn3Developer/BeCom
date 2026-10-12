@@ -241,4 +241,28 @@ class CallBookTest {
         book.hangUp(alice);
         assertTrue(book.version() > v2);
     }
+
+    @Test
+    void oneCallCanBeEvaluatedTheMomentItConnects() {
+        Call call = connect();
+        assertEquals(SignalLevel.NONE, call.level(alice, bob));
+        book.evaluate(call, 1000, quality);
+        assertEquals(SignalLevel.LOW, call.level(alice, bob));
+        assertEquals(SignalLevel.LOW, call.level(bob, alice));
+    }
+
+    @Test
+    void aRingingCallEndsWhenItsPathGoes() {
+        assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
+        // Just under Low still rings, thanks to the hysteresis; past it the line is gone.
+        snr = 5;
+        book.evaluate(1000, quality);
+        assertTrue(
+            book.callOfPhone(PHONE_B) != null && book.callOfPhone(PHONE_B)
+                .state() == Call.State.RINGING);
+        snr = 3;
+        book.evaluate(2000, quality);
+        assertNull(book.callOfPhone(PHONE_B));
+        assertTrue(events.contains("ended DROPPED unanswered"));
+    }
 }

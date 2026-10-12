@@ -46,6 +46,7 @@ import com.enn3developer.becom.machine.MTEPylonHead;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.LinkService;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
@@ -560,64 +561,65 @@ public final class SelfTest {
     }
 
     /**
-     * A call through the call service without real players: the dial rings the other Telephone, answering joins the
-     * voice group and publishes routes, the levels come out at Low, and hanging up writes both phones' history.
+     * A call through the call service, as players make one but with fake players: picking up, dialling through every
+     * check the service makes (voice, do-not-disturb, the block list, a busy handset, the path), answering, the levels
+     * the Telephone's own cap gives, the routes from the very first frame, hanging up and the history it leaves.
      */
     private int checkCall() {
-        CallBook book = becom.calls.book();
-        int a = repeaterLine.phoneStart.number(), b = repeaterLine.phoneEnd.number();
+        CallService calls = becom.calls;
+        CallBook book = calls.book();
+        TileTelephone start = repeaterLine.phoneStart, end = repeaterLine.phoneEnd;
+        int a = start.number(), b = end.number();
         UUID alice = owner.getUniqueID(), bob = stranger.getUniqueID();
-        CallBook.DialResult result = book.dial(alice, a, b, System.currentTimeMillis(), CallBook.Check.OK);
+        // The fake players have no voice session; the real check would refuse them before anything else.
+        calls.voiceForSelfTest(id -> id.equals(alice) || id.equals(bob));
+        standBy(owner, start);
+        standBy(stranger, end);
+
+        check("picking up takes the handset", calls.takeHandset(owner, start) == CallService.Pickup.TAKEN, "");
+        CallBook.DialResult result = calls.dial(owner, a, b);
         check(
             "dialling rings the other Telephone",
-            result == CallBook.DialResult.RINGING && repeaterLine.phoneEnd.ringing(),
+            result == CallBook.DialResult.RINGING && end.ringing(),
             result.name());
-        check("answering connects", book.answer(bob, b, System.currentTimeMillis()), "");
+        check("answering connects", calls.takeHandset(stranger, end) == CallService.Pickup.ANSWERED, "");
         Call call = book.callOf(alice);
-        Collection<UUID> members = GtnhVoiceApi.groupManager()
-            .membersOf(becom.calls.group());
-        check("both players join becom:call", members.contains(alice) && members.contains(bob), members.toString());
-        check("the ring stops", !repeaterLine.phoneEnd.ringing(), "");
-        becom.calls.tick();
-        book.evaluate(System.currentTimeMillis(), new CallBook.Quality() {
-
-            @Override
-            public double snr(Call c, Call.Leg speaker, Call.Leg listener) {
-                return becom.network.graph()
-                    .width(speaker.phone(), listener.phone());
-            }
-
-            @Override
-            public SignalLevel cap(Call c, Call.Leg speaker, Call.Leg listener) {
-                return SignalLevel.LOW;
-            }
-        });
-        becom.calls.tick();
+        // No tick and no evaluation in between: a call carries voice from its first frame.
         check(
-            "levels are Low both ways",
-            call.level(alice, bob) == SignalLevel.LOW && call.level(bob, alice) == SignalLevel.LOW,
-            call.level(alice, bob) + "/" + call.level(bob, alice));
-        check(
-            "the routing snapshot carries each side to the other",
-            becom.calls.group()
+            "the routing snapshot carries each side to the other the moment it connects",
+            calls.group()
                 .snapshot()
                 .hasPair(alice, bob)
-                && becom.calls.group()
+                && calls.group()
                     .snapshot()
                     .hasPair(bob, alice),
             "");
-        book.hangUp(bob);
+        Collection<UUID> members = GtnhVoiceApi.groupManager()
+            .membersOf(calls.group());
+        check("both players join becom:call", members.contains(alice) && members.contains(bob), members.toString());
+        check("the ring stops", !end.ringing(), "");
+        // 18 dB a stretch is High on the line, so Low here is the Telephone's cap (D10).
+        check(
+            "levels are Low both ways, the Telephone's cap",
+            call != null && call.level(alice, bob) == SignalLevel.LOW && call.level(bob, alice) == SignalLevel.LOW,
+            call == null ? "no call" : call.level(alice, bob) + "/" + call.level(bob, alice));
+        calls.hangUpHandset(bob);
         members = GtnhVoiceApi.groupManager()
-            .membersOf(becom.calls.group());
+            .membersOf(calls.group());
         check("hanging up leaves becom:call", !members.contains(alice) && !members.contains(bob), members.toString());
+        check("the handset goes back on the hook", !end.offHook(), "");
         PhoneRecord ra = becom.phones.record(a), rb = becom.phones.record(b);
         check(
-            "both phones remember the call",
+            "both phones remember the call, with who was on the other end",
             !ra.history()
                 .isEmpty()
                 && ra.history()
                     .get(0)
                     .direction() == PhoneRecord.Direction.OUTGOING
+                && bob.equals(
+                    ra.history()
+                        .get(0)
+                        .otherPlayer())
                 && !rb.history()
                     .isEmpty()
                 && rb.history()
@@ -625,22 +627,42 @@ public final class SelfTest {
                     .direction() == PhoneRecord.Direction.INCOMING,
             "");
 
-        // Do-not-disturb and the block list refuse calls (DESIGN.md 12.3).
+        // Alice still holds her handset. Do-not-disturb, the block list and a busy handset refuse her (DESIGN.md 10,
+        // 12.3).
         rb.setDoNotDisturb(true);
-        check(
-            "do-not-disturb makes the phone unreachable",
-            registry().refusal(alice, b) == PhoneRegistry.Refusal.DO_NOT_DISTURB,
-            "");
+        result = calls.dial(owner, a, b);
+        check("do-not-disturb makes the phone unreachable", result == CallBook.DialResult.UNREACHABLE, result.name());
         rb.setDoNotDisturb(false);
         rb.block(alice, owner.getCommandSenderName());
+        result = calls.dial(owner, a, b);
         check(
             "a blocked caller can't reach the phone and doesn't see it",
-            registry().refusal(alice, b) == PhoneRegistry.Refusal.BLOCKED
-                && registry().contacts(alice, a, becom.calls.reachableFrom(a))
-                    .isEmpty(),
-            "");
+            result == CallBook.DialResult.UNREACHABLE && registry().contacts(alice, a, calls.reachableFrom(a))
+                .isEmpty(),
+            result.name());
         rb.unblock(alice);
+        check(
+            "someone else picks up the other handset",
+            calls.takeHandset(stranger, end) == CallService.Pickup.TAKEN,
+            "");
+        result = calls.dial(owner, a, b);
+        check("a handset off the hook is busy", result == CallBook.DialResult.BUSY, result.name());
+        calls.hangUpHandset(bob);
+        calls.hangUpHandset(alice);
+        calls.voiceForSelfTest(
+            id -> GtnhVoiceApi.session(id)
+                .isPresent());
+
+        // As after a restart: the off-hook bit was saved with the chunk, but nobody holds the handset any more.
+        end.setOffHook(true);
+        end.releaseStaleHandset();
+        check("a handset nobody holds goes back on the hook when the phone loads", !end.offHook(), "");
         return 1;
+    }
+
+    /** Puts a fake player on the floor right next to a Telephone, within its cord. */
+    private static void standBy(FakePlayer player, TileTelephone phone) {
+        player.setPosition(phone.xCoord + 1.5, phone.yCoord, phone.zCoord + 0.5);
     }
 
     private PhoneRegistry registry() {

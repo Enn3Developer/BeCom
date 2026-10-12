@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -132,8 +133,7 @@ public final class CallService implements CallBook.Listener {
         boolean ringingHere = call != null && call.state() == Call.State.RINGING
             && call.caller()
                 .phone() != phone;
-        if (ringingHere && !GtnhVoiceApi.session(id)
-            .isPresent()) {
+        if (ringingHere && !hasVoice.test(id)) {
             tell(player, "becom.call.no_voice");
             return Pickup.REFUSED;
         }
@@ -207,8 +207,7 @@ public final class CallService implements CallBook.Listener {
     }
 
     private CallBook.Check worldCheck(EntityPlayerMP caller, int from, int to) {
-        if (!GtnhVoiceApi.session(caller.getUniqueID())
-            .isPresent()) {
+        if (!hasVoice.test(caller.getUniqueID())) {
             tell(caller, "becom.call.no_voice");
             return CallBook.Check.UNREACHABLE;
         }
@@ -247,6 +246,9 @@ public final class CallService implements CallBook.Listener {
             if (mp != null) tone(mp, TonePacket.Tone.NONE);
         }
         BeComQuests.complete(QuestTask.FIRST_CALL, players);
+        // Levels now, not at the next whole second: until a direction has a level it gets no route, and "hello?" is
+        // lost.
+        book.evaluate(call, now(), quality);
         publish();
     }
 
@@ -309,25 +311,37 @@ public final class CallService implements CallBook.Listener {
         book.tick(now);
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
-            book.evaluate(now, new CallBook.Quality() {
-
-                @Override
-                public double snr(Call call, Call.Leg speaker, Call.Leg listener) {
-                    return network.graph()
-                        .width(speaker.phone(), listener.phone());
-                }
-
-                @Override
-                public SignalLevel cap(Call call, Call.Leg speaker, Call.Leg listener) {
-                    return SignalLevel.min(capOf(speaker.phone()), capOf(listener.phone()));
-                }
-            });
+            book.evaluate(now, quality);
             // SNR moves dropout rates even when no level changes, so the snapshot is rebuilt every evaluation.
             publish();
         } else if (book.version() != publishedVersion) {
             publish();
         }
     }
+
+    // Whether a player has a voice session (DESIGN.md 13.2). Only the self-test swaps it, for its fake players.
+    private Predicate<UUID> hasVoice = id -> GtnhVoiceApi.session(id)
+        .isPresent();
+
+    /** The self-test's fake players have no voice; this lets it dial and answer through the real checks. */
+    public void voiceForSelfTest(Predicate<UUID> hasVoice) {
+        this.hasVoice = hasVoice;
+    }
+
+    /** A direction's SNR is its best path's weakest hop; its level is capped by both phones (DESIGN.md 4.1). */
+    private final CallBook.Quality quality = new CallBook.Quality() {
+
+        @Override
+        public double snr(Call call, Call.Leg speaker, Call.Leg listener) {
+            return network.graph()
+                .width(speaker.phone(), listener.phone());
+        }
+
+        @Override
+        public SignalLevel cap(Call call, Call.Leg speaker, Call.Leg listener) {
+            return SignalLevel.min(capOf(speaker.phone()), capOf(listener.phone()));
+        }
+    };
 
     private SignalLevel capOf(int phone) {
         PhoneRecord record = phones.record(phone);
@@ -368,6 +382,13 @@ public final class CallService implements CallBook.Listener {
 
     public void stop() {
         for (Call call : new ArrayList<>(book.calls())) book.endByAdmin(call);
+        // Handsets go back on the hook while the worlds are still loaded, so none is saved as missing.
+        for (Map.Entry<Integer, UUID> entry : new ArrayList<>(handsets.entrySet())) {
+            TileTelephone telephone = phones.telephone(entry.getKey());
+            if (telephone != null) telephone.setOffHook(false);
+        }
+        handsets.clear();
+        handsetOf.clear();
         group.clear();
     }
 
