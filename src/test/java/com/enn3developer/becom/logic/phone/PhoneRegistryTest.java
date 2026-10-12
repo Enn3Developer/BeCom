@@ -108,7 +108,7 @@ class PhoneRegistryTest {
         PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
         PhoneRecord carols = registry.create(PhoneKind.TELEPHONE, carol, "carol", random);
         mine.addHistory(new PhoneRecord.HistoryEntry(1, carols.number(), "bob", PhoneRecord.Direction.MISSED, bob));
-        PhoneRegistry.Blockable target = registry.recentTarget(mine, 0, carols.number());
+        PhoneRegistry.Blockable target = registry.recentTarget(mine, 1, carols.number());
         assertEquals(new PhoneRegistry.Blockable(bob, "bob"), target);
         mine.block(target.player(), target.name());
         assertEquals(PhoneRegistry.Refusal.BLOCKED, registry.refusal(bob, mine.number()));
@@ -116,27 +116,43 @@ class PhoneRegistryTest {
     }
 
     @Test
-    void anUnansweredOutgoingCallBlocksThePhonesOwner() {
+    void aRowNamesWhoItWasAtTheTimeEvenIfTheNumberMovesOn() {
+        // An unanswered call to Bob's phone records Bob, its owner then. The number is freed and reissued to Carol;
+        // blocking the old row still blocks Bob.
         PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
         PhoneRecord bobs = registry.create(PhoneKind.TELEPHONE, bob, "bob", random);
-        mine.addHistory(new PhoneRecord.HistoryEntry(1, bobs.number(), "bob", PhoneRecord.Direction.OUTGOING, null));
-        assertEquals(new PhoneRegistry.Blockable(bob, "bob"), registry.recentTarget(mine, 0, bobs.number()));
+        int number = bobs.number();
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, number, "bob", PhoneRecord.Direction.OUTGOING, bob));
+        registry.remove(number);
+        registry.restore(new PhoneRecord(number, PhoneKind.TELEPHONE, carol, "carol"));
+        assertEquals(new PhoneRegistry.Blockable(bob, "bob"), registry.recentTarget(mine, 1, number));
     }
 
     @Test
-    void aRecentRowThatMovedOnBlocksNobody() {
+    void aRowWithNobodyRecordedBlocksNobody() {
         PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
-        mine.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.MISSED, bob));
-        assertNull(registry.recentTarget(mine, 0, 333_333));
-        assertNull(registry.recentTarget(mine, 1, 222_222));
-        assertNull(registry.recentTarget(mine, -1, 222_222));
+        PhoneRecord bobs = registry.create(PhoneKind.TELEPHONE, bob, "bob", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(1, bobs.number(), "", PhoneRecord.Direction.OUTGOING, null));
+        assertNull(registry.recentTarget(mine, 1, bobs.number()));
+    }
+
+    @Test
+    void aRowIsFoundByItsTimeAndNumberNotItsPosition() {
+        PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
+        mine.addHistory(new PhoneRecord.HistoryEntry(10, 222_222, "bob", PhoneRecord.Direction.MISSED, bob));
+        mine.addHistory(new PhoneRecord.HistoryEntry(20, 222_222, "carol", PhoneRecord.Direction.MISSED, carol));
+        // A new call lands on top between the screen's last view and the click; the row picked is still Bob's.
+        mine.addHistory(new PhoneRecord.HistoryEntry(30, 333_333, "dan", PhoneRecord.Direction.MISSED, null));
+        assertEquals(new PhoneRegistry.Blockable(bob, "bob"), registry.recentTarget(mine, 10, 222_222));
+        assertNull(registry.recentTarget(mine, 10, 333_333));
+        assertNull(registry.recentTarget(mine, 99, 222_222));
     }
 
     @Test
     void nobodyBlocksThemselves() {
         PhoneRecord mine = registry.create(PhoneKind.TELEPHONE, alice, "alice", random);
         mine.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "alice", PhoneRecord.Direction.MISSED, alice));
-        assertNull(registry.recentTarget(mine, 0, 222_222));
+        assertNull(registry.recentTarget(mine, 1, 222_222));
     }
 
     @Test

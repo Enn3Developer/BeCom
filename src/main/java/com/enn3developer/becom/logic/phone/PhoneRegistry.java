@@ -89,26 +89,20 @@ public final class PhoneRegistry {
     public record Blockable(UUID player, String name) {}
 
     /**
-     * Who blocking row {@code index} of {@code own}'s recent calls blocks: the player on the other end of that call,
-     * or, when nobody answered an outgoing call, the owner of the phone it went to. Null when the row has moved on
-     * (it no longer shows {@code number}), or it would block the phone's own owner. The client names the row by its
-     * position and number, never by a player, so a modified client can only block someone this phone has talked to.
+     * Who blocking a row of {@code own}'s recent calls blocks: the player the row recorded on the other end (whoever
+     * called or answered, or for an unanswered outgoing call the other phone's owner at the time). The row is named by
+     * its time and number, which survive new calls landing on top. Null when there's no such row, it recorded nobody,
+     * or it would block the phone's own owner. The client never names a player, so a modified client can only block
+     * someone this phone has had a call with.
      */
-    public Blockable recentTarget(PhoneRecord own, int index, int number) {
-        List<PhoneRecord.HistoryEntry> history = own.history();
-        if (index < 0 || index >= history.size()) return null;
-        PhoneRecord.HistoryEntry entry = history.get(index);
-        if (entry.otherNumber() != number) return null;
-        Blockable target;
-        if (entry.otherPlayer() != null) {
-            target = new Blockable(entry.otherPlayer(), entry.otherName());
-        } else {
-            PhoneRecord other = phones.get(number);
-            if (other == null || other.owner() == null) return null;
-            target = new Blockable(other.owner(), other.ownerName());
+    public Blockable recentTarget(PhoneRecord own, long time, int number) {
+        for (PhoneRecord.HistoryEntry entry : own.history()) {
+            if (entry.time() != time || entry.otherNumber() != number) continue;
+            if (entry.otherPlayer() == null || entry.otherPlayer()
+                .equals(own.owner())) return null;
+            return new Blockable(entry.otherPlayer(), entry.otherName());
         }
-        return target.player()
-            .equals(own.owner()) ? null : target;
+        return null;
     }
 
     /**

@@ -12,6 +12,7 @@ import net.minecraft.util.ChatComponentTranslation;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.logic.PhoneNumbers;
+import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
@@ -70,7 +71,8 @@ public final class PhoneScreenActions {
         List<PhoneView.Recent> recent = new ArrayList<>();
         if (manage) {
             for (PhoneRecord.HistoryEntry entry : record.history()) {
-                recent.add(new PhoneView.Recent(entry.otherNumber(), entry.otherName(), entry.direction()));
+                recent
+                    .add(new PhoneView.Recent(entry.time(), entry.otherNumber(), entry.otherName(), entry.direction()));
             }
         }
         List<PhoneView.Blocked> blocked = new ArrayList<>();
@@ -131,9 +133,17 @@ public final class PhoneScreenActions {
         if (held != null && held == tile.number()) becom.calls.hangUpHandset(player.getUniqueID());
     }
 
+    // Settings and block-list changes are cheap one by one, but each recomputes contacts or the view: a client that
+    // floods them only wastes the server's time (DESIGN.md 14: client input). A person never needs more than this.
+    private static final int SETTINGS_CHANGES_PER_MINUTE = 60;
+    private static final RateLimiter<UUID> SETTINGS_CHANGES = new RateLimiter<>(SETTINGS_CHANGES_PER_MINUTE, 60_000);
+
     private static PhoneRecord managed(EntityPlayer player, TileTelephone tile) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !near(player, tile)) return null;
+        long now = System.nanoTime() / 1_000_000L;
+        SETTINGS_CHANGES.sweep(now);
+        if (!SETTINGS_CHANGES.tryAcquire(player.getUniqueID(), now)) return null;
         PhoneRecord record = becom.phones.record(tile.number());
         if (record == null || !Ownership.mayManage(player, record.owner())) return null;
         return record;
@@ -165,15 +175,15 @@ public final class PhoneScreenActions {
         block(player, record, target);
     }
 
-    /** Blocks the player on the other end of row {@code index} of this phone's recent calls, if it still shows. */
-    public static void blockRecent(EntityPlayer player, TileTelephone tile, int index, int number) {
+    /** Blocks whoever the recent call at {@code time} with {@code number} recorded on the other end. */
+    public static void blockRecent(EntityPlayer player, TileTelephone tile, long time, int number) {
         PhoneRecord record = managed(player, tile);
         if (record == null) return;
         block(
             player,
             record,
             BeComServer.get().phones.registry()
-                .recentTarget(record, index, number));
+                .recentTarget(record, time, number));
     }
 
     private static void block(EntityPlayer player, PhoneRecord record, PhoneRegistry.Blockable target) {

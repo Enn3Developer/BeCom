@@ -80,7 +80,7 @@ public final class PhoneScreen {
             BLOCK_RECENT,
             false,
             true,
-            buf -> PhoneScreenActions.blockRecent(player, tile, buf.readInt(), buf.readInt()));
+            buf -> PhoneScreenActions.blockRecent(player, tile, buf.readLong(), buf.readInt()));
         sync.registerSyncedAction(
             UNBLOCK,
             false,
@@ -183,10 +183,16 @@ public final class PhoneScreen {
                             .recent()
                             .get(i)
                             .number(),
-                        (i, n) -> sync.callSyncedAction(BLOCK_RECENT, buf -> {
-                            buf.writeInt(i);
-                            buf.writeInt(n);
-                        }),
+                        (i, n) -> {
+                            long time = view.get()
+                                .recent()
+                                .get(i)
+                                .time();
+                            sync.callSyncedAction(BLOCK_RECENT, buf -> {
+                                buf.writeLong(time);
+                                buf.writeInt(n);
+                            });
+                        },
                         view))
                 .addPage(settings(sync, view)));
         panel.child(column);

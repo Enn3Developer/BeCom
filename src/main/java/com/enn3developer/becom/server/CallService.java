@@ -278,9 +278,12 @@ public final class CallService implements CallBook.Listener {
                 if (other == leg) continue;
                 PhoneRecord.Direction direction = leg == caller ? PhoneRecord.Direction.OUTGOING
                     : call.wasConnected() ? PhoneRecord.Direction.INCOMING : PhoneRecord.Direction.MISSED;
-                // The player on the other end, so blocking this row blocks whoever called, whosever phone it was.
-                UUID otherPlayer = other.player();
-                String name = otherPlayer != null ? nameOf(otherPlayer, phones.name(other.phone()))
+                // Who was on the other end, so blocking this row blocks whoever called, whosever phone it was. With
+                // nobody there, the phone's owner now: its number can be freed and given to someone else later.
+                PhoneRecord otherPhone = phones.record(other.phone());
+                UUID otherPlayer = other.player() != null ? other.player()
+                    : otherPhone == null ? null : otherPhone.owner();
+                String name = other.player() != null ? nameOf(other.player(), phones.name(other.phone()))
                     : phones.name(other.phone());
                 record.addHistory(new PhoneRecord.HistoryEntry(time, other.phone(), name, direction, otherPlayer));
             }

@@ -57,7 +57,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
 
     public record Contact(int number, String name) {}
 
-    public record Recent(int number, String name, PhoneRecord.Direction direction) {}
+    /** A recent call; {@code time} names the row when the owner blocks from it. */
+    public record Recent(long time, int number, String name, PhoneRecord.Direction direction) {}
 
     public record Blocked(UUID player, String name) {}
 
@@ -80,6 +81,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         List<Recent> r = cap(recent, MAX_RECENT);
         buf.writeVarIntToBuffer(r.size());
         for (Recent entry : r) {
+            buf.writeLong(entry.time());
             buf.writeInt(entry.number());
             writeString(buf, entry.name());
             buf.writeByte(
@@ -116,10 +118,11 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         List<Recent> recent = new ArrayList<>(count);
         PhoneRecord.Direction[] directions = PhoneRecord.Direction.values();
         for (int i = 0; i < count; i++) {
+            long time = buf.readLong();
             int n = buf.readInt();
             String name = readString(buf);
             int dir = buf.readByte();
-            recent.add(new Recent(n, name, directions[Math.floorMod(dir, directions.length)]));
+            recent.add(new Recent(time, n, name, directions[Math.floorMod(dir, directions.length)]));
         }
         count = Math.min(buf.readVarIntFromBuffer(), MAX_BLOCKED);
         List<Blocked> blocked = new ArrayList<>(count);

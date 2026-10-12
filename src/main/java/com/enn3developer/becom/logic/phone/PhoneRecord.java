@@ -125,9 +125,9 @@ public final class PhoneRecord {
     }
 
     /**
-     * One call this phone made, took or missed: the other phone, and the player on it (the one who called, or who
-     * answered), by name and UUID. The player is null when nobody answered an outgoing call, or for entries saved
-     * before players were recorded.
+     * One call this phone made, took or missed: the other phone, and who was on it, by name and UUID: the player who
+     * called or answered, or for an outgoing call nobody answered, that phone's owner at the time. The player is null
+     * when there was nobody to record, or for entries saved before players were recorded.
      */
     public record HistoryEntry(long time, int otherNumber, String otherName, Direction direction, UUID otherPlayer) {}
 }

@@ -24,7 +24,8 @@ class PhoneViewTest {
         for (int i = 0; i < contacts; i++) c.add(new PhoneView.Contact(100_000 + i, "owner" + i));
         List<PhoneView.Blocked> b = new ArrayList<>();
         for (int i = 0; i < blocked; i++) b.add(new PhoneView.Blocked(UUID.randomUUID(), "pest" + i));
-        List<PhoneView.Recent> r = List.of(new PhoneView.Recent(123_456, "bob", PhoneRecord.Direction.MISSED));
+        List<PhoneView.Recent> r = List
+            .of(new PhoneView.Recent(1_700_000_000_000L, 123_456, "bob", PhoneRecord.Direction.MISSED));
         return new PhoneView(
             654_321,
             "alice",
