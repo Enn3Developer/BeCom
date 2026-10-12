@@ -25,6 +25,10 @@ public final class RearUploadPacket implements IMessage {
         this.jpeg = jpeg;
     }
 
+    public byte[] jpeg() {
+        return jpeg;
+    }
+
     @Override
     public void toBytes(ByteBuf buf) {
         Wire.writeBytes(buf, jpeg);
