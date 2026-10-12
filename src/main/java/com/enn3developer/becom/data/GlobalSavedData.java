@@ -1,5 +1,6 @@
 package com.enn3developer.becom.data;
 
+import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,6 +28,9 @@ public final class GlobalSavedData extends WorldSavedData {
     private final PhoneRegistry phones = new PhoneRegistry();
     private long savedVersion;
     private NBTTagCompound tooNewData;
+    // A phone kind this BeCom doesn't know, which means a newer BeCom saved the file.
+    private String unknownKind;
+    private boolean read;
 
     public GlobalSavedData(String name) {
         super(name);
@@ -35,15 +39,28 @@ public final class GlobalSavedData extends WorldSavedData {
     /** @throws IllegalStateException when the saved data is newer than this BeCom understands */
     public static GlobalSavedData get(World world) {
         GlobalSavedData data = (GlobalSavedData) world.mapStorage.loadData(GlobalSavedData.class, NAME);
+        File file = world.getSaveHandler()
+            .getMapFileFromName(NAME);
         if (data == null) {
             data = new GlobalSavedData(NAME);
+            // Nothing on disk to read: a new world. Counts as read, so a later get() after the first save is fine.
+            data.read = true;
             world.mapStorage.setData(NAME, data);
+        } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
+            data.tooNewData = new NBTTagCompound();
+            throw SavedDataFormat.couldNotRead("the phone registry", file);
         }
+        if (data.unknownKind != null) throw SavedDataFormat.unknownKind("the phone registry", data.unknownKind);
         if (data.tooNewData != null) {
             throw SavedDataFormat
                 .newerThanUnderstood("the phone registry", SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
         return data;
+    }
+
+    /** Whether {@link #readFromNBT} ran; false for data vanilla failed to read. */
+    public boolean wasRead() {
+        return read;
     }
 
     public PhoneRegistry phones() {
@@ -62,11 +79,24 @@ public final class GlobalSavedData extends WorldSavedData {
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
+        read = true;
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
             tooNewData = (NBTTagCompound) nbt.copy();
             return;
         }
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
+        // Phone kinds are added without a format bump (PhoneKind): one this BeCom doesn't know means a newer BeCom
+        // saved
+        // the file. Dropping those phones would free their numbers for reuse (D12), so keep the file untouched.
+        for (int i = 0; i < list.tagCount(); i++) {
+            String kind = list.getCompoundTagAt(i)
+                .getString("kind");
+            if (kindOf(kind) == null) {
+                unknownKind = kind;
+                tooNewData = (NBTTagCompound) nbt.copy();
+                return;
+            }
+        }
         for (int i = 0; i < list.tagCount(); i++) {
             PhoneRecord record = readPhone(list.getCompoundTagAt(i));
             if (record != null && phones.get(record.number()) == null) phones.restore(record);
@@ -87,19 +117,22 @@ public final class GlobalSavedData extends WorldSavedData {
         savedVersion = phones.version();
     }
 
+    private static PhoneKind kindOf(String name) {
+        try {
+            return PhoneKind.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     static PhoneRecord readPhone(NBTTagCompound tag) {
         int number = tag.getInteger("number");
         if (!PhoneNumbers.isValid(number)) {
             BeCom.LOG.warn("Dropping a saved phone with invalid number {}", number);
             return null;
         }
-        PhoneKind kind;
-        try {
-            kind = PhoneKind.valueOf(tag.getString("kind"));
-        } catch (IllegalArgumentException e) {
-            BeCom.LOG.warn("Dropping saved phone {} of unknown kind {}", number, tag.getString("kind"));
-            return null;
-        }
+        PhoneKind kind = kindOf(tag.getString("kind"));
+        if (kind == null) return null;
         PhoneRecord record = new PhoneRecord(number, kind, readUuid(tag, "owner"), tag.getString("ownerName"));
         record.setLocation(tag.getInteger("dim"), tag.getLong("pos"));
         record.setDoNotDisturb(tag.getBoolean("dnd"));

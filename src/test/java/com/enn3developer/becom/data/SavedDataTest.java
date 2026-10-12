@@ -127,19 +127,60 @@ class SavedDataTest {
     }
 
     @Test
-    void unknownNodeKindsAreDroppedNotFatal() {
+    void anUnknownNodeKindMeansANewerBeComSavedIt() {
+        // DESIGN.md 14.2: data a newer BeCom wrote is kept untouched and never saved over, not partly dropped.
         NBTTagCompound nbt = new NBTTagCompound();
         NBTTagList nodes = new NBTTagList();
-        NBTTagCompound bad = node(BlockPos.pack(0, 64, 0), NodeKind.PYLON);
-        bad.setString("kind", "NOT_A_KIND");
-        nodes.appendTag(bad);
+        nodes.appendTag(node(BlockPos.pack(0, 64, 0), NodeKind.PYLON));
+        NBTTagCompound future = node(BlockPos.pack(10, 64, 0), NodeKind.PYLON);
+        future.setString("kind", "SATELLITE_DISH_MK2");
+        nodes.appendTag(future);
         nbt.setTag("nodes", nodes);
         NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
         read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+        assertFalse(read.isDirty());
+        NBTTagCompound written = new NBTTagCompound();
+        read.writeToNBT(written);
+        assertEquals(nbt, written);
+    }
+
+    @Test
+    void anUnknownPhoneKindMeansANewerBeComSavedIt() {
+        GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
+        data.phones()
+            .create(PhoneKind.TELEPHONE, UUID.randomUUID(), "alice", new Random(1));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        NBTTagCompound future = (NBTTagCompound) nbt.getTagList("phones", 10)
+            .getCompoundTagAt(0)
+            .copy();
+        future.setInteger("number", 654_321);
+        future.setString("kind", "HOLOPHONE");
+        nbt.getTagList("phones", 10)
+            .appendTag(future);
+        GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+        assertFalse(read.isDirty());
         assertEquals(
             0,
-            read.model()
+            read.phones()
                 .size());
+    }
+
+    @Test
+    void dataVanillaFailedToReadIsUnreadable() {
+        // MapStorage swallows a read error and hands back an object readFromNBT never ran on.
+        NetworkSavedData failed = new NetworkSavedData(NetworkSavedData.NAME);
+        assertFalse(failed.wasRead());
+        assertTrue(SavedDataFormat.unreadable(true, failed.wasRead()));
+        NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
+        read.readFromNBT(new NBTTagCompound());
+        assertFalse(SavedDataFormat.unreadable(true, read.wasRead()));
+        // No file at all is a new world, not a broken one.
+        assertFalse(SavedDataFormat.unreadable(false, false));
+        assertFalse(new GlobalSavedData(GlobalSavedData.NAME).wasRead());
     }
 
     @Test

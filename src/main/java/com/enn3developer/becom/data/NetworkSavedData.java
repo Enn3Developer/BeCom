@@ -1,14 +1,15 @@
 package com.enn3developer.becom.data;
 
+import java.io.File;
 import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSavedData;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.util.Constants;
 
-import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -25,6 +26,9 @@ public final class NetworkSavedData extends WorldSavedData {
     private final NetworkModel model = new NetworkModel();
     private long savedVersion;
     private NBTTagCompound tooNewData;
+    // A node kind this BeCom doesn't know, which means a newer BeCom saved the file.
+    private String unknownKind;
+    private boolean read;
 
     public NetworkSavedData(String name) {
         super(name);
@@ -37,17 +41,34 @@ public final class NetworkSavedData extends WorldSavedData {
      */
     public static NetworkSavedData get(World world) {
         NetworkSavedData data = (NetworkSavedData) world.perWorldStorage.loadData(NetworkSavedData.class, NAME);
+        String what = "the network of dimension " + world.provider.dimensionId;
+        File file = file(world);
         if (data == null) {
             data = new NetworkSavedData(NAME);
+            // Nothing on disk to read: a new world. Counts as read, so a later get() after the first save is fine.
+            data.read = true;
             world.perWorldStorage.setData(NAME, data);
+        } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
+            data.tooNewData = new NBTTagCompound();
+            throw SavedDataFormat.couldNotRead(what, file);
         }
+        if (data.unknownKind != null) throw SavedDataFormat.unknownKind(what, data.unknownKind);
         if (data.tooNewData != null) {
-            throw SavedDataFormat.newerThanUnderstood(
-                "the network of dimension " + world.provider.dimensionId,
-                SavedDataFormat.versionOf(data.tooNewData),
-                FORMAT);
+            throw SavedDataFormat.newerThanUnderstood(what, SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
         return data;
+    }
+
+    /** Where {@code world.perWorldStorage} keeps this file: the dimension's own data folder. */
+    private static File file(World world) {
+        if (!(world instanceof WorldServer server)) return null;
+        File dir = server.getChunkSaveLocation();
+        return dir == null ? null : new File(new File(dir, "data"), NAME + ".dat");
+    }
+
+    /** Whether {@link #readFromNBT} ran; false for data vanilla failed to read. */
+    public boolean wasRead() {
+        return read;
     }
 
     public NetworkModel model() {
@@ -67,21 +88,27 @@ public final class NetworkSavedData extends WorldSavedData {
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
+        read = true;
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
             tooNewData = (NBTTagCompound) nbt.copy();
             return;
         }
         // Format 1 is the first; later formats upgrade from here.
         NBTTagList nodes = nbt.getTagList("nodes", Constants.NBT.TAG_COMPOUND);
+        // Kinds are added without a format bump (NodeKind), so a kind this BeCom doesn't know means a newer one saved
+        // the file: keep it all, untouched, rather than drop those nodes and save over it.
+        for (int i = 0; i < nodes.tagCount(); i++) {
+            String name = nodes.getCompoundTagAt(i)
+                .getString("kind");
+            if (kindOf(name) == null) {
+                unknownKind = name;
+                tooNewData = (NBTTagCompound) nbt.copy();
+                return;
+            }
+        }
         for (int i = 0; i < nodes.tagCount(); i++) {
             NBTTagCompound tag = nodes.getCompoundTagAt(i);
-            NodeKind kind;
-            try {
-                kind = NodeKind.valueOf(tag.getString("kind"));
-            } catch (IllegalArgumentException e) {
-                BeCom.LOG.warn("Dropping a saved network node of unknown kind {}", tag.getString("kind"));
-                continue;
-            }
+            NodeKind kind = kindOf(tag.getString("kind"));
             UUID owner = tag.hasKey("ownerMost") ? new UUID(tag.getLong("ownerMost"), tag.getLong("ownerLeast")) : null;
             NetNode node = new NetNode(tag.getLong("pos"), kind, owner);
             node.setHeight(tag.getInteger("height"));
@@ -113,6 +140,14 @@ public final class NetworkSavedData extends WorldSavedData {
             if (model.linked(a, b)) model.setBlocked(a, b, true);
         }
         savedVersion = model.version();
+    }
+
+    private static NodeKind kindOf(String name) {
+        try {
+            return NodeKind.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     @Override

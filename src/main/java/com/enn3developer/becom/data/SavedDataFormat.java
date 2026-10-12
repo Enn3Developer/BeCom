@@ -30,6 +30,33 @@ public final class SavedDataFormat {
         nbt.setInteger(KEY, current);
     }
 
+    /**
+     * Whether a data file that exists was never read: vanilla's {@code MapStorage.loadData} swallows a read error (a
+     * file cut short by a crash mid-save, say) and hands back an empty object, which would be saved over the file on
+     * the first change.
+     */
+    public static boolean unreadable(boolean fileExists, boolean read) {
+        return fileExists && !read;
+    }
+
+    public static IllegalStateException couldNotRead(String what, java.io.File file) {
+        return new IllegalStateException(
+            "BeCom couldn't read " + what
+                + " from "
+                + file
+                + ". Stopping instead of starting it empty and saving over the file: restore it from a backup, or"
+                + " delete it to start with none.");
+    }
+
+    public static IllegalStateException unknownKind(String what, String kind) {
+        return new IllegalStateException(
+            "BeCom found " + what
+                + " holding a kind it doesn't know, \""
+                + kind
+                + "\", saved by a newer BeCom. Stopping instead of dropping it and saving over the file: update BeCom,"
+                + " or restore a backup made with this version.");
+    }
+
     public static IllegalStateException newerThanUnderstood(String what, int found, int current) {
         return new IllegalStateException(
             "BeCom found " + what
