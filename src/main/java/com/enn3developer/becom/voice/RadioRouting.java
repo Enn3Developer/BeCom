@@ -91,6 +91,11 @@ public final class RadioRouting {
         if (reported.add(contact)) contacts.add(contact);
     }
 
+    /** Server thread: whether a receiving device's capture is held by {@code speaker} on {@code channel}. */
+    public boolean deviceHeldBy(Object device, int channel, UUID speaker) {
+        return speaker.equals(capture.holder(device, channel));
+    }
+
     /** Server thread: who has been keyed, and when their last frame went through. */
     public Map<UUID, Keyed> keyedSpeakers() {
         return keyed;

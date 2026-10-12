@@ -50,6 +50,14 @@ public final class Capture<L> {
         return true;
     }
 
+    /**
+     * Who {@code listener} is holding on {@code channel}, or null. Safe from any thread; the answer may be a frame old.
+     */
+    public Object holder(L listener, int channel) {
+        State state = holders.get(new Key<>(listener, channel));
+        return state == null ? null : state.speaker;
+    }
+
     /** Server thread: forgets a listener, on every channel. */
     public void forgetListener(L listener) {
         holders.keySet()

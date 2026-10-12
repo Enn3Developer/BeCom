@@ -13,12 +13,14 @@ import java.util.UUID;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.FakePlayer;
 
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.item.ItemSignalAnalyzer;
@@ -564,19 +566,38 @@ public final class RadioService {
         return level == null ? SignalLevel.NONE : level.level;
     }
 
-    /** The squelch tail at every device that was receiving a transmission that just ended (DESIGN.md 13.6, 15.2). */
+    /**
+     * The squelch tail (DESIGN.md 13.6, 15.2) at every device that was holding a transmission that just ended, for the
+     * players who were hearing it there: around a walkie within the walkie speaker's range (D21), around a loudspeaker
+     * within its own.
+     */
     private void squelch(UUID speaker) {
         RadioSnapshot.Transmission tx = published.transmission(speaker);
         if (tx == null) return;
         for (RadioSnapshot.Link link : tx.walkies()) {
+            if (!routing.deviceHeldBy(link.device(), tx.channel(), speaker)) continue;
             EntityPlayerMP holder = player(link.holder());
-            if (holder != null) holder.worldObj.playSoundAtEntity(holder, SQUELCH, SQUELCH_VOLUME, 1.0f);
+            if (holder == null) continue;
+            playAround(
+                holder.dimension,
+                holder.posX,
+                holder.posY + EYE_HEIGHT,
+                holder.posZ,
+                tunables.walkieSpeakerRange());
         }
         for (RadioSnapshot.Link link : tx.transceivers()) {
             RadioSnapshot.Transceiver t = link.transceiver();
-            WorldServer world = DimensionManager.getWorld(t.dimension());
-            if (t.loudspeaker() && world != null)
-                world.playSoundEffect(t.x(), t.y(), t.z(), SQUELCH, SQUELCH_VOLUME, 1.0f);
+            if (!t.loudspeaker() || !routing.deviceHeldBy(link.device(), tx.channel(), speaker)) continue;
+            playAround(t.dimension(), t.x(), t.y(), t.z(), tunables.loudspeakerRange());
+        }
+    }
+
+    private void playAround(int dimension, double x, double y, double z, double range) {
+        S29PacketSoundEffect sound = new S29PacketSoundEffect(SQUELCH, x, y, z, SQUELCH_VOLUME, 1.0f);
+        for (EntityPlayerMP player : players()) {
+            if (player.dimension != dimension || player.getDistanceSq(x, y, z) > range * range) continue;
+            if (player instanceof FakePlayer || player.playerNetServerHandler == null) continue;
+            player.playerNetServerHandler.sendPacket(sound);
         }
     }
 

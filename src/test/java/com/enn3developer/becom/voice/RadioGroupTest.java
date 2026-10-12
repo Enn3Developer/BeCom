@@ -434,4 +434,20 @@ class RadioGroupTest {
         fixture.route(one, alice, RADIO);
         assertTrue(fixture.sent.isEmpty(), "Bob's own walkie still has Alice, but Bob is Cat's now");
     }
+
+    @Test
+    void tellsWhichSpeakerEachDeviceHolds() {
+        // The server plays the squelch tail only where a device was holding the speaker who let go.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 60, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        assertTrue(!shared.deviceHeldBy(bob, 1, alice));
+        fixture.route(one, alice, RADIO);
+        assertTrue(shared.deviceHeldBy(bob, 1, alice));
+        assertTrue(!shared.deviceHeldBy(bob, 2, alice));
+    }
 }
