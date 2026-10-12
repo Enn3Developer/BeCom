@@ -1,0 +1,90 @@
+{
+  "preRequisites:9": {
+    "0:10": {
+      "questIDHigh:4": -65402956228896849,
+      "questIDLow:4": -8945519870335909461
+    }
+  },
+  "properties:10": {
+    "betterquesting:10": {
+      "autoClaim:1": 0,
+      "desc:8": "A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power. Wrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench it, go through the portal, and wrench a relay on the other side within 5 minutes: the pair joins the two networks at High.",
+      "globalShare:1": 1,
+      "icon:10": {
+        "Count:3": 1,
+        "Damage:2": 25012,
+        "OreDict:8": "",
+        "id:8": "gregtech:gt.blockmachines"
+      },
+      "isGlobal:1": 0,
+      "isMain:1": 1,
+      "isSilent:1": 0,
+      "lockedProgress:1": 0,
+      "name:8": "Through the Portal",
+      "partySingleReward:1": 0,
+      "questLogic:8": "AND",
+      "repeatTime:3": -1,
+      "repeat_relative:1": 1,
+      "simultaneous:1": 0,
+      "snd_complete:8": "random.levelup",
+      "snd_update:8": "random.levelup",
+      "taskLogic:8": "AND",
+      "visibility:8": "NORMAL"
+    }
+  },
+  "questIDHigh:4": -6856239567180702068,
+  "questIDLow:4": -5006339470503113491,
+  "rewards:9": {
+    "0:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 0,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 5,
+          "OreDict:8": "",
+          "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    },
+    "1:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 1,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 25,
+          "Damage:2": 0,
+          "OreDict:8": "",
+          "id:8": "dreamcraft:CoinTechnician"
+        }
+      }
+    }
+  },
+  "tasks:9": {
+    "0:10": {
+      "autoConsume:1": 0,
+      "consume:1": 0,
+      "groupDetect:1": 0,
+      "ignoreNBT:1": 1,
+      "index:3": 0,
+      "partialMatch:1": 1,
+      "requireOnlyOneItem:1": 0,
+      "requiredItems:9": {
+        "0:10": {
+          "Count:3": 2,
+          "Damage:2": 25012,
+          "OreDict:8": "",
+          "id:8": "gregtech:gt.blockmachines"
+        }
+      },
+      "taskID:8": "bq_standard:retrieval"
+    },
+    "1:10": {
+      "becomTask:8": "PORTAL_RELAY_PAIR",
+      "index:3": 1,
+      "taskID:8": "becom:event"
+    }
+  }
+}

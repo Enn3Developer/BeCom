@@ -1,0 +1,72 @@
+{
+  "preRequisites:9": {
+    "0:10": {
+      "questIDHigh:4": 679645289370508672,
+      "questIDLow:4": -6543167966628687831
+    }
+  },
+  "properties:10": {
+    "betterquesting:10": {
+      "autoClaim:1": 0,
+      "desc:8": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. Satellites come down after about 100 days, so keep launching.",
+      "globalShare:1": 1,
+      "icon:10": {
+        "Count:3": 1,
+        "Damage:2": 0,
+        "OreDict:8": "",
+        "id:8": "becom:satellite"
+      },
+      "isGlobal:1": 0,
+      "isMain:1": 1,
+      "isSilent:1": 0,
+      "lockedProgress:1": 0,
+      "name:8": "A Constellation",
+      "partySingleReward:1": 0,
+      "questLogic:8": "AND",
+      "repeatTime:3": -1,
+      "repeat_relative:1": 1,
+      "simultaneous:1": 0,
+      "snd_complete:8": "random.levelup",
+      "snd_update:8": "random.levelup",
+      "taskLogic:8": "AND",
+      "visibility:8": "NORMAL"
+    }
+  },
+  "questIDHigh:4": 2843184896839144012,
+  "questIDLow:4": -8942407194285358329,
+  "rewards:9": {
+    "0:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 0,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 6,
+          "OreDict:8": "",
+          "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    },
+    "1:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 1,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 5,
+          "Damage:2": 0,
+          "OreDict:8": "",
+          "id:8": "dreamcraft:CoinTechnicianI"
+        }
+      }
+    }
+  },
+  "tasks:9": {
+    "0:10": {
+      "becomTask:8": "FIVE_SATELLITES",
+      "index:3": 0,
+      "taskID:8": "becom:event"
+    }
+  }
+}

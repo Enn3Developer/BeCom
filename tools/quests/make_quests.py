@@ -45,8 +45,8 @@ LINE = {
     "icon": ("becom:telephone", 0),
 }
 
-# Each quest: key, tier, title, description, icon, prerequisites, tasks, big step (adds coins), position.
-# Tasks are ("item", id, damage, count) or ("becom", QuestTask name).
+# Each quest: key, tier, title, description, icon, prerequisites, tasks, big step (adds coins), position, and optionally
+# "logic": "OR" when any one prerequisite unlocks it. Tasks are ("item", id, damage, count) or ("becom", QuestTask name).
 QUESTS = [
     {
         "key": "phone_cable",
@@ -325,6 +325,101 @@ QUESTS = [
         "big": True,
         "pos": (480, 120),
     },
+    {
+        "key": "portal_relay",
+        "tier": "MV",
+        "name": "Through the Portal",
+        "desc": "A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or "
+        "a Personal Space portal, on 32 EU/t of MV power. Wrench-link it to an antenna, a Pylon Head or a Line "
+        "Terminal of your network. Then wrench it, go through the portal, and wrench a relay on the other side "
+        "within 5 minutes: the pair joins the two networks at High.",
+        "icon": (GT_MACHINE, 25012),
+        "pre": ["first_call"],
+        "tasks": [("item", GT_MACHINE, 25012, 2), ("becom", "PORTAL_RELAY_PAIR")],
+        "big": True,
+        "pos": (192, 216),
+    },
+    {
+        "key": "satellite_rocket",
+        "tier": "HV",
+        "name": "Payload",
+        "desc": "A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 "
+        "rocket parts in the assembler to make a Satellite Rocket. It doesn't fly from Galacticraft's pads: it "
+        "needs a Satellite Launch Pad.",
+        "icon": ("becom:satellite_rocket", 0),
+        "pre": ["mobile_call"],
+        "tasks": [("item", "becom:satellite_rocket", 0, 1)],
+        "big": False,
+        "pos": (336, 192),
+    },
+    {
+        "key": "first_satellite",
+        "tier": "HV",
+        "name": "Liftoff",
+        "desc": "The Satellite Launch Pad is a 5 by 5 floor of Clean Stainless Steel Machine Casings under open "
+        "sky, with an input bus for rockets, an input hatch for rocket fuel, an energy hatch and a maintenance "
+        "hatch. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over the "
+        "pad's dimension.",
+        "icon": (GT_MACHINE, 25010),
+        "pre": ["satellite_rocket"],
+        "tasks": [("item", GT_MACHINE, 25010, 1), ("becom", "FIRST_SATELLITE")],
+        "big": False,
+        "pos": (384, 192),
+    },
+    {
+        "key": "five_satellites",
+        "tier": "HV",
+        "name": "A Constellation",
+        "desc": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from "
+        "them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. "
+        "Satellites come down after about 100 days, so keep launching.",
+        "icon": ("becom:satellite", 0),
+        "pre": ["first_satellite"],
+        "tasks": [("becom", "FIVE_SATELLITES")],
+        "big": True,
+        "pos": (432, 192),
+    },
+    {
+        "key": "satellite_dish",
+        "tier": "HV",
+        "name": "Dish Network",
+        "desc": "A Satellite Dish joins its network to every other dish in the same dimension, through the "
+        "satellites. It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless "
+        "Steel Frame Boxes, with an energy hatch and a maintenance hatch, under open sky, on 512 EU/t. "
+        "Wrench-link it to an antenna, a Pylon Head or a Line Terminal. Each maintenance problem costs it 2 dB.",
+        "icon": (GT_MACHINE, 25011),
+        "pre": ["five_satellites"],
+        "tasks": [("item", GT_MACHINE, 25011, 1)],
+        "big": False,
+        "pos": (480, 168),
+    },
+    {
+        "key": "rocket_receiver",
+        "tier": "HV",
+        "name": "Calling Home",
+        "desc": "A Rocket Radio Receiver in the cargo of a rocket standing on a launch pad on a planet makes the "
+        "rocket an antenna there, and the planet's link to the Overworld's satellites, at High. The rocket needs "
+        "chests to have cargo. In the Overworld, phones under open sky and networks with a dish reach it.",
+        "icon": ("becom:rocket_radio_receiver", 0),
+        "pre": ["five_satellites"],
+        "tasks": [("item", "becom:rocket_radio_receiver", 0, 1)],
+        "big": False,
+        "pos": (480, 216),
+    },
+    {
+        "key": "call_between_dimensions",
+        "tier": "HV",
+        "name": "Out of This World",
+        "desc": "Call someone in another dimension: through a pair of Portal Relays to the Nether, the End, the "
+        "Twilight Forest or a personal dimension, or through the Overworld's satellites to a planet with a Rocket "
+        "Radio Receiver.",
+        "icon": ("becom:mobile_phone", 0),
+        "pre": ["portal_relay", "rocket_receiver"],
+        "logic": "OR",
+        "tasks": [("becom", "CALL_BETWEEN_DIMENSIONS")],
+        "big": True,
+        "pos": (528, 264),
+    },
 ]
 
 
@@ -412,7 +507,7 @@ def quest_json(q, index):
         "lockedProgress:1": 0,
         "name:8": q["name"],
         "partySingleReward:1": 0,
-        "questLogic:8": "AND",
+        "questLogic:8": q.get("logic", "AND"),
         "repeatTime:3": -1,
         "repeat_relative:1": 1,
         "simultaneous:1": 0,

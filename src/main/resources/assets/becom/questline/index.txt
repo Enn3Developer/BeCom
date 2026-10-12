@@ -41,3 +41,17 @@ DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BridgingtheNe
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BridgingtheNetwo-6JNs0PJ2W_2dWPcb8B5q0A==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/LongDistance-1FYiW9xFV5eNdWDcFL6cbw==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/LongDistance-1FYiW9xFV5eNdWDcFL6cbw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ThroughthePortal-oNm-cIc3Xoy6hejGu6UM7Q==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ThroughthePortal-oNm-cIc3Xoy6hejGu6UM7Q==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Payload-78j3bHKHWF6_v27ljQ8cYg==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Payload-78j3bHKHWF6_v27ljQ8cYg==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Liftoff-CW6Vyi4yXYClMf9my2HQKQ==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Liftoff-CW6Vyi4yXYClMf9my2HQKQ==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AConstellation-J3UFmY7aUkyD5jAJI7lDBw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AConstellation-J3UFmY7aUkyD5jAJI7lDBw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/DishNetwork-aEl8W97yVGeFRBy0p4O4ZA==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/DishNetwork-aEl8W97yVGeFRBy0p4O4ZA==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CallingHome-iphLiVwwUKakj8QR4PH2-w==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CallingHome-iphLiVwwUKakj8QR4PH2-w==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OutofThisWorld-Ww6rBsobWMmbyc-M1rYILg==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OutofThisWorld-Ww6rBsobWMmbyc-M1rYILg==.json

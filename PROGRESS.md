@@ -899,9 +899,9 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 
 | Item                                                                                            | Status |
 |-------------------------------------------------------------------------------------------------|--------|
-| The Portal Relay quest, with the Portal Relay pair task                                         | todo   |
-| The satellite quests, with the First satellite and Five satellites tasks                        | todo   |
-| The space call quests, with the Call between dimensions task                                    | todo   |
+| The Portal Relay quest, with the Portal Relay pair task                                         | done   |
+| The satellite quests, with the First satellite and Five satellites tasks                        | done   |
+| The space call quests, with the Call between dimensions task                                    | done   |
 
 ### Assets (DESIGN.md 15)
 
