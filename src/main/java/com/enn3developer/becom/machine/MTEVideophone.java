@@ -305,7 +305,7 @@ public class MTEVideophone extends MTETieredMachineBlock {
     public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
         int z) {
         super.getWailaNBTData(player, tile, tag, world, x, y, z);
-        waila.write(tag);
+        waila.write(tag, player, world, x, y, z);
     }
 
     @Override

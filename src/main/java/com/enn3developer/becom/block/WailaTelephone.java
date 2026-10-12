@@ -55,7 +55,7 @@ public final class WailaTelephone implements IWailaDataProvider {
     public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x,
         int y, int z) {
         if (tile instanceof TileTelephone phone) phone.waila()
-            .write(tag);
+            .write(tag, player, world, x, y, z);
         return tag;
     }
 }

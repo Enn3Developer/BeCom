@@ -1,6 +1,8 @@
 package com.enn3developer.becom.machine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,5 +97,14 @@ class InfoSnapshotTest {
         snapshot.write(new NBTTagCompound());
         InfoSnapshot.refreshWanted();
         assertEquals(1, made.get(), "and the machine can be asked about again");
+    }
+
+    @Test
+    void onlyAPlayerCloseByInTheSameDimensionIsLooking() {
+        assertTrue(InfoSnapshot.near(0, 12.5, 64, 10.5, 0, 10, 64, 10), "two blocks off");
+        assertTrue(InfoSnapshot.near(0, 10.5 + 7.9, 64.5, 10.5, 0, 10, 64, 10), "just within reach");
+        assertFalse(InfoSnapshot.near(0, 10.5 + 8.1, 64.5, 10.5, 0, 10, 64, 10), "just out of reach");
+        assertFalse(InfoSnapshot.near(0, 10.5, 64.5 + 9, 10.5, 0, 10, 64, 10), "straight above, out of reach");
+        assertFalse(InfoSnapshot.near(-1, 12.5, 64, 10.5, 0, 10, 64, 10), "the same spot in another dimension");
     }
 }

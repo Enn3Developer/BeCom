@@ -135,6 +135,8 @@ public final class SelfTest {
     private final WorldServer world;
     final FakePlayer owner;
     private final FakePlayer stranger;
+    /** Stands beside a machine as a player looking at it with WAILA would. */
+    private final FakePlayer looker;
     private boolean fakePlacedOwnerless;
     private final List<Step> steps = new ArrayList<>();
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
@@ -224,6 +226,8 @@ public final class SelfTest {
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000001"), "BeComSelfTest"));
         this.stranger = FakePlayerFactory
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000002"), "BeComStranger"));
+        this.looker = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000b1"), "BeComLooker"));
         BeComQuests.recordForSelfTest();
         // Satellites an earlier run left in orbit would give every radio and phone here a sky hop (DESIGN.md 9.1),
         // stronger than the links the checks before 0.4's measure.
@@ -906,6 +910,13 @@ public final class SelfTest {
             phone.contains(
                 StatCollector.translateToLocalFormatted("becom.mobile.number", repeaterLine.phoneStart.number())),
             phone.toString());
+        int dimension = world.provider.dimensionId;
+        List<String> far = wailaLines(repeaterLine.start, 9, dimension);
+        List<String> elsewhere = wailaLines(repeaterLine.start, 2, dimension + 1);
+        check(
+            "WAILA gives none of BeCom's lines to a player 9 blocks off, or one in another dimension",
+            far.isEmpty() && elsewhere.isEmpty(),
+            far + " " + elsewhere);
         check(
             "WAILA took BeCom's Telephone provider through IMC",
             cpw.mods.fml.common.Loader.isModLoaded("Waila") && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
@@ -916,11 +927,22 @@ public final class SelfTest {
         return 1;
     }
 
-    private static List<String> wailaLines(MTELineTerminal mte) {
+    private List<String> wailaLines(MTELineTerminal mte) {
+        return wailaLines(
+            mte,
+            2,
+            mte.getBaseMetaTileEntity()
+                .getWorld().provider.dimensionId);
+    }
+
+    /** What WAILA gets for a Line Terminal, asked by a player {@code away} blocks east of it in {@code dimension}. */
+    private List<String> wailaLines(MTELineTerminal mte, double away, int dimension) {
         IGregTechTileEntity tile = mte.getBaseMetaTileEntity();
+        looker.setPosition(tile.getXCoord() + 0.5 + away, tile.getYCoord(), tile.getZCoord() + 0.5);
+        looker.dimension = dimension;
         NBTTagCompound tag = new NBTTagCompound();
         mte.getWailaNBTData(
-            null,
+            looker,
             (TileEntity) tile,
             tag,
             tile.getWorld(),
@@ -932,10 +954,12 @@ public final class SelfTest {
         return tip;
     }
 
-    private static List<String> wailaLines(TileTelephone phone) {
+    private List<String> wailaLines(TileTelephone phone) {
+        looker.setPosition(phone.xCoord + 2.5, phone.yCoord, phone.zCoord + 0.5);
+        looker.dimension = phone.getWorldObj().provider.dimensionId;
         NBTTagCompound tag = new NBTTagCompound();
         phone.waila()
-            .write(tag);
+            .write(tag, looker, phone.getWorldObj(), phone.xCoord, phone.yCoord, phone.zCoord);
         List<String> tip = new ArrayList<>();
         InfoLines.read(tag, tip);
         return tip;

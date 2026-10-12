@@ -7,7 +7,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 
 import com.enn3developer.becom.BeCom;
 
@@ -17,6 +19,14 @@ import com.enn3developer.becom.BeCom;
  * ones for the next tick. WAILA asks again every 250 ms while a player looks, so the lines fill in at once.
  */
 public final class InfoSnapshot {
+
+    /**
+     * How near a player must stand to get a machine's lines, in blocks. WAILA shows what's under the crosshair, at
+     * most 5 blocks off in 1.7.10's creative mode, and the rest covers a few steps taken while the request travels.
+     * WAILA serves any position a client names, so without this a modified client could read every Telephone's
+     * number and owner from anywhere.
+     */
+    static final double REACH = 8;
 
     private static final Queue<InfoSnapshot> WANTED = new ConcurrentLinkedQueue<>();
     private static boolean warned;
@@ -29,8 +39,25 @@ public final class InfoSnapshot {
         this.source = source;
     }
 
-    /** On WAILA's network thread: writes the last lines and asks the server thread for fresh ones. */
-    public void write(NBTTagCompound tag) {
+    /**
+     * On WAILA's network thread: writes the last lines for a player looking from close by, and asks the server thread
+     * for fresh ones. A player anywhere else gets nothing, and asks for nothing.
+     */
+    public void write(NBTTagCompound tag, EntityPlayer player, World world, int x, int y, int z) {
+        if (player == null || world == null) return;
+        if (!near(player.dimension, player.posX, player.posY, player.posZ, world.provider.dimensionId, x, y, z)) return;
+        write(tag);
+    }
+
+    /** Whether a player stands close enough to a machine at {@code x, y, z} to be looking at it. */
+    static boolean near(int playerDimension, double px, double py, double pz, int dimension, int x, int y, int z) {
+        if (playerDimension != dimension) return false;
+        double dx = px - (x + 0.5), dy = py - (y + 0.5), dz = pz - (z + 0.5);
+        return dx * dx + dy * dy + dz * dz <= REACH * REACH;
+    }
+
+    /** Writes the last lines and asks the server thread for fresh ones. */
+    void write(NBTTagCompound tag) {
         if (queued.compareAndSet(false, true)) WANTED.add(this);
         InfoLines current = lines;
         if (current != null) current.write(tag);
