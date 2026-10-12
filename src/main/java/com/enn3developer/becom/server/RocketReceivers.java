@@ -119,23 +119,31 @@ public final class RocketReceivers {
 
     /** Where a receiver counts from: the block at the top of its rocket. */
     private static NodeRef refOf(EntityAutoRocket rocket) {
-        return new NodeRef(
-            rocket.worldObj.provider.dimensionId,
-            BlockPos.pack(
-                MathHelper.floor_double(rocket.posX),
-                MathHelper.floor_double(rocket.posY + rocket.height),
-                MathHelper.floor_double(rocket.posZ)));
+        return new NodeRef(rocket.worldObj.provider.dimensionId, BlockPos.pack(x(rocket), top(rocket), z(rocket)));
     }
 
     /**
-     * Where the receiver transmits from (DESIGN.md 6.1): the top of the rocket, how far below the surface that is, and
-     * the pad it stands on.
+     * Where the receiver transmits from (DESIGN.md 6.1): the top of the rocket's top block, how far below the surface
+     * that is, and the pad it stands on. Whole blocks, like an antenna's head, so the rocket's position settling by a
+     * hair doesn't make a new antenna that surveys again.
      */
     private static RadioHops.End endOf(EntityAutoRocket rocket) {
-        double top = rocket.posY + rocket.height;
-        int surface = rocket.worldObj
-            .getHeightValue(MathHelper.floor_double(rocket.posX), MathHelper.floor_double(rocket.posZ));
-        return new RadioHops.End(rocket.posX, top, rocket.posZ, surface - top, rocket.posY);
+        int x = x(rocket), z = z(rocket);
+        double eye = top(rocket) + 1;
+        int surface = rocket.worldObj.getHeightValue(x, z);
+        return new RadioHops.End(x + 0.5, eye, z + 0.5, surface - eye, MathHelper.floor_double(rocket.posY));
+    }
+
+    private static int x(EntityAutoRocket rocket) {
+        return MathHelper.floor_double(rocket.posX);
+    }
+
+    private static int z(EntityAutoRocket rocket) {
+        return MathHelper.floor_double(rocket.posZ);
+    }
+
+    private static int top(EntityAutoRocket rocket) {
+        return MathHelper.floor_double(rocket.posY + rocket.height);
     }
 
     /** How many receivers count now; for the self-test. */
