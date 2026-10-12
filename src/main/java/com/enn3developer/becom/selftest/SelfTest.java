@@ -2824,6 +2824,14 @@ public final class SelfTest {
             added == CallBook.DialResult.RINGING && ringing.state() == PhoneView.State.RINGING_IN
                 && named.equals(List.of("BeComTia")),
             added + ", " + ringing.state() + ", " + named);
+        uma.setPosition(X0 + 2.5, Y, z + 0.5);
+        PhoneScreenActions.hangUp(uma, screen);
+        boolean turnedDown = !becom.calls.isRinging(number);
+        uma.setPosition(X0 - 5.5, Y, z + 0.5);
+        check(
+            "...and someone in its room who is already in a call can't turn it down (DESIGN.md 12.2)",
+            !turnedDown,
+            "");
         PhoneScreenActions.pickUp(yul, screen);
         String told = becom.calls.lastMessageForSelfTest(yul.getUniqueID());
         boolean stillRinging = becom.calls.isRinging(number);
@@ -3141,6 +3149,12 @@ public final class SelfTest {
                 + atScreen.members()
                     .size()
                 + " in the call shown");
+        PhoneScreenActions.hangUp(xan, new PhoneHandle.Videophone(videophone));
+        check(
+            "...nor can hang it up there, standing in its room but kept out of its call (X28)",
+            becom.calls.book()
+                .callOfPhone(videophone.number()) != null,
+            "");
         becom.calls.voiceForSelfTest(id -> true);
         xan.setPosition(X0 + 30.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
         walkWes(false);

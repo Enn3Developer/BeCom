@@ -671,16 +671,21 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * Anyone in Videophone {@code number}'s room hangs it up at its screen for the whole room, who hear the click as
-     * they leave the call, or turns down a ringing call.
+     * Someone in Videophone {@code number}'s call hangs it up at its screen for the whole room, who hear the click as
+     * they leave the call; or someone in its room who could answer it turns a ringing call down. Its call is the
+     * room's: anyone near it but kept out of it, in another call say, can't end it (DESIGN.md 12.2).
      */
     public void hangUpVideophone(EntityPlayerMP player, int number) {
         if (!atVideophone(player, number)) return;
+        UUID id = player.getUniqueID();
         if (isRinging(number)) {
-            book.reject(number);
+            if (book.callOf(id) == null && !handsetOf.containsKey(id)) book.reject(number);
             return;
         }
-        book.hangUpPhone(number);
+        Call call = book.callOfPhone(number);
+        Call.Leg leg = call == null ? null : call.legOf(number);
+        if (leg != null && leg.players()
+            .contains(id)) book.hangUpPhone(number);
     }
 
     /**

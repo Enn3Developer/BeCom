@@ -432,8 +432,10 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
     it keeps their voice's 10 s grace. The 30 s clock runs while the room is empty, so someone standing near in
     another call doesn't keep it on the line.
   - Its screen stays open from 8 blocks, as any block's does, but only someone in its room can dial, answer or hang
-    up there, since its calls are the room's; anyone further off is told to step closer. Hanging up ends the call for
-    the whole room, as the Phone key does from anyone in it. Answering needs a voice session, as at a Telephone (X8).
+    up there, since its calls are the room's; anyone further off is told to step closer. Hanging up is for the people
+    in its call, and ends the call for the whole room, as the Phone key does from anyone in it; turning a ringing call
+    down is for someone near it in no call and holding no handset. Someone within 4 blocks who is kept out of its
+    call can do neither. Answering needs a voice session, as at a Telephone (X8).
   - While it rings, its screen shows who calls, as a carried phone's notice does, and nobody else in the call. In a
     call, it shows the call to the people in it, wherever they stand, and to anyone else only that it's in use
     (DESIGN.md 12.2). A Telephone's screen does the same.
