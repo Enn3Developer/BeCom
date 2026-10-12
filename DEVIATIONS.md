@@ -92,12 +92,14 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** blocking by typed name would need a name lookup that can block the server thread on Mojang's API.
 - **To match the design:** nothing, unless the owner wants a name field limited to online players.
 
-### X10: The handset cord reaches 1.5 blocks from the phone
+### X10: The handset cord reaches 1.2 blocks from the phone to the player's body
 
 - **Where:** 0.1, DESIGN.md 5.6
 - **Design says:** you can move 1 block away; further than that hangs up.
-- **Built:** the call hangs up once the player's feet are more than 1.5 blocks from the phone's block, measured from
-  its sides, checked 4 times a second. The handset can only be taken from within that reach, so picking up from
-  across the room doesn't hang up again a moment later.
-- **Why:** "1 block away" from a player standing next to the phone, allowing for the player's own half-block width.
+- **Built:** the call hangs up once the gap between the phone's block and the player's body (their 0.6 × 1.8 hitbox)
+  is more than 1.2 blocks, checked 4 times a second. The handset can only be taken from within that reach, so picking
+  up from across the room doesn't hang up again a moment later.
+- **Why:** "1 block away" from a player standing next to the phone, with a little slack so standing still at the edge
+  doesn't hang up. Measuring to the body rather than the feet keeps a phone on a desk or at head height usable; the
+  first version measured to the feet, and the 0.1 code review found a desk phone hung up after 0.8 blocks.
 - **To match the design:** `TileTelephone.CORD_REACH`.

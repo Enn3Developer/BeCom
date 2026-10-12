@@ -12,6 +12,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.gui.PhoneScreen;
+import com.enn3developer.becom.logic.phone.Cord;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -25,8 +26,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
 
     // A ring cycle: the ring sound plays for its first part, then silence, like a real bell (DESIGN.md 15.2).
     private static final int RING_PERIOD_TICKS = 120;
-    // "You can move 1 block away": measured from the block's sides, with half a block for the player's own width.
-    private static final double CORD_REACH = 1.5;
+    // "You can move 1 block away" (DESIGN.md 5.6): the gap from the block to the player's body, with a little slack.
+    private static final double CORD_REACH = 1.2;
 
     private int number = -1;
     private boolean ringing;
@@ -64,10 +65,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     /** Whether {@code player} is still within the handset's cord. */
     public boolean withinCord(EntityPlayer player) {
         if (worldObj == null || player.worldObj != worldObj || player.isDead) return false;
-        double dx = Math.max(0, Math.abs(player.posX - (xCoord + 0.5)) - 0.5);
-        double dy = Math.max(0, Math.abs(player.posY - (yCoord + 0.5)) - 0.5);
-        double dz = Math.max(0, Math.abs(player.posZ - (zCoord + 0.5)) - 0.5);
-        return dx * dx + dy * dy + dz * dz <= CORD_REACH * CORD_REACH;
+        // On the server, posY is the player's feet.
+        return Cord.within(xCoord, yCoord, zCoord, player.posX, player.posY, player.posZ, CORD_REACH);
     }
 
     @Override
