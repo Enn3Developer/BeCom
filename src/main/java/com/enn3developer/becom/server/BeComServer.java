@@ -88,7 +88,7 @@ public final class BeComServer {
                 return world != null && BeComServer.rains(world, x, z);
             }
         }, Ownership::sameTeam);
-        this.network = new NetworkService(tunables, antennas);
+        this.network = new NetworkService(tunables, antennas, space);
         this.links = new LinkService(network, tunables);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
@@ -97,7 +97,7 @@ public final class BeComServer {
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());
         this.radio = new RadioService(server, tunables, antennas, heights);
-        this.carried = new CarriedPhones(server, tunables, phones, antennas, RadioService::endOf);
+        this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
         // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
         // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge.
         carried.setAccess(PhoneKind.ME_PHONE, (holder, stack) -> {

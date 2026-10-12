@@ -83,10 +83,25 @@ public final class SpaceService {
         return satellites.version();
     }
 
+    /** Whether {@code dimension} is loaded and has a sky; satellites don't reach one without (DESIGN.md 6.1). */
+    public boolean hasSky(int dimension) {
+        WorldServer world = DimensionManager.getWorld(dimension);
+        return world != null && !world.provider.hasNoSky;
+    }
+
     /** Whether {@code dimension} has a sky and satellites enough over it for sky hops (DESIGN.md 6.1, 9.1). */
     public boolean skyHops(int dimension) {
+        return hasSky(dimension) && sky.enough(satellites.count(dimension));
+    }
+
+    /**
+     * The weather's loss on a sky hop in {@code dimension} now, in dB (D26): it costs a hop whose ground end stands
+     * where it rains or snows. 0 for a dimension that isn't loaded.
+     */
+    public double weather(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);
-        return world != null && !world.provider.hasNoSky && sky.enough(satellites.count(dimension));
+        if (world == null) return 0;
+        return tunables.weatherLoss(world.getRainStrength(1), world.getWeightedThunderStrength(1));
     }
 
     /**

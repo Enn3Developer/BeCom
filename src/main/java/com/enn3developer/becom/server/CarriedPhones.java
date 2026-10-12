@@ -50,7 +50,10 @@ public final class CarriedPhones {
         void lost(int number);
     }
 
-    /** A working phone's service: the antennas (or other ways in) it reaches and the SNR to each, and its level. */
+    /**
+     * A working phone's service: the antennas, satellites or other ways in it reaches and the SNR to each, and its
+     * level.
+     */
     public record Service(List<CallGraph.Entry> entries, SignalLevel level) {
 
         public static final Service NONE = new Service(List.of(), SignalLevel.NONE);
@@ -82,18 +85,25 @@ public final class CarriedPhones {
     private long ticks;
 
     public CarriedPhones(MinecraftServer server, Tunables tunables, PhoneService phones, AntennaNetwork antennas,
-        Function<EntityPlayer, RadioHops.End> endOf) {
+        SpaceService space, Function<EntityPlayer, RadioHops.End> endOf) {
         this.server = server;
         this.tunables = tunables;
         this.levels = tunables.levelScale();
         this.phones = phones;
-        // The Mobile Phone: every antenna that reaches its holder on UHF (DESIGN.md 8.2), rain included (D26).
+        // The Mobile Phone: every antenna that reaches its holder on UHF (DESIGN.md 8.2), and the satellites over
+        // their dimension (9.1), rain included (D26).
         access.put(PhoneKind.MOBILE, (holder, phone) -> {
             List<CallGraph.Entry> entries = new ArrayList<>();
             boolean rains = BeComServer
                 .rains(holder.worldObj, (int) Math.floor(holder.posX), (int) Math.floor(holder.posZ));
+            RadioHops.End end = endOf.apply(holder);
+            double sky = space
+                .hop(holder.dimension, end.depth(), antennas.uhf(), rains ? space.weather(holder.dimension) : 0);
+            if (sky > Double.NEGATIVE_INFINITY) {
+                entries.add(new CallGraph.Entry(new CallGraph.SkyVertex(holder.dimension), sky));
+            }
             for (AntennaNetwork.Best reached : antennas
-                .reach(holder.dimension, endOf.apply(holder), holder.getUniqueID(), antennas.uhf(), rains)) {
+                .reach(holder.dimension, end, holder.getUniqueID(), antennas.uhf(), rains)) {
                 entries.add(
                     new CallGraph.Entry(
                         new CallGraph.NodeVertex(

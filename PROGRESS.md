@@ -881,12 +881,12 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 | Satellite Launch Pad: structure, launches, fuel, open sky, maintenance (9.1, 3.2, D40)          | doing  |
 | Satellites per dimension and their decay (9.1, D23, 14)                                         | doing  |
 | The Launch Pad screen: each dimension's satellites and the next to come down (9.1)              | doing  |
-| Sky hops for devices under open sky, on calls and radio (9.1, D5, 6.1)                          | todo   |
+| Sky hops for devices under open sky, on calls and radio (9.1, D5, 6.1)                          | doing  |
 | Satellite Dish: structure, links to other dishes and planets, maintenance (9.2, 3.2, D40)       | todo   |
 | Rocket Radio Receiver: a T1 antenna and an uplink in a landed rocket (9.3, D28, 14)             | todo   |
 | Portal Relay: portals, pairing through a portal, a High hop (9.4, D22, D46)                     | todo   |
 | Calls between dimensions, and ME Bridges across dimensions (9.5, 0.3's known issue)             | todo   |
-| The 0.4 tunables in the config (17)                                                             | todo   |
+| The 0.4 tunables in the config (17)                                                             | done   |
 | Self-test rows for 0.4 (16.3)                                                                   | todo   |
 
 ### Untested assumptions (DESIGN.md 16.2)

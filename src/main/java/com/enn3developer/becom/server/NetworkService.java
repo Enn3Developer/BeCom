@@ -2,9 +2,11 @@ package com.enn3developer.becom.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
@@ -29,6 +31,7 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
+import com.enn3developer.becom.logic.space.Gateways;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
@@ -44,6 +47,8 @@ public final class NetworkService {
     // A powered node not heard from for 2 seconds counts as offline (DESIGN.md 14).
     private static final long OFFLINE_AFTER_TICKS = 40;
     private static final int TICKS_PER_SECOND = 20;
+    // A dish's loss moves calls' paths in steps this small; finer ones would rebuild them every second of a fade.
+    private static final double LOSS_STEP = 0.1;
 
     private final Tunables tunables;
     private final LinkRules rules;
@@ -54,6 +59,10 @@ public final class NetworkService {
     private final Map<NodeRef, Integer> phonesSeen = new HashMap<>();
     // Each working ME Bridge's ME network, by grid id (DESIGN.md 8.3).
     private final Map<NodeRef, Integer> meBridges = new HashMap<>();
+    // Each working Satellite Dish, and what its hop up to the satellites loses (DESIGN.md 9.2).
+    private final Map<NodeRef, Double> dishes = new HashMap<>();
+    // Each Rocket Radio Receiver standing on a pad, by its rocket's spot; working while heard (DESIGN.md 9.3).
+    private final Set<NodeRef> receivers = new HashSet<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
     private final Map<Integer, Long> wiresSent = new HashMap<>();
     private long tick;
@@ -62,13 +71,21 @@ public final class NetworkService {
     private final Sweep<Recheck> recheck = new Sweep<>();
     private final AntennaNetwork antennas;
     private long antennasVersion = -1;
+    private final SpaceService space;
+    private final Gateways gateways;
+    private long spaceVersion = -1;
     private CallGraph graph;
     private long graphVersion = -1;
 
-    /** @param antennas where calls find the UHF links between antennas (DESIGN.md 7) */
-    public NetworkService(Tunables tunables, AntennaNetwork antennas) {
+    /**
+     * @param antennas where calls find the UHF links between antennas (DESIGN.md 7)
+     * @param space    the satellites, which carry calls between dishes and up from planets (DESIGN.md 9)
+     */
+    public NetworkService(Tunables tunables, AntennaNetwork antennas, SpaceService space) {
         this.tunables = tunables;
         this.antennas = antennas;
+        this.space = space;
+        this.gateways = Gateways.of(tunables);
         this.rules = new LinkRules(tunables.pylonSpanFactor(), tunables.wrenchLinkDistance());
         this.line = tunables.lineModel();
         this.nextClearanceTick = (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
@@ -107,6 +124,9 @@ public final class NetworkService {
             .removeIf(ref -> ref.dimension() == dimension);
         meBridges.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
+        dishes.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
+        receivers.removeIf(ref -> ref.dimension() == dimension);
         wiresSent.remove(dimension);
         version++;
     }
@@ -155,6 +175,7 @@ public final class NetworkService {
         attachments.remove(ref);
         phonesSeen.remove(ref);
         meBridges.remove(ref);
+        dishes.remove(ref);
         version++;
     }
 
@@ -197,6 +218,37 @@ public final class NetworkService {
     /** An ME Bridge is offline, in BeCom's network or its ME network. */
     public void meBridgeOff(World world, long pos) {
         if (meBridges.remove(new NodeRef(world.provider.dimensionId, pos)) != null) version++;
+    }
+
+    /**
+     * A Satellite Dish is working this tick, under open sky (DESIGN.md 9.2): its hop up loses {@code loss} dB, for
+     * rain at the dish and its maintenance problems.
+     */
+    public void dish(World world, long pos, double loss) {
+        double rounded = Math.round(loss / LOSS_STEP) * LOSS_STEP;
+        Double before = dishes.put(new NodeRef(world.provider.dimensionId, pos), rounded);
+        if (before == null || before != rounded) version++;
+    }
+
+    /** A Satellite Dish lost its sky, its structure or its power. */
+    public void dishOff(World world, long pos) {
+        if (dishes.remove(new NodeRef(world.provider.dimensionId, pos)) != null) version++;
+    }
+
+    /**
+     * A Rocket Radio Receiver counts this second, in a rocket standing at {@code pos} (DESIGN.md 9.3): it uplinks to
+     * the Overworld's satellites while it's heard from.
+     */
+    public void receiver(World world, long pos) {
+        heartbeat(world, pos);
+        if (receivers.add(new NodeRef(world.provider.dimensionId, pos))) version++;
+    }
+
+    /** The receiver's rocket launched, left its pad, or lost its receiver. */
+    public void receiverGone(int dimension, long pos) {
+        NodeRef ref = new NodeRef(dimension, pos);
+        if (receivers.remove(ref)) version++;
+        if (lastHeard.remove(ref) != null) version++;
     }
 
     public boolean working(int dimension, long pos) {
@@ -243,8 +295,10 @@ public final class NetworkService {
 
     /** Goes up on every change that can move a path: nodes, links, clearance, power, attachments. */
     public long version() {
-        boolean changed = seenModelVersions.size() != models.size() || antennas.version() != antennasVersion;
+        boolean changed = seenModelVersions.size() != models.size() || antennas.version() != antennasVersion
+            || space.version() != spaceVersion;
         antennasVersion = antennas.version();
+        spaceVersion = space.version();
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
             Long seen = seenModelVersions.put(
                 entry.getKey(),
@@ -294,6 +348,7 @@ public final class NetworkService {
                 Double.POSITIVE_INFINITY,
                 CallGraph.HopKind.ME_BRIDGE);
         }
+        gateways.addTo(builder, this::satellitesOver, workingDishes(), workingReceivers(), List.of());
         Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
         for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);
         for (Map.Entry<NodeRef, Integer> entry : attachments.entrySet()) {
@@ -309,6 +364,32 @@ public final class NetworkService {
                 CallGraph.HopKind.CABLE);
         }
         return builder.build();
+    }
+
+    /** The satellites over a dimension that its sky hops can reach: none where it has no sky (DESIGN.md 6.1). */
+    private int satellitesOver(int dimension) {
+        return space.hasSky(dimension) ? space.count(dimension) : 0;
+    }
+
+    private List<Gateways.Dish> workingDishes() {
+        List<Gateways.Dish> working = new ArrayList<>();
+        for (Map.Entry<NodeRef, Double> entry : dishes.entrySet()) {
+            NodeRef dish = entry.getKey();
+            if (working(dish.dimension(), dish.pos())) {
+                working.add(new Gateways.Dish(dish.dimension(), dish.pos(), entry.getValue()));
+            }
+        }
+        return working;
+    }
+
+    private List<Gateways.Receiver> workingReceivers() {
+        List<Gateways.Receiver> working = new ArrayList<>();
+        for (NodeRef receiver : receivers) {
+            if (working(receiver.dimension(), receiver.pos())) {
+                working.add(new Gateways.Receiver(receiver.dimension(), receiver.pos()));
+            }
+        }
+        return working;
     }
 
     // endregion

@@ -28,6 +28,12 @@ public final class CallGraph {
     public record MeVertex(int grid) {}
 
     /**
+     * The satellites over a dimension (DESIGN.md 9.1): devices under its open sky and its Satellite Dishes join them,
+     * and in the Overworld every planet's Rocket Radio Receiver too (9.2, 9.3).
+     */
+    public record SkyVertex(int dimension) {}
+
+    /**
      * Where a phone that isn't a vertex of its own joins the graph, and how good that hop is: a carried phone at each
      * antenna it reaches (DESIGN.md 8.2). A phone on a line joins at its own vertex, through a lossless hop.
      */
@@ -50,7 +56,13 @@ public final class CallGraph {
         /** A UHF link between two antennas (DESIGN.md 7). */
         RADIO,
         /** An ME Bridge joining its ME network (DESIGN.md 8.3). */
-        ME_BRIDGE
+        ME_BRIDGE,
+        /** A Satellite Dish's hop up to the satellites over its dimension (DESIGN.md 9.2). */
+        SKY,
+        /** A Rocket Radio Receiver's uplink to the Overworld's satellites (DESIGN.md 9.3). */
+        UPLINK,
+        /** A linked pair of Portal Relays (DESIGN.md 9.4). */
+        RELAY
     }
 
     private final Map<Object, Integer> index;
