@@ -11,10 +11,10 @@ import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
 
 /**
- * BeCom's own network channel. Messages go from the server to clients, but for sneak + scroll on a walkie-talkie and
- * the Phone key; otherwise clients act on the server only through ModularUI's synced actions. The server checks both
- * (DESIGN.md 14:
- * client input).
+ * BeCom's own network channel. Messages go from the server to clients, but for sneak + scroll on a walkie-talkie, the
+ * Phone key and rear-camera pictures; otherwise clients act on the server only through ModularUI's synced actions. The
+ * server checks all of them (DESIGN.md 14: client input). Video travels here too (DESIGN.md 14; VOICE.md V2 if it
+ * lags the game).
  */
 public final class BeComPackets {
 
@@ -33,6 +33,12 @@ public final class BeComPackets {
         CHANNEL.registerMessage(RingPacket.Handler.class, RingPacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(PhoneKeyPacket.Handler.class, PhoneKeyPacket.class, id++, Side.SERVER);
         CHANNEL.registerMessage(PhoneStatusPacket.Handler.class, PhoneStatusPacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(VideoStatePacket.Handler.class, VideoStatePacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(VideoPosePacket.Handler.class, VideoPosePacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(VideoEquipmentPacket.Handler.class, VideoEquipmentPacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(VideoProfilePacket.Handler.class, VideoProfilePacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(RearFramePacket.Handler.class, RearFramePacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(RearUploadPacket.Handler.class, RearUploadPacket.class, id++, Side.SERVER);
     }
 
     public static void send(IMessage message, EntityPlayerMP player) {

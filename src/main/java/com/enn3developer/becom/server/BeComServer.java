@@ -49,6 +49,7 @@ public final class BeComServer {
     public final LinkService links;
     public final PhoneService phones;
     public final CallService calls;
+    public final VideoService video;
     public final RadioService radio;
     public final CarriedPhones carried;
     public final MeGrids meGrids = new MeGrids();
@@ -102,6 +103,7 @@ public final class BeComServer {
             return List.of(new CallGraph.Entry(new CallGraph.MeVertex(meGrids.idOf(grid)), Double.POSITIVE_INFINITY));
         });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
+        this.video = new VideoService(calls, tunables);
     }
 
     /** Whether rain or snow falls at a column, so the weather can cost a link there (DESIGN.md 6.1, D26). */
@@ -152,6 +154,7 @@ public final class BeComServer {
         LATER.clear();
         stopping = becom;
         becom.calls.stop();
+        becom.video.stop();
         becom.radio.stop();
         becom.carried.stop();
     }
@@ -190,6 +193,7 @@ public final class BeComServer {
         antennas.tick(Math.max(0, budget - (System.nanoTime() - start)), System::nanoTime);
         carried.tick();
         calls.tick();
+        video.tick();
         radio.tick();
         if (network.currentTick() % 20 == 0) links.expire();
     }

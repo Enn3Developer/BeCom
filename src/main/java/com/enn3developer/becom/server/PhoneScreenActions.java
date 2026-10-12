@@ -16,6 +16,7 @@ import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.call.Call;
+import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 
@@ -195,6 +196,27 @@ public final class PhoneScreenActions {
     // floods them only wastes the server's time (DESIGN.md 14: client input). A person never needs more than this.
     private static final int SETTINGS_CHANGES_PER_MINUTE = 60;
     private static final RateLimiter<UUID> SETTINGS_CHANGES = new RateLimiter<>(SETTINGS_CHANGES_PER_MINUTE, 60_000);
+
+    /**
+     * Switches one of {@code player}'s own cameras during their call on this phone (DESIGN.md 10.1), on a phone with
+     * video. Each switch re-plans every video call, so it shares the settings' rate limit.
+     */
+    public static void setCamera(EntityPlayer player, PhoneHandle handle, boolean rear, boolean on) {
+        BeComServer becom = BeComServer.get();
+        if (becom == null || !handle.usableBy(player)) return;
+        PhoneKind kind = becom.calls.kindOf(handle.number());
+        if (kind == null || !kind.video()) return;
+        UUID id = player.getUniqueID();
+        Call call = becom.calls.book()
+            .callOf(id);
+        Call.Leg own = call == null ? null : call.legOf(id);
+        if (own == null || own.phone() != handle.number()) return;
+        long now = System.nanoTime() / 1_000_000L;
+        SETTINGS_CHANGES.sweep(now);
+        if (!SETTINGS_CHANGES.tryAcquire(id, now)) return;
+        if (rear) becom.video.setRear(id, on);
+        else becom.video.setFront(id, on);
+    }
 
     private static PhoneRecord managed(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();

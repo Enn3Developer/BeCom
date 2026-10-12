@@ -528,8 +528,8 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Signal bars while holding a phone or in a call (11.2)                        | done   |
 | ME Phone (8.3, D13)                                                          | done   |
 | ME Bridge (8.3, D45)                                                         | done   |
-| Video: front camera (10.1, D41, D43)                                         | todo   |
-| Video: rear camera (10.1)                                                    | todo   |
+| Video: front camera (10.1, D41, D43)                                         | doing  |
+| Video: rear camera (10.1)                                                    | doing  |
 | Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
 | Videophone (10.2, D42)                                                       | doing  |
 | The 0.3 tunables in the config (17)                                          | done   |

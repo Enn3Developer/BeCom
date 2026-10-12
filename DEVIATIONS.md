@@ -415,3 +415,23 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** DESIGN.md doesn't say how a speakerphone's room works past who is in it, and a timer kept running by
   someone who isn't in the call would leave the far side talking to nobody.
 - **To match the design:** count everyone within 4 blocks for the 30 s timer, whatever call they are in.
+
+### X29: Video calls: one to one, whose cameras, and what the server checks
+
+- **Where:** 0.3, DESIGN.md 10.1, 10.2, 14, 17, D41, D42
+- **Design says:** the rear camera streams in one-to-one calls only; each camera can be switched on or off during a
+  call, the front starting on and the rear off; the server caps each client's rear-camera frames by size and rate.
+- **Built:**
+  - One to one means two people on two phones. A Videophone with two people in its room makes a group call, and the
+    rear camera stops.
+  - The Videophone has no rear camera: its screen shows its room as front-camera tiles, and nobody's first-person
+    view.
+  - Everyone switches their own cameras, from the screen of the phone they're in the call on, a Videophone's
+    included. The switches go back to front on, rear off when they leave the call.
+  - "Size" is the picture's bytes: the server refuses pictures over `rearMaxBytes` and more than `rearMaxFps` a
+    second from one client, and never reads a picture, so not its width and height either.
+- **Why:** DESIGN.md doesn't say who counts in "one to one", whose camera a shared Videophone's switches turn, or
+  which size the server checks; reading a JPEG's dimensions would mean parsing what the server otherwise only
+  relays.
+- **To match the design:** count phones instead of people for one to one; give the Videophone's screen switches for
+  the whole room.

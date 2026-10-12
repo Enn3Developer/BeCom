@@ -18,8 +18,13 @@ import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.PhoneStatusPacket;
+import com.enn3developer.becom.packet.RearFramePacket;
 import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
+import com.enn3developer.becom.packet.VideoEquipmentPacket;
+import com.enn3developer.becom.packet.VideoPosePacket;
+import com.enn3developer.becom.packet.VideoProfilePacket;
+import com.enn3developer.becom.packet.VideoStatePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.recipe.BeComRecipes;
@@ -129,6 +134,16 @@ public class CommonProxy {
     public void onRing(RingPacket packet) {}
 
     public void onPhoneStatus(PhoneStatusPacket packet) {}
+
+    public void onVideoState(VideoStatePacket packet) {}
+
+    public void onVideoPoses(VideoPosePacket packet) {}
+
+    public void onVideoEquipment(VideoEquipmentPacket packet) {}
+
+    public void onVideoProfile(VideoProfilePacket packet) {}
+
+    public void onRearFrame(RearFramePacket packet) {}
 
     /** Whether this client is transmitting on that walkie, for its TX light (DESIGN.md 11.3); never on a server. */
     public boolean isTransmittingOn(ItemStack stack) {

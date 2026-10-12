@@ -57,6 +57,7 @@ import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Coverage;
 import com.enn3developer.becom.logic.radio.RadioModel;
+import com.enn3developer.becom.logic.video.VideoPlan;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTELineTerminal;
@@ -264,6 +265,10 @@ public final class SelfTest {
         steps.add(this::holdVideophone);
         steps.add(this::checkVideophoneHungUp);
         steps.add(this::checkVideophonePower);
+        steps.add(this::startVideoCall);
+        steps.add(this::checkVideoCall);
+        steps.add(this::checkVideoSwitches);
+        steps.add(this::checkVideoEnded);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -2366,6 +2371,99 @@ public final class SelfTest {
             "working " + videophone.isWorking() + ", " + result);
         becom.calls.hangUp(pia);
         powered.add(videophone.getBaseMetaTileEntity());
+        // Powered again, it reports in on its next ticks.
+        return 5;
+    }
+
+    /** DESIGN.md 16, 0.3's second "Done when": a Mobile Phone calls the Videophone, and Vic answers at its screen. */
+    private int startVideoCall() {
+        int z = phoneZ + VIDEOPHONE_DZ;
+        vic.setPosition(X0 + 2.5, Y, z + 0.5);
+        becom.calls.presentForSelfTest(mona);
+        becom.carried.refreshForSelfTest(mona);
+        CallBook.DialResult result = becom.calls.dialCarried(mona, monaNumber, videophone.number());
+        PhoneScreenActions.pickUp(vic, new PhoneHandle.Videophone(videophone));
+        Call call = becom.calls.book()
+            .callOfPhone(videophone.number());
+        check(
+            "a Mobile Phone calls the Videophone and Vic answers at its screen",
+            result == CallBook.DialResult.RINGING && call != null
+                && call.state() == Call.State.CONNECTED
+                && call.legOf(vic.getUniqueID()) != null,
+            result + ", " + (call == null ? "no call" : call.participants()));
+        // A second or so of poses, about ten a second each way.
+        return TICKS_PER_SECOND;
+    }
+
+    private int checkVideoCall() {
+        UUID m = mona.getUniqueID(), v = vic.getUniqueID();
+        VideoPlan plan = becom.video.plan();
+        VideoPlan.Tile monaSeen = tileOf(plan, v, m);
+        VideoPlan.Tile vicSeen = tileOf(plan, m, v);
+        check(
+            "a video call between a Mobile Phone and a Videophone shows both sides (DESIGN.md 16, 0.3)",
+            becom.video.posesDelivered(m, v) > 0 && becom.video.posesDelivered(v, m) > 0,
+            "poses Mona to Vic " + becom.video.posesDelivered(m, v)
+                + ", Vic to Mona "
+                + becom.video.posesDelivered(v, m));
+        check(
+            "...each sees the other live, at the call's level, Medium or better (D43)",
+            monaSeen != null && vicSeen != null
+                && monaSeen.live()
+                && vicSeen.live()
+                && monaSeen.level() == becom.calls.book()
+                    .callOf(m)
+                    .level(m, v),
+            monaSeen + " / " + vicSeen);
+        return 1;
+    }
+
+    private static VideoPlan.Tile tileOf(VideoPlan plan, UUID viewer, UUID source) {
+        for (VideoPlan.Tile tile : plan.tilesOf(viewer)) if (tile.source()
+            .equals(source)) return tile;
+        return null;
+    }
+
+    /** DESIGN.md 10.1: each camera switches on and off during a call; the rear camera needs High, one to one. */
+    private int checkVideoSwitches() {
+        UUID m = mona.getUniqueID(), v = vic.getUniqueID();
+        PhoneHandle phone = new PhoneHandle.CarriedPhone(monaNumber);
+        PhoneScreenActions.setCamera(mona, phone, true, true);
+        SignalLevel level = becom.calls.book()
+            .callOf(m)
+            .level(m, v);
+        boolean rearSent = becom.video.plan()
+            .rearSendOf(m) != null;
+        check(
+            "...a rear camera switched on goes out only at High or better: here at " + level,
+            becom.video.camerasOf(m)
+                .rear() && rearSent == level.atLeast(SignalLevel.HIGH),
+            "switched on " + becom.video.camerasOf(m)
+                .rear() + ", sent " + rearSent);
+        PhoneScreenActions.setCamera(mona, phone, false, false);
+        VideoPlan.Tile tile = tileOf(becom.video.plan(), v, m);
+        check(
+            "...a front camera switched off still shows its tile, not moving",
+            tile != null && !tile.front() && !tile.live(),
+            String.valueOf(tile));
+        becom.calls.hangUp(mona);
+        // The plan follows the calls at its next round of poses.
+        return 5;
+    }
+
+    private int checkVideoEnded() {
+        UUID m = mona.getUniqueID(), v = vic.getUniqueID();
+        check(
+            "...and hanging up ends the video for both, the switches back to how a call starts",
+            becom.video.plan()
+                .tilesOf(v)
+                .isEmpty()
+                && becom.video.plan()
+                    .tilesOf(m)
+                    .isEmpty()
+                && becom.video.camerasOf(m)
+                    .equals(VideoPlan.Cameras.START),
+            "");
         return 1;
     }
 

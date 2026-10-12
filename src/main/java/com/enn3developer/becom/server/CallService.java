@@ -998,6 +998,15 @@ public final class CallService implements CallBook.Listener {
         return player(id);
     }
 
+    /** {@code id}'s player: online, or one of the self-test's fake players standing in for one. */
+    public EntityPlayer playerOrPresent(UUID id) {
+        EntityPlayerMP online = player(id);
+        if (online != null) return online;
+        for (EntityPlayer player : selfTestPlayers) if (player.getUniqueID()
+            .equals(id)) return player;
+        return null;
+    }
+
     private static void tone(EntityPlayerMP player, TonePacket.Tone tone) {
         BeComPackets.send(new TonePacket(tone), player);
     }
