@@ -383,6 +383,7 @@ public final class CallService implements CallBook.Listener {
         if (!carries(player, from) || !carried.working()
             .contains(from)) return CallBook.DialResult.INVALID;
         UUID id = player.getUniqueID();
+        if (holdsHandset(player)) return CallBook.DialResult.INVALID;
         Call call = book.callOf(id);
         if (call != null) return add(player, call, from, to);
         CallBook.DialResult result = book.dial(id, from, to, now(), () -> worldCheck(player, from, to));
@@ -443,7 +444,7 @@ public final class CallService implements CallBook.Listener {
 
     /** {@code player} answers phone {@code number}, which they carry and which rings. */
     public boolean answerCarried(EntityPlayerMP player, int number) {
-        if (!carries(player, number) || !isRinging(number)) return false;
+        if (!carries(player, number) || !isRinging(number) || holdsHandset(player)) return false;
         if (!hasVoice.test(player.getUniqueID())) {
             tell(player, "becom.call.no_voice");
             return false;
@@ -454,6 +455,16 @@ public final class CallService implements CallBook.Listener {
     /** {@code player} turns down a call ringing phone {@code number}, which they carry (D34). */
     public boolean rejectCarried(EntityPlayer player, int number) {
         return carries(player, number) && book.reject(number);
+    }
+
+    /**
+     * Whether {@code player} holds a Telephone's handset, and is told to put it down: a call on a phone they carry
+     * would be tied to its cord, and end as they walk off or hang the handset up.
+     */
+    private boolean holdsHandset(EntityPlayerMP player) {
+        if (!handsetOf.containsKey(player.getUniqueID())) return false;
+        tell(player, "becom.phone.handset_first");
+        return true;
     }
 
     /** {@code player} hangs up whatever call they're in: a handset goes back, a carried phone leaves its call. */

@@ -260,6 +260,8 @@ public final class SelfTest {
         steps.add(this::checkBaublePhone);
         steps.add(this::checkTwoRinging);
         steps.add(this::checkContactsAgain);
+        steps.add(this::checkHandsetFirst);
+        steps.add(this::checkNoCord);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -2172,6 +2174,64 @@ public final class SelfTest {
             "...and finds them again a second later, so a change shows within a second (X32)",
             more == 1,
             more + " searches");
+        return 1;
+    }
+
+    private FakePlayer uma;
+    private TileTelephone umaTelephone;
+
+    /**
+     * DESIGN.md 11.1: someone holding a Telephone's handset can't dial or answer on a phone they carry, whose call its
+     * cord would then end. The Phone key puts the handset down first, and pressed again answers.
+     */
+    private int checkHandsetFirst() {
+        // A Telephone of its own, on no line: holding its handset is all the check needs.
+        umaTelephone = telephone(X0 - 22, Y, phoneZ + 6);
+        uma = phonePlayer("BeComUma", 8, X0 - 19.5, phoneZ + 6.5);
+        standBy(uma, umaTelephone);
+        becom.carried.refreshForSelfTest(uma);
+        int umaNumber = ItemCarriedPhone.number(uma.inventory.mainInventory[0]);
+        UUID u = uma.getUniqueID();
+        CallService.Pickup taken = becom.calls.takeHandset(uma, umaTelephone);
+        CallBook.DialResult dialled = becom.calls.dialCarried(uma, umaNumber, sidNumber);
+        String told = becom.calls.lastMessageForSelfTest(u);
+        check(
+            "someone holding a Telephone's handset can't dial on the phone they carry, and is told why",
+            taken == CallService.Pickup.TAKEN && dialled == CallBook.DialResult.INVALID
+                && "becom.phone.handset_first".equals(told),
+            taken + ", dialled " + dialled + ", told " + told);
+        becom.calls.hangUpHandset(u);
+        // A call to someone holding a handset is busy: theirs rings first, and then they pick it up.
+        becom.calls.dialCarried(sid, sidNumber, umaNumber);
+        taken = becom.calls.takeHandset(uma, umaTelephone);
+        boolean answered = becom.calls.answerCarried(uma, umaNumber);
+        check(
+            "...nor answer it when it rang before they picked the handset up",
+            taken == CallService.Pickup.TAKEN && !answered && becom.calls.isRinging(umaNumber),
+            taken + ", answered " + answered + ", ringing " + becom.calls.isRinging(umaNumber));
+        becom.calls.phoneKey(uma, false);
+        boolean down = becom.calls.handsetOf(u) == null && becom.calls.isRinging(umaNumber);
+        becom.calls.phoneKey(uma, false);
+        Call call = becom.calls.book()
+            .callOf(u);
+        Call.Leg own = call == null ? null : call.legOf(u);
+        check(
+            "...the Phone key puts the handset down first, and pressed again answers the phone they carry",
+            down && own != null && own.phone() == umaNumber,
+            "handset down " + down + ", answered " + (own == null ? "nothing" : own.phone()));
+        // Off with the call, further than the cord reaches, for longer than the cord takes to be checked.
+        uma.setPosition(X0 - 14.5, Y, phoneZ + 6.5);
+        return TICKS_PER_SECOND;
+    }
+
+    private int checkNoCord() {
+        check(
+            "...and that call goes on as they walk away from the Telephone",
+            becom.calls.book()
+                .callOf(uma.getUniqueID()) != null,
+            "");
+        becom.calls.hangUp(uma);
+        world.setBlockToAir(umaTelephone.xCoord, umaTelephone.yCoord, umaTelephone.zCoord);
         return 1;
     }
 

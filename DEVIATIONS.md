@@ -383,9 +383,12 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
       moved with the mouse still counts as carried.
   - When two carried phones ring for a player, the notice and the key name the latest to ring. A notice hidden while
     they're in a call shows again when the call ends.
+  - Someone holding a Telephone's handset can't dial or answer on a phone they carry, and is told to put the handset
+    down first.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
   A ringing or dialling phone is busy with the call already. Hanging up comes before answering because a call has to
-  end before another can be answered.
+  end before another can be answered. A carried phone's call made while holding a handset would end when the cord
+  pulls the handset back.
 - **To match the design:** none of these contradicts it; they fill in what it leaves open.
 
 ### X27: The ME Phone's power, linking and range check

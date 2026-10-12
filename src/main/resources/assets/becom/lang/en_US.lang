@@ -91,6 +91,7 @@ becom.call.add_no_answer=%s didn't answer.
 becom.call.add_rejected=%s turned the call down.
 becom.call.add_lost=%s can't join the call any more.
 becom.phone.holding_other=You're already holding another handset.
+becom.phone.handset_first=Put the Telephone's handset down first.
 becom.phone.in_use=Someone else is using this phone.
 becom.phone.too_far=Step up to the phone to pick up the handset.
 becom.phone.too_new=This Telephone was saved by a newer BeCom. Update BeCom to use it.
