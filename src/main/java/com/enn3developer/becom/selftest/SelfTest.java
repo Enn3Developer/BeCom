@@ -1873,6 +1873,19 @@ public final class SelfTest {
             "...over the phone's link to the antenna, the path's weakest hop",
             clearService,
             call == null ? Double.NaN : call.snr(m, s));
+        // Calls are private to the people in them (DESIGN.md 12.2): the Telephone's owner, at it but not holding its
+        // handset, isn't one of them.
+        double ox = owner.posX, oy = owner.posY, oz = owner.posZ;
+        standBy(owner, phoneTelephone);
+        PhoneView seen = PhoneScreenActions.view(owner, new PhoneHandle.Telephone(phoneTelephone));
+        owner.setPosition(ox, oy, oz);
+        check(
+            "...and anyone else at the Telephone, its owner too, sees only that it's in use (DESIGN.md 12.2)",
+            seen.state() == PhoneView.State.IN_USE && seen.members()
+                .isEmpty()
+                && seen.otherName()
+                    .isEmpty(),
+            seen.state() + ", " + seen.otherName());
         return 1;
     }
 
@@ -2955,6 +2968,15 @@ public final class SelfTest {
             becom.calls.book()
                 .callOf(xan.getUniqueID()) == null,
             "");
+        PhoneView atScreen = PhoneScreenActions.view(xan, new PhoneHandle.Videophone(videophone));
+        check(
+            "...and sees on the Videophone's screen only that it's in use (DESIGN.md 12.2)",
+            atScreen.state() == PhoneView.State.IN_USE && atScreen.members()
+                .isEmpty(),
+            atScreen.state() + ", "
+                + atScreen.members()
+                    .size()
+                + " in the call shown");
         becom.calls.voiceForSelfTest(id -> true);
         xan.setPosition(X0 + 30.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
         walkWes(false);

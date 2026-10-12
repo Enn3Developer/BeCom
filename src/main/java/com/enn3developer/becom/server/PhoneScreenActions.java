@@ -42,9 +42,16 @@ public final class PhoneScreenActions {
         Call call = becom.calls.book()
             .callOfPhone(number);
         Call.Leg own = call == null ? null : call.legOf(number);
+        // Calls are private to the people in them (DESIGN.md 12.2): anyone else at a Telephone or a Videophone in a
+        // call sees only that it's in use. While it rings, whoever could answer it sees who calls.
+        boolean outsider = own != null && own.state() == Call.Leg.State.ACTIVE
+            && !own.players()
+                .contains(player.getUniqueID());
         PhoneView.State state;
         List<PhoneView.Member> members = new ArrayList<>();
-        if (own != null) {
+        if (outsider) {
+            state = PhoneView.State.IN_USE;
+        } else if (own != null) {
             if (own.state() == Call.Leg.State.RINGING) state = PhoneView.State.RINGING_IN;
             else if (call.state() == Call.State.RINGING) state = PhoneView.State.RINGING_OUT;
             else state = PhoneView.State.CONNECTED;
