@@ -258,3 +258,54 @@ types) is new. V2 and V3 belong to later milestones.
 10. A Telephone placed by a machine (a block placer or robot arm) has no owner until a player uses it, who then owns it.
 11. In single-player, put `I:pylonMinHeight=20` and `I:pylonMaxHeight=10` under `wired` in `config/becom.cfg` and open
     a world: a notice names `pylonMaxHeight` and leads back to the menu. Put the values back and the world opens.
+
+## 0.2 Radio
+
+Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
+
+### Contents (DESIGN.md 16)
+
+| Item                                                                 | Status |
+|----------------------------------------------------------------------|--------|
+| Height cache (6.2)                                                   | doing  |
+| Radio model: link budget, knife-edge terrain, cover, noise (6.1)     | doing  |
+| Surveys (6.3) within the survey budget (6.5)                         | doing  |
+| Direct links between radios (6.4)                                    | todo   |
+| Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | todo   |
+| Antenna links on VHF and UHF, and bridges onto wired lines (7)       | todo   |
+| Antenna screen: links and team lock (11.4, 12.2)                     | todo   |
+| Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | todo   |
+| Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | todo   |
+| Push-to-talk key and the `radio` activation (11.1, 13.4)             | todo   |
+| Channels `becom:radio.1` to `16` (8.1, 13.1, 13.2)                   | doing  |
+| Capture effect (D24)                                                 | doing  |
+| Walkie speaker (D21)                                                 | doing  |
+| Radio audio filters per level (4.3, 13.5)                            | todo   |
+| Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | todo   |
+| `/becom signal` (6.6)                                                | todo   |
+| The 0.2 tunables in the config (17)                                  | todo   |
+| Self-test rows for 0.2 (16.3)                                        | todo   |
+
+### Untested assumptions (DESIGN.md 16.2)
+
+| Assumption                                                         | Status |
+|--------------------------------------------------------------------|--------|
+| Caps Lock works as a held push-to-talk key on every OS             | todo   |
+
+### Quests (DESIGN.md 15.5)
+
+| Item                                                               | Status |
+|--------------------------------------------------------------------|--------|
+| The radio quests, with the Radio contact task                      | todo   |
+
+### Assets (DESIGN.md 15)
+
+| Item                                                               | Status |
+|--------------------------------------------------------------------|--------|
+| Antenna T1, T2, T3 head overlays and glows                         | todo   |
+| Transceiver overlay and glow                                       | todo   |
+| Walkie-Talkie icon, with its TX light                              | todo   |
+| Signal Analyzer icon                                               | todo   |
+| Modernity style of all of the above                                | todo   |
+| Sound: walkie squelch tail                                         | todo   |
+| English language entries                                           | todo   |
