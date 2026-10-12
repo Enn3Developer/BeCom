@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Milestone 0.1, wired calls: the Pylon Head with its Repeater and Router variants, the Line Terminal, Phone Cable and
-  the Telephone, with GregTech recipes.
+- Wired calls: the Pylon Head with its Repeater and Router variants, the Line Terminal, Phone Cable and the Telephone,
+  with GregTech recipes.
 - Calls carried by GTNH Voice through the `becom:call` group: line loss, signal levels with hysteresis, burst dropouts,
   and call audio filtered by level on the listener's client.
 - Six-digit phone numbers, contacts by owner name, recent and missed calls, do-not-disturb, hiding from contacts, block
@@ -22,11 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A config file and saved data with format versions, and a startup check of BeCom's GregTech machine IDs. Saved data
   that is newer, holds kinds BeCom doesn't know, or can't be read stops the server instead of being saved over.
 - Clients show the server's tunables in tooltips and holograms, sent at login.
-- `/becom calls` and `/becom hangup` for operators, and `/becom selftest` in the development environment.
+- `/becom calls` and `/becom hangup` for operators.
 - Generated textures in GT's style and a Modernity add-on pack, and synthesized call tones, ringtone and hang-up click,
   the handset's in stereo so they sit at the ear.
-- Milestone 0.2, radio: Antennas T1 to T3 (multiblocks on a frame-box mast over a casing base), the Transceiver, the
-  Walkie-Talkie and the Signal Analyzer, with GregTech recipes.
+- Radio: Antennas T1 to T3 (multiblocks on a frame-box mast over a casing base), the Transceiver, the Walkie-Talkie
+  and the Signal Analyzer, with GregTech recipes.
 - A radio simulation from DESIGN.md 6: link budgets, knife-edge diffraction over terrain from a height cache filled
   as chunks load and save, cover below the surface, and a higher noise floor without a sky. Antennas survey the land
   around them within a per-tick budget and link to each other on VHF for radio and UHF for calls.
@@ -41,11 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   walkie's channel; walkie battery drain, and a flat walkie switching off.
 - The Signal Analyzer's overlay and `/becom signal`: SNR, level, the serving antenna and every loss on the link to it.
 - Seven radio quests, completed by BeCom's new Radio contact task among others.
-- Line re-checks now share the survey budget per tick with antenna surveys.
+- Line re-checks share the survey budget per tick with antenna surveys.
 - The config refuses NaN and Infinity in its decimal values, naming the key.
-- Milestone 0.3, phones: the Mobile Phone, an HV handheld with service through antennas on UHF and a cap of High. It
-  rings from its player with a notice in the corner, buzzes only for its holder in silent mode, drains its battery on
-  standby and more in a call, and works from the inventory or a bauble slot, as walkies now do too.
+- Phones: the Mobile Phone, an HV handheld with service through antennas on UHF and a cap of High. It rings from its
+  player with a notice in the corner, buzzes only for its holder in silent mode, drains its battery on standby and more
+  in a call, and works from the inventory or a bauble slot, as walkies do.
 - The Phone key (N): answers a ringing phone, the player's own or a Telephone or Videophone close enough to answer,
   hangs up during a call, opens the phone screen otherwise; sneak + Phone rejects a call.
 - Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, a Telephone's included, and hears
@@ -70,8 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seven quests for phones, video and ME, with three new task types: Mobile call, Video call and ME Bridge call.
 - The Signal Analyzer and `/becom signal` read both bands: what a radio gets on VHF and what a Mobile Phone gets on
   UHF, where weather shows.
-- Milestone 0.4, space, with Galacticraft as a dependency: the Satellite, the Satellite Rocket (a Satellite on
-  Galacticraft's Tier 1 rocket parts) and the Rocket Radio Receiver, from the assembler.
+- Space, with Galacticraft as a dependency: the Satellite, the Satellite Rocket (a Satellite on Galacticraft's Tier 1
+  rocket parts) and the Rocket Radio Receiver, from the assembler.
 - The Satellite Launch Pad, a 5 by 5 multiblock under open sky: each launch takes a Satellite Rocket and 1,000 L of
   rocket fuel, runs 30 s at 480 EU/t, and puts a satellite into orbit over its dimension. Anything covering the pad
   holds a launch, which goes on once the sky clears. Its screen shows the rockets waiting, a launch on hold, each
@@ -92,10 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seven space quests, with four new task types: Portal Relay pair, First satellite, Five satellites and Call between
   dimensions.
 - Textures for the space machines and parts in both styles, and a rocket launch sound.
-- Milestone 1.0, polish: Italian, every string and the quest text. A test keeps Italian in step with English, key for
-  key.
-- CI zips the Modernity add-on pack as `Modernity-GTNHAddon-BeCom.zip` on every build, and releases attach it next to
-  the jar.
+- Italian: every string and the quest text.
+- Each release comes with the Modernity add-on pack, `Modernity-GTNHAddon-BeCom.zip`, to put above Modernity.
 - WAILA shows what GT's scanner shows for each BeCom machine, links listed one by one aside, in the looking player's
   language, and a Telephone's number, owner and whether it rings or its handset is lifted.
 - An in-game guide through GuideNH, in English and Italian: the tiers, how signal works, reading the Signal Analyzer,
