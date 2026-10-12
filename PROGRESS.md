@@ -876,7 +876,7 @@ Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
 
 | Item                                                                                            | Status |
 |-------------------------------------------------------------------------------------------------|--------|
-| Galacticraft as a hard dependency, Twilight Forest and Personal Space in the dev server (16.4)  | todo   |
+| Galacticraft as a hard dependency, Twilight Forest and Personal Space in the dev server (16.4)  | done   |
 | Satellite and Satellite Rocket, with their recipes (3.1, D30)                                   | todo   |
 | Satellite Launch Pad: structure, launches, fuel, open sky, maintenance (9.1, 3.2, D40)          | todo   |
 | Satellites per dimension and their decay (9.1, D23, 14)                                         | todo   |

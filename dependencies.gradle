@@ -43,10 +43,17 @@ dependencies {
     // in a bauble slot. Both are hard dependencies.
     implementation("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1080-GTNH:dev")
     implementation("com.github.GTNewHorizons:Baubles-Expanded:2.2.25-GTNH:dev")
+    // From 0.4 (DESIGN.md 16.4, D27): Galacticraft for the Satellite Rocket's parts, its fuels, and the rockets a
+    // Rocket Radio Receiver rides in. A hard dependency.
+    implementation("com.github.GTNewHorizons:Galacticraft:3.4.34-GTNH:dev")
     compileOnly("org.jetbrains:annotations:24.1.0")
     // BetterQuesting is optional (DESIGN.md 15.5): compiled against, and present in the dev server so the self-test
     // can check the questline, but never required at runtime.
     devOnlyNonPublishable("com.github.GTNewHorizons:BetterQuesting:3.8.89-GTNH:dev") { transitive = false }
+    // The Portal Relay knows the Twilight Forest's and Personal Space's portals by their block classes, so neither is a
+    // dependency (DESIGN.md 9.4); both are in the dev server for the self-test to stand a relay by their portals.
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:twilightforest:2.7.44:dev") { transitive = false }
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:PersonalSpace:1.0.41:dev") { transitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

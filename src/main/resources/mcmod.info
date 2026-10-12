@@ -13,8 +13,8 @@
 		"logoFile": "",
 		"screenshots": [],
 		"parent": "",
-		"requiredMods": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles"],
-		"dependencies": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles"],
+		"requiredMods": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles", "GalacticraftCore"],
+		"dependencies": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles", "GalacticraftCore"],
 		"dependants": [],
 		"useDependencyInformation": true
 	}]
