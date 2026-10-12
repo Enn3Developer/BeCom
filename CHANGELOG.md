@@ -46,10 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Milestone 0.3, phones: the Mobile Phone, an HV handheld with service through antennas on UHF and a cap of High. It
   rings from its player with a notice in the corner, buzzes only for its holder in silent mode, drains its battery on
   standby and more in a call, and works from the inventory or a bauble slot, as walkies now do too.
-- The Phone key (N): answers a ringing phone, hangs up during a call, opens the phone screen otherwise; sneak + Phone
-  rejects a call.
-- Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, which now lists everyone in the
-  call with their signal bars, and has power and silent mode for carried phones.
+- The Phone key (N): answers a ringing phone, the player's own or a Telephone or Videophone close enough to answer,
+  hangs up during a call, opens the phone screen otherwise; sneak + Phone rejects a call.
+- Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, a Telephone's included, and hears
+  when it doesn't answer. The screen lists everyone in the call with their signal bars, everyone in a Videophone's
+  room by name, and has power and silent mode for carried phones.
+- Signal bars by the hotbar while a phone is held or during a call: the call's weakest level, or the phone's service,
+  unlit with none.
 - Rain and thunderstorms weaken calls between antennas and phones' service where they fall: 3 dB in rain, 6 in a storm.
 - The antenna screen draws a coverage map: the level a player standing on the ground would get around the antenna,
   for radio channels or for calls.
@@ -64,3 +67,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   person sees to the other in a call of two at High or better. Video shows in a corner window, full size on the
   phone screen's new Video tab with each camera's switch, and on a Videophone's screen for its room.
 - Seven quests for phones, video and ME, with three new task types: Mobile call, Video call and ME Bridge call.
+- The Signal Analyzer and `/becom signal` read both bands: what a radio gets on VHF and what a Mobile Phone gets on
+  UHF, where weather shows.

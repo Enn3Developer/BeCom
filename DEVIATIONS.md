@@ -5,15 +5,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X1: Sneak + right-click opens a Telephone's phone screen
 
-- **Where:** 0.1, DESIGN.md 5.6, 11.2, D34
+- **Where:** 0.1, DESIGN.md 5.6, 11.1, 11.2, D34
 - **Design says:** right-click picks up the handset, and opens the phone screen only when there is more than one
-  phone to dial. The Phone key opens the phone screen otherwise, but the Phone key comes with 0.3.
+  phone to dial. The Phone key opens the phone screen otherwise.
 - **Built:** sneak + right-click on a Telephone opens its phone screen without touching the handset, so its owner can
-  reach the settings (do-not-disturb, hide, block list) and recent calls in 0.1.
+  reach the settings (do-not-disturb, hide, block list) and recent calls. From 0.3 the Phone key answers a ringing
+  Telephone within its cord, but the screen it opens is that of the first phone the player carries (X26), never a
+  Telephone's.
 - **Why:** without it, a Telephone's settings can only be reached while its handset is up and more than one phone is
   reachable.
-- **To match the design:** drop the sneak branch in `BlockTelephone.onBlockActivated` once the Phone key opens the
-  screen.
+- **To match the design:** have the Phone key open the screen of a Telephone within reach when the player carries no
+  phone, then drop the sneak branch in `BlockTelephone.onBlockActivated`.
 
 ### X2: A terminal with more than one phone on its cable serves none, and so does a phone on two terminals
 
@@ -225,7 +227,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 14.2, 17
 - **Design says:** pylons are 6 to 16 frames and Phone Cable reaches 32 blocks by default; DESIGN.md 17 gives no
   limits on the config values.
-- **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. Every whole-number option shows its
+- **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. From 0.3: `groupCallSize` from 2 to
+  16, the video heights up to 512, rear pictures up to 640x360 and 32 KB (`rearMaxBytes`), `videoPoseRate` up to 20
+  a second (one a server tick), and `meBridgeChannels` 0 or 1. Every whole-number option shows its
   range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value outside
   it is used at the nearest end with a warning naming what was written. The checks no single range can hold (ordered
   level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this BeCom
@@ -236,7 +240,7 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
   make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
   code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.
-- **To match the design:** raise `Tunables.MAX_COLUMN` and `MAX_CABLE`.
+- **To match the design:** raise `Tunables.MAX_COLUMN`, `MAX_CABLE` and 0.3's `MAX_` ceilings beside them.
 
 ### X19: Antennas take up to 15 bridges and route like a Router
 
@@ -275,7 +279,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   sets its channel and loudspeaker; walkies and phones drain their battery (D36), which DESIGN.md 16 lists under 0.3.
 - **Built:**
   - A player talks and listens on one walkie: the first working one, the one in hand first, then the hotbar, then the
-    rest of the inventory. Other walkies switched on in the same inventory only drain their standby charge.
+    rest of the inventory, then the bauble slots (D14). Other walkies switched on in the same inventory only drain
+    their standby charge.
   - Anyone can tune a Transceiver and switch its loudspeaker, from within 8 blocks of it.
   - The walkie drains its battery from 0.2 on (1, 2 and 4 EU/t on standby, receiving and transmitting), and a flat one
     switches off. Phones get theirs with the Mobile Phone in 0.3.
@@ -365,8 +370,10 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Whoever carries a phone may switch it on or off, as with a walkie; silent mode, like the other settings, is for
     its owner and their team. Silent mode is a carried phone's only: a Telephone rings out loud as before.
   - A phone dialling out or ringing counts as in a call for the drain.
-  - The Phone key, with no call ringing or going on, opens the screen of the first phone the player carries: held,
-    then inventory, then bauble slots.
+  - The Phone key answers a ringing phone the player carries, a ringing Telephone whose cord reaches them, or a
+    ringing Videophone whose room they stand in, in that order; with no call ringing or going on, it opens the screen
+    of the first phone the player carries: held, then inventory, then bauble slots. A phone being moved with the
+    mouse still counts as carried.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
   A ringing or dialling phone is busy with the call already.
 - **To match the design:** none of these contradicts it; they fill in what it leaves open.
@@ -385,6 +392,10 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Its range check is AE2's rule, active access points of its network and their ranges with boosters, done by
     BeCom: AE2 only runs it for items that are wireless terminals.
   - The ME Bridge's channel can be switched off in the config (`meBridgeChannels`, 0 or 1).
+  - What this costs: GTNH's AE2 skips the distance test for a wireless terminal with an Infinity Booster Card in it.
+    An ME Phone has no card slot, so it never gets that, though D13 has GTNH's booster cards apply unchanged; the
+    access points' own boosters do. Nor does it check its user's AE2 security permissions, as a wireless terminal
+    does: whoever carries a linked ME Phone calls through its network.
 - **Why:** making it a wireless terminal would turn it into one, a feature DESIGN.md doesn't give it. The same
   battery as the phone it's made from keeps the two in step.
 - **To match the design:** register the ME Phone as a wireless terminal handler and call AE2's `checkRange`, which
@@ -399,8 +410,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Built:**
   - Its room is the people in the call through it: within 4 blocks of the block, nearest first, until the call
     reaches the group call size (8, everyone in it counted). Someone in another call, or holding a Telephone's
-    handset, isn't in it. The 30 s clock runs while the room is empty, so someone standing near in another call
-    doesn't keep it on the line.
+    handset, isn't in it, and nobody joins without a voice session or while their own phone rings; someone already in
+    it keeps their voice's 10 s grace. The 30 s clock runs while the room is empty, so someone standing near in
+    another call doesn't keep it on the line.
   - Anyone at its screen, within the 8 blocks a block's screen stays open at, can dial, answer or hang up, and
     hanging up ends the call for the whole room, as the Phone key does from anyone in it. Answering needs a voice
     session, as at a Telephone (X8).
@@ -411,7 +423,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
     them as a player; otherwise its first user owns it (X6).
   - Players around its loudspeaker who aren't in its call hear each speaker at the level the Videophone hears them
     at, as around a Transceiver (DESIGN.md 13.5).
-  - Dialling from it, the ringback plays for whoever dialled.
+  - Dialling from it, the ringback plays for whoever dialled, and stops if they walk out of the room.
+  - The Call tab of the other phones lists each person in its room by name.
 - **Why:** DESIGN.md doesn't say how a speakerphone's room works past who is in it, and a timer kept running by
   someone who isn't in the call would leave the far side talking to nobody.
 - **To match the design:** count everyone within 4 blocks for the 30 s timer, whatever call they are in.
@@ -429,9 +442,39 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Everyone switches their own cameras, from the screen of the phone they're in the call on, a Videophone's
     included. The switches go back to front on, rear off when they leave the call.
   - "Size" is the picture's bytes: the server refuses pictures over `rearMaxBytes` and more than `rearMaxFps` a
-    second from one client, and never reads a picture, so not its width and height either.
+    second from one client, and never reads a picture, so not its width and height either. The receiving client
+    reads a picture's width and height before decoding it, and drops one larger than the config's ceiling.
+  - A viewer's rear pictures are held to their level's rate by an allowance that fills at that rate and holds two
+    pictures, not a fixed gap after the last one: pictures land on server ticks, so one a tick early after one a tick
+    late still goes on, and the average stays at the level's rate.
+  - The corner window is at most a quarter of the screen wide. While a rear picture comes in, it shows that picture
+    with its sender in an inset; the phone screen's Video tab shows the picture above the people. A screen open over
+    the game hides the window, chat aside.
 - **Why:** DESIGN.md doesn't say who counts in "one to one", whose camera a shared Videophone's switches turn, or
   which size the server checks; reading a JPEG's dimensions would mean parsing what the server otherwise only
   relays.
 - **To match the design:** count phones instead of people for one to one; give the Videophone's screen switches for
   the whole room.
+
+### X30: Call tones on a phone with no handset
+
+- **Where:** 0.3, DESIGN.md 10, 15.2
+- **Design says:** dial tone, ringback, busy, unreachable and hang-up are ordinary Minecraft sounds; the busy tone
+  plays until the handset goes down.
+- **Built:** a carried phone and a Videophone have no handset to put down. Dialling from one, the ringback plays until
+  the call connects or ends, and a call ending, or the phone leaving it, plays the hang-up click, which stops it. A
+  busy tone plays for 3 s and stops by itself. Adding a phone to a call makes no ringback over the call; an added
+  phone that doesn't answer, turns the call down or is lost is told to whoever added it, in chat.
+- **Why:** DESIGN.md's tones are a Telephone's, where the handset ends them; without one, a looping tone never stopped.
+- **To match the design:** nothing to undo; give the phones' tones their own sounds if the owner wants them to differ.
+
+### X31: The Signal Analyzer reads both bands
+
+- **Where:** 0.3, DESIGN.md 6.6, 11.4, D15, D26, D35
+- **Design says:** the analyzer shows SNR, level, the serving antenna and the biggest loss, weather among them; so does
+  `/becom signal`.
+- **Built:** both show two readings: what a radio gets where the player stands, on VHF and stopping at Medium, and what
+  a Mobile Phone gets, on UHF with rain there, stopping at High. Weather only ever shows on the phones' band.
+- **Why:** weather costs UHF alone (D26), so a VHF-only reading, as in 0.2, could never show it, and phone users would
+  read the radio band's numbers.
+- **To match the design:** nothing to undo; show one band, chosen by what the player carries, if the owner prefers.
