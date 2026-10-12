@@ -104,4 +104,14 @@ class BeComConfigTest {
         // Never rewritten by a BeCom that doesn't understand it.
         assertEquals(newer, new String(Files.readAllBytes(file.toPath())));
     }
+
+    @Test
+    void everyTunableIsInTheFile(@TempDir File dir) throws Exception {
+        File file = new File(dir, "becom.cfg");
+        BeComConfig.load(file);
+        String text = new String(Files.readAllBytes(file.toPath()));
+        for (java.lang.reflect.RecordComponent c : Tunables.class.getRecordComponents()) {
+            assertEquals(true, text.contains(":" + c.getName() + "="), c.getName() + " is missing from the file");
+        }
+    }
 }

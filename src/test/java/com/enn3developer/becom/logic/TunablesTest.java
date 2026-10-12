@@ -103,4 +103,33 @@ class TunablesTest {
         values.put("notAKey", 3);
         assertEquals(Tunables.defaults(), Tunables.fromMap(values));
     }
+
+    @Test
+    void radioWorkStaysBounded() throws Exception {
+        // A budget reaching past MAX_RADIO_RANGE would make one survey or direct link read thousands of heights.
+        refused("antennaBudgetT3", 200.0);
+        refused("walkieBudget", 200.0);
+        refused("surveyBearings", 0);
+        refused("surveyBearings", Tunables.MAX_BEARINGS + 1);
+        refused("surveyStep", 0);
+        refused("surveyBudgetMillis", 0.0);
+    }
+
+    @Test
+    void antennaMastsMustMakeSense() throws Exception {
+        refused("antennaMastMin", 0);
+        refused("antennaMastMax", 3);
+        refused("antennaMastMax", Tunables.MAX_COLUMN + 1);
+    }
+
+    @Test
+    void designRangesComeFromTheDefaults() {
+        Tunables t = Tunables.defaults();
+        // DESIGN.md 7: roughly 64, 128 and 256 blocks to the edge of Low; 8.1: a walkie about 80, a Transceiver 125.
+        assertEquals(64, t.rangeToLow(t.antennaBudget(1)), 2);
+        assertEquals(128, t.rangeToLow(t.antennaBudget(2)), 3);
+        assertEquals(256, t.rangeToLow(t.antennaBudget(3)), 6);
+        assertEquals(80, t.rangeToLow(t.walkieBudget()), 2);
+        assertEquals(125, t.rangeToLow(t.transceiverBudget()), 2);
+    }
 }

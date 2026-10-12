@@ -1,6 +1,7 @@
 package com.enn3developer.becom.config;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 import net.minecraftforge.common.config.Configuration;
@@ -21,6 +22,9 @@ public final class BeComConfig {
     private static final String SIGNAL = "signal";
     private static final String WIRED = "wired";
     private static final String CALLS = "calls";
+    private static final String RADIO = "radio";
+    private static final String ANTENNAS = "antennas";
+    private static final String RADIOS = "radios";
     private static final String QUESTS = "quests";
 
     // What this side acts on: the file's values while a server runs here, the server's on a client connected to one,
@@ -82,78 +86,91 @@ public final class BeComConfig {
         config.get(GENERAL, "formatVersion", FORMAT_VERSION)
             .set(FORMAT_VERSION);
 
-        Tunables d = Tunables.defaults();
-        Tunables loaded = new Tunables(
-            dbl(config, SIGNAL, "levelLow", d.levelLow(), "SNR in dB a link needs for Low."),
-            dbl(config, SIGNAL, "levelMedium", d.levelMedium(), "SNR in dB a link needs for Medium."),
-            dbl(config, SIGNAL, "levelHigh", d.levelHigh(), "SNR in dB a link needs for High."),
-            dbl(config, SIGNAL, "levelMax", d.levelMax(), "SNR in dB a link needs for Max."),
-            dbl(
-                config,
-                SIGNAL,
-                "levelHysteresis",
-                d.levelHysteresis(),
-                "dB below a threshold before a link leaves it."),
-            dbl(config, SIGNAL, "dropoutMaxLoss", d.dropoutMaxLoss(), "Share of voice frames lost at the worst."),
-            dbl(config, SIGNAL, "dropoutFullLossSnr", d.dropoutFullLossSnr(), "SNR in dB where losses peak."),
-            dbl(config, SIGNAL, "dropoutCleanSnr", d.dropoutCleanSnr(), "SNR in dB from which nothing is lost."),
-            dbl(config, SIGNAL, "dropoutMeanBurstMillis", d.dropoutMeanBurstMillis(), "Mean burst of losses, in ms."),
-            dbl(config, SIGNAL, "dropAfterSeconds", d.dropAfterSeconds(), "Seconds below Low before a link drops."),
-            integer(config, WIRED, "pylonMinHeight", d.pylonMinHeight(), "Shortest pylon, in frame boxes."),
-            integer(
-                config,
-                WIRED,
-                "pylonMaxHeight",
-                d.pylonMaxHeight(),
-                1,
-                Tunables.MAX_COLUMN,
-                "Tallest pylon, in frame boxes."),
-            dbl(config, WIRED, "pylonSpanFactor", d.pylonSpanFactor(), "Span limit, times the shorter pylon's height."),
-            integer(config, WIRED, "pylonClearanceSeconds", d.pylonClearanceSeconds(), "Seconds between line checks."),
-            dbl(config, WIRED, "lineBudget", d.lineBudget(), "dB every powered node drives the line at."),
-            dbl(config, WIRED, "lineLossPerBlock", d.lineLossPerBlock(), "dB the line loses per block of span."),
-            integer(
-                config,
-                WIRED,
-                "phoneCableLength",
-                d.phoneCableLength(),
-                1,
-                Tunables.MAX_CABLE,
-                "Most Phone Cable from phone to terminal."),
-            integer(config, WIRED, "terminalPower", d.terminalPower(), "EU/t a Line Terminal draws."),
-            integer(config, WIRED, "repeaterPower", d.repeaterPower(), "EU/t a Repeater Head draws."),
-            integer(config, WIRED, "routerPower", d.routerPower(), "EU/t a Router Head draws."),
-            dbl(
-                config,
-                CALLS,
-                "directHearingRange",
-                d.directHearingRange(),
-                "Blocks within which listeners hear a speaker directly, not through BeCom."),
-            integer(
-                config,
-                CALLS,
-                "sessionGraceSeconds",
-                d.sessionGraceSeconds(),
-                "Seconds a timed-out voice keeps a call."),
-            integer(config, CALLS, "halfLinkSeconds", d.halfLinkSeconds(), "Seconds a half-made wrench link is kept."),
-            integer(config, CALLS, "ringSeconds", d.ringSeconds(), "Seconds a phone rings before \"no answer\"."),
-            integer(
-                config,
-                CALLS,
-                "callAttemptsPerMinute",
-                d.callAttemptsPerMinute(),
-                "Call attempts per caller a minute."),
+        Map<String, Object> v = new HashMap<>();
+        dbl(config, v, SIGNAL, "levelLow", "SNR in dB a link needs for Low.");
+        dbl(config, v, SIGNAL, "levelMedium", "SNR in dB a link needs for Medium.");
+        dbl(config, v, SIGNAL, "levelHigh", "SNR in dB a link needs for High.");
+        dbl(config, v, SIGNAL, "levelMax", "SNR in dB a link needs for Max.");
+        dbl(config, v, SIGNAL, "levelHysteresis", "dB below a threshold before a link leaves it.");
+        dbl(config, v, SIGNAL, "dropoutMaxLoss", "Share of voice frames lost at the worst.");
+        dbl(config, v, SIGNAL, "dropoutFullLossSnr", "SNR in dB where losses peak.");
+        dbl(config, v, SIGNAL, "dropoutCleanSnr", "SNR in dB from which nothing is lost.");
+        dbl(config, v, SIGNAL, "dropoutMeanBurstMillis", "Mean burst of losses, in ms.");
+        dbl(config, v, SIGNAL, "dropAfterSeconds", "Seconds below Low before a link drops.");
+        integer(config, v, WIRED, "pylonMinHeight", "Shortest pylon, in frame boxes.");
+        integer(config, v, WIRED, "pylonMaxHeight", 1, Tunables.MAX_COLUMN, "Tallest pylon, in frame boxes.");
+        dbl(config, v, WIRED, "pylonSpanFactor", "Span limit, times the shorter pylon's height.");
+        integer(config, v, WIRED, "pylonClearanceSeconds", "Seconds between line checks.");
+        dbl(config, v, WIRED, "lineBudget", "dB every powered node drives the line at.");
+        dbl(config, v, WIRED, "lineLossPerBlock", "dB the line loses per block of span.");
+        integer(
+            config,
+            v,
+            WIRED,
+            "phoneCableLength",
+            1,
+            Tunables.MAX_CABLE,
+            "Most Phone Cable from phone to terminal.");
+        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
+        integer(config, v, WIRED, "repeaterPower", "EU/t a Repeater Head draws.");
+        integer(config, v, WIRED, "routerPower", "EU/t a Router Head draws.");
+        dbl(
+            config,
+            v,
+            CALLS,
+            "directHearingRange",
+            "Blocks within which listeners hear a speaker directly, not through BeCom.");
+        integer(config, v, CALLS, "sessionGraceSeconds", "Seconds a timed-out voice keeps a call.");
+        integer(config, v, CALLS, "halfLinkSeconds", "Seconds a half-made wrench link is kept.");
+        integer(config, v, CALLS, "ringSeconds", "Seconds a phone rings before \"no answer\".");
+        integer(config, v, CALLS, "callAttemptsPerMinute", "Call attempts per caller a minute.");
+        dbl(config, v, RADIO, "vhfWavelength", "Radio channels' wavelength in blocks. Longer bends over hills better.");
+        dbl(config, v, RADIO, "uhfWavelength", "Calls' wavelength in blocks.");
+        dbl(config, v, RADIO, "vhfCoverPerBlock", "dB a radio loses per block below the surface.");
+        dbl(config, v, RADIO, "uhfCoverPerBlock", "dB a phone loses per block below the surface.");
+        dbl(config, v, RADIO, "coverLossCap", "Most dB cover costs at one end.");
+        dbl(config, v, RADIO, "terrainLossCap", "Most dB terrain costs a hop.");
+        dbl(config, v, RADIO, "noSkyNoise", "Noise floor in dB in dimensions without a sky.");
+        integer(config, v, RADIO, "surveyBearings", 1, Tunables.MAX_BEARINGS, "Bearings an antenna surveys.");
+        integer(config, v, RADIO, "surveyStep", "Blocks between survey samples.");
+        integer(config, v, RADIO, "surveySeconds", "Seconds between an antenna's surveys.");
+        dbl(config, v, RADIO, "surveyBudgetMillis", "ms per tick surveys and line checks may take together.");
+        dbl(config, v, ANTENNAS, "antennaBudgetT1", "Antenna T1 link budget in dB.");
+        dbl(config, v, ANTENNAS, "antennaBudgetT2", "Antenna T2 link budget in dB.");
+        dbl(config, v, ANTENNAS, "antennaBudgetT3", "Antenna T3 link budget in dB.");
+        integer(config, v, ANTENNAS, "antennaPowerT1", "EU/t an Antenna T1 draws.");
+        integer(config, v, ANTENNAS, "antennaPowerT2", "EU/t an Antenna T2 draws.");
+        integer(config, v, ANTENNAS, "antennaPowerT3", "EU/t an Antenna T3 draws.");
+        integer(config, v, ANTENNAS, "antennaMastMin", "Shortest antenna mast, in frame boxes.");
+        integer(config, v, ANTENNAS, "antennaMastMax", 1, Tunables.MAX_COLUMN, "Tallest antenna mast, in frame boxes.");
+        dbl(
+            config,
+            v,
+            ANTENNAS,
+            "wrenchLinkDistance",
+            "Blocks an antenna reaches to bridge a Pylon Head or Line Terminal.");
+        dbl(config, v, RADIOS, "transceiverBudget", "Transceiver link budget in dB, for direct links.");
+        dbl(config, v, RADIOS, "walkieBudget", "Walkie-Talkie link budget in dB, for direct links.");
+        integer(config, v, RADIOS, "transceiverPower", "EU/t a Transceiver draws.");
+        dbl(config, v, RADIOS, "loudspeakerRange", "Blocks a Transceiver's loudspeaker carries.");
+        dbl(config, v, RADIOS, "talkRange", "Blocks from a Transceiver within which it transmits your voice.");
+        dbl(config, v, RADIOS, "walkieSpeakerRange", "Blocks around a receiving walkie within which others hear it.");
+        integer(config, v, RADIOS, "captureHoldMillis", "ms a listener keeps hearing someone after their last frame.");
+        dbl(config, v, RADIOS, "captureMargin", "dB stronger another transmitter must be to take over.");
+        integer(config, v, RADIOS, "walkieBattery", "EU a Walkie-Talkie holds.");
+        integer(config, v, RADIOS, "walkieStandbyDrain", "EU/t a Walkie-Talkie uses switched on.");
+        integer(config, v, RADIOS, "walkieReceiveDrain", "EU/t a Walkie-Talkie uses while receiving.");
+        integer(config, v, RADIOS, "walkieTransmitDrain", "EU/t a Walkie-Talkie uses while transmitting.");
+        integer(config, v, RADIOS, "analyzerRefreshSeconds", "Seconds between Signal Analyzer readings.");
+        v.put(
+            "questlineEnabled",
             config.getBoolean(
                 "questlineEnabled",
                 QUESTS,
-                d.questlineEnabled(),
-                "Add BeCom's questline to the BetterQuesting book. Turn off for servers with a curated book."),
-            integer(
-                config,
-                QUESTS,
-                "questlineRecheckSeconds",
-                d.questlineRecheckSeconds(),
-                "Seconds between checks that the tab is there."));
+                (Boolean) Tunables.defaultOf("questlineEnabled"),
+                "Add BeCom's questline to the BetterQuesting book. Turn off for servers with a curated book."));
+        integer(config, v, QUESTS, "questlineRecheckSeconds", "Seconds between checks that the tab is there.");
+        Tunables loaded = Tunables.fromMap(v);
         // Checked when a server is about to use them, not here: a client never acts on its own file (DESIGN.md
         // 14.2), so a bad value in it mustn't stop the client from starting.
         fileValues = loaded;
@@ -168,31 +185,37 @@ public final class BeComConfig {
         BeCom.LOG.info("Loaded config {}", file.getName());
     }
 
-    private static double dbl(Configuration config, String category, String key, double def, String comment) {
-        return config.get(category, key, def, comment, -1000, 1000)
-            .getDouble(def);
+    private static void dbl(Configuration config, Map<String, Object> values, String category, String key,
+        String comment) {
+        double def = (Double) Tunables.defaultOf(key);
+        values.put(
+            key,
+            config.get(category, key, def, comment, -1000, 1000)
+                .getDouble(def));
     }
 
     // The smallest value each whole-number option makes sense with, as Tunables.validate checks; the file shows it.
-    private static final Map<String, Integer> MINIMUM = Map.of(
-        "pylonMinHeight",
-        1,
-        "pylonClearanceSeconds",
-        1,
-        "ringSeconds",
-        1,
-        "callAttemptsPerMinute",
-        1,
-        "questlineRecheckSeconds",
-        1);
+    private static final Map<String, Integer> MINIMUM = Map.ofEntries(
+        Map.entry("pylonMinHeight", 1),
+        Map.entry("pylonClearanceSeconds", 1),
+        Map.entry("ringSeconds", 1),
+        Map.entry("callAttemptsPerMinute", 1),
+        Map.entry("questlineRecheckSeconds", 1),
+        Map.entry("surveyStep", 1),
+        Map.entry("surveySeconds", 1),
+        Map.entry("antennaMastMin", 1),
+        Map.entry("walkieBattery", 1),
+        Map.entry("analyzerRefreshSeconds", 1));
 
-    private static int integer(Configuration config, String category, String key, int def, String comment) {
-        return integer(config, category, key, def, MINIMUM.getOrDefault(key, 0), Integer.MAX_VALUE, comment);
+    private static void integer(Configuration config, Map<String, Object> values, String category, String key,
+        String comment) {
+        integer(config, values, category, key, MINIMUM.getOrDefault(key, 0), Integer.MAX_VALUE, comment);
     }
 
     /** A whole number in [min, max]; a value outside is used at the nearest end, with a warning naming what was set. */
-    private static int integer(Configuration config, String category, String key, int def, int min, int max,
-        String comment) {
+    private static void integer(Configuration config, Map<String, Object> values, String category, String key, int min,
+        int max, String comment) {
+        int def = (Integer) Tunables.defaultOf(key);
         // What the file says, read first: Configuration.get without a comment clears the comment getInt writes.
         int written = config.get(category, key, def)
             .getInt(def);
@@ -200,6 +223,6 @@ public final class BeComConfig {
         if (written != value) {
             BeCom.LOG.warn("BeCom config: {} is {}, outside {} to {}; using {}", key, written, min, max, value);
         }
-        return value;
+        values.put(key, value);
     }
 }
