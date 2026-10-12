@@ -43,10 +43,12 @@ import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
+import com.enn3developer.becom.voice.Nearby;
 import com.enn3developer.becom.voice.RadioGroup;
 import com.enn3developer.becom.voice.RadioRouting;
 import com.enn3developer.becom.voice.RadioSnapshot;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
+import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
  * Radio channels in the world (DESIGN.md 8.1, 13.2, 13.3): who carries a working walkie or stands at a Transceiver,
@@ -561,48 +563,30 @@ public final class RadioService {
      * then the nearest walkie speaker in the snapshot's order, then a loudspeaker (DESIGN.md 13.3, 13.5).
      */
     private void sendLevels(List<UUID> speakers) {
-        double walkieSq = tunables.walkieSpeakerRange() * tunables.walkieSpeakerRange();
-        double loudSq = tunables.loudspeakerRange() * tunables.loudspeakerRange();
         List<EntityPlayerMP> online = players();
-        // Looked up for every listener and walkie, so built once: a scan each time grows with players squared.
-        Map<UUID, EntityPlayerMP> byId = new HashMap<>();
-        for (EntityPlayerMP player : online) byId.put(player.getUniqueID(), player);
+        Map<UUID, PlayerSnapshot> positions = new HashMap<>();
+        for (EntityPlayerMP player : online) {
+            positions.put(
+                player.getUniqueID(),
+                new PlayerSnapshot(
+                    player.getUniqueID(),
+                    player.getCommandSenderName(),
+                    player.posX,
+                    player.posY,
+                    player.posZ,
+                    player.dimension));
+        }
+        Nearby nearby = new Nearby(positions.values());
         for (UUID speaker : speakers) {
             RadioSnapshot.Transmission tx = published.transmission(speaker);
             if (tx == null) continue;
             String group = RadioGroup.nameOf(tx.channel());
+            Map<UUID, List<RadioRouting.Carrier>> carriers = routing
+                .carriers(speaker, tx, positions, nearby, link -> levelOf(speaker, levelKey(link)));
             for (EntityPlayerMP listener : online) {
                 UUID id = listener.getUniqueID();
                 if (id.equals(speaker)) continue;
-                // The devices that can carry this speaker to them, in the order route() sends through them.
-                List<RadioRouting.Carrier> carriers = new ArrayList<>();
-                for (RadioSnapshot.Link link : tx.walkies()) {
-                    if (link.holder()
-                        .equals(id)) {
-                        carriers.add(new RadioRouting.Carrier(link.device(), link.snr(), levelOf(speaker, id)));
-                    }
-                }
-                for (RadioSnapshot.Link link : tx.walkies()) {
-                    EntityPlayerMP holder = byId.get(link.holder());
-                    if (holder != null && holder != listener
-                        && holder.dimension == listener.dimension
-                        && holder.getDistanceSqToEntity(listener) <= walkieSq) {
-                        carriers
-                            .add(new RadioRouting.Carrier(link.device(), link.snr(), levelOf(speaker, link.holder())));
-                    }
-                }
-                for (RadioSnapshot.Link link : tx.transceivers()) {
-                    RadioSnapshot.Transceiver t = link.transceiver();
-                    if (t.loudspeaker() && t.dimension() == listener.dimension
-                        && listener.getDistanceSq(t.x(), t.y(), t.z()) <= loudSq) {
-                        carriers.add(
-                            new RadioRouting.Carrier(
-                                link.device(),
-                                link.snr(),
-                                levelOf(speaker, new NodeRef(t.dimension(), t.pos()))));
-                    }
-                }
-                SignalLevel level = routing.heardThrough(speaker, tx.channel(), carriers);
+                SignalLevel level = routing.heardThrough(speaker, tx.channel(), carriers.getOrDefault(id, List.of()));
                 Heard heard = new Heard(id, speaker);
                 Sent before = sent.get(heard);
                 if (level == SignalLevel.NONE && before == null) continue;
@@ -613,6 +597,12 @@ public final class RadioService {
                 else sent.put(heard, new Sent(tx.channel(), level, tick));
             }
         }
+    }
+
+    /** What a link's level is kept under: a walkie's holder, or a Transceiver's place. */
+    private static Object levelKey(RadioSnapshot.Link link) {
+        RadioSnapshot.Transceiver t = link.transceiver();
+        return link.holder() != null ? link.holder() : new NodeRef(t.dimension(), t.pos());
     }
 
     private SignalLevel levelOf(UUID speaker, Object device) {

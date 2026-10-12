@@ -1,5 +1,7 @@
 package com.enn3developer.becom.voice;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -7,11 +9,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.DoubleSupplier;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.radio.Capture;
+import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
  * State the sixteen radio groups share (DESIGN.md 13.3): the published snapshot, the capture holds, the burst-loss
@@ -107,6 +111,66 @@ public final class RadioRouting {
 
     /** A device that could carry a speaker to a listener: its link from the speaker, and that link's level. */
     public record Carrier(Object device, double snr, SignalLevel level) {}
+
+    /**
+     * Server thread: for one transmission, the devices that could carry it to each listener, in the order
+     * {@code route()} sends through them: their own walkie, then the walkies around them, then loudspeakers, each in
+     * the snapshot's order. Found from each device out to the players around it, as route() does: looking at every
+     * walkie for every listener grows with players squared, and so did a publish on a busy channel.
+     *
+     * @param positions every online player, by id
+     * @param nearby    the same players, by cell
+     * @param levelOf   the level a link's device hears the speaker at
+     */
+    public Map<UUID, List<Carrier>> carriers(UUID speaker, RadioSnapshot.Transmission tx,
+        Map<UUID, PlayerSnapshot> positions, Nearby nearby, Function<RadioSnapshot.Link, SignalLevel> levelOf) {
+        Map<UUID, List<Carrier>> carriers = new HashMap<>();
+        for (RadioSnapshot.Link link : tx.walkies()) {
+            if (link.holder()
+                .equals(speaker) || !positions.containsKey(link.holder())) continue;
+            carry(carriers, link.holder(), link, levelOf);
+        }
+        for (RadioSnapshot.Link link : tx.walkies()) {
+            PlayerSnapshot holder = positions.get(link.holder());
+            if (holder == null) continue;
+            for (UUID listener : around(
+                nearby,
+                speaker,
+                holder.getDimensionId(),
+                holder.getX(),
+                holder.getY(),
+                holder.getZ(),
+                walkieSpeakerRange)) {
+                if (!listener.equals(link.holder())) carry(carriers, listener, link, levelOf);
+            }
+        }
+        for (RadioSnapshot.Link link : tx.transceivers()) {
+            RadioSnapshot.Transceiver t = link.transceiver();
+            if (!t.loudspeaker()) continue;
+            for (UUID listener : around(nearby, speaker, t.dimension(), t.x(), t.y(), t.z(), loudspeakerRange)) {
+                carry(carriers, listener, link, levelOf);
+            }
+        }
+        return carriers;
+    }
+
+    /** The players within {@code range} of a device, but the speaker. */
+    private static List<UUID> around(Nearby nearby, UUID speaker, int dimension, double x, double y, double z,
+        double range) {
+        List<UUID> found = new ArrayList<>();
+        for (PlayerSnapshot p : nearby.around(dimension, x, z, range)) {
+            double dx = p.getX() - x, dy = p.getY() - y, dz = p.getZ() - z;
+            if (dx * dx + dy * dy + dz * dz <= range * range && !p.getUuid()
+                .equals(speaker)) found.add(p.getUuid());
+        }
+        return found;
+    }
+
+    private static void carry(Map<UUID, List<Carrier>> carriers, UUID listener, RadioSnapshot.Link link,
+        Function<RadioSnapshot.Link, SignalLevel> levelOf) {
+        carriers.computeIfAbsent(listener, k -> new ArrayList<>())
+            .add(new Carrier(link.device(), link.snr(), levelOf.apply(link)));
+    }
 
     /**
      * Server thread: the level a listener hears {@code speaker} at, given the devices that could carry it to them in

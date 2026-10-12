@@ -11,9 +11,10 @@ import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 /**
  * One frame's players by dimension and 16-block cell, so a device finds the players around it without looking at
  * everyone: with every listener's walkie playing around it (D21), that was one look per listener per player, for every
- * frame (DESIGN.md 6.5). Built from the frame's own position snapshot, on the thread that routes it.
+ * frame (DESIGN.md 6.5). Built from the frame's own position snapshot, on the thread that routes it, and on the server
+ * thread from the online players when a radio publish works out who hears whom.
  */
-final class Nearby {
+public final class Nearby {
 
     private static final int CELL = 16;
 
@@ -21,7 +22,7 @@ final class Nearby {
 
     private final Map<Cell, List<PlayerSnapshot>> cells = new HashMap<>();
 
-    Nearby(Collection<PlayerSnapshot> players) {
+    public Nearby(Collection<PlayerSnapshot> players) {
         for (PlayerSnapshot p : players) {
             cells
                 .computeIfAbsent(
@@ -39,7 +40,7 @@ final class Nearby {
      * The players of {@code dimension} in the cells within {@code range} of {@code (x, z)}: everyone that close, and
      * some further, so the caller still checks the distance.
      */
-    List<PlayerSnapshot> around(int dimension, double x, double z, double range) {
+    public List<PlayerSnapshot> around(int dimension, double x, double z, double range) {
         List<PlayerSnapshot> found = new ArrayList<>();
         int minX = cellOf(x - range), maxX = cellOf(x + range);
         int minZ = cellOf(z - range), maxZ = cellOf(z + range);
