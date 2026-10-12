@@ -25,11 +25,15 @@ LANG_END = "# End of quests"
 NAMESPACE = uuid.UUID("6b5f1c1e-3c39-4f0e-9d35-2b0f4a6c1b00")
 
 LOOTBAG = "enhancedlootbags:lootbag"
+# DESIGN.md 15.5 (D51): one lootbag of the tier on every quest, and coins of the tier on the big steps. The amounts are
+# the commonest ones in GTNH's own quests of each tier (GT-New-Horizons-Modpack 5c60ab9, DefaultQuests): LV 15
+# Technician (44 of 144 quests), MV 25 Technician (54 of 142), HV 5 Technician I (33 of 108; 1 Technician II is
+# commoner but D51 names Technician I for HV), EV 2 Technician II (24 of 85). Lootbags there are one per quest.
 TIER = {
     "LV": {"bag": 4, "coin": "dreamcraft:CoinTechnician", "coins": 15},
-    "MV": {"bag": 5, "coin": "dreamcraft:CoinTechnician", "coins": 15},
-    "HV": {"bag": 6, "coin": "dreamcraft:CoinTechnicianI", "coins": 3},
-    "EV": {"bag": 7, "coin": "dreamcraft:CoinTechnicianII", "coins": 3},
+    "MV": {"bag": 5, "coin": "dreamcraft:CoinTechnician", "coins": 25},
+    "HV": {"bag": 6, "coin": "dreamcraft:CoinTechnicianI", "coins": 5},
+    "EV": {"bag": 7, "coin": "dreamcraft:CoinTechnicianII", "coins": 2},
 }
 
 GT_MACHINE = "gregtech:gt.blockmachines"
