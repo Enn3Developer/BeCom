@@ -16,7 +16,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.MathHelper;
-import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
@@ -172,10 +171,7 @@ public final class RadioService {
                 .nextDouble(),
             System::nanoTime);
         for (int channel = 1; channel <= RadioGroup.CHANNELS; channel++) {
-            groups[channel] = new RadioGroup(
-                channel,
-                StatCollector.translateToLocalFormatted("becom.group.radio", channel),
-                routing);
+            groups[channel] = new RadioGroup(channel, GroupNames.radio(channel), routing);
         }
     }
 

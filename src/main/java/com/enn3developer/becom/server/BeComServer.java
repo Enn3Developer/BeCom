@@ -5,7 +5,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -94,7 +93,7 @@ public final class BeComServer {
         this.rockets = new RocketReceivers(network, antennas);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
-            StatCollector.translateToLocal("becom.group.call"),
+            GroupNames.call(),
             tunables.directHearingRange(),
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());

@@ -90,3 +90,17 @@ stopgap.
 - **Stopgap:** count the contact on every send; it miscounts only two players already talking another way, or a
   listener a moment from hearing them anyway.
 - **Found:** code review, 2026-10-12.
+
+### V6: Group names in each player's language
+
+- **Status:** open, polish
+- **Needed by:** 1.0, DESIGN.md [15.3](DESIGN.md#153-languages)
+- **Missing:** `IGroup.getDisplayName()` is a plain string. GTNH Voice sends it to clients in its group update packet
+  and its HUD's speaker list draws it as it is, so BeCom can only translate it on the server. A dedicated server's
+  language is always English, so an Italian player sees "Call" there instead of "Chiamata". In single player the
+  server shares the client's language, and the name is right.
+- **Proposed API:** a translation key and its arguments on `IGroup`, sent with the name and formatted on each client;
+  or the name as an `IChatComponent`, which 1.7.10 already translates on the client.
+- **Stopgap:** BeCom translates its group names on the server, in one place (`GroupNames`). Only the call group's
+  name differs between English and Italian; "Radio 3" reads the same in both.
+- **Found:** 1.0 design review, 2026-10-12.
