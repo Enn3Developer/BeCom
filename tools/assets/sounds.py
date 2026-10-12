@@ -112,6 +112,11 @@ def click():
     return fade(signal / np.max(np.abs(signal)) * 0.7, 0.002)
 
 
+# Sounds heard "at the ear", with no place in the world: the handset's tones and click, and the owner-only buzz.
+# Minecraft plays them at (0, 0, 0) with no attenuation, and OpenAL pans a mono source toward its position, so these
+# are written in stereo, which OpenAL never pans. Sounds that come from a block, like the ring, stay mono.
+AT_THE_EAR = {"tone/dial", "tone/ringback", "tone/busy", "tone/unreachable", "phone/buzz", "phone/hangup"}
+
 SOUNDS = {
     "tone/dial": dial_tone,
     "tone/ringback": ringback,
@@ -126,11 +131,14 @@ SOUNDS = {
 def write_ogg(name, signal):
     path = os.path.join(OUT, name + ".ogg")
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    channels = 2 if name in AT_THE_EAR else 1
     pcm = (np.clip(signal, -1, 1) * 32767).astype("<i2")
+    if channels == 2:
+        pcm = np.repeat(pcm, 2)
     with tempfile.TemporaryDirectory() as tmp:
         wav = os.path.join(tmp, "sound.wav")
         with wave.open(wav, "wb") as w:
-            w.setnchannels(1)
+            w.setnchannels(channels)
             w.setsampwidth(2)
             w.setframerate(RATE)
             w.writeframes(pcm.tobytes())
