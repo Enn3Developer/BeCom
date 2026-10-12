@@ -23,6 +23,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.FakePlayer;
 
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemSignalAnalyzer;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
@@ -332,8 +333,8 @@ public final class RadioService {
     /** Looks at a player's inventory and surroundings again (DESIGN.md 6.5: once a second per player). */
     private void refresh(EntityPlayerMP player) {
         UUID id = player.getUniqueID();
-        int slot = ItemWalkieTalkie.activeSlot(player.inventory);
-        int walkieChannel = slot < 0 ? 0 : ItemWalkieTalkie.channel(player.inventory.getStackInSlot(slot));
+        Carried.Slot slot = ItemWalkieTalkie.active(player);
+        int walkieChannel = slot == null ? 0 : ItemWalkieTalkie.channel(slot.stack());
         NodeRef at = transceiverAt(player);
         if (walkieChannel == 0 && at == null) {
             radios.remove(id);
@@ -651,17 +652,16 @@ public final class RadioService {
         }
         for (EntityPlayerMP player : players) {
             UUID id = player.getUniqueID();
-            int activeSlot = ItemWalkieTalkie.activeSlot(player.inventory);
+            Carried.Slot activeSlot = ItemWalkieTalkie.active(player);
             Radio radio = radios.get(id);
             boolean transmitting = active.contains(id) && radio != null
                 && (radio.transceiver == null || transceivers.get(radio.transceiver) == null);
-            ItemStack[] inventory = player.inventory.mainInventory;
-            for (int i = 0; i < inventory.length; i++) {
-                ItemStack stack = inventory[i];
+            for (Carried.Slot slot : Carried.slots(player)) {
+                ItemStack stack = slot.stack();
                 if (!ItemWalkieTalkie.is(stack) || ItemWalkieTalkie.isTooNew(stack) || !ItemWalkieTalkie.on(stack))
                     continue;
                 int perTick = tunables.walkieStandbyDrain();
-                if (i == activeSlot) {
+                if (slot.equals(activeSlot)) {
                     if (transmitting) perTick = tunables.walkieTransmitDrain();
                     else if (receiving.contains(id)) perTick = tunables.walkieReceiveDrain();
                 }

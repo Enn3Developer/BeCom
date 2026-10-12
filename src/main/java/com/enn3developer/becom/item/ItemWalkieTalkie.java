@@ -4,8 +4,8 @@ import java.util.List;
 
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -26,6 +26,9 @@ import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.WalkieScreen;
 import com.enn3developer.becom.voice.RadioGroup;
 
+import baubles.api.BaubleType;
+import baubles.api.expanded.BaubleExpandedSlots;
+import baubles.api.expanded.IBaubleExpanded;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.modularui2.GTGuiThemes;
@@ -37,10 +40,11 @@ import ic2.api.item.IElectricItem;
  * and charged; right-click opens its screen, sneak + scroll changes the channel. GT's chargers and battery buffers
  * charge it through IC2's electric item interface, like GT's own tools.
  * <p>
- * A player transmits and receives on one walkie, the first working one: the one in hand, then the hotbar, then the
- * rest of the inventory (X21). Its state lives in the stack: channel, power, and IC2's charge.
+ * A player transmits and receives on one walkie, the first working one: the one in hand, then the rest of the
+ * inventory, then the bauble slots (X21, D14). Its state lives in the stack: channel, power, and IC2's charge.
  */
-public class ItemWalkieTalkie extends Item implements IElectricItem, IGuiHolder<PlayerInventoryGuiData> {
+public class ItemWalkieTalkie extends Item
+    implements IElectricItem, IGuiHolder<PlayerInventoryGuiData>, IBaubleExpanded {
 
     private static final String CHANNEL = "becomChannel";
     private static final String ON = "becomOn";
@@ -105,13 +109,9 @@ public class ItemWalkieTalkie extends Item implements IElectricItem, IGuiHolder<
         return ElectricItem.manager.discharge(stack, eu, Integer.MAX_VALUE, true, false, false);
     }
 
-    /** The slot of the walkie a player talks and listens on, or -1: the first working one, held first (X21). */
-    public static int activeSlot(InventoryPlayer inventory) {
-        if (working(inventory.getCurrentItem())) return inventory.currentItem;
-        for (int i = 0; i < inventory.mainInventory.length; i++) {
-            if (working(inventory.mainInventory[i])) return i;
-        }
-        return -1;
+    /** Where the walkie a player talks and listens on is, or null: the first working one, held first (X21). */
+    public static Carried.Slot active(EntityPlayer player) {
+        return Carried.first(player, ItemWalkieTalkie::working);
     }
 
     /** Its tag, marked with BeCom's format as BeCom writes into it; IC2 keeps its charge there too. */
@@ -154,6 +154,39 @@ public class ItemWalkieTalkie extends Item implements IElectricItem, IGuiHolder<
     @Override
     public double getTransferLimit(ItemStack stack) {
         return TRANSFER_LIMIT;
+    }
+
+    // endregion
+
+    // region Baubles
+
+    @Override
+    public String[] getBaubleTypes(ItemStack stack) {
+        return new String[] { BaubleExpandedSlots.universalType };
+    }
+
+    @Override
+    public BaubleType getBaubleType(ItemStack stack) {
+        return BaubleType.UNIVERSAL;
+    }
+
+    @Override
+    public void onWornTick(ItemStack stack, EntityLivingBase player) {}
+
+    @Override
+    public void onEquipped(ItemStack stack, EntityLivingBase player) {}
+
+    @Override
+    public void onUnequipped(ItemStack stack, EntityLivingBase player) {}
+
+    @Override
+    public boolean canEquip(ItemStack stack, EntityLivingBase player) {
+        return true;
+    }
+
+    @Override
+    public boolean canUnequip(ItemStack stack, EntityLivingBase player) {
+        return true;
     }
 
     // endregion

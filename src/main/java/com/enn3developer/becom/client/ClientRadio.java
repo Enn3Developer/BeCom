@@ -10,6 +10,7 @@ import net.minecraftforge.client.event.MouseEvent;
 import org.lwjgl.input.Keyboard;
 
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.machine.MTETransceiver;
 import com.enn3developer.becom.packet.BeComPackets;
@@ -49,9 +50,9 @@ public final class ClientRadio {
         EntityClientPlayerMP player = mc.thePlayer;
         boolean held = player != null && !player.isDead && mc.currentScreen == null && key.getIsKeyPressed();
         boolean atTransceiver = player != null && transceiverNear(player);
-        int slot = player == null ? -1 : ItemWalkieTalkie.activeSlot(player.inventory);
-        talkingOn = held && !atTransceiver && slot >= 0 ? player.inventory.getStackInSlot(slot) : null;
-        activation.setKeyed(held && (atTransceiver || slot >= 0));
+        Carried.Slot slot = player == null ? null : ItemWalkieTalkie.active(player);
+        talkingOn = held && !atTransceiver && slot != null ? slot.stack() : null;
+        activation.setKeyed(held && (atTransceiver || slot != null));
     }
 
     /** Whether the player is transmitting on {@code stack} right now, for its TX light (DESIGN.md 11.3). */

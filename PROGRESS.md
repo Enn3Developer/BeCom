@@ -517,7 +517,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | AE2 and Baubles Expanded as hard dependencies (16.4, D27)                    | done   |
 | Mobile Phone: item, number, owner, power, recipe (8, 8.2, 3.1)               | todo   |
 | Mobile service through antennas, on UHF (8.2)                                | todo   |
-| Baubles slots for phones and walkies (D14, 8)                                | todo   |
+| Baubles slots for phones and walkies (D14, 8)                                | doing  |
 | Ringing from the player, the incoming-call notice, silent mode (11.2)        | todo   |
 | The Phone key, and sneak + Phone to reject (11.1, D34)                       | todo   |
 | Phone screen for carried phones: power, silent mode, everyone in a call (11.2) | todo |
