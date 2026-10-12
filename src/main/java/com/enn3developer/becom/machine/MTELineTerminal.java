@@ -226,7 +226,10 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     public String[] getInfoData() {
         List<String> info = new ArrayList<>();
         info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        if (phone >= 0) info.add(StatCollector.translateToLocalFormatted("becom.info.phone", phone));
+        BeComServer server = BeComServer.get();
+        if (phone >= 0 && server != null && server.network.terminalsOf(phone) > 1)
+            info.add(StatCollector.translateToLocalFormatted("becom.info.phone_shared", phone));
+        else if (phone >= 0) info.add(StatCollector.translateToLocalFormatted("becom.info.phone", phone));
         else if (phonesSeen > 1)
             info.add(StatCollector.translateToLocalFormatted("becom.info.too_many_phones", phonesSeen));
         else info.add(StatCollector.translateToLocal("becom.info.no_phone"));

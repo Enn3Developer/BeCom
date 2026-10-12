@@ -35,6 +35,28 @@ class CallGraphTest {
     }
 
     @Test
+    void aPhoneIsNeverAWayThrough() {
+        // Two separate lines, A on one and C on the other. B touches the terminal of each: it may call either side,
+        // but it doesn't join the lines (D19, DESIGN.md 5.4).
+        CallGraph.NodeVertex t1 = new CallGraph.NodeVertex(0, 1);
+        CallGraph.NodeVertex t1b = new CallGraph.NodeVertex(0, 2);
+        CallGraph.NodeVertex t2 = new CallGraph.NodeVertex(0, 3);
+        CallGraph.NodeVertex t2b = new CallGraph.NodeVertex(0, 4);
+        CallGraph graph = CallGraph.builder()
+            .twoWay(new CallGraph.PhoneVertex(111111), t1, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(t1, t1b, 20, CallGraph.HopKind.LINE)
+            .twoWay(new CallGraph.PhoneVertex(222222), t1b, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(new CallGraph.PhoneVertex(222222), t2b, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(t2b, t2, 20, CallGraph.HopKind.LINE)
+            .twoWay(new CallGraph.PhoneVertex(333333), t2, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .build();
+        assertEquals(Double.NEGATIVE_INFINITY, graph.width(111111, 333333));
+        assertEquals(Double.NEGATIVE_INFINITY, graph.width(333333, 111111));
+        assertEquals(Map.of(222222, 20.0), graph.phonesFrom(111111));
+        assertEquals(20, graph.width(222222, 333333), 1e-12);
+    }
+
+    @Test
     void unknownPhonesAreUnreachable() {
         CallGraph graph = CallGraph.builder()
             .build();

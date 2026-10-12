@@ -15,14 +15,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **To match the design:** drop the sneak branch in `BlockTelephone.onBlockActivated` once the Phone key opens the
   screen.
 
-### X2: A terminal that finds more than one phone on its cable serves none
+### X2: A terminal with more than one phone on its cable serves none, and so does a phone on two terminals
 
 - **Where:** 0.1, DESIGN.md 5.2, D19
 - **Design says:** a Line Terminal connects to exactly one Telephone or Videophone through Phone Cable.
 - **Built:** the terminal scans its cable once a second; with exactly one phone it serves it, with none or several it
-  serves nothing, and its scanner info says how many it found.
-- **Why:** DESIGN.md doesn't say what happens when a player wires two phones to one terminal, and picking one of them
-  would make D19 depend on scan order.
+  serves nothing, and its scanner info says how many it found. The other way round, a phone found on the cables of
+  two terminals is served by neither, and each terminal's scanner info says so. Calls never pass through a phone
+  either way: the call graph treats each phone as a start or an end only.
+- **Why:** DESIGN.md doesn't say what happens when a player wires two phones to one terminal, or one phone to two
+  terminals. Picking one would make D19 depend on scan order, and a phone shared by two lines used to join them into
+  one network with no Router (found in the 0.1 design review).
 - **To match the design:** nothing to change unless the owner prefers, say, the nearest phone.
 
 ### X3: A terminal's link to its pylon spans up to 4 times that pylon's height

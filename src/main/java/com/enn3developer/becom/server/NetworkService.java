@@ -196,12 +196,11 @@ public final class NetworkService {
         return phonesSeen.getOrDefault(new NodeRef(dimension, terminalPos), 0);
     }
 
-    /** The terminal a phone hangs off, or null. */
-    public NodeRef terminalOf(int phone) {
-        for (Map.Entry<NodeRef, Integer> entry : attachments.entrySet()) {
-            if (entry.getValue() == phone) return entry.getKey();
-        }
-        return null;
+    /** How many terminals found {@code phone} on their cable; a phone on more than one is served by none (D19). */
+    public int terminalsOf(int phone) {
+        int found = 0;
+        for (int attached : attachments.values()) if (attached == phone) found++;
+        return found;
     }
 
     // endregion
@@ -250,9 +249,13 @@ public final class NetworkService {
                     CallGraph.HopKind.LINE);
             }
         }
+        Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
+        for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);
         for (Map.Entry<NodeRef, Integer> entry : attachments.entrySet()) {
             NodeRef terminal = entry.getKey();
             if (!working(terminal.dimension(), terminal.pos())) continue;
+            // Strictly one phone per terminal and one terminal per phone (D19): a phone on two cables gets neither.
+            if (terminalsPerPhone.get(entry.getValue()) > 1) continue;
             // Phone Cable is lossless (DESIGN.md 5.5).
             builder.twoWay(
                 new CallGraph.PhoneVertex(entry.getValue()),
