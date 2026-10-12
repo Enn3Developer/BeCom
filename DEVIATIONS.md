@@ -135,3 +135,28 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   from GT's inputs (found in the 0.1 design review, confirmed by the self-test). GT keeps overlapping assembler
   recipes apart the same way, which is what D31 asks for.
 - **To match the design:** drop `.circuit(PHONE_CABLE_CIRCUIT)` in `BeComRecipes`, and accept the clash.
+
+### X13: An offline Repeater or Router cuts its line
+
+- **Where:** 0.1, DESIGN.md 5.3, 5.4, D11
+- **Design says:** powered nodes work only while loaded and powered (D11). 5.3 doesn't say what happens to a line
+  whose Repeater is down.
+- **Built:** a Repeater or Router that is unpowered, switched off or in an unloaded chunk passes nothing: the line
+  through it is dead until it's back. Its links stay.
+- **Why:** D11 has powered nodes work only while loaded and powered; passing the signal through unregenerated would
+  make a Repeater's power optional. It does mean a Repeater far from every player needs its chunk loaded: in the
+  "Done when" test the Repeater sits 150 blocks from each player, inside the loaded area at view distance 10 but not
+  at 8 (found in the 0.1 design review).
+- **To match the design:** if the owner prefers pass-through, `WiredTopology` can treat an offline Repeater as a
+  passive pylon.
+
+### X14: Quest text names DESIGN.md 17's default values
+
+- **Where:** 0.1, DESIGN.md 15.3, 15.5, 17
+- **Design says:** every tunable is a server config option; quest text lives in BeCom's language files.
+- **Built:** quest descriptions give the default numbers (32 blocks of cable, 4 EU/t, pylons 6 to 16 frames, a
+  repeater every 225 blocks). Machine tooltips show the server's own values.
+- **Why:** BetterQuesting shows a quest's language string as it is, with nothing to fill in a server's values, so a
+  server that changes those config options shows stale numbers in the quest book (found in the 0.1 design review).
+- **To match the design:** a server that changes them can override the strings in a resource pack; BeCom could also
+  word the quests without numbers.

@@ -18,6 +18,9 @@ import com.enn3developer.gtnhvoice.server.VoiceServerSession;
 /**
  * Hand-built sessions and positions for routing tests, run through GTNH Voice's own {@link RoutingContext} with a
  * capturing packet sender (CLAUDE.md: checking your work).
+ * <p>
+ * VOICE.md V4: the builder only takes GTNH Voice's internal session and packet types, so this fixture, and only this
+ * fixture, builds them.
  */
 final class RoutingFixture {
 

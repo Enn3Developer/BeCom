@@ -62,3 +62,18 @@ stopgap.
   fade it by distance, or an optional maximum distance on `RoutingContext.sendTo`.
 - **Stopgap:** voice's falloff, cut off at BeCom's range.
 - **Found:** design review, 2026-10-12.
+
+### V4: Routing tests through API types
+
+- **Status:** open, tests only
+- **Needed by:** 0.1, DESIGN.md [16.3](DESIGN.md#163-verification) (routing tests)
+- **Missing:** `RoutingContext.builder()` takes GTNH Voice's internal `VoiceServerSession`, and a capturing
+  `PacketSender` receives internal packet classes. So BeCom's routing tests, which CLAUDE.md asks to go through that
+  builder, have to build `VoiceServerSession`, `AesEncryption`, `PlayerAudioPacket` and read `SourceAudioPacket`, all
+  outside the `api` packages. A GTNH Voice update can break the tests without breaking BeCom.
+- **Proposed API:** a test session factory in the `api` packages (or builder overloads taking `IVoiceSession` and an
+  `IAudioFrame`), and a sender callback that gets the recipient session, source state, position and source id as
+  plain values.
+- **Stopgap:** BeCom's test fixture builds the internal types, in one place (`RoutingFixture`). Nothing outside the
+  tests touches them.
+- **Found:** 0.1 design review, 2026-10-12.
