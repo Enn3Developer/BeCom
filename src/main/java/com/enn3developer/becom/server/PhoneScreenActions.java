@@ -43,18 +43,27 @@ public final class PhoneScreenActions {
             .callOfPhone(number);
         Call.Leg own = call == null ? null : call.legOf(number);
         // Calls are private to the people in them (DESIGN.md 12.2): anyone else at a Telephone or a Videophone in a
-        // call sees only that it's in use. While it rings, whoever could answer it sees who calls.
+        // call sees only that it's in use.
         boolean outsider = own != null && own.state() == Call.Leg.State.ACTIVE
-            && !own.players()
+            && !call.participants()
                 .contains(player.getUniqueID());
         PhoneView.State state;
         List<PhoneView.Member> members = new ArrayList<>();
         if (outsider) {
             state = PhoneView.State.IN_USE;
+        } else if (own != null && own.state() == Call.Leg.State.RINGING) {
+            // A ringing phone shows who calls, as its notice does (DESIGN.md 11.2), and none of the rest of the call.
+            state = PhoneView.State.RINGING_IN;
+            Call.Leg ringer = call.legOf(own.invitedBy());
+            if (ringer == null && !call.activeLegs()
+                .isEmpty())
+                ringer = call.activeLegs()
+                    .get(0);
+            if (ringer != null) {
+                members.add(new PhoneView.Member(ringer.phone(), nameOn(becom, ringer), SignalLevel.NONE, false));
+            }
         } else if (own != null) {
-            if (own.state() == Call.Leg.State.RINGING) state = PhoneView.State.RINGING_IN;
-            else if (call.state() == Call.State.RINGING) state = PhoneView.State.RINGING_OUT;
-            else state = PhoneView.State.CONNECTED;
+            state = call.state() == Call.State.RINGING ? PhoneView.State.RINGING_OUT : PhoneView.State.CONNECTED;
             for (Call.Leg leg : call.legs()) {
                 if (leg == own || leg.state() == Call.Leg.State.LEFT) continue;
                 boolean talking = own.state() == Call.Leg.State.ACTIVE && leg.state() == Call.Leg.State.ACTIVE;

@@ -434,6 +434,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Anyone at its screen, within the 8 blocks a block's screen stays open at, can dial, answer or hang up, and
     hanging up ends the call for the whole room, as the Phone key does from anyone in it. Answering needs a voice
     session, as at a Telephone (X8).
+  - While it rings, its screen shows who calls, as a carried phone's notice does, and nobody else in the call. In a
+    call, it shows the call to the people in it, wherever they stand, and to anyone else only that it's in use
+    (DESIGN.md 12.2). A Telephone's screen does the same.
   - It works while loaded and powered (D11): not heard from for 2 s, it leaves its call, and it can't be called or
     show in contacts.
   - Its number works like a Telephone's (X17): one moved keeps its number, a copy gets its own. GT records whoever

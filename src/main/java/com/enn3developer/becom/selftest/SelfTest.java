@@ -278,6 +278,7 @@ public final class SelfTest {
         steps.add(this::checkVideophoneRegistration);
         steps.add(this::buildVideophone);
         steps.add(this::formVideophone);
+        steps.add(this::checkVideophoneScreen);
         steps.add(this::checkVideophoneCall);
         steps.add(this::checkVideophoneRoom);
         steps.add(this::checkVideophoneEmpty);
@@ -2765,6 +2766,50 @@ public final class SelfTest {
         return player;
     }
 
+    /**
+     * DESIGN.md 11.2, 12.2: a Videophone added to a group call shows only who calls while it rings; answered, its
+     * screen shows the call to everyone in it and to nobody else.
+     */
+    private int checkVideophoneScreen() {
+        int number = videophone.number();
+        int z = phoneZ + VIDEOPHONE_DZ;
+        PhoneHandle screen = new PhoneHandle.Videophone(videophone);
+        // Yul stands in reach of its screen but out of its room, Zed in its room, and Uma, in the call, out of it.
+        FakePlayer yul = roomPlayer("BeComYul", 3, X0 + 6.5, z + 0.5);
+        FakePlayer zed = roomPlayer("BeComZed", 4, X0 + 1.5, z + 0.5);
+        uma.setPosition(X0 - 5.5, Y, z + 0.5);
+        becom.carried.refreshForSelfTest(uma);
+        int umaNumber = ItemCarriedPhone.number(uma.inventory.mainInventory[0]);
+        becom.calls.dialCarried(tia, tiaNumber, umaNumber);
+        becom.calls.answerCarried(uma, umaNumber);
+        CallBook.DialResult added = becom.calls.dialCarried(tia, tiaNumber, number);
+        PhoneView ringing = PhoneScreenActions.view(yul, screen);
+        List<String> named = new ArrayList<>();
+        for (PhoneView.Member member : ringing.members()) named.add(member.name());
+        check(
+            "a Videophone added to a call shows who calls while it rings, as a notice does, not who else is in it",
+            added == CallBook.DialResult.RINGING && ringing.state() == PhoneView.State.RINGING_IN
+                && named.equals(List.of("BeComTia")),
+            added + ", " + ringing.state() + ", " + named);
+        PhoneScreenActions.pickUp(zed, screen);
+        PhoneView inCall = PhoneScreenActions.view(uma, screen);
+        PhoneView outside = PhoneScreenActions.view(yul, screen);
+        check(
+            "...answered, its screen shows the call to everyone in it, out of its room too, and to nobody else",
+            inCall.state() == PhoneView.State.CONNECTED && !inCall.members()
+                .isEmpty()
+                && outside.state() == PhoneView.State.IN_USE
+                && outside.members()
+                    .isEmpty(),
+            inCall.state() + " / " + outside.state());
+        becom.calls.phoneKey(zed, false);
+        becom.calls.hangUp(tia);
+        becom.calls.hangUp(uma);
+        yul.setPosition(X0 + 30.5, Y, z + 0.5);
+        zed.setPosition(X0 + 30.5, Y, z + 2.5);
+        return 1;
+    }
+
     /** DESIGN.md 10.2, D19, D42: a Videophone is its Line Terminal's phone, rings, and answers as a speakerphone. */
     private int checkVideophoneCall() {
         int number = videophone.number();
@@ -2806,6 +2851,11 @@ public final class SelfTest {
                 && call.participants()
                     .size() == 3,
             call == null ? "no call" : call.participants() + "");
+        PhoneView atScreen = PhoneScreenActions.view(vic, new PhoneHandle.Videophone(videophone));
+        check(
+            "...and those in its room see the call on its screen",
+            atScreen.state() == PhoneView.State.CONNECTED && atScreen.otherNumber() == piaNumber,
+            atScreen.state() + ", " + atScreen.otherNumber());
         check(
             "...an ME Phone's Max comes through at the Videophone's High (D42)",
             call != null && call.level(p, v) == SignalLevel.HIGH && call.level(v, p) == SignalLevel.HIGH,
