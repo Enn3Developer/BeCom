@@ -76,7 +76,8 @@ public final class RadioRouting {
         return chain.drop(link.enterBad(), link.leaveBad(), random.getAsDouble());
     }
 
-    void keyed(UUID speaker, int channel, long nanos) {
+    /** {@code route()} marks a speaker keyed with each frame that goes through; the self-test stands in for a frame. */
+    public void keyed(UUID speaker, int channel, long nanos) {
         keyed.put(speaker, new Keyed(channel, nanos));
     }
 

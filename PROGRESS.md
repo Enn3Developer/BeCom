@@ -284,7 +284,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | doing  |
 | `/becom signal` (6.6)                                                | done   |
 | The 0.2 tunables in the config (17)                                  | done   |
-| Self-test rows for 0.2 (16.3)                                        | todo   |
+| Self-test rows for 0.2 (16.3)                                        | doing  |
 
 ### Untested assumptions (DESIGN.md 16.2)
 

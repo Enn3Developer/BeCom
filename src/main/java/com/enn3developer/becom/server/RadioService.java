@@ -256,7 +256,7 @@ public final class RadioService {
         }
         if (tick % TICKS_PER_SECOND == 0) {
             memberships();
-            drainWalkies();
+            drainWalkies(players());
             forgetOld(now);
             changed = true;
         }
@@ -593,14 +593,14 @@ public final class RadioService {
      * Walkies drain their battery while switched on, more while receiving and most while transmitting, and switch off
      * when it's flat (D36, DESIGN.md 11.3). Once a second, the second's worth.
      */
-    private void drainWalkies() {
+    private void drainWalkies(List<EntityPlayerMP> players) {
         Set<UUID> receiving = new HashSet<>();
         for (UUID speaker : active) {
             RadioSnapshot.Transmission tx = published.transmission(speaker);
             if (tx == null) continue;
             for (RadioSnapshot.Link link : tx.walkies()) receiving.add(link.holder());
         }
-        for (EntityPlayerMP player : players()) {
+        for (EntityPlayerMP player : players) {
             UUID id = player.getUniqueID();
             int activeSlot = ItemWalkieTalkie.activeSlot(player.inventory);
             Radio radio = radios.get(id);
@@ -649,6 +649,35 @@ public final class RadioService {
                 .tier(),
             losses,
             levels.levelOf(losses.snr()));
+    }
+
+    // endregion
+
+    // region Self-test
+
+    // The self-test's fake players aren't in the server's player list, which is where the ticks look; these let it
+    // put them through the same code.
+
+    public void refreshForSelfTest(EntityPlayerMP player) {
+        refresh(player);
+    }
+
+    public void drainForSelfTest(EntityPlayerMP player) {
+        drainWalkies(List.of(player));
+    }
+
+    /** Stands in for a radio frame from {@code speaker}: the next tick builds their transmission. */
+    public void keyForSelfTest(UUID speaker) {
+        routing.keyed(speaker, channelOf(speaker), System.nanoTime());
+    }
+
+    /**
+     * Evaluates every keyed speaker now. A speaker keyed already is otherwise re-evaluated at the next whole second,
+     * so a check right after a change would read the snapshot from before it.
+     */
+    public void publishForSelfTest() {
+        keys(System.nanoTime());
+        publish();
     }
 
     // endregion

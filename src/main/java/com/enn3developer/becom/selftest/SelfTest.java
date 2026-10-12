@@ -31,6 +31,8 @@ import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.data.SavedDataFormat;
+import com.enn3developer.becom.item.BeComItems;
+import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -42,9 +44,14 @@ import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
+import com.enn3developer.becom.logic.radio.AntennaNetwork;
+import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.machine.BeComMachines;
+import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTELineTerminal;
 import com.enn3developer.becom.machine.MTEPylonHead;
+import com.enn3developer.becom.machine.MTETransceiver;
+import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
@@ -52,6 +59,8 @@ import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.LinkService;
 import com.enn3developer.becom.server.PhoneScreenActions;
 import com.enn3developer.becom.voice.CallGroup;
+import com.enn3developer.becom.voice.RadioGroup;
+import com.enn3developer.becom.voice.RadioSnapshot;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
 import com.mojang.authlib.GameProfile;
@@ -66,6 +75,7 @@ import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
+import ic2.api.item.ElectricItem;
 
 /**
  * {@code /becom selftest} (DESIGN.md 16.3): the checks that need a real server. It builds what it needs in a scratch
@@ -118,6 +128,31 @@ public final class SelfTest {
     private UUID questProbe;
     private final Map<String, Integer> sidesAccepted = new java.util.HashMap<>();
 
+    // 0.2's radio checks, in their own areas: two T1 antennas with a line bridged onto each, and the walkies that talk
+    // through them; walkies and a Transceiver out of every antenna's reach; and T2, T3 and a short mast out of
+    // everyone's reach.
+    private static final int RADIO_Z = Z0 + GROUP_GAP * 9;
+    private static final int DIRECT_Z = RADIO_Z + 150;
+    private static final int FORM_Z = RADIO_Z + 600;
+    private static final int ANTENNA_GAP = 60;
+    private MTEAntenna antennaA;
+    private MTEAntenna antennaB;
+    private MTEAntenna antennaT2;
+    private MTEAntenna antennaT3;
+    private MTEAntenna antennaShort;
+    private MTELineTerminal bridgeTerminalA;
+    private MTELineTerminal bridgeTerminalB;
+    private TileTelephone bridgePhoneA;
+    private TileTelephone bridgePhoneB;
+    private MTETransceiver transceiver;
+    private FakePlayer alice;
+    private FakePlayer bob;
+    private FakePlayer carol;
+    private FakePlayer dave;
+    private FakePlayer eve;
+    private FakePlayer frank;
+    private FakePlayer gina;
+
     /** One test line: terminals at both ends, heads between, and a Telephone on each terminal's cable. */
     private static final class Line {
 
@@ -154,6 +189,20 @@ public final class SelfTest {
         steps.add(this::checkRepeaterOff);
         steps.add(this::checkQuests);
         steps.add(this::checkQuestReload);
+        steps.add(this::checkRadioRegistration);
+        steps.add(this::buildRadio);
+        steps.add(this::formRadio);
+        steps.add(this::checkAntennas);
+        steps.add(this::keyDirect);
+        steps.add(this::checkDirect);
+        steps.add(this::checkTransceiver);
+        steps.add(this::checkLoudspeaker);
+        steps.add(this::keyThroughAntennas);
+        steps.add(this::checkThroughAntennas);
+        steps.add(this::keyLocked);
+        steps.add(this::checkLocked);
+        steps.add(this::checkFlatWalkie);
+        steps.add(this::checkOffWalkie);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -973,6 +1022,401 @@ public final class SelfTest {
             BeCom.LOG.error(PREFIX + "couldn't call {}", method, e);
         }
         return null;
+    }
+
+    // endregion
+
+    // region Radio (0.2)
+
+    private int checkRadioRegistration() {
+        boolean groups = true;
+        for (int channel = 1; channel <= RadioGroup.CHANNELS; channel++) {
+            groups &= GtnhVoiceApi.groupManager()
+                .byName(RadioGroup.nameOf(channel)) == becom.radio.group(channel);
+        }
+        check("voice groups becom:radio.1 to becom:radio.16 are registered", groups, "");
+        for (MTEAntenna antenna : List.of(BeComMachines.antennaT1, BeComMachines.antennaT2, BeComMachines.antennaT3)) {
+            check("crafting recipe for " + antenna.getMetaName(), hasCraftingRecipe(antenna.getStackForm(1)), "");
+        }
+        check(
+            "crafting recipe for " + BeComMachines.transceiver.getMetaName(),
+            hasCraftingRecipe(BeComMachines.transceiver.getStackForm(1)),
+            "");
+        for (net.minecraft.item.Item item : List.of(BeComItems.walkieTalkie, BeComItems.signalAnalyzer)) {
+            GTRecipe ours = null;
+            for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
+                for (ItemStack out : recipe.mOutputs) if (out != null && out.getItem() == item) ours = recipe;
+            }
+            String name = item.getUnlocalizedName();
+            if (ours == null) {
+                fail("assembler makes " + name, "no recipe");
+                continue;
+            }
+            List<GTRecipe> found = RecipeMaps.assemblerRecipes.findRecipeQuery()
+                .items(ours.mInputs)
+                .fluids(ours.mFluidInputs)
+                .voltage(GTValues.V[2])
+                .findAll()
+                .collect(java.util.stream.Collectors.toList());
+            check(
+                "assembler makes " + name + ", and its inputs make nothing else",
+                found.size() == 1,
+                found.toString());
+        }
+        return 1;
+    }
+
+    private int buildRadio() {
+        for (int z : new int[] { RADIO_Z, DIRECT_Z, FORM_Z }) {
+            for (int cx = (X0 - 40) >> 4; cx <= (X0 + 200) >> 4; cx++) {
+                for (int cz = (z - 16) >> 4; cz <= (z + 16) >> 4; cz++) world.theChunkProviderServer.loadChunk(cx, cz);
+            }
+        }
+        clearRadioArea();
+        antennaA = antenna(BeComMachines.antennaT1, X0, RADIO_Z, gregtech.api.enums.ItemList.Hatch_Energy_LV);
+        antennaB = antenna(
+            BeComMachines.antennaT1,
+            X0 + ANTENNA_GAP,
+            RADIO_Z,
+            gregtech.api.enums.ItemList.Hatch_Energy_LV);
+        antennaT2 = antenna(BeComMachines.antennaT2, X0, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_MV);
+        antennaT3 = antenna(BeComMachines.antennaT3, X0 + 40, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_HV);
+        antennaShort = antenna(BeComMachines.antennaT1, X0 + 80, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_LV);
+        // One frame short: the base moves up into the bottom frame's place.
+        int mast = BeComConfig.get()
+            .antennaMastMin();
+        int sx = X0 + 80;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                Block block = world.getBlock(sx + dx, Y - mast - 1, FORM_Z + dz);
+                int meta = world.getBlockMetadata(sx + dx, Y - mast - 1, FORM_Z + dz);
+                if (world.getTileEntity(sx + dx, Y - mast - 1, FORM_Z + dz) == null) {
+                    world.setBlock(sx + dx, Y - mast, FORM_Z + dz, block, meta, 3);
+                } else {
+                    world.setBlockToAir(sx + dx, Y - mast, FORM_Z + dz);
+                }
+                world.setBlockToAir(sx + dx, Y - mast - 1, FORM_Z + dz);
+            }
+        }
+        bridgeTerminalA = place(BeComMachines.lineTerminal, X0, Y, RADIO_Z + 5);
+        bridgeTerminalB = place(BeComMachines.lineTerminal, X0 + ANTENNA_GAP, Y, RADIO_Z + 5);
+        powered.add(bridgeTerminalA.getBaseMetaTileEntity());
+        powered.add(bridgeTerminalB.getBaseMetaTileEntity());
+        world.setBlock(X0, Y, RADIO_Z + 6, BeComBlocks.phoneCable);
+        bridgePhoneA = telephone(X0, Y, RADIO_Z + 7);
+        world.setBlock(X0 + ANTENNA_GAP, Y, RADIO_Z + 6, BeComBlocks.phoneCable);
+        bridgePhoneB = telephone(X0 + ANTENNA_GAP, Y, RADIO_Z + 7);
+        transceiver = place(BeComMachines.transceiver, X0 + 100, Y, DIRECT_Z);
+        powered.add(transceiver.getBaseMetaTileEntity());
+        transceiver.setChannel(5);
+        return 2;
+    }
+
+    /** Clears what an earlier run built here, so the checks mean the same every time. */
+    private void clearRadioArea() {
+        NetworkModel model = becom.network.model(world);
+        for (NetNode node : new ArrayList<>(model.nodes())) {
+            boolean here = node.x() >= X0 - 40 && node.x() <= X0 + 200
+                && (Math.abs(node.z() - RADIO_Z) <= 16 || Math.abs(node.z() - DIRECT_Z) <= 16
+                    || Math.abs(node.z() - FORM_Z) <= 16);
+            if (!here) continue;
+            world.setBlockToAir(node.x(), node.y(), node.z());
+            model.remove(node.pos());
+        }
+        int[][] spots = { { X0, RADIO_Z }, { X0 + ANTENNA_GAP, RADIO_Z }, { X0, FORM_Z }, { X0 + 40, FORM_Z },
+            { X0 + 80, FORM_Z }, { X0 + 100, DIRECT_Z } };
+        for (int[] spot : spots) {
+            for (int x = spot[0] - 1; x <= spot[0] + 1; x++) {
+                for (int z = spot[1] - 1; z <= spot[1] + 8; z++) {
+                    for (int y = Y - 8; y <= Y; y++) world.setBlockToAir(x, y, z);
+                }
+            }
+        }
+    }
+
+    /** Places an antenna head, builds its shortest mast and base, and puts an energy hatch in a corner of the base. */
+    private MTEAntenna antenna(MTEAntenna machine, int x, int z, gregtech.api.enums.ItemList hatch) {
+        MTEAntenna head = place(machine, x, Y, z);
+        ((IConstructable) head).construct(machine.getStackForm(1), false);
+        int base = Y - BeComConfig.get()
+            .antennaMastMin() - 1;
+        world.setBlockToAir(x + 1, base, z + 1);
+        IMetaTileEntity hatchMte = GregTechAPI.METATILEENTITIES[hatch.get(1)
+            .getItemDamage()];
+        IMetaTileEntity placed = place(hatchMte, x + 1, base, z + 1);
+        powered.add(placed.getBaseMetaTileEntity());
+        return head;
+    }
+
+    private int formRadio() {
+        for (MTEAntenna antenna : List.of(antennaA, antennaB, antennaT2, antennaT3, antennaShort)) {
+            antenna.refreshStructure();
+        }
+        bridgeTerminalA.scanCable();
+        bridgeTerminalB.scanCable();
+        link(bridgeTerminalA, antennaA);
+        link(bridgeTerminalB, antennaB);
+        // The height cache follows chunks as they load and save; these were changed after loading.
+        for (int z : new int[] { RADIO_Z, DIRECT_Z, FORM_Z }) {
+            for (int cx = (X0 - 40) >> 4; cx <= (X0 + 200) >> 4; cx++) {
+                for (int cz = (z - 16) >> 4; cz <= (z + 16) >> 4; cz++) {
+                    becom.heights.chunkChanged(world, world.getChunkFromChunkCoords(cx, cz));
+                }
+            }
+        }
+        return SETTLE_TICKS;
+    }
+
+    private int checkAntennas() {
+        Tunables t = BeComConfig.get();
+        for (MTEAntenna antenna : List.of(antennaA, antennaB, antennaT2, antennaT3)) {
+            check(
+                "antenna T" + antenna.tier() + " with a mast of " + t.antennaMastMin() + " forms and works",
+                antenna.mMachine && antenna.mast() == t.antennaMastMin() && antenna.isWorking(),
+                "formed " + antenna.mMachine + ", mast " + antenna.mast() + ", working " + antenna.isWorking());
+            AntennaNetwork.Antenna known = becom.antennas.antenna(antenna.ref());
+            check(
+                "antenna T" + antenna.tier() + " has surveyed",
+                known != null && known.survey() != null,
+                known == null ? "unknown to the network" : "no survey yet");
+        }
+        antennaShort.refreshStructure();
+        check(
+            "an antenna one frame short of the shortest mast doesn't form",
+            !antennaShort.mMachine && antennaShort.mast() == t.antennaMastMin() - 1,
+            "formed " + antennaShort.mMachine + ", mast " + antennaShort.mast());
+
+        AntennaNetwork.Link link = becom.antennas.links(0)
+            .get(AntennaNetwork.LinkKey.of(pos(antennaA), pos(antennaB)));
+        double expected = t.antennaBudget(1) - RadioModel.distanceLoss(ANTENNA_GAP);
+        if (link == null) {
+            fail("two T1 antennas " + ANTENNA_GAP + " blocks apart link", "no link");
+        } else {
+            near(
+                "two T1 antennas " + ANTENNA_GAP + " blocks apart link on VHF at 42 - 20 log10(60) dB",
+                expected,
+                link.vhf()
+                    .snr());
+            near(
+                "...and on UHF",
+                expected,
+                link.uhf()
+                    .snr());
+        }
+        int a = bridgePhoneA.number(), b = bridgePhoneB.number();
+        near(
+            "a call between lines bridged onto them: its weakest hop is the UHF link",
+            expected,
+            becom.network.graph()
+                .width(a, b));
+        check(
+            "...so each Telephone has the other in its contacts",
+            becom.calls.reachableFrom(a)
+                .contains(b),
+            "");
+        return 1;
+    }
+
+    /** A fake player at {@code (x, Y, z)}, in the air, carrying a charged walkie on {@code channel} if it's above 0. */
+    private FakePlayer radioPlayer(String name, int n, double x, double z, int channel) {
+        FakePlayer player = FakePlayerFactory.get(
+            world,
+            new GameProfile(
+                UUID.fromString(String.format(Locale.ROOT, "b3c0b3c0-0000-4000-8000-0000000000%02x", 0xb0 + n)),
+                name));
+        player.setPosition(x, Y, z);
+        java.util.Arrays.fill(player.inventory.mainInventory, null);
+        player.inventory.currentItem = 0;
+        if (channel > 0) {
+            ItemStack walkie = new ItemStack(BeComItems.walkieTalkie);
+            ElectricItem.manager
+                .charge(walkie, BeComItems.walkieTalkie.getMaxCharge(walkie), Integer.MAX_VALUE, true, false);
+            ItemWalkieTalkie.setChannel(walkie, channel);
+            player.inventory.mainInventory[0] = walkie;
+        }
+        becom.radio.refreshForSelfTest(player);
+        return player;
+    }
+
+    private static RadioSnapshot.Link linkTo(RadioSnapshot.Transmission tx, UUID holder) {
+        if (tx == null) return null;
+        for (RadioSnapshot.Link link : tx.walkies()) if (holder.equals(link.holder())) return link;
+        return null;
+    }
+
+    private static double distance(double ax, double ay, double az, double bx, double by, double bz) {
+        double dx = bx - ax, dy = by - ay, dz = bz - az;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /** Walkies and a Transceiver out of every antenna's reach: only direct links (DESIGN.md 6.4, 8.1). */
+    private int keyDirect() {
+        alice = radioPlayer("BeComRadioAlice", 1, X0 + 0.5, DIRECT_Z + 0.5, 3);
+        bob = radioPlayer("BeComRadioBob", 2, X0 + 30.5, DIRECT_Z + 0.5, 3);
+        carol = radioPlayer("BeComRadioCarol", 3, X0 + 150.5, DIRECT_Z + 0.5, 5);
+        // Dave has no walkie: he stands at the Transceiver, which transmits for him.
+        dave = radioPlayer("BeComRadioDave", 4, X0 + 101.5, DIRECT_Z + 0.5, 0);
+        becom.radio.keyForSelfTest(alice.getUniqueID());
+        return 2;
+    }
+
+    private int checkDirect() {
+        becom.radio.publishForSelfTest();
+        Tunables t = BeComConfig.get();
+        RadioSnapshot.Transmission tx = becom.radio.published()
+            .transmission(alice.getUniqueID());
+        check(
+            "a speaker holding push-to-talk transmits on their walkie's channel",
+            tx != null && tx.channel() == 3,
+            "");
+        RadioSnapshot.Link link = linkTo(tx, bob.getUniqueID());
+        if (link == null) fail("a walkie 30 blocks away hears it directly", "no link");
+        else near(
+            "a walkie 30 blocks away hears it directly at 44 - 20 log10(30) dB",
+            t.walkieBudget() - RadioModel.distanceLoss(30),
+            link.snr());
+        check("a walkie on another channel doesn't", linkTo(tx, carol.getUniqueID()) == null, "");
+        becom.radio.keyForSelfTest(dave.getUniqueID());
+        return 2;
+    }
+
+    private int checkTransceiver() {
+        becom.radio.publishForSelfTest();
+        Tunables t = BeComConfig.get();
+        RadioSnapshot.Transmission tx = becom.radio.published()
+            .transmission(dave.getUniqueID());
+        check(
+            "standing at a Transceiver, a player transmits through it on its channel",
+            tx != null && tx.channel() == 5,
+            tx == null ? "no transmission" : "channel " + tx.channel());
+        RadioSnapshot.Link link = linkTo(tx, carol.getUniqueID());
+        double d = distance(X0 + 100.5, Y + 1, DIRECT_Z + 0.5, X0 + 150.5, Y + 1.62, DIRECT_Z + 0.5);
+        if (link == null) fail("...reaching a walkie 50 blocks away with the Transceiver's budget", "no link");
+        else near(
+            "...reaching a walkie 50 blocks away with the Transceiver's budget",
+            t.transceiverBudget() - RadioModel.distanceLoss(d),
+            link.snr());
+        becom.radio.keyForSelfTest(carol.getUniqueID());
+        return 2;
+    }
+
+    private int checkLoudspeaker() {
+        becom.radio.publishForSelfTest();
+        Tunables t = BeComConfig.get();
+        RadioSnapshot.Transmission tx = becom.radio.published()
+            .transmission(carol.getUniqueID());
+        RadioSnapshot.Link heard = null;
+        if (tx != null) for (RadioSnapshot.Link link : tx.transceivers()) heard = link;
+        double d = distance(X0 + 150.5, Y + 1.62, DIRECT_Z + 0.5, X0 + 100.5, Y + 1, DIRECT_Z + 0.5);
+        if (heard == null) fail("a Transceiver on the channel receives a walkie 50 blocks away", "no link");
+        else near(
+            "a Transceiver on the channel receives a walkie 50 blocks away, for its loudspeaker",
+            t.walkieBudget() - RadioModel.distanceLoss(d),
+            heard.snr());
+        check(
+            "...with its loudspeaker on",
+            heard != null && heard.transceiver()
+                .loudspeaker(),
+            "");
+        return 1;
+    }
+
+    /** Two walkies 100 blocks apart, each 20 blocks from one of two linked T1 antennas (DESIGN.md 7, 8.1). */
+    private int keyThroughAntennas() {
+        eve = radioPlayer("BeComRadioEve", 5, X0 - 19.5, RADIO_Z + 0.5, 7);
+        frank = radioPlayer("BeComRadioFrank", 6, X0 + ANTENNA_GAP + 20.5, RADIO_Z + 0.5, 7);
+        becom.radio.keyForSelfTest(eve.getUniqueID());
+        return 2;
+    }
+
+    private int checkThroughAntennas() {
+        becom.radio.publishForSelfTest();
+        Tunables t = BeComConfig.get();
+        check(
+            "100 blocks is past a walkie's direct reach",
+            t.rangeToLow(t.walkieBudget()) < 100,
+            "reach " + t.rangeToLow(t.walkieBudget()));
+        RadioSnapshot.Link link = linkTo(
+            becom.radio.published()
+                .transmission(eve.getUniqueID()),
+            frank.getUniqueID());
+        if (link == null) fail("two walkies talk through the antennas", "no link");
+        else near(
+            "two walkies talk through the antennas, at the weakest hop: the link between them",
+            t.antennaBudget(1) - RadioModel.distanceLoss(ANTENNA_GAP),
+            link.snr());
+        AnalyzerPacket reading = becom.radio.reading(eve);
+        double d = distance(X0 + 0.5, Y + 1, RADIO_Z + 0.5, X0 - 19.5, Y + 1.62, RADIO_Z + 0.5);
+        check(
+            "the Signal Analyzer names the T1 antenna serving the walkie",
+            reading.served() && reading.tier() == 1 && reading.x() == X0 && reading.z() == RADIO_Z,
+            reading.served() ? reading.x() + "," + reading.z() : "nothing in reach");
+        near(
+            "...at 42 - 20 log10(d) dB",
+            t.antennaBudget(1) - RadioModel.distanceLoss(d),
+            reading.served() ? reading.losses()
+                .snr() : Double.NaN);
+        check(
+            "...with distance its biggest loss",
+            reading.served() && reading.losses()
+                .biggest() == RadioModel.Loss.DISTANCE,
+            reading.served() ? String.valueOf(
+                reading.losses()
+                    .biggest())
+                : "");
+        antennaA.setLocked(true);
+        return 3;
+    }
+
+    private int keyLocked() {
+        becom.radio.refreshForSelfTest(eve);
+        becom.radio.keyForSelfTest(eve.getUniqueID());
+        return 2;
+    }
+
+    private int checkLocked() {
+        becom.radio.publishForSelfTest();
+        check(
+            "an antenna locked to its owner's team refuses a stranger's walkie",
+            linkTo(
+                becom.radio.published()
+                    .transmission(eve.getUniqueID()),
+                frank.getUniqueID()) == null,
+            "");
+        antennaA.setLocked(false);
+        return 1;
+    }
+
+    private int checkFlatWalkie() {
+        Tunables t = BeComConfig.get();
+        gina = radioPlayer("BeComRadioGina", 7, X0 + 0.5, FORM_Z + 40.5, 9);
+        ItemStack walkie = gina.inventory.mainInventory[0];
+        double before = ItemWalkieTalkie.charge(walkie);
+        becom.radio.drainForSelfTest(gina);
+        near(
+            "a walkie switched on drains its standby charge each second",
+            (double) t.walkieStandbyDrain() * TICKS_PER_SECOND,
+            before - ItemWalkieTalkie.charge(walkie));
+        ItemStack bobs = bob.inventory.mainInventory[0];
+        ItemWalkieTalkie.drain(bobs, ItemWalkieTalkie.charge(bobs));
+        ElectricItem.manager.charge(bobs, 1, Integer.MAX_VALUE, true, false);
+        becom.radio.drainForSelfTest(bob);
+        check("a flat walkie switches off", !ItemWalkieTalkie.on(bobs), "");
+        becom.radio.refreshForSelfTest(bob);
+        becom.radio.keyForSelfTest(alice.getUniqueID());
+        return 2;
+    }
+
+    private int checkOffWalkie() {
+        becom.radio.publishForSelfTest();
+        check(
+            "a walkie switched off receives nothing",
+            linkTo(
+                becom.radio.published()
+                    .transmission(alice.getUniqueID()),
+                bob.getUniqueID()) == null,
+            "");
+        return 1;
     }
 
     // endregion
