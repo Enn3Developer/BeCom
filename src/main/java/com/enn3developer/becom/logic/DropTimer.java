@@ -30,6 +30,14 @@ public final class DropTimer {
         return nowMillis - belowSince > graceMillis;
     }
 
+    /**
+     * Carries on from {@code other}: below since when it was, so a link that takes over a weak one gets no fresh grace.
+     */
+    public void continueFrom(DropTimer other) {
+        below = other.below;
+        belowSince = other.belowSince;
+    }
+
     public boolean isBelow() {
         return below;
     }

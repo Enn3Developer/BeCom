@@ -290,4 +290,17 @@ class CallBookTest {
         assertEquals(SignalLevel.LOW, call.level(alice, bob));
         assertEquals(SignalLevel.LOW, call.level(bob, alice));
     }
+
+    @Test
+    void answeringDoesntRestartTheDropGrace() {
+        // Below Low since 1 s into the ring, answered at 3.9 s: the 3 s of grace run out at 4 s, not 6.9 s.
+        snr = 7;
+        assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
+        snr = 3;
+        book.evaluate(1000, quality);
+        assertTrue(book.answer(bob, PHONE_B, 3900));
+        Call call = book.callOf(alice);
+        book.evaluate(call, 4100, quality);
+        assertTrue(events.contains("ended DROPPED after connecting"), events.toString());
+    }
 }

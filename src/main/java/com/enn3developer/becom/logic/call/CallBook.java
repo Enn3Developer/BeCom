@@ -151,10 +151,13 @@ public final class CallBook {
         for (Call.Leg speaker : call.legs()) {
             for (Call.Leg hearer : call.legs()) {
                 if (speaker == hearer || speaker.player() == null || hearer.player() == null) continue;
-                call.link(
+                Call.LinkState link = call.link(
                     new Call.Direction(speaker.player(), hearer.player()),
                     levels.threshold(SignalLevel.LOW),
-                    dropGraceMillis).rawLevel = SignalLevel.LOW;
+                    dropGraceMillis);
+                link.rawLevel = SignalLevel.LOW;
+                // The ring's time below Low counts: answering doesn't buy a weak line a fresh 3 s (DESIGN.md 4.2).
+                link.dropTimer.continueFrom(call.ringTimer(levels.threshold(SignalLevel.LOW), dropGraceMillis));
             }
         }
         version++;
