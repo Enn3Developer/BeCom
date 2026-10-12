@@ -1,0 +1,9 @@
+{
+  "tone.dial": { "category": "player", "sounds": [ "tone/dial" ] },
+  "tone.ringback": { "category": "player", "sounds": [ "tone/ringback" ] },
+  "tone.busy": { "category": "player", "sounds": [ "tone/busy" ] },
+  "tone.unreachable": { "category": "player", "sounds": [ "tone/unreachable" ] },
+  "phone.ring": { "category": "block", "sounds": [ "phone/ring" ] },
+  "phone.buzz": { "category": "player", "sounds": [ "phone/buzz" ] },
+  "phone.hangup": { "category": "player", "sounds": [ "phone/hangup" ] }
+}

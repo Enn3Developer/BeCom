@@ -61,9 +61,9 @@ Branch `milestone/0.1-wired`, from `master`.
 
 | Item                                                              | Status |
 |-------------------------------------------------------------------|--------|
-| Front overlays and glows: Pylon, Repeater, Router heads, Terminal | todo   |
-| Telephone model and textures                                      | todo   |
-| Phone Cable texture                                               | todo   |
-| Modernity style of all of the above                               | todo   |
-| Sounds: dial tone, ringback, busy, unreachable, ringtone, hang-up | todo   |
-| English language file                                             | todo   |
+| Front overlays and glows: Pylon, Repeater, Router heads, Terminal | done   |
+| Telephone model and textures                                      | done   |
+| Phone Cable texture                                               | done   |
+| Modernity style of all of the above                               | done   |
+| Sounds: dial tone, ringback, busy, unreachable, ringtone, hang-up | done   |
+| English language file                                             | done   |
