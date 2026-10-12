@@ -138,8 +138,8 @@ public final class AntennaScreen {
                 link.y(),
                 link.z(),
                 link.distance(),
-                band(link.vhf()),
-                band(link.uhf()));
+                band(link.vhf(), SignalLevel.MEDIUM),
+                band(link.uhf(), SignalLevel.MAX));
         }
         i -= links.size();
         List<AntennaView.Bridge> bridges = view.bridges();
@@ -155,11 +155,13 @@ public final class AntennaScreen {
         return i == 0 && links.isEmpty() ? StatCollector.translateToLocal("becom.antenna.no_links") : "";
     }
 
-    /** A band's level and SNR, or a dash below Low. */
-    private static String band(double snr) {
+    /**
+     * A band's level and SNR, or a dash below Low. Radio channels stop at Medium (D10); calls go as high as the link.
+     */
+    private static String band(double snr, SignalLevel cap) {
         LevelScale scale = BeComConfig.get()
             .levelScale();
-        SignalLevel level = SignalLevel.min(scale.levelOf(snr), SignalLevel.MEDIUM);
+        SignalLevel level = SignalLevel.min(scale.levelOf(snr), cap);
         if (!level.atLeast(SignalLevel.LOW)) return "-";
         return StatCollector.translateToLocal(
             "becom.level." + level.name()

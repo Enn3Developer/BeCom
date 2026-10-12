@@ -648,7 +648,8 @@ public final class RadioService {
             best.antenna()
                 .tier(),
             losses,
-            levels.levelOf(losses.snr()));
+            // What a radio hears there: radios stop at Medium (D10).
+            SignalLevel.min(levels.levelOf(losses.snr()), SignalLevel.MEDIUM));
     }
 
     // endregion
