@@ -141,15 +141,14 @@ public final class CarriedPhones {
         return Collections.unmodifiableSet(service.keySet());
     }
 
-    /** The stack of {@code number} in its holder's inventory or bauble slots, or null. */
+    /** The stack of {@code number} in its holder's inventory or bauble slots, or on their cursor; or null. */
     public ItemStack stackOf(int number) {
         EntityPlayerMP holder = player(holders.get(number));
         return holder == null ? null : stackOf(holder, number);
     }
 
     private static ItemStack stackOf(EntityPlayer player, int number) {
-        for (Carried.Slot slot : Carried.slots(player)) {
-            ItemStack stack = slot.stack();
+        for (ItemStack stack : Carried.stacks(player)) {
             if (ItemCarriedPhone.is(stack) && ItemCarriedPhone.number(stack) == number) return stack;
         }
         return null;
@@ -172,8 +171,8 @@ public final class CarriedPhones {
         UUID id = player.getUniqueID();
         List<Integer> found = new ArrayList<>();
         Map<Integer, ItemStack> stacks = new HashMap<>();
-        for (Carried.Slot slot : Carried.slots(player)) {
-            ItemStack stack = slot.stack();
+        // The cursor counts: a phone being moved to another slot mustn't drop out of its call (D14).
+        for (ItemStack stack : Carried.stacks(player)) {
             if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack)) continue;
             ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
             int number = ItemCarriedPhone.number(stack);
@@ -251,8 +250,7 @@ public final class CarriedPhones {
      */
     private void drain(List<EntityPlayerMP> players) {
         for (EntityPlayerMP player : players) {
-            for (Carried.Slot slot : Carried.slots(player)) {
-                ItemStack stack = slot.stack();
+            for (ItemStack stack : Carried.stacks(player)) {
                 if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack) || !ItemCarriedPhone.on(stack))
                     continue;
                 int number = ItemCarriedPhone.number(stack);

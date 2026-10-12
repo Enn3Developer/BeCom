@@ -253,6 +253,7 @@ public final class SelfTest {
         steps.add(this::checkPhoneDrain);
         steps.add(this::checkTones);
         steps.add(this::checkBusyToneStops);
+        steps.add(this::checkPhoneMoves);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -1983,6 +1984,34 @@ public final class SelfTest {
             "...and a carried phone calling a busy one hears busy, which stops by itself",
             busyTone == TonePacket.Tone.BUSY && now == TonePacket.Tone.NONE,
             busyTone + ", then " + now);
+        return 1;
+    }
+
+    /** D14: a phone being moved with the mouse stays in its call. */
+    private int checkPhoneMoves() {
+        FakePlayer olga = phonePlayer("BeComOlga", 2, X0 - 19.5, phoneZ + 1.5);
+        FakePlayer pete = phonePlayer("BeComPete", 3, X0 - 19.5, phoneZ + 3.5);
+        int olgaNumber = ItemCarriedPhone.number(olga.inventory.mainInventory[0]);
+        int peteNumber = ItemCarriedPhone.number(pete.inventory.mainInventory[0]);
+        becom.calls.dialCarried(olga, olgaNumber, peteNumber);
+        becom.calls.answerCarried(pete, peteNumber);
+        Call call = becom.calls.book()
+            .callOf(olga.getUniqueID());
+        // Olga moves her phone to another slot, and the once-a-second look comes while it's on her cursor.
+        ItemStack phone = olga.inventory.mainInventory[0];
+        olga.inventory.mainInventory[0] = null;
+        olga.inventory.setItemStack(phone);
+        becom.carried.refreshForSelfTest(olga);
+        olga.inventory.setItemStack(null);
+        olga.inventory.mainInventory[5] = phone;
+        becom.carried.refreshForSelfTest(olga);
+        check(
+            "a phone moved to another slot with the mouse during a call stays in it",
+            call != null && call.state() == Call.State.CONNECTED
+                && becom.calls.book()
+                    .callOf(olga.getUniqueID()) == call,
+            call == null ? "no call" : call.state() + "");
+        becom.calls.hangUp(olga);
         return 1;
     }
 

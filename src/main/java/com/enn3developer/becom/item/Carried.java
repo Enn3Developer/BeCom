@@ -39,6 +39,21 @@ public final class Carried {
         return slots;
     }
 
+    /**
+     * Every stack the player carries, in the order a device is chosen, then the one they're moving with the mouse in an
+     * open inventory: it's in no slot for that moment, but it hasn't left them.
+     */
+    public static List<ItemStack> stacks(EntityPlayer player) {
+        List<ItemStack> stacks = new ArrayList<>();
+        for (Slot slot : slots(player)) {
+            ItemStack stack = slot.stack();
+            if (stack != null) stacks.add(stack);
+        }
+        ItemStack moving = player.inventory.getItemStack();
+        if (moving != null) stacks.add(moving);
+        return stacks;
+    }
+
     /** The first slot whose stack {@code wanted} accepts, or null. */
     public static Slot first(EntityPlayer player, Predicate<ItemStack> wanted) {
         for (Slot slot : slots(player)) {
