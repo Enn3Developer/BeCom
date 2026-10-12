@@ -374,9 +374,14 @@ public final class CallService implements CallBook.Listener {
 
     // region Carried phones
 
-    /** Whether {@code player} carries phone {@code number} right now. */
+    /**
+     * Whether {@code player} carries phone {@code number} right now: one handed to someone else is theirs as soon as
+     * the
+     * server has seen it in their hands, though the old holder's list catches up only at their next look.
+     */
     public boolean carries(EntityPlayer player, int number) {
-        return carried.carriedBy(player.getUniqueID())
+        UUID id = player.getUniqueID();
+        return id.equals(carried.holderOf(number)) && carried.carriedBy(id)
             .contains(number);
     }
 
@@ -430,7 +435,9 @@ public final class CallService implements CallBook.Listener {
     public int ringingFor(EntityPlayer player) {
         Notice shown = latestNotice(player.getUniqueID());
         if (shown != null && carries(player, shown.phone()) && isRinging(shown.phone())) return shown.phone();
-        for (int number : carried.carriedBy(player.getUniqueID())) if (isRinging(number)) return number;
+        for (int number : carried.carriedBy(player.getUniqueID())) {
+            if (isRinging(number) && carries(player, number)) return number;
+        }
         return -1;
     }
 

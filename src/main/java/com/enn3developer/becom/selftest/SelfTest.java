@@ -2217,7 +2217,6 @@ public final class SelfTest {
         pete.inventory.mainInventory[1] = rex.inventory.mainInventory[0];
         rex.inventory.mainInventory[0] = null;
         becom.carried.refreshForSelfTest(pete);
-        becom.carried.refreshForSelfTest(rex);
         return 1;
     }
 
@@ -2230,6 +2229,14 @@ public final class SelfTest {
             "a ringing phone that changes hands takes its notice to whoever has it now",
             !rexSees && peteSees && becom.calls.isRinging(rexFirst),
             "Rex sees it " + rexSees + ", Pete sees it " + peteSees);
+        // Rex's own phones aren't looked at again yet: his list still has it, but it's Pete's to answer.
+        int rexRinging = becom.calls.ringingFor(rex);
+        boolean rexAnswered = becom.calls.answerCarried(rex, rexFirst);
+        check(
+            "...and only they can answer it, before the server looks at the old holder's phones again",
+            rexRinging != rexFirst && !rexAnswered && becom.calls.isRinging(rexFirst),
+            "Rex's ringing phone " + rexRinging + ", answered " + rexAnswered);
+        becom.carried.refreshForSelfTest(rex);
         becom.calls.hangUp(tia);
         pete.inventory.mainInventory[1] = null;
         becom.carried.refreshForSelfTest(pete);
