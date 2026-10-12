@@ -3,9 +3,11 @@ package com.enn3developer.becom.selftest;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
@@ -19,6 +21,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
@@ -125,6 +128,9 @@ public final class SelfTest {
     private boolean fakePlacedOwnerless;
     private final List<Step> steps = new ArrayList<>();
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
+    // The chunks it builds in. An autosave queues every chunk no player watches for unloading, so these are loaded
+    // again after every tick's save, before the next tick unloads anything.
+    private final Set<ChunkCoordIntPair> keepLoaded = new HashSet<>();
     private int index;
     private long edgeHoldStart;
     private boolean edgeDroppedEarly;
@@ -269,8 +275,18 @@ public final class SelfTest {
         running.step();
     }
 
+    private void keepLoaded(int cx, int cz) {
+        world.theChunkProviderServer.loadChunk(cx, cz);
+        keepLoaded.add(new ChunkCoordIntPair(cx, cz));
+    }
+
     private void step() {
         tick++;
+        // With no players in it, a world stops ticking entities and tile entities after a minute, and the self-test's
+        // players are fake: without this, every machine it built would stop at 1200 ticks.
+        world.resetUpdateEntityTick();
+        for (ChunkCoordIntPair chunk : keepLoaded)
+            world.theChunkProviderServer.loadChunk(chunk.chunkXPos, chunk.chunkZPos);
         // A test power supply: the line's machines are topped up every tick. Taking power from a real cable is
         // checked on its own, through the call GT cables make.
         for (IGregTechTileEntity tile : powered) {
@@ -456,7 +472,7 @@ public final class SelfTest {
         // Far from spawn nothing is loaded, and an unloaded chunk silently swallows setBlock; load the whole area.
         for (int cx = (X0 - 16) >> 4; cx <= (X0 + 330) >> 4; cx++) {
             for (int cz = (Z0 - 16) >> 4; cz <= (Z0 + GROUP_GAP * 7) >> 4; cz++) {
-                world.theChunkProviderServer.loadChunk(cx, cz);
+                keepLoaded(cx, cz);
             }
         }
         clearScratchArea();
@@ -1125,7 +1141,7 @@ public final class SelfTest {
     private int buildRadio() {
         for (int z : new int[] { RADIO_Z, DIRECT_Z, FORM_Z }) {
             for (int cx = (X0 - 40) >> 4; cx <= (X0 + 200) >> 4; cx++) {
-                for (int cz = (z - 16) >> 4; cz <= (z + 16) >> 4; cz++) world.theChunkProviderServer.loadChunk(cx, cz);
+                for (int cz = (z - 16) >> 4; cz <= (z + 16) >> 4; cz++) keepLoaded(cx, cz);
             }
         }
         clearRadioArea();
@@ -1675,8 +1691,7 @@ public final class SelfTest {
             if (phoneRains) phoneZ = z;
         }
         for (int cx = (X0 - 48) >> 4; cx <= (X0 + 64) >> 4; cx++) {
-            for (int cz = (phoneZ - 16) >> 4; cz <= (phoneZ + 16) >> 4; cz++)
-                world.theChunkProviderServer.loadChunk(cx, cz);
+            for (int cz = (phoneZ - 16) >> 4; cz <= (phoneZ + 16) >> 4; cz++) keepLoaded(cx, cz);
         }
         NetworkModel model = becom.network.model(world);
         for (NetNode node : new ArrayList<>(model.nodes())) {
