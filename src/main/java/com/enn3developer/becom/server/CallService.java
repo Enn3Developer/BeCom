@@ -2,8 +2,10 @@ package com.enn3developer.becom.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -19,6 +21,7 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
+import com.enn3developer.becom.logic.call.CallHistory;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
@@ -53,6 +56,9 @@ public final class CallService implements CallBook.Listener {
     private final Map<UUID, Integer> handsetOf = new HashMap<>();
     // The name each handset holder had as they took it: their calls' history and screens name them by it.
     private final Map<UUID, String> names = new HashMap<>();
+    // Per call, the pairs of phones that were in it at the same time, and those whose history is written.
+    private final Map<Long, Set<Pair>> talked = new HashMap<>();
+    private final Map<Long, Set<Pair>> recorded = new HashMap<>();
     private long ticks;
     private long publishedVersion = -1;
 
@@ -70,6 +76,7 @@ public final class CallService implements CallBook.Listener {
             tunables.ringSeconds() * MILLIS_PER_SECOND,
             (long) (tunables.dropAfterSeconds() * MILLIS_PER_SECOND),
             tunables.sessionGraceSeconds() * MILLIS_PER_SECOND,
+            tunables.groupCallSize(),
             this);
     }
 
@@ -95,9 +102,8 @@ public final class CallService implements CallBook.Listener {
     /** Whether a call is ringing {@code phone}, waiting for it to answer. */
     public boolean isRinging(int phone) {
         Call call = book.callOfPhone(phone);
-        return call != null && call.state() == Call.State.RINGING
-            && call.caller()
-                .phone() != phone;
+        Call.Leg leg = call == null ? null : call.legOf(phone);
+        return leg != null && leg.state() == Call.Leg.State.RINGING;
     }
 
     public UUID holderOf(int phone) {
@@ -141,10 +147,7 @@ public final class CallService implements CallBook.Listener {
             tell(player, "becom.phone.too_far");
             return Pickup.REFUSED;
         }
-        Call call = book.callOfPhone(phone);
-        boolean ringingHere = call != null && call.state() == Call.State.RINGING
-            && call.caller()
-                .phone() != phone;
+        boolean ringingHere = isRinging(phone);
         if (ringingHere && !hasVoice.test(id)) {
             tell(player, "becom.call.no_voice");
             return Pickup.REFUSED;
@@ -243,11 +246,8 @@ public final class CallService implements CallBook.Listener {
     // region CallBook.Listener
 
     @Override
-    public void ringing(Call call) {
-        int callee = call.legs()
-            .get(1)
-            .phone();
-        TileTelephone telephone = phones.telephone(callee);
+    public void ringing(Call call, Call.Leg leg) {
+        TileTelephone telephone = phones.telephone(leg.phone());
         if (telephone != null) telephone.setRinging(true);
     }
 
@@ -255,6 +255,10 @@ public final class CallService implements CallBook.Listener {
     public void connected(Call call, Call.Leg answered) {
         TileTelephone telephone = phones.telephone(answered.phone());
         if (telephone != null) telephone.setRinging(false);
+        Set<Pair> pairs = talked.computeIfAbsent(call.id(), id -> new HashSet<>());
+        for (Call.Leg other : call.activeLegs()) {
+            if (other != answered) pairs.add(Pair.of(answered.phone(), other.phone()));
+        }
         List<UUID> players = call.participants();
         for (UUID player : players) {
             GtnhVoiceApi.groupManager()
@@ -270,56 +274,128 @@ public final class CallService implements CallBook.Listener {
     }
 
     @Override
+    public void legLeft(Call call, Call.Leg leg, Set<UUID> players, CallBook.EndReason reason) {
+        TileTelephone telephone = phones.telephone(leg.phone());
+        if (telephone != null) telephone.setRinging(false);
+        // Its rows are written now, while everyone's names are still known; the rest when the call ends.
+        for (Call.Leg other : call.legs()) if (other != leg) record(call, leg, other);
+        phones.registry()
+            .changed();
+        List<UUID> stay = call.participants();
+        for (UUID player : players) leaveCall(player, stay, reason);
+        for (UUID player : stay) {
+            EntityPlayerMP mp = player(player);
+            if (mp == null) continue;
+            for (UUID gone : players) BeComPackets.send(new LevelPacket(gone, CallGroup.NAME, SignalLevel.NONE), mp);
+        }
+        publish();
+    }
+
+    @Override
     public void ended(Call call, CallBook.EndReason reason) {
-        // History keeps wall-clock time: it's a date, saved across restarts, not a timer.
-        long time = System.currentTimeMillis();
-        Call.Leg caller = call.caller();
         for (Call.Leg leg : call.legs()) {
             TileTelephone telephone = phones.telephone(leg.phone());
             if (telephone != null) telephone.setRinging(false);
         }
         for (Call.Leg leg : call.legs()) {
-            PhoneRecord record = phones.record(leg.phone());
-            if (record == null) continue;
-            for (Call.Leg other : call.legs()) {
-                if (other == leg) continue;
-                PhoneRecord.Direction direction = leg == caller ? PhoneRecord.Direction.OUTGOING
-                    : call.wasConnected() ? PhoneRecord.Direction.INCOMING : PhoneRecord.Direction.MISSED;
-                // Who was on the other end, so blocking this row blocks whoever called, whosever phone it was. With
-                // nobody there, the phone's owner now: its number can be freed and given to someone else later.
-                PhoneRecord otherPhone = phones.record(other.phone());
-                UUID otherPlayer = other.player() != null ? other.player()
-                    : otherPhone == null ? null : otherPhone.owner();
-                String name = other.player() != null ? nameOf(other.player(), phones.name(other.phone()))
-                    : phones.name(other.phone());
-                record.addHistory(new PhoneRecord.HistoryEntry(time, other.phone(), name, direction, otherPlayer));
-            }
+            for (Call.Leg other : call.legs()) if (other != leg) record(call, leg, other);
         }
+        talked.remove(call.id());
+        recorded.remove(call.id());
         phones.registry()
             .changed();
         List<UUID> players = call.participants();
-        for (UUID player : players) {
-            GtnhVoiceApi.groupManager()
-                .leave(player, group);
-            EntityPlayerMP mp = player(player);
-            if (mp == null) continue;
-            for (UUID other : players) {
-                if (!other.equals(player)) {
-                    BeComPackets.send(new LevelPacket(other, CallGroup.NAME, SignalLevel.NONE), mp);
-                }
-            }
-            if (reason == CallBook.EndReason.NO_ANSWER) tell(mp, "becom.call.no_answer");
-            if (reason == CallBook.EndReason.DROPPED) tell(mp, "becom.call.dropped");
-            // Whoever still holds a handset hears the line go dead; whoever hung up already heard the click.
-            if (handsetOf.containsKey(player)) tone(mp, TonePacket.Tone.BUSY);
-        }
+        for (UUID player : players) leaveCall(player, players, reason);
         publish();
+    }
+
+    /** {@code player} is out of their call: out of the group, the others' levels cleared, and told why. */
+    private void leaveCall(UUID player, List<UUID> others, CallBook.EndReason reason) {
+        GtnhVoiceApi.groupManager()
+            .leave(player, group);
+        EntityPlayerMP mp = player(player);
+        if (mp == null) return;
+        for (UUID other : others) {
+            if (!other.equals(player)) BeComPackets.send(new LevelPacket(other, CallGroup.NAME, SignalLevel.NONE), mp);
+        }
+        if (reason == CallBook.EndReason.NO_ANSWER) tell(mp, "becom.call.no_answer");
+        if (reason == CallBook.EndReason.DROPPED) tell(mp, "becom.call.dropped");
+        // Whoever still holds a handset hears the line go dead; whoever hung up already heard the click.
+        if (handsetOf.containsKey(player)) tone(mp, TonePacket.Tone.BUSY);
+    }
+
+    /**
+     * Writes the row {@code leg}'s phone keeps about {@code other}'s, and the one {@code other} keeps about it, once
+     * per call: when the first of the two leaves or the call ends. History keeps wall-clock time: it's a date, saved
+     * across restarts, not a timer.
+     */
+    private void record(Call call, Call.Leg leg, Call.Leg other) {
+        Pair pair = Pair.of(leg.phone(), other.phone());
+        if (!recorded.computeIfAbsent(call.id(), id -> new HashSet<>())
+            .add(pair)) return;
+        boolean together = talked.getOrDefault(call.id(), Set.of())
+            .contains(pair);
+        long time = System.currentTimeMillis();
+        addRow(leg, other, CallHistory.direction(leg, other, together), time);
+        addRow(other, leg, CallHistory.direction(other, leg, together), time);
+    }
+
+    private void addRow(Call.Leg own, Call.Leg other, PhoneRecord.Direction direction, long time) {
+        PhoneRecord record = phones.record(own.phone());
+        if (record == null || direction == null) return;
+        // Who was on the other end, so blocking this row blocks whoever called, whosever phone it was. With nobody
+        // there, the phone's owner now: its number can be freed and given to someone else later.
+        PhoneRecord otherPhone = phones.record(other.phone());
+        UUID otherPlayer = other.player() != null ? other.player() : otherPhone == null ? null : otherPhone.owner();
+        String name = other.player() != null ? nameOf(other.player(), phones.name(other.phone()))
+            : phones.name(other.phone());
+        record.addHistory(new PhoneRecord.HistoryEntry(time, other.phone(), name, direction, otherPlayer));
+    }
+
+    /** Two phones of a call, either way round. */
+    private record Pair(int low, int high) {
+
+        static Pair of(int a, int b) {
+            return a <= b ? new Pair(a, b) : new Pair(b, a);
+        }
     }
 
     @Override
     public void levelChanged(Call call, UUID speaker, UUID listener, SignalLevel level) {
         EntityPlayerMP mp = player(listener);
         if (mp != null) BeComPackets.send(new LevelPacket(speaker, CallGroup.NAME, level), mp);
+    }
+
+    @Override
+    public void roomChanged(Call call, Call.Leg leg, Set<UUID> joined, Set<UUID> left) {
+        List<UUID> players = call.participants();
+        for (UUID player : left) leaveCall(player, players, null);
+        for (UUID player : joined) {
+            GtnhVoiceApi.groupManager()
+                .join(player, group);
+        }
+        // Newcomers hear and are heard at the levels the speakerphone already has.
+        for (Call.Leg other : call.activeLegs()) {
+            if (other == leg) continue;
+            SignalLevel in = call.level(other, leg);
+            SignalLevel out = call.level(leg, other);
+            for (UUID player : joined) {
+                EntityPlayerMP mp = player(player);
+                for (UUID far : other.players()) {
+                    if (mp != null) BeComPackets.send(new LevelPacket(far, CallGroup.NAME, in), mp);
+                    EntityPlayerMP farMp = player(far);
+                    if (farMp != null) BeComPackets.send(new LevelPacket(player, CallGroup.NAME, out), farMp);
+                }
+            }
+            for (UUID player : left) {
+                for (UUID far : other.players()) {
+                    EntityPlayerMP farMp = player(far);
+                    if (farMp != null)
+                        BeComPackets.send(new LevelPacket(player, CallGroup.NAME, SignalLevel.NONE), farMp);
+                }
+            }
+        }
+        publish();
     }
 
     // endregion
@@ -411,6 +487,8 @@ public final class CallService implements CallBook.Listener {
         handsets.clear();
         handsetOf.clear();
         names.clear();
+        talked.clear();
+        recorded.clear();
         group.clear();
     }
 
@@ -422,15 +500,22 @@ public final class CallService implements CallBook.Listener {
         CallSnapshot.Builder builder = CallSnapshot.builder();
         for (Call call : book.calls()) {
             if (call.state() != Call.State.CONNECTED) continue;
-            for (UUID speaker : call.participants()) {
-                for (UUID listener : call.participants()) {
-                    if (speaker.equals(listener)) continue;
-                    if (!call.level(speaker, listener)
+            List<Call.Leg> active = call.activeLegs();
+            for (Call.Leg from : active) {
+                for (Call.Leg to : active) {
+                    if (from == to || !call.level(from, to)
                         .atLeast(SignalLevel.LOW)) continue;
-                    double loss = dropouts.lossRate(call.snr(speaker, listener));
-                    builder.route(
-                        speaker,
-                        new CallSnapshot.Route(listener, dropouts.enterBadChance(loss), dropouts.leaveBadChance()));
+                    double loss = dropouts.lossRate(call.snr(from, to));
+                    for (UUID speaker : from.players()) {
+                        for (UUID listener : to.players()) {
+                            builder.route(
+                                speaker,
+                                new CallSnapshot.Route(
+                                    listener,
+                                    dropouts.enterBadChance(loss),
+                                    dropouts.leaveBadChance()));
+                        }
+                    }
                 }
             }
         }

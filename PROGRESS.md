@@ -521,7 +521,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Ringing from the player, the incoming-call notice, silent mode (11.2)        | todo   |
 | The Phone key, and sneak + Phone to reject (11.1, D34)                       | todo   |
 | Phone screen for carried phones: power, silent mode, everyone in a call (11.2) | todo |
-| Group calls of up to 8 (8.2, 10.1)                                           | todo   |
+| Group calls of up to 8 (8.2, 10.1)                                           | doing  |
 | Weather loss on UHF links (6.1, D26)                                         | todo   |
 | Coverage map in the antenna screen (6.6, 11.4)                               | todo   |
 | Battery drain for phones (D36, 11.3)                                         | todo   |
