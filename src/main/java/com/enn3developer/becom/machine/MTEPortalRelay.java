@@ -300,14 +300,25 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
             NodeRef partner = becom.network.partnerOf(ref());
-            info.add(
-                partner == null ? StatCollector.translateToLocal("becom.relay.unpaired")
-                    : StatCollector.translateToLocalFormatted(
+            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
+            NetNode node = model == null ? null : model.node(ref().pos());
+            NodeRef kept = node == null ? null : node.partner();
+            if (partner != null) {
+                info.add(
+                    StatCollector.translateToLocalFormatted(
                         "becom.relay.paired",
                         BlockPos.toString(partner.pos()),
                         partner.dimension()));
-            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
-            NetNode node = model == null ? null : model.node(ref().pos());
+            } else if (kept != null && becom.network.model(kept.dimension()) == null) {
+                // The far side's dimension isn't loaded, so the pair can't be checked, nor carry calls, until it is.
+                info.add(
+                    StatCollector.translateToLocalFormatted(
+                        "becom.relay.paired_unloaded",
+                        BlockPos.toString(kept.pos()),
+                        kept.dimension()));
+            } else {
+                info.add(StatCollector.translateToLocal("becom.relay.unpaired"));
+            }
             if (node != null && !node.links()
                 .isEmpty()) {
                 info.add(

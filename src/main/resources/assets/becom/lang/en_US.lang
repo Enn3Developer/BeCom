@@ -63,6 +63,7 @@ becom.relay.no_portal=No portal in reach
 becom.relay.portal=In reach: %s
 becom.relay.unpaired=Not paired
 becom.relay.paired=Paired with the relay at %s in dimension %s
+becom.relay.paired_unloaded=Paired with the relay at %s in dimension %s, which isn't loaded
 becom.portal.nether=a Nether portal
 becom.portal.end=an End portal
 becom.portal.twilight_forest=a Twilight Forest portal
