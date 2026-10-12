@@ -16,6 +16,8 @@ import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.Cord;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
+import com.enn3developer.becom.machine.InfoLines;
+import com.enn3developer.becom.machine.InfoSnapshot;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.PhoneHandle;
 
@@ -180,6 +182,25 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     /** Saved by a newer BeCom: this one leaves it alone. */
     public boolean isTooNew() {
         return tooNew != null;
+    }
+
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
+    /** Its lines for WAILA, worked out on the server thread (see {@link InfoSnapshot}). */
+    public InfoSnapshot waila() {
+        return waila;
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (isTooNew()) info.add("becom.info.too_new");
+        BeComServer becom = BeComServer.get();
+        PhoneRecord record = number < 0 || becom == null ? null : becom.phones.record(number);
+        if (number >= 0) info.add("becom.mobile.number", number);
+        if (record != null && record.ownerName() != null) info.add("becom.antenna.owner", record.ownerName());
+        if (ringing()) info.add("becom.info.ringing");
+        else if (offHook()) info.add("becom.info.off_hook");
+        return info;
     }
 
     @Override

@@ -2,12 +2,13 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -34,6 +35,8 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock;
 import gregtech.api.render.TextureFactory;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * The Transceiver (DESIGN.md 8, 8.1, 11.3): a radio on a block. Anyone within its talk range transmits through it on
@@ -253,15 +256,34 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.transceiverPower(), "MV") };
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        info.add(StatCollector.translateToLocalFormatted("becom.walkie.channel", channel));
-        info.add(
-            StatCollector.translateToLocal(loudspeaker ? "becom.info.loudspeaker_on" : "becom.info.loudspeaker_off"));
-        return info.toArray(new String[0]);
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (tooNew != null) info.add("becom.info.too_new");
+        info.add(working ? "becom.info.online" : "becom.info.offline");
+        info.add("becom.walkie.channel", channel);
+        info.add(loudspeaker ? "becom.info.loudspeaker_on" : "becom.info.loudspeaker_off");
+        return info;
     }
 
     @Override

@@ -2,13 +2,14 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
@@ -37,6 +38,8 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock;
 import gregtech.api.render.TextureFactory;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * The Videophone (DESIGN.md 10.2, D42): an MV phone for wired networks, on a Line Terminal's Phone Cable like a
@@ -291,13 +294,33 @@ public class MTEVideophone extends MTETieredMachineBlock {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.videophonePower(), "MV") };
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        if (number >= 0) info.add(StatCollector.translateToLocalFormatted("becom.info.phone", number));
-        return info.toArray(new String[0]);
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (tooNew != null) info.add("becom.info.too_new");
+        info.add(working ? "becom.info.online" : "becom.info.offline");
+        if (number >= 0) info.add("becom.info.phone", number);
+        return info;
     }
 
     @Override

@@ -6,13 +6,14 @@ import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
@@ -56,6 +57,8 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrorRegistry;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * An antenna, T1 to T3 (DESIGN.md 7, 3.2): the head on top of a mast of frame boxes standing on a 3×3 base of machine
@@ -433,14 +436,34 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         return tt;
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
-        info.add(StatCollector.translateToLocalFormatted("becom.info.mast", mMachine ? mast : 0));
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        if (locked) info.add(StatCollector.translateToLocal("becom.info.locked"));
-        return info.toArray(new String[0]);
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (tooNew != null) info.add("becom.info.too_new");
+        info.add("becom.info.mast", mMachine ? mast : 0);
+        info.add(working ? "becom.info.online" : "becom.info.offline");
+        if (locked) info.add("becom.info.locked");
+        return info;
     }
 
     @Override

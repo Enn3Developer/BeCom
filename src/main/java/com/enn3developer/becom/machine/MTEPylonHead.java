@@ -3,11 +3,13 @@ package com.enn3developer.becom.machine;
 import static gregtech.api.enums.GTValues.V;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -40,6 +42,8 @@ import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrorRegistry;
 import gregtech.api.util.MultiblockTooltipBuilder;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * A Pylon Head and its powered variants (DESIGN.md 5.1, 5.3, 5.4): the controller on top of a column of steel frame
@@ -324,13 +328,31 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         return tt;
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        info.add(StatCollector.translateToLocalFormatted("becom.info.formed", mMachine ? height : 0));
-        if (kind.powered()) {
-            info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        }
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        info.add("becom.info.formed", mMachine ? height : 0);
+        if (kind.powered()) info.add(working ? "becom.info.online" : "becom.info.offline");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
@@ -338,22 +360,19 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
             NetNode node = model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             if (node != null) {
                 info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.info.links",
-                        node.links()
-                            .size(),
-                        kind.linkSlots()));
+                    "becom.info.links",
+                    node.links()
+                        .size(),
+                    kind.linkSlots());
                 for (long other : node.links()) {
-                    boolean blocked = model.isBlocked(node.pos(), other);
-                    info.add(
-                        StatCollector.translateToLocalFormatted(
-                            blocked ? "becom.info.link_blocked" : "becom.info.link",
-                            BlockPos.toString(other),
-                            (int) Math.round(BlockPos.distance(node.pos(), other))));
+                    info.detail(
+                        model.isBlocked(node.pos(), other) ? "becom.info.link_blocked" : "becom.info.link",
+                        BlockPos.toString(other),
+                        (int) Math.round(BlockPos.distance(node.pos(), other)));
                 }
             }
         }
-        return info.toArray(new String[0]);
+        return info;
     }
 
     @Override

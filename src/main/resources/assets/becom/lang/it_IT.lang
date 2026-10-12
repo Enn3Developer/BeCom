@@ -112,6 +112,8 @@ becom.info.satellites=Satelliti sopra questa dimensione: %s
 becom.info.no_sky=Niente cielo aperto sopra
 becom.info.loudspeaker_on=Altoparlante acceso
 becom.info.loudspeaker_off=Altoparlante spento
+becom.info.ringing=Squilla
+becom.info.off_hook=Cornetta alzata
 
 # Linking
 becom.link.no_node=Questo nodo non è ancora pronto. Riprova tra un momento.

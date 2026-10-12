@@ -22,6 +22,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.StatCollector;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.WorldInfo;
@@ -61,6 +62,7 @@ import com.enn3developer.becom.logic.radio.Coverage;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.logic.video.VideoPlan;
 import com.enn3developer.becom.machine.BeComMachines;
+import com.enn3developer.becom.machine.InfoLines;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTELineTerminal;
 import com.enn3developer.becom.machine.MTEMeBridge;
@@ -235,6 +237,8 @@ public final class SelfTest {
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) steps.add(() -> powerFrom(side));
         steps.add(this::checkPower);
         steps.add(this::checkStructuresAndLines);
+        steps.add(this::askWaila);
+        steps.add(this::checkWaila);
         steps.add(this::checkCall);
         steps.add(this::switchRepeaterOff);
         steps.add(this::checkRepeaterOff);
@@ -850,6 +854,67 @@ public final class SelfTest {
      * check the service makes (voice, do-not-disturb, the block list, a busy handset, the path), answering, the levels
      * the Telephone's own cap gives, the routes from the very first frame, hanging up and the history it leaves.
      */
+    private List<String> firstWailaLook = List.of();
+
+    /** WAILA asks for a machine's lines on its network thread (DESIGN.md 16.4); the server tick works them out. */
+    private int askWaila() {
+        firstWailaLook = wailaLines(repeaterLine.start);
+        wailaLines(repeaterLine.phoneStart);
+        return 2;
+    }
+
+    private int checkWaila() {
+        check(
+            "WAILA's first look at a Line Terminal gets no lines worked out off the server thread",
+            firstWailaLook.isEmpty(),
+            firstWailaLook.toString());
+        List<String> terminal = wailaLines(repeaterLine.start);
+        check(
+            "a server tick later, WAILA gets the Line Terminal's lines",
+            terminal.contains(StatCollector.translateToLocal("becom.info.online")) && terminal.contains(
+                StatCollector.translateToLocalFormatted("becom.info.phone", repeaterLine.phoneStart.number())),
+            terminal.toString());
+        List<String> phone = wailaLines(repeaterLine.phoneStart);
+        check(
+            "and the Telephone's number",
+            phone.contains(
+                StatCollector.translateToLocalFormatted("becom.mobile.number", repeaterLine.phoneStart.number())),
+            phone.toString());
+        check(
+            "WAILA took BeCom's Telephone provider through IMC",
+            cpw.mods.fml.common.Loader.isModLoaded("Waila") && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
+                .hasBodyProviders(BeComBlocks.telephone)
+                && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
+                    .hasNBTProviders(BeComBlocks.telephone),
+            "WAILA loaded: " + cpw.mods.fml.common.Loader.isModLoaded("Waila"));
+        return 1;
+    }
+
+    private static List<String> wailaLines(MTELineTerminal mte) {
+        IGregTechTileEntity tile = mte.getBaseMetaTileEntity();
+        NBTTagCompound tag = new NBTTagCompound();
+        mte.getWailaNBTData(
+            null,
+            (TileEntity) tile,
+            tag,
+            tile.getWorld(),
+            tile.getXCoord(),
+            tile.getYCoord(),
+            tile.getZCoord());
+        List<String> tip = new ArrayList<>();
+        InfoLines.read(tag, tip);
+        return tip;
+    }
+
+    private static List<String> wailaLines(TileTelephone phone) {
+        NBTTagCompound tag = new NBTTagCompound();
+        phone.waila()
+            .write(tag);
+        List<String> tip = new ArrayList<>();
+        InfoLines.read(tag, tip);
+        return tip;
+    }
+
     private int checkCall() {
         CallService calls = becom.calls;
         CallBook book = calls.book();

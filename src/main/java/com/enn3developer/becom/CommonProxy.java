@@ -38,6 +38,7 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.StartupQuery;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLInterModComms;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
@@ -65,6 +66,8 @@ public class CommonProxy {
         // Session listeners outlive voice server restarts, so this is added once (DESIGN.md 13.2).
         GtnhVoiceApi.addSessionListener(new VoiceSessions());
         BeComQuests.init();
+        // By name, so the class and WAILA's API load only if WAILA is there to call it. GT covers BeCom's machines.
+        FMLInterModComms.sendMessage("Waila", "register", "com.enn3developer.becom.block.WailaTelephone.register");
     }
 
     public void postInit(FMLPostInitializationEvent event) {

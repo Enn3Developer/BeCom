@@ -7,6 +7,7 @@ import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.machine.InfoSnapshot;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
@@ -25,6 +26,7 @@ public final class ServerEvents {
         BeComServer becom = BeComServer.get();
         if (becom == null) return;
         becom.tick();
+        InfoSnapshot.refreshWanted();
         BeComQuests.backend()
             .tick();
         SelfTest.tick();

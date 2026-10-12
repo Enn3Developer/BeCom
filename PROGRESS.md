@@ -1144,7 +1144,7 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 | Italian: every string, the quest text included (15.3, 15.5)                                     | done   |
 | The GuideNH guide: the tiers, how signal works, reading the Signal Analyzer (15.4, D48)         | todo   |
 | Quests point to their guide pages (15.5)                                                        | todo   |
-| WAILA info for BeCom's machines and blocks (16.4: Waila 1.19.34, optional)                      | todo   |
+| WAILA info for BeCom's machines and blocks (16.4: Waila 1.19.34, optional)                      | done   |
 | A balancing pass: the tunables, recipes and quest rewards (17, 3.1, 15.5, D51)                  | todo   |
 | A load test against the budgets in 6.5                                                          | todo   |
 | README                                                                                          | todo   |

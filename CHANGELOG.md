@@ -95,6 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   key.
 - CI zips the Modernity add-on pack as `Modernity-GTNHAddon-BeCom.zip` on every build, and releases attach it next to
   the jar.
+- WAILA shows what GT's scanner shows for each BeCom machine, links listed one by one aside, in the looking player's
+  language, and a Telephone's number, owner and whether it rings or its handset is lifted.
 
 ### Changed
 

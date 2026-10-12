@@ -2,7 +2,6 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -11,9 +10,11 @@ import java.util.Set;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
@@ -38,6 +39,8 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock;
 import gregtech.api.render.TextureFactory;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * The Portal Relay (DESIGN.md 9.4, D22, D46): works within a few blocks of a Nether portal, an End portal, the End's
@@ -311,26 +314,44 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.relayPower(), "MV") };
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (tooNew != null) info.add("becom.info.too_new");
+        info.add(working ? "becom.info.online" : "becom.info.offline");
         if (portals.isEmpty()) {
-            info.add(StatCollector.translateToLocal("becom.relay.no_portal"));
+            info.add("becom.relay.no_portal");
         } else {
             for (Portals.Kind kind : portals) {
                 info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.relay.portal",
-                        StatCollector.translateToLocal(
-                            "becom.portal." + kind.name()
-                                .toLowerCase(Locale.ROOT))));
+                    "becom.relay.portal",
+                    new InfoLines.Key(
+                        "becom.portal." + kind.name()
+                            .toLowerCase(Locale.ROOT)));
             }
             for (int target : personalTargets()) {
-                info.add(
-                    target == Portals.UNKNOWN_DIMENSION ? StatCollector.translateToLocal("becom.relay.leads_anywhere")
-                        : StatCollector.translateToLocalFormatted("becom.relay.leads_into", target));
+                if (target == Portals.UNKNOWN_DIMENSION) info.add("becom.relay.leads_anywhere");
+                else info.add("becom.relay.leads_into", target);
             }
         }
         BeComServer becom = BeComServer.get();
@@ -341,33 +362,24 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             NetNode node = model == null ? null : model.node(ref().pos());
             NodeRef kept = node == null ? null : node.partner();
             if (partner != null) {
-                info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.relay.paired",
-                        BlockPos.toString(partner.pos()),
-                        partner.dimension()));
+                info.add("becom.relay.paired", BlockPos.toString(partner.pos()), partner.dimension());
             } else if (kept != null && becom.network.model(kept.dimension()) == null) {
                 // The far side's dimension isn't loaded, so the pair can't be checked, nor carry calls, until it is.
-                info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.relay.paired_unloaded",
-                        BlockPos.toString(kept.pos()),
-                        kept.dimension()));
+                info.add("becom.relay.paired_unloaded", BlockPos.toString(kept.pos()), kept.dimension());
             } else {
-                info.add(StatCollector.translateToLocal("becom.relay.unpaired"));
+                info.add("becom.relay.unpaired");
             }
             if (node != null && !node.links()
                 .isEmpty()) {
                 info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.dish.linked",
-                        BlockPos.toString(
-                            node.links()
-                                .iterator()
-                                .next())));
+                    "becom.dish.linked",
+                    BlockPos.toString(
+                        node.links()
+                            .iterator()
+                            .next()));
             }
         }
-        return info.toArray(new String[0]);
+        return info;
     }
 
     @Override

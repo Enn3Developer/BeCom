@@ -7,13 +7,14 @@ import static gregtech.api.enums.HatchElement.Maintenance;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
@@ -58,6 +59,8 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * The Satellite Dish (DESIGN.md 9.2, 3.2, D40): a late-HV dish of 5 by 5 clean stainless steel casings on a stand of
@@ -333,36 +336,32 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
             linked);
     }
 
-    /** The view's lines, in the language of whoever reads them: the client's on the screen. */
-    private static List<String> lines(DishView view) {
-        List<String> lines = new ArrayList<>();
-        lines.add(StatCollector.translateToLocalFormatted("becom.info.satellites", view.satellites()));
+    /** The view's lines, which whoever reads them translates: the client on the screen and in WAILA. */
+    private static InfoLines lines(DishView view, InfoLines lines) {
+        lines.add("becom.info.satellites", view.satellites());
         if (!view.formed()) return lines;
         if (!view.sky()) {
-            lines.add(StatCollector.translateToLocal("becom.info.no_sky"));
+            lines.add("becom.info.no_sky");
         } else if (!view.enough()) {
-            lines.add(StatCollector.translateToLocalFormatted("becom.dish.too_few", view.satellitesLow()));
+            lines.add("becom.dish.too_few", view.satellitesLow());
         } else {
             lines.add(
-                StatCollector.translateToLocalFormatted(
-                    "becom.dish.hop",
-                    String.format(Locale.ROOT, "%.1f", view.snr()),
-                    StatCollector.translateToLocal(
-                        "becom.level." + view.level()
-                            .name()
-                            .toLowerCase(Locale.ROOT))));
+                "becom.dish.hop",
+                String.format(Locale.ROOT, "%.1f", view.snr()),
+                new InfoLines.Key(
+                    "becom.level." + view.level()
+                        .name()
+                        .toLowerCase(Locale.ROOT)));
         }
         if (view.problems() > 0) {
             lines.add(
-                StatCollector.translateToLocalFormatted(
-                    "becom.dish.problems",
-                    view.problems(),
-                    String.format(Locale.ROOT, "%.0f", view.problems() * view.problemLoss())));
+                "becom.dish.problems",
+                view.problems(),
+                String.format(Locale.ROOT, "%.0f", view.problems() * view.problemLoss()));
         }
-        lines.add(
-            view.linked()
-                .isEmpty() ? StatCollector.translateToLocal("becom.dish.unlinked")
-                    : StatCollector.translateToLocalFormatted("becom.dish.linked", view.linked()));
+        if (view.linked()
+            .isEmpty()) lines.add("becom.dish.unlinked");
+        else lines.add("becom.dish.linked", view.linked());
         return lines;
     }
 
@@ -379,7 +378,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
                     DishView.EMPTY);
                 sync.syncValue("becomDish", view);
                 return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(() -> String.join("\n", lines(view.view())))
+                    IKey.dynamic(() -> String.join("\n", lines(view.view(), new InfoLines()).translate()))
                         .asWidget()
                         .marginBottom(2)
                         .fullWidth());
@@ -434,14 +433,34 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         return tt;
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        // GT's scanner reads on the server and sends its text as it is.
-        info.addAll(lines(view()));
-        return info.toArray(new String[0]);
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        if (tooNew != null) info.add("becom.info.too_new");
+        info.add(working ? "becom.info.online" : "becom.info.offline");
+        // GT's scanner reads on the server and sends its text as it is; WAILA translates on the client.
+        lines(view(), info);
+        return info;
     }
 
     @Override

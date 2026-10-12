@@ -112,6 +112,8 @@ becom.info.satellites=Satellites over this dimension: %s
 becom.info.no_sky=No open sky above it
 becom.info.loudspeaker_on=Loudspeaker on
 becom.info.loudspeaker_off=Loudspeaker off
+becom.info.ringing=Ringing
+becom.info.off_hook=Handset lifted
 
 # Linking
 becom.link.no_node=This node isn't ready yet. Try again in a moment.

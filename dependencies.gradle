@@ -50,6 +50,8 @@ dependencies {
     // BetterQuesting is optional (DESIGN.md 15.5): compiled against, and present in the dev server so the self-test
     // can check the questline, but never required at runtime.
     devOnlyNonPublishable("com.github.GTNewHorizons:BetterQuesting:3.8.89-GTNH:dev") { transitive = false }
+    // Optional (DESIGN.md 16.4). GregTech already brings it; named here so its version is BeCom's own choice.
+    compileOnly("com.github.GTNewHorizons:waila:1.19.34:dev") { transitive = false }
     // The Portal Relay knows the Twilight Forest's and Personal Space's portals by their block classes, so neither is a
     // dependency (DESIGN.md 9.4); both are in the dev server for the self-test to stand a relay by their portals.
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:twilightforest:2.7.44:dev") { transitive = false }

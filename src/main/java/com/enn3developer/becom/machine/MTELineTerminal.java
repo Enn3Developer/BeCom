@@ -2,12 +2,13 @@ package com.enn3developer.becom.machine;
 
 import static gregtech.api.enums.GTValues.V;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -28,6 +29,8 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock;
 import gregtech.api.render.TextureFactory;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
  * The Line Terminal (DESIGN.md 5.2): where a line starts or ends. An LV machine drawing a few EU/t (D29) that links to
@@ -223,44 +226,59 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.terminalPower(), "LV") };
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>();
-        info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
-        BeComServer server = BeComServer.get();
-        if (phone >= 0 && server != null && server.network.terminalsOf(phone) > 1)
-            info.add(StatCollector.translateToLocalFormatted("becom.info.phone_shared", phone));
-        else if (phone >= 0) info.add(StatCollector.translateToLocalFormatted("becom.info.phone", phone));
-        else if (tooMuchCable) info.add(
-            StatCollector.translateToLocalFormatted(
-                "becom.info.too_much_cable",
-                BeComConfig.get()
-                    .phoneCableLength() * PhoneCables.CABLES_PER_LENGTH));
-        else if (phonesSeen > 1)
-            info.add(StatCollector.translateToLocalFormatted("becom.info.too_many_phones", phonesSeen));
-        else info.add(StatCollector.translateToLocal("becom.info.no_phone"));
+        return info().translateArray();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        info.add(working ? "becom.info.online" : "becom.info.offline");
         BeComServer becom = BeComServer.get();
+        if (phone >= 0 && becom != null && becom.network.terminalsOf(phone) > 1)
+            info.add("becom.info.phone_shared", phone);
+        else if (phone >= 0) info.add("becom.info.phone", phone);
+        else if (tooMuchCable) info.add(
+            "becom.info.too_much_cable",
+            BeComConfig.get()
+                .phoneCableLength() * PhoneCables.CABLES_PER_LENGTH);
+        else if (phonesSeen > 1) info.add("becom.info.too_many_phones", phonesSeen);
+        else info.add("becom.info.no_phone");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
             NetNode node = becom.network.model(tile.getWorld())
                 .node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             if (node != null) {
                 info.add(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.info.links",
-                        node.links()
-                            .size(),
-                        1));
+                    "becom.info.links",
+                    node.links()
+                        .size(),
+                    1);
                 for (long other : node.links()) {
-                    info.add(
-                        StatCollector.translateToLocalFormatted(
-                            "becom.info.link",
-                            BlockPos.toString(other),
-                            (int) Math.round(BlockPos.distance(node.pos(), other))));
+                    info.detail(
+                        "becom.info.link",
+                        BlockPos.toString(other),
+                        (int) Math.round(BlockPos.distance(node.pos(), other)));
                 }
             }
         }
-        return info.toArray(new String[0]);
+        return info;
     }
 
     @Override

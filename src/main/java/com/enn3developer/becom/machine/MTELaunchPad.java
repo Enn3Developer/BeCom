@@ -12,7 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -58,6 +61,8 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 import micdoodle8.mods.galacticraft.core.util.FluidUtil;
 
 /**
@@ -372,17 +377,40 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         return tt;
     }
 
+    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+
     @Override
     public String[] getInfoData() {
-        List<String> info = new ArrayList<>(java.util.Arrays.asList(super.getInfoData()));
+        List<String> lines = new ArrayList<>(java.util.Arrays.asList(super.getInfoData()));
+        lines.addAll(info().translate());
+        return lines.toArray(new String[0]);
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        waila.write(tag);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, tip, accessor, config);
+        InfoLines.read(accessor.getNBTData(), tip);
+    }
+
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
-            int dimension = tile.getWorld().provider.dimensionId;
-            info.add(StatCollector.translateToLocalFormatted("becom.info.satellites", becom.space.count(dimension)));
+            info.add("becom.info.satellites", becom.space.count(tile.getWorld().provider.dimensionId));
         }
-        if (mMachine && !openSky()) info.add(StatCollector.translateToLocal("becom.info.no_sky"));
-        return info.toArray(new String[0]);
+        if (mMachine) info.add("becom.launch_pad.queue", rocketsWaiting());
+        if (held()) info.add("becom.launch_pad.held");
+        else if (mMachine && !openSky()) info.add("becom.info.no_sky");
+        return info;
     }
 
     @Override
