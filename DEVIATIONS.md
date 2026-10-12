@@ -231,7 +231,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   limits on the config values.
 - **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. From 0.3: `groupCallSize` from 2 to
   16, the video heights up to 512, rear pictures up to 640x360 and 32 KB (`rearMaxBytes`), `videoPoseRate` up to 20
-  a second (one a server tick), and `meBridgeChannels` 0 or 1. Every whole-number option shows its
+  a second (one a server tick), and `meBridgeChannels` 0 or 1. From 0.4: `relayPortalDistance` up to 8 blocks, so a
+  relay's search for portals stays a few thousand blocks a second (a larger value refuses the world, as for the other
+  decimal options), the receiver's uplink and the relay pair's levels written 1 (Low) to 4 (Max), at least 1
+  satellite for Low and 1 second a launch, and `/becom satellites` at most 1,000 over a dimension. Every whole-number
+  option shows its
   range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value outside
   it is used at the nearest end with a warning naming what was written. The checks no single range can hold (ordered
   level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this BeCom
@@ -538,18 +542,22 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **To match the design:** decide which rule wins. If ME should carry calls between dimensions, make the ME vertex one
   per network again, and accept that it reaches the Deep Dark and the rest.
 
-### X34: A Satellite Dish carries calls, not radio channels
+### X34: Dishes, relays and uplinks carry calls, not radio channels
 
-- **Where:** 0.4, DESIGN.md 9.2, 7, D5
+- **Where:** 0.4, DESIGN.md 9.2, 9.3, 9.4, 7, D5
 - **Design says:** a dish wrench-linked to an antenna, Pylon Head or Line Terminal joins it to that network, and links
-  its network to every other dish in the same dimension through the satellites. Antennas repeat radio channels and link
-  to each other on VHF (7).
-- **Built:** a dish joins calls. Radio channels still travel between antennas on VHF, and through the satellites from
-  one radio under open sky straight down to another (9.1), but not from an antenna up through a dish.
-- **Why:** a dish joins its network the way a wired link does, and wired links carry calls, not radio channels (7).
-  9.2 speaks of networks, and 9.5 of calls between dimensions; neither says radio crosses a dish.
-- **To match the design:** give each dimension's antenna mesh a vertex for the satellites, joined by every antenna
-  wrench-linked to a working dish at that dish's hop on VHF.
+  its network to every other dish in the same dimension through the satellites. A receiver is a planet's uplink to
+  the Overworld's satellites; a relay pair joins two dimensions' networks. Antennas repeat radio channels and link to
+  each other on VHF (7).
+- **Built:** dishes, relay pairs and receivers' uplinks join calls. Radio channels stay in their dimension: they
+  travel between antennas on VHF, a receiver's included, and through the satellites from one radio under open sky
+  straight down to another (9.1), but not from an antenna up through a dish, through a relay pair, or up a receiver's
+  uplink. A walkie in the Nether or on a planet never reaches the Overworld.
+- **Why:** dishes and relays join their networks the way a wired link does, and wired links carry calls, not radio
+  channels (7). 9.2 to 9.4 speak of networks, and 9.5 of calls between dimensions; none says radio crosses them.
+- **To match the design:** give the radio side a vertex for each dimension's satellites, joined by every antenna
+  wrench-linked to a working dish and by every receiver, and the relay pairs as links between dimensions' antenna
+  meshes, all on VHF.
 
 ### X35: The Rocket Radio Receiver counts only on Galacticraft's worlds
 
@@ -604,3 +612,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   UHF, and about 3,900 would beat the 40 dB cover cap and reach any depth, which breaks "underground it's gone".
   "100 for maximum" reads as the ceiling.
 - **To match the design:** drop the cap in `SkyStrength.snr`.
+
+### X39: A Rocket Radio Receiver bridges no line and can't be locked
+
+- **Where:** 0.4, DESIGN.md 9.3, 7, 12.2
+- **Design says:** a receiver on a planet acts as a T1 antenna there. Antennas bridge wired lines by a wrench link
+  (7), and their owner can lock them to a team (12.2).
+- **Built:** a receiver is a T1 antenna for devices in reach and for the antennas around it, which it links to by
+  their surveys, and it repeats radio channels. It can't be wrench-linked, so it bridges no Pylon Head or Line
+  Terminal, and it has no screen or owner, so it can't be locked: it serves everyone. A planet's wired network reaches
+  it through an antenna of its own in UHF range of the rocket.
+- **Why:** the receiver is an item in a rocket, an entity BeCom can't tick or give a screen, and a rocket moves when it
+  flies. A wrench link to it would point at nothing once it launched.
+- **To match the design:** let a wrench link a Pylon Head or Line Terminal to a landed rocket's receiver, dropped when
+  the rocket leaves its pad, and take the rocket's owner from Galacticraft for a lock.
