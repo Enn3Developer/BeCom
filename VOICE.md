@@ -83,8 +83,10 @@ stopgap.
 - **Status:** open, polish
 - **Needed by:** 0.2, DESIGN.md 15.5 (the Radio contact task)
 - **Missing:** `RoutingContext.sendTo` returns nothing, and drops a send silently when a higher-priority group already
-  served that listener this frame. BeCom counts a radio contact for the quests when it sends a radio frame, so it
-  also counts one that GTNH Voice dropped because the two players were, say, in a call with each other.
+  served that listener this frame, or when the listener has no UDP address yet. BeCom counts a radio contact for the
+  quests when it sends a radio frame, so it also counts one that GTNH Voice dropped: the two players were, say, in a
+  call with each other, or the listener's voice connection hadn't finished starting.
 - **Proposed API:** `sendTo` returns whether it sent, or `RoutingContext` gets `isServed(UUID)`.
-- **Stopgap:** count the contact on every send; the case it miscounts is two players already talking another way.
+- **Stopgap:** count the contact on every send; it miscounts only two players already talking another way, or a
+  listener a moment from hearing them anyway.
 - **Found:** code review, 2026-10-12.

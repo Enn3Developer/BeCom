@@ -245,10 +245,14 @@ public final class RadioService {
     public void tick() {
         tick++;
         long now = System.nanoTime();
+        // One pass over the quest book for everyone this tick's contacts name: each completion walks every quest.
+        Set<UUID> contacted = new HashSet<>();
         RadioRouting.Contact contact;
         while ((contact = routing.pollContact()) != null) {
-            BeComQuests.complete(QuestTask.RADIO_CONTACT, List.of(contact.speaker(), contact.listener()));
+            contacted.add(contact.speaker());
+            contacted.add(contact.listener());
         }
+        if (!contacted.isEmpty()) BeComQuests.complete(QuestTask.RADIO_CONTACT, contacted);
         boolean changed = keys(now);
         int slot = (int) (tick % TICKS_PER_SECOND);
         for (EntityPlayerMP player : players()) {
