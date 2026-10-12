@@ -267,6 +267,8 @@ public final class SelfTest {
         steps.add(this::placeMeBridges);
         steps.add(this::linkMe);
         steps.add(this::checkMe);
+        steps.add(this::placeNewerBridge);
+        steps.add(this::checkNewerBridge);
         steps.add(this::checkVideophoneRegistration);
         steps.add(this::buildVideophone);
         steps.add(this::formVideophone);
@@ -2441,6 +2443,45 @@ public final class SelfTest {
                 .entries()
                 .isEmpty(),
             "");
+        return 1;
+    }
+
+    private MTEMeBridge newerBridge;
+    private NBTTagCompound newerSaved;
+
+    /**
+     * X16: an ME Bridge a newer BeCom saved, next to the owner's online one on the same cable, loaded the way its chunk
+     * loads it: before its first tick.
+     */
+    private int placeNewerBridge() {
+        int z = phoneZ + ME_DZ;
+        newerSaved = new NBTTagCompound();
+        meBridge.saveNBTData(newerSaved);
+        newerSaved.setInteger(BeComNbt.KEY, MTEMeBridge.FORMAT + 1);
+        newerSaved.setString("becomFromTheFuture", "kept");
+        newerBridge = placeAs(BeComMachines.meBridge, X0 + 6, Y + 1, z, owner);
+        newerBridge.loadNBTData(newerSaved);
+        return SETTLE_TICKS;
+    }
+
+    private int checkNewerBridge() {
+        NBTTagCompound written = new NBTTagCompound();
+        newerBridge.saveNBTData(written);
+        boolean node = newerBridge.getProxy()
+            .getNode() != null;
+        boolean proxy = newerSaved.hasKey(MTEMeBridge.PROXY);
+        check(
+            "an ME Bridge saved by a newer BeCom stays out of ME, and keeps its keys and its AE2 node's data (X16)",
+            newerBridge.isTooNew() && !node
+                && !newerBridge.meOnline()
+                && proxy
+                && newerSaved.getTag(MTEMeBridge.PROXY)
+                    .equals(written.getTag(MTEMeBridge.PROXY))
+                && "kept".equals(written.getString("becomFromTheFuture"))
+                && written.getInteger(BeComNbt.KEY) == MTEMeBridge.FORMAT + 1,
+            "node " + node + ", node data to keep " + proxy + ", kept " + written.hasKey(MTEMeBridge.PROXY));
+        IGregTechTileEntity tile = newerBridge.getBaseMetaTileEntity();
+        world.setBlockToAir(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         return 1;
     }
 

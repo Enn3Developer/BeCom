@@ -184,7 +184,7 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X16: Saved data that can't be read stops the server; a newer Telephone is left alone
 
-- **Where:** 0.1, 0.2, DESIGN.md 14.2
+- **Where:** 0.1, 0.2, 0.3, DESIGN.md 14.2
 - **Design says:** data newer than BeCom understands stops the server instead of being overwritten.
 - **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
   load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
@@ -195,6 +195,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Transceiver or a walkie-talkie whose BeCom keys a newer BeCom wrote: the machine stays offline and the walkie
   dead, their keys are written back as they were, and a scanner or tooltip says to update BeCom. Their keys, which
   share GT's machine NBT or IC2's charge tag, carry `becomFormat` (the 0.2 design review found them unversioned).
+  From 0.3, the same for a Mobile Phone, an ME Phone, a Videophone and an ME Bridge. Such a bridge also stays out of
+  ME, and its AE2 node's data, which holds its AE2 owner and its network, is written back with its keys.
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
   a backup, or delete the file to start with none (for the phone registry, every Telephone then goes to the first

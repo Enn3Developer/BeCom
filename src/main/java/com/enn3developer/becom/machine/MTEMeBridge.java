@@ -51,7 +51,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     // BeCom's keys from a newer BeCom: kept as they were, and the bridge left alone (X16).
     private NBTTagCompound tooNew;
     // The NBT key AE2 saves the bridge's node under.
-    private static final String PROXY = "proxy";
+    public static final String PROXY = "proxy";
 
     private AENetworkProxy proxy;
     private boolean working;
@@ -132,11 +132,12 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         return p.getNode() != null && p.isActive();
     }
 
-    // GT's own tile invalidates the proxy and unloads it with its chunk, as for GT's ME hatches.
+    // GT's own tile invalidates the proxy and unloads it with its chunk, as for GT's ME hatches. A bridge from a newer
+    // BeCom stays out of ME, so its node isn't remade without the data it was saved with.
     @Override
     public void onFirstTick(IGregTechTileEntity tile) {
         super.onFirstTick(tile);
-        if (tile.isServerSide()) getProxy().onReady();
+        if (tile.isServerSide() && tooNew == null) getProxy().onReady();
     }
 
     // endregion
@@ -310,7 +311,12 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
         if (BeComNbt.tooNew(nbt, FORMAT)) {
+            // Its node too: AE2's owner, security key and grid storage come back with the newer BeCom.
             tooNew = BeComNbt.ours(nbt);
+            if (nbt.hasKey(PROXY)) tooNew.setTag(
+                PROXY,
+                nbt.getTag(PROXY)
+                    .copy());
             return;
         }
         tooNew = null;
