@@ -517,6 +517,9 @@ public final class RadioService {
         double walkieSq = tunables.walkieSpeakerRange() * tunables.walkieSpeakerRange();
         double loudSq = tunables.loudspeakerRange() * tunables.loudspeakerRange();
         List<EntityPlayerMP> online = players();
+        // Looked up for every listener and walkie, so built once: a scan each time grows with players squared.
+        Map<UUID, EntityPlayerMP> byId = new HashMap<>();
+        for (EntityPlayerMP player : online) byId.put(player.getUniqueID(), player);
         for (UUID speaker : speakers) {
             RadioSnapshot.Transmission tx = published.transmission(speaker);
             if (tx == null) continue;
@@ -531,7 +534,7 @@ public final class RadioService {
                 }
                 if (level == SignalLevel.NONE) {
                     for (RadioSnapshot.Link link : tx.walkies()) {
-                        EntityPlayerMP holder = player(link.holder());
+                        EntityPlayerMP holder = byId.get(link.holder());
                         if (holder != null && holder.dimension == listener.dimension
                             && holder.getDistanceSqToEntity(listener) <= walkieSq) {
                             level = levelOf(speaker, link.holder());
