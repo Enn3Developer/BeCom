@@ -299,3 +299,19 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   flickered once a second, which 4.1's hysteresis exists to prevent (found by both 0.2 reviews; the self-test checks
   a walkie link holding at 81 blocks).
 - **To match the design:** keep 64 steps and give up hysteresis at the edge of range, or shorten the step.
+
+### X23: `/becom signal` is for operators, and an end's own cell isn't terrain
+
+- **Where:** 0.2, DESIGN.md 6.1, 6.4, 6.6, 12.3
+- **Design says:** `/becom signal` gives the Signal Analyzer's breakdown in chat "for testing and debugging" (6.6);
+  12.3's list of operator-only commands doesn't name it. The terrain term scores the worst obstacle on the path.
+- **Built:**
+  - `/becom signal` needs operator level 2, like the rest of `/becom`. Players get the same breakdown from the Signal
+    Analyzer.
+  - Terrain samples in either end's own 4×4 height-cache cell are skipped, on direct links, antenna links and surveys.
+    A wall right beside a player, in their cell, counts as neither terrain nor cover; a roof over them counts as cover.
+- **Why:** the command is a debugging tool, and BeCom's other commands are an operator's. The height cache keeps the
+  highest point of each cell, so an end's own cell holds the end itself (an antenna's mast, the block a player
+  stands next to) and would read as an obstacle on every path.
+- **To match the design:** lower the command's permission for `signal` alone; for the cells, sample the end's column
+  from the world, which is loaded, instead of skipping the cell.
