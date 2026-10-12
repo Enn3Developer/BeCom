@@ -26,6 +26,7 @@ public final class BeComRecipes {
     private static final int PHONE_CABLE_EUT = 8;
     private static final int PHONE_CABLE_SECONDS = 5;
     private static final int PHONE_CABLE_RUBBER_L = 72;
+    private static final int PHONE_CABLE_CIRCUIT = 2;
     private static final int TELEPHONE_EUT = 30;
     private static final int TELEPHONE_SECONDS = 10;
 
@@ -34,9 +35,12 @@ public final class BeComRecipes {
     public static void register() {
         ItemStack cable = new ItemStack(BeComBlocks.phoneCable);
 
-        // Phone Cable ×2 (D8): red alloy wire in rubber.
+        // Phone Cable ×2 (D8): red alloy wire in rubber. GT's own Red Alloy Cable takes the same wire with circuit 24
+        // and more rubber; without a circuit of its own, a machine that last made Phone Cable would keep making it
+        // from GT's inputs (D31: GT keeps overlapping assembler recipes apart by circuit).
         GTValues.RA.stdBuilder()
             .itemInputs(GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.RedAlloy, 1))
+            .circuit(PHONE_CABLE_CIRCUIT)
             .fluidInputs(Materials.Rubber.getMolten(PHONE_CABLE_RUBBER_L))
             .itemOutputs(new ItemStack(BeComBlocks.phoneCable, 2))
             .duration(PHONE_CABLE_SECONDS * SECONDS)

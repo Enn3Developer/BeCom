@@ -54,10 +54,15 @@ import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
 import com.mojang.authlib.GameProfile;
 
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.GTValues;
+import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.recipe.RecipeMaps;
+import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
+import gregtech.api.util.GTUtility;
 
 /**
  * {@code /becom selftest} (DESIGN.md 16.3): the checks that need a real server. It builds what it needs in a scratch
@@ -269,6 +274,7 @@ public final class SelfTest {
             }
         }
         check("assembler makes Phone Cable x2", cable, "");
+        checkCableRecipeDoesNotShadowGt();
         check("assembler makes the Telephone", telephone, "");
         for (MTEPylonHead head : List
             .of(BeComMachines.pylonHead, BeComMachines.repeaterHead, BeComMachines.routerHead)) {
@@ -279,6 +285,49 @@ public final class SelfTest {
             hasCraftingRecipe(BeComMachines.lineTerminal.getStackForm(1)),
             "");
         return 1;
+    }
+
+    /**
+     * Phone Cable and GT's Red Alloy Cable both start from a red alloy wire and molten rubber. GT checks a machine's
+     * last recipe first, so a Phone Cable recipe whose inputs are a subset of GT's would keep making Phone Cable from
+     * GT's inputs. A programmed circuit of its own keeps them apart.
+     */
+    private void checkCableRecipeDoesNotShadowGt() {
+        GTRecipe phoneCable = null;
+        for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
+            for (ItemStack out : recipe.mOutputs) {
+                if (out != null && out.getItem() == itemOf(BeComBlocks.phoneCable)) phoneCable = recipe;
+            }
+        }
+        if (phoneCable == null) {
+            fail("GT's red alloy cable recipe still wins after Phone Cable", "no Phone Cable recipe");
+            return;
+        }
+        ItemStack wire = GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.RedAlloy, 1);
+        ItemStack gtCable = GTOreDictUnificator.get(OrePrefixes.cableGt01, Materials.RedAlloy, 1);
+        GTRecipe found = RecipeMaps.assemblerRecipes.findRecipeQuery()
+            .items(wire, GTUtility.getIntegratedCircuit(24))
+            .fluids(Materials.Rubber.getMolten(144))
+            .voltage(GTValues.V[1])
+            .cachedRecipe(phoneCable)
+            .find();
+        check(
+            "GT's red alloy cable recipe still wins after Phone Cable",
+            found != null && found != phoneCable
+                && found.mOutputs[0] != null
+                && gtCable != null
+                && found.mOutputs[0].isItemEqual(gtCable),
+            found == null ? "nothing found" : String.valueOf(found.mOutputs[0]));
+        List<GTRecipe> ours = RecipeMaps.assemblerRecipes.findRecipeQuery()
+            .items(phoneCable.mInputs)
+            .fluids(phoneCable.mFluidInputs)
+            .voltage(GTValues.V[1])
+            .findAll()
+            .collect(java.util.stream.Collectors.toList());
+        StringBuilder matched = new StringBuilder();
+        for (GTRecipe recipe : ours) matched.append(recipe.mOutputs.length > 0 ? recipe.mOutputs[0] : "?")
+            .append(' ');
+        check("Phone Cable's own inputs make only Phone Cable", ours.size() == 1, matched.toString());
     }
 
     private static net.minecraft.item.Item itemOf(Block block) {

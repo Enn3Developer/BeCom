@@ -119,3 +119,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** a desk phone stands in the open. Showing its history to whoever walks up would tell anyone who called the
   owner and when (found in the 0.1 design review). DESIGN.md doesn't say who sees a shared phone's history.
 - **To match the design:** drop the `manage` check around the history in `PhoneScreenActions.view`.
+
+### X12: Phone Cable's assembler recipe takes programmed circuit 2
+
+- **Where:** 0.1, DESIGN.md 3.1, D31
+- **Design says:** Phone Cable ×2 from Red Alloy Wire and 72 L Rubber in the assembler, 8 EU/t, 5 s.
+- **Built:** the same, plus programmed circuit 2, which isn't used up. Circuits 1, 4 and 5 already make other things
+  from that wire in GT's assembler; 2 is free, and easy to remember for a recipe that makes two.
+- **Why:** GT makes Red Alloy Cable in the assembler from the same wire, circuit 24 and 144 L of rubber. GT checks a
+  machine's last recipe first, so without a circuit of its own a machine that last made Phone Cable kept making it
+  from GT's inputs (found in the 0.1 design review, confirmed by the self-test). GT keeps overlapping assembler
+  recipes apart the same way, which is what D31 asks for.
+- **To match the design:** drop `.circuit(PHONE_CABLE_CIRCUIT)` in `BeComRecipes`, and accept the clash.
