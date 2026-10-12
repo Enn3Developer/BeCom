@@ -45,6 +45,16 @@ class TunablesTest {
     }
 
     @Test
+    void everyDecimalValueMustBeFinite() throws Exception {
+        // A config file takes NaN and Infinity; a drop delay of either would hold the self-test's edge step forever.
+        for (RecordComponent c : Tunables.class.getRecordComponents()) {
+            if (c.getType() != double.class) continue;
+            refused(c.getName(), Double.NaN);
+            refused(c.getName(), Double.POSITIVE_INFINITY);
+        }
+    }
+
+    @Test
     void noCallAttemptsAtAllIsRefused() throws Exception {
         refused("callAttemptsPerMinute", 0);
     }

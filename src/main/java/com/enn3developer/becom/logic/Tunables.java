@@ -129,6 +129,17 @@ public record Tunables(
      * @throws IllegalArgumentException for the first such value
      */
     public void validate() {
+        // A config file reads NaN and Infinity as numbers, and most checks below let NaN through.
+        try {
+            for (java.lang.reflect.RecordComponent c : Tunables.class.getRecordComponents()) {
+                if (c.getType() != double.class) continue;
+                double value = (double) c.getAccessor()
+                    .invoke(this);
+                if (!Double.isFinite(value)) throw invalid(c.getName(), value, "a finite number");
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
         try {
             levelScale();
         } catch (IllegalArgumentException e) {
