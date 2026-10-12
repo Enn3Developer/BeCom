@@ -177,27 +177,32 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   about 44,000 blocks within 32 steps (found in the 0.1 code review). Branches and spare runs fit easily in 128.
 - **To match the design:** raise `PhoneCables.CABLES_PER_LENGTH`, at the cost of slower scans.
 
-### X16: Saved data that can't be read stops the server
+### X16: Saved data that can't be read stops the server; a newer Telephone is left alone
 
 - **Where:** 0.1, DESIGN.md 14.2
 - **Design says:** data newer than BeCom understands stops the server instead of being overwritten.
 - **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
   load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
-  holding something this BeCom doesn't know: a node, phone or history kind, or more links than a kind has slots.
+  holding something this BeCom doesn't know: a node, phone or history kind, more links than a kind has slots, or an
+  invalid or repeated phone number. The one exception is a Telephone block saved by a newer BeCom: its tile entity is
+  kept as it was, never given a number, written back unchanged, and tells whoever uses it to update BeCom.
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
-  a backup, or delete the file to start with none.
-- **To match the design:** start empty and log instead, accepting the overwrite.
+  a backup, or delete the file to start with none. A Telephone's data comes with its chunk, while the server is
+  already running, where stopping would only crash it; keeping the block untouched protects it just as well.
+- **To match the design:** start empty and log instead of stopping, accepting the overwrite; for the Telephone,
+  crash the server on such a chunk.
 
-### X17: A number whose Telephone is gone is freed; a moved Telephone keeps its own
+### X17: Numbers are held for good; a moved Telephone keeps its own, and a copy gets a new one
 
 - **Where:** 0.1, DESIGN.md 8.2, D12
 - **Design says:** every phone gets a number unique in the world, assigned when first placed.
-- **Built:** once a minute the server checks, in small slices, that each Telephone's record still has its Telephone
-  in a loaded chunk, and frees the number of any that's gone without being broken (a rolled-back or trimmed chunk, an
-  outside edit). A Telephone moved by a frame or a dolly takes its record along on its first tick at the new spot. A
-  copy of one that still stands, or whose old spot isn't loaded, gets a new number on first use.
-- **Why:** DESIGN.md doesn't say what happens to the number of a phone that disappears without being broken; without
-  this it was held forever (found in the 0.1 code review). The move rule came from the fresh design review.
-- **To match the design:** nothing to change unless the owner prefers numbers held for good.
-
+- **Built:** a number is freed only when its Telephone is broken. A Telephone moved by a frame or a dolly takes its
+  record along on its first tick at the new spot. A copy of one that still stands (a world editor's, say), or one
+  whose old spot isn't loaded, takes a fresh number at once, owned by the original's owner.
+- **Why:** DESIGN.md doesn't say what happens to a number whose phone disappears without being broken, or to copies.
+  A version that freed the numbers of vanished Telephones once a minute also freed the numbers of phones in transit
+  and of phones saved by a newer BeCom (found in the third round of the 0.1 reviews), and a vanished phone's number
+  costs nothing: nobody can reach it. A copy holding the original's number would put one number on two cables.
+- **To match the design:** nothing to change unless the owner wants vanished numbers freed, which needs a check that
+  can tell a vanished phone from one being carried.
