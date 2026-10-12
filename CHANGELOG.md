@@ -42,3 +42,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Signal Analyzer's overlay and `/becom signal`: SNR, level, the serving antenna and every loss on the link to it.
 - Seven radio quests, completed by BeCom's new Radio contact task among others.
 - Line re-checks now share the survey budget per tick with antenna surveys.
+- The config refuses NaN and Infinity in its decimal values, naming the key.
