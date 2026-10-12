@@ -27,3 +27,17 @@ DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ATallerMast-B
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/ATallerMast-BRsUHvwqVhSei0mx4y1eWg==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AcrosstheValley-fia8emGdXIqzunSxVhLBng==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/AcrosstheValley-fia8emGdXIqzunSxVhLBng==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/FacetoFace-Cs4eUVpnUBeevZzOvcInrw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/FacetoFace-Cs4eUVpnUBeevZzOvcInrw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/SeeingIsBelievin-1e_b8ZF0VRq1STROZstNIg==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/SeeingIsBelievin-1e_b8ZF0VRq1STROZstNIg==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PhoneinYourPocke-tmuzvF6QVE-ZigvcfAhM5Q==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PhoneinYourPocke-tmuzvF6QVE-ZigvcfAhM5Q==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CanYouHearMeNow-QTf-qLjuX5uncRhFsloOcg==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CanYouHearMeNow-QTf-qLjuX5uncRhFsloOcg==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/WirelessEverywhe-SSBYl-CuVHeaS00Zgy5NWA==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/WirelessEverywhe-SSBYl-CuVHeaS00Zgy5NWA==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BridgingtheNetwo-6JNs0PJ2W_2dWPcb8B5q0A==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BridgingtheNetwo-6JNs0PJ2W_2dWPcb8B5q0A==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/LongDistance-1FYiW9xFV5eNdWDcFL6cbw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/LongDistance-1FYiW9xFV5eNdWDcFL6cbw==.json

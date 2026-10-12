@@ -59,3 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Videophone, an MV speakerphone for wired networks on a Line Terminal's Phone Cable: everyone within 4 blocks is
   in its call, which plays from its loudspeaker to everyone within 16 blocks, and it hangs up by itself 30 s after
   the last person walks off.
+- Video calls between Mobile Phones, ME Phones and Videophones: the front camera shows each person's character as the
+  server knows it, moving at the level's frame rate, noisy at Medium, frozen at Low; the rear camera streams what one
+  person sees to the other in a call of two at High or better. Video shows in a corner window, full size on the
+  phone screen's new Video tab with each camera's switch, and on a Videophone's screen for its room.
+- Seven quests for phones, video and ME, with three new task types: Mobile call, Video call and ME Bridge call.

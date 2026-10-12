@@ -1,0 +1,72 @@
+{
+  "preRequisites:9": {
+    "0:10": {
+      "questIDHigh:4": 5874745841317728421,
+      "questIDLow:4": -8175533940696060407
+    }
+  },
+  "properties:10": {
+    "betterquesting:10": {
+      "autoClaim:1": 0,
+      "desc:8": "A Mobile Phone gets its service from antennas, on the calls band: about 64 blocks from a T1 on open ground, twice that from a T2. It takes its number when you first use it, and works from your inventory or a bauble slot. Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call. The Phone key, N unless you changed it, answers, hangs up, or opens its screen.",
+      "globalShare:1": 1,
+      "icon:10": {
+        "Count:3": 1,
+        "Damage:2": 0,
+        "OreDict:8": "",
+        "id:8": "becom:mobile_phone"
+      },
+      "isGlobal:1": 0,
+      "isMain:1": 0,
+      "isSilent:1": 0,
+      "lockedProgress:1": 0,
+      "name:8": "Phone in Your Pocket",
+      "partySingleReward:1": 0,
+      "questLogic:8": "AND",
+      "repeatTime:3": -1,
+      "repeat_relative:1": 1,
+      "simultaneous:1": 0,
+      "snd_complete:8": "random.levelup",
+      "snd_update:8": "random.levelup",
+      "taskLogic:8": "AND",
+      "visibility:8": "NORMAL"
+    }
+  },
+  "questIDHigh:4": -5301946514676886449,
+  "questIDLow:4": -7383075597518877467,
+  "rewards:9": {
+    "0:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 0,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 6,
+          "OreDict:8": "",
+          "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    }
+  },
+  "tasks:9": {
+    "0:10": {
+      "autoConsume:1": 0,
+      "consume:1": 0,
+      "groupDetect:1": 0,
+      "ignoreNBT:1": 1,
+      "index:3": 0,
+      "partialMatch:1": 1,
+      "requireOnlyOneItem:1": 0,
+      "requiredItems:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 0,
+          "OreDict:8": "",
+          "id:8": "becom:mobile_phone"
+        }
+      },
+      "taskID:8": "bq_standard:retrieval"
+    }
+  }
+}

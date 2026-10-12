@@ -684,6 +684,7 @@ public final class CallService implements CallBook.Listener {
             if (mp != null) tone(mp, TonePacket.Tone.NONE);
         }
         BeComQuests.complete(QuestTask.FIRST_CALL, players);
+        callQuests(call);
         // Levels now, not at the next whole second: until a direction has a level it gets no route, and "hello?" is
         // lost.
         book.evaluate(call, now(), quality);
@@ -726,6 +727,32 @@ public final class CallService implements CallBook.Listener {
         List<UUID> players = call.participants();
         for (UUID player : players) leaveCall(player, players, reason);
         publish();
+    }
+
+    /**
+     * The quests a call completes as it connects (DESIGN.md 15.5): Mobile call for everyone in it on a Mobile Phone,
+     * ME Bridge call for each ME Phone's user whose path to another phone of the call goes through an ME Bridge.
+     */
+    private void callQuests(Call call) {
+        List<UUID> mobile = new ArrayList<>();
+        List<UUID> bridged = new ArrayList<>();
+        List<Call.Leg> active = call.activeLegs();
+        CallGraph graph = network.graph();
+        for (Call.Leg leg : active) {
+            PhoneKind kind = kindOf(leg.phone());
+            if (kind == PhoneKind.MOBILE) mobile.addAll(leg.players());
+            if (kind != PhoneKind.ME_PHONE) continue;
+            for (Call.Leg other : active) {
+                if (other == leg) continue;
+                if (graph.hops(entriesOf(leg.phone()), entriesOf(other.phone()))
+                    .contains(CallGraph.HopKind.ME_BRIDGE)) {
+                    bridged.addAll(leg.players());
+                    break;
+                }
+            }
+        }
+        if (!mobile.isEmpty()) BeComQuests.complete(QuestTask.MOBILE_CALL, mobile);
+        if (!bridged.isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, bridged);
     }
 
     /** {@code player} is out of their call: out of the group, the others' levels cleared, and told why. */

@@ -528,29 +528,29 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Signal bars while holding a phone or in a call (11.2)                        | done   |
 | ME Phone (8.3, D13)                                                          | done   |
 | ME Bridge (8.3, D45)                                                         | done   |
-| Video: front camera (10.1, D41, D43)                                         | doing  |
-| Video: rear camera (10.1)                                                    | doing  |
-| Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
-| Videophone (10.2, D42)                                                       | doing  |
+| Video: front camera (10.1, D41, D43)                                         | done   |
+| Video: rear camera (10.1)                                                    | done   |
+| Video: the corner window and the full-size view, camera switches (11.2, D44) | done   |
+| Videophone (10.2, D42)                                                       | done   |
 | The 0.3 tunables in the config (17)                                          | done   |
-| Self-test rows for 0.3 (16.3)                                                | doing  |
+| Self-test rows for 0.3 (16.3)                                                | done   |
 
 ### Untested assumptions (DESIGN.md 16.2)
 
 | Assumption                                                                     | Status |
 |--------------------------------------------------------------------------------|--------|
 | The ME Bridge joins an ME network on ME cable, the way GT's ME hatches do       | done   |
-| Video renders under Angelica and shader packs                                  | todo   |
-| A far-away player's skin can be drawn from the profile the server sends        | todo   |
-| Video on BeCom's own network channel doesn't lag the game connection           | todo   |
+| Video renders under Angelica and shader packs                                  | blocked |
+| A far-away player's skin can be drawn from the profile the server sends        | blocked |
+| Video on BeCom's own network channel doesn't lag the game connection           | blocked |
 
 ### Quests (DESIGN.md 15.5)
 
 | Item                                                                         | Status |
 |------------------------------------------------------------------------------|--------|
-| The phone quests, with the Mobile call task                                  | todo   |
-| The video quests, with the Video call task                                   | todo   |
-| The ME quests, with the ME Bridge call task                                  | todo   |
+| The phone quests, with the Mobile call task                                  | done   |
+| The video quests, with the Video call task                                   | done   |
+| The ME quests, with the ME Bridge call task                                  | done   |
 
 ### Assets (DESIGN.md 15)
 
@@ -559,6 +559,6 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Mobile Phone and ME Phone icons                                              | done   |
 | Videophone overlay and glow                                                  | done   |
 | ME Bridge overlay and glow                                                   | done   |
-| Modernity style of all of the above                                          | todo   |
+| Modernity style of all of the above                                          | done   |
 | Sounds: the ringtone from a carried phone, the silent-mode buzz             | done   |
-| English language entries                                                     | doing  |
+| English language entries                                                     | done   |

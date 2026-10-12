@@ -231,6 +231,100 @@ QUESTS = [
         "big": True,
         "pos": (336, 48),
     },
+    {
+        "key": "videophone",
+        "tier": "MV",
+        "name": "Face to Face",
+        "desc": "A Videophone is a speakerphone with a screen, at MV and 32 EU/t. Give it Phone Cable to a Line "
+        "Terminal, like a Telephone. Right-click it to dial, answer or hang up. Everyone within 4 blocks is in its "
+        "call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds "
+        "after the last person walks away.",
+        "icon": (GT_MACHINE, 25009),
+        "pre": ["first_call"],
+        "tasks": [("item", GT_MACHINE, 25009, 1)],
+        "big": False,
+        "pos": (192, 144),
+    },
+    {
+        "key": "video_call",
+        "tier": "MV",
+        "name": "Seeing Is Believing",
+        "desc": "See someone in a video call: on a Videophone, a Mobile Phone or an ME Phone, with their front "
+        "camera on. The front camera shows your character, and the rear camera what you see, in calls of two "
+        "people at High or better. Video needs Medium: at Low the picture freezes and the voice carries on. The "
+        "phone screen's Video tab shows the call full size and switches each camera.",
+        "icon": (GT_MACHINE, 25009),
+        "pre": ["videophone"],
+        "tasks": [("becom", "VIDEO_CALL")],
+        "big": True,
+        "pos": (240, 144),
+    },
+    {
+        "key": "mobile_phone",
+        "tier": "HV",
+        "name": "Phone in Your Pocket",
+        "desc": "A Mobile Phone gets its service from antennas, on the calls band: about 64 blocks from a T1 on "
+        "open ground, twice that from a T2. It takes its number when you first use it, and works from your "
+        "inventory or a bauble slot. "
+        "Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call. The Phone key, N unless you "
+        "changed it, answers, hangs up, or opens its screen.",
+        "icon": ("becom:mobile_phone", 0),
+        "pre": ["antenna_t1"],
+        "tasks": [("item", "becom:mobile_phone", 0, 1)],
+        "big": False,
+        "pos": (336, 96),
+    },
+    {
+        "key": "mobile_call",
+        "tier": "HV",
+        "name": "Can You Hear Me Now?",
+        "desc": "Make or take a call on a Mobile Phone. Its bars show your service while you hold it. Rain costs a "
+        "phone 3 dB of its service, a thunderstorm 6, and an antenna's screen maps where its signal reaches. In a "
+        "call, add more phones from the keypad: up to 8 people talk together.",
+        "icon": ("becom:mobile_phone", 0),
+        "pre": ["mobile_phone"],
+        "tasks": [("becom", "MOBILE_CALL")],
+        "big": True,
+        "pos": (384, 96),
+    },
+    {
+        "key": "me_phone",
+        "tier": "EV",
+        "name": "Wireless Everywhere",
+        "desc": "An ME Phone is a Mobile Phone with an ME network's link. Link it at a Security Terminal, like a "
+        "Wireless Terminal: it has service at Max wherever that network's wireless access points reach, boosters "
+        "included, and charges in an ME charger. ME Phones on one ME network call each other with no antenna.",
+        "icon": ("becom:me_phone", 0),
+        "pre": ["mobile_call"],
+        "tasks": [("item", "becom:me_phone", 0, 1)],
+        "big": False,
+        "pos": (432, 96),
+    },
+    {
+        "key": "me_bridge",
+        "tier": "EV",
+        "name": "Bridging the Networks",
+        "desc": "An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME "
+        "cable, where it takes one channel, and wrench-link it to a BeCom node within 16 blocks. It uses 512 "
+        "EU/t.",
+        "icon": (GT_MACHINE, 25008),
+        "pre": ["me_phone"],
+        "tasks": [("item", GT_MACHINE, 25008, 1)],
+        "big": False,
+        "pos": (432, 144),
+    },
+    {
+        "key": "me_bridge_call",
+        "tier": "EV",
+        "name": "Long Distance",
+        "desc": "Call a phone outside your ME network from an ME Phone, through an ME Bridge: a Telephone on a "
+        "line, a Mobile Phone, or a Videophone.",
+        "icon": ("becom:me_phone", 0),
+        "pre": ["me_bridge"],
+        "tasks": [("becom", "ME_BRIDGE_CALL")],
+        "big": True,
+        "pos": (480, 120),
+    },
 ]
 
 

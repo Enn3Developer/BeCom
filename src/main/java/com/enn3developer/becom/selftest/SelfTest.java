@@ -209,6 +209,7 @@ public final class SelfTest {
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000001"), "BeComSelfTest"));
         this.stranger = FakePlayerFactory
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000002"), "BeComStranger"));
+        BeComQuests.recordForSelfTest();
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::formAndLink);
@@ -1053,6 +1054,15 @@ public final class SelfTest {
             "the radio-contact quest uses BeCom's task type",
             invoke(quests, "firstTask", QuestTask.RADIO_CONTACT) != null,
             "");
+        for (QuestTask kind : new QuestTask[] { QuestTask.VIDEO_CALL, QuestTask.MOBILE_CALL,
+            QuestTask.ME_BRIDGE_CALL }) {
+            check(
+                "the " + kind.name()
+                    .toLowerCase(Locale.ROOT)
+                    .replace('_', ' ') + " quest uses BeCom's task type",
+                invoke(quests, "firstTask", kind) != null,
+                "");
+        }
         // A database to reload, saved by BQ itself without BeCom's quests: what a pack's DefaultQuests looks like.
         quests.removeQuestlineForTest();
         command("/bq_admin default save " + RELOAD_DATABASE);
@@ -2111,6 +2121,11 @@ public final class SelfTest {
                 && call.state() == Call.State.CONNECTED
                 && hops.contains(CallGraph.HopKind.ME_BRIDGE),
             result + ", hops " + hops);
+        check(
+            "...which reports the ME Bridge call quest task for the ME Phone's user (DESIGN.md 15.5)",
+            BeComQuests.reportedForSelfTest(QuestTask.ME_BRIDGE_CALL, odo.getUniqueID())
+                && !BeComQuests.reportedForSelfTest(QuestTask.ME_BRIDGE_CALL, stranger.getUniqueID()),
+            "");
         becom.calls.hangUpHandset(stranger.getUniqueID());
         becom.calls.hangUp(odo);
         odo.setPosition(X0 - 60.5, Y, z);
@@ -2406,6 +2421,13 @@ public final class SelfTest {
             "poses Mona to Vic " + becom.video.posesDelivered(m, v)
                 + ", Vic to Mona "
                 + becom.video.posesDelivered(v, m));
+        check(
+            "...which reports the Video call quest task for both, and the Mobile call one for Mona (DESIGN.md 15.5)",
+            BeComQuests.reportedForSelfTest(QuestTask.VIDEO_CALL, m)
+                && BeComQuests.reportedForSelfTest(QuestTask.VIDEO_CALL, v)
+                && BeComQuests.reportedForSelfTest(QuestTask.MOBILE_CALL, m)
+                && !BeComQuests.reportedForSelfTest(QuestTask.MOBILE_CALL, v),
+            "");
         check(
             "...each sees the other live, at the call's level, Medium or better (D43)",
             monaSeen != null && vicSeen != null

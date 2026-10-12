@@ -10,5 +10,9 @@ public enum QuestTask {
     /** BeCom carries a radio frame from one player to another: the speaker and the listener (DESIGN.md 15.5). */
     RADIO_CONTACT,
     /** Live video from someone in their call reaches a player: the viewer (DESIGN.md 15.5). */
-    VIDEO_CALL
+    VIDEO_CALL,
+    /** A call connects: everyone in it on a Mobile Phone (DESIGN.md 15.5). */
+    MOBILE_CALL,
+    /** A call connects whose path goes through an ME Bridge: the ME Phone's user (DESIGN.md 15.5). */
+    ME_BRIDGE_CALL
 }

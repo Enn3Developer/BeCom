@@ -236,6 +236,20 @@ betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.name=A Taller Mast
 betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=An Antenna T2 stands on MV Machine Casings with an Aluminium Frame Box mast and uses 128 EU/t. It reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.
 betterquesting.quest.fia8emGdXIqzunSxVhLBng.name=Across the Valley
 betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a hill in the way can cost more than the distance.
+betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.name=Face to Face
+betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.desc=A Videophone is a speakerphone with a screen, at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Right-click it to dial, answer or hang up. Everyone within 4 blocks is in its call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away.
+betterquesting.quest.1e_b8ZF0VRq1STROZstNIg.name=Seeing Is Believing
+betterquesting.quest.1e_b8ZF0VRq1STROZstNIg.desc=See someone in a video call: on a Videophone, a Mobile Phone or an ME Phone, with their front camera on. The front camera shows your character, and the rear camera what you see, in calls of two people at High or better. Video needs Medium: at Low the picture freezes and the voice carries on. The phone screen's Video tab shows the call full size and switches each camera.
+betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.name=Phone in Your Pocket
+betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.desc=A Mobile Phone gets its service from antennas, on the calls band: about 64 blocks from a T1 on open ground, twice that from a T2. It takes its number when you first use it, and works from your inventory or a bauble slot. Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call. The Phone key, N unless you changed it, answers, hangs up, or opens its screen.
+betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.name=Can You Hear Me Now?
+betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.desc=Make or take a call on a Mobile Phone. Its bars show your service while you hold it. Rain costs a phone 3 dB of its service, a thunderstorm 6, and an antenna's screen maps where its signal reaches. In a call, add more phones from the keypad: up to 8 people talk together.
+betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=Wireless Everywhere
+betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=An ME Phone is a Mobile Phone with an ME network's link. Link it at a Security Terminal, like a Wireless Terminal: it has service at Max wherever that network's wireless access points reach, boosters included, and charges in an ME charger. ME Phones on one ME network call each other with no antenna.
+betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=Bridging the Networks
+betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME cable, where it takes one channel, and wrench-link it to a BeCom node within 16 blocks. It uses 512 EU/t.
+betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.name=Long Distance
+betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Call a phone outside your ME network from an ME Phone, through an ME Bridge: a Telephone on a line, a Mobile Phone, or a Videophone.
 # End of quests
 
 # Quest tasks
