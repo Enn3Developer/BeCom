@@ -562,3 +562,308 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 | Modernity style of all of the above                                          | done   |
 | Sounds: the ringtone from a carried phone, the silent-mode buzz             | done   |
 | English language entries                                                     | done   |
+
+### Summary
+
+**Built.** Phones, ME and video on top of 0.2's radio, end to end on the server, with the client drawing video:
+
+- AE2 and Baubles Expanded are hard dependencies now (D27), at DESIGN.md 16.4's versions.
+- The Mobile Phone (HV, assembler): its number and owner on first use (X24), a 1,200,000 EU battery drained at 4 EU/t
+  on standby and 16 in a call, a power switch, silent mode, and service through every antenna that reaches its holder
+  on UHF, capped at High. It works from the inventory, a bauble slot or the mouse cursor (D14), and walkies work from
+  a bauble slot too.
+- Ringing from the player: everyone near hears a carried phone ring, or only its holder feels a buzz in silent mode,
+  with a notice in the corner naming the caller, their number and the keys, shown while the player is free to answer
+  (X26). The Phone key (N) hangs up during a call, answers a ringing phone, the player's own or a Telephone or
+  Videophone close enough to answer, and opens the phone screen otherwise; sneak + N turns a call down (D34). Tones on
+  phones with no handset stop when the call does (X30). A call shows on a phone's screen only to the people in it.
+- Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, a Telephone's handset included,
+  and whoever added it is told when it doesn't answer. The phone screen lists everyone in the call with their signal
+  bars, everyone in a Videophone's room by name, and has power and silent mode for carried phones (X25, X26). Signal
+  bars by the hotbar show the call's weakest level, or the held phone's service, unlit with none.
+- Phones join the call graph at the antennas they reach. Rain costs UHF links 3 dB and storms 6, where one end stands
+  in the rain (D26). The antenna screen draws a coverage map on each band, and the Signal Analyzer and
+  `/becom signal` read both bands (X31).
+- The ME Phone (EV): linked at a Security Terminal, it has service at Max inside its ME network's wireless range by
+  AE2's own rule, calls other ME Phones on it directly, and any other phone through an ME Bridge (X27). The ME Bridge
+  (EV, 512 EU/t, one ME channel) joins an ME network on ME cable like GT's ME hatches and is wrench-linked to a BeCom
+  node within 16 blocks, as a Max hop.
+- The Videophone (MV, 32 EU/t, cap High): a speakerphone on a Line Terminal's Phone Cable. Everyone within 4 blocks
+  with a voice session is in its call and works its screen, the call plays from its loudspeaker out to 16 blocks, it
+  hangs up 30 s after its room empties, and it works only while loaded and powered (X28).
+- Video calls (D41-D44): the server knows who sees whom at which level, sends front-camera poses about ten times a
+  second through each viewer's dropout chain, each person's held item, armor and profile, and relays rear pictures
+  within the client caps at each viewer's level (X29). The client draws each person the way the inventory draws the
+  player into a picture of the level's height and rate, noisy at Medium, light noise at High, frozen at Low with
+  "Weak signal", glitching after lost frames, nodding while they talk; shows the call in a corner window, full size
+  on the phone screen's Video tab with each camera's switch, and on the face of the Videophone the player stands at;
+  and copies its own view for the rear camera, shrinks it on the GPU and compresses it on a worker.
+- Seven quests for phones, video and ME, with three new task types (Mobile call, Video call, ME Bridge call), whose
+  triggers are decided in pure classes.
+- Textures for the Mobile Phone, ME Phone, Videophone and ME Bridge in GT's style and the Modernity pack, and the
+  ringtone and silent-mode buzz.
+
+**Tests.**
+
+- 350 unit and routing tests, all passing: 278 from 0.1 and 0.2, 72 new. Logic: the call book's group calls,
+  speakerphone rooms, empty-room hang-up and the world check after the rate limit (15), the video plan (10), the rear
+  picture relay (8), the call quest triggers (5), video quality per level (2), repeat reports for quest tasks (2),
+  the call graph with carried phones (2), call history in groups (2), weather on antenna links (3), the coverage map
+  (2), video frames sampling the dropout chain (1), link rules for the ME Bridge (1), tunables (1). Client: rear
+  pictures under the cap, the right way up, and a header claiming a huge picture refused before decoding (4).
+  Packets: round trips for 0.3's packets and the antenna view's maps (9). Language: every key built from an enum's
+  names (1). Routing: `becom:call` with loudspeakers and rooms through GTNH Voice's `RoutingContext` (4).
+- The self-test: 219 checks on a real dev server, all passing, 96 of them new. The Mobile Phone's recipe, number,
+  owner and service at the model's SNR; a Mobile Phone calling a Telephone through an antenna bridged onto a pylon
+  line, at the path's weakest hop (0.3's first "Done when"); a Telephone's call shown only to the people in it; group
+  calls, adding from a carried phone and a Telephone, the Phone key answering, rejecting and hanging up, and a
+  Telephone answered with the key; tones stopping; a phone switched off leaving its call; drain; a phone moved
+  through the cursor staying in its call; a ringing phone dropped taking its notice with it; two phones ringing for
+  one player, the key answering the latest, hanging up before it answers and, with sneak, turning the other down in a
+  call; notices hidden while dialling out or holding a handset and shown again after, and following a phone handed
+  to someone else, who alone can answer it; a handset holder unable to dial or answer on a carried phone; a copy of a
+  phone opening on its own number; a phone screen finding its contacts once over a second of asking every tick, and
+  again a second later; a phone in a bauble slot; rain on service and on the analyzer's phone band; the coverage
+  map; the ME Bridge joining a secured ME network for its owner and not for a stranger, both placed from items that
+  kept some data, each with its AE2 owner checked; an ME Bridge and an ME Phone saved by a newer BeCom left alone;
+  ME Phones at Max, through a bridge, and out of range; rear pictures through the relay; a Videophone added to a call
+  showing only its caller while it rings, worked only from its room, its call shown to the people in it and to nobody
+  else, and hung up for its room by the Phone key; the Videophone's number, ringing, room, loudspeaker, its room's
+  signal bars, empty-room hang-up, offline when unpowered; the video call between a Mobile Phone and a Videophone
+  (0.3's second "Done when": the server sends each side the other's poses), the Call tab, a voiceless player kept out
+  of the room and unable to hang it up, profiles sent again, camera switches; the quest reports. CI runs it on every
+  push.
+- The client smoke test: started with `-Dbecom.clienttest=<dir>`, the dev client opens a flat world under Xvfb with
+  Mesa's software OpenGL, plays a made-up video call at every level through the real drawing code, and checks each
+  front picture's height and that it shows a person, that Low and a switched-off camera draw nothing, that the rear
+  camera captures a JPEG under the cap, and that no frame raised an OpenGL error: 8 checks, all passing, with
+  screenshots of the corner window, the phone screen's Video tab and the Videophone's face. It is run by hand; CI
+  doesn't run it.
+
+**Review.** Five rounds, a design reviewer and a code reviewer side by side in each (D58): the milestone
+(`milestone/0.2-radio..280ee68`), then each round's fixes in turn (`280ee68..029f3d0`, `029f3d0..542a4d2`,
+`542a4d2..4a9a9be`, `4a9a9be..cf47443`). The fifth round's fixes are `cf47443..2840cf4`. Each finding was confirmed
+by a failing test, a self-test check or the code before it was fixed, as each item says.
+
+- First round, design review (2 major, 14 minor), "fix first":
+  - Ringback and busy tones never stopped on carried phones and Videophones: fixed, a call ending clicks every phone
+    with no handset and a busy tone stops after 3 s (four self-test rows; X30). The same as the code review's M2.
+  - A Telephone's Add failed with "You can't make that call now": fixed, adding goes the same way from every phone,
+    and whoever added a phone that doesn't answer is told (self-test rows). The same as code m1.
+  - The three new quest tasks had no text: fixed (LangTest, which checks every key built from an enum, failed on
+    exactly those three). The same as code m4.
+  - Video call was reported once per player per run, so it was used up while its quest was locked: fixed, reported
+    again after a minute, and decided by the video plan (RepeatReportsTest, VideoPlanTest).
+  - The Signal Analyzer read VHF only, so it could never show weather: fixed, it reads both bands (self-test row in
+    the rain; X31).
+  - The rear camera's server side was untested: fixed with code M1 below.
+  - Baubles were untested: a self-test row now carries a phone in a bauble slot through service, ringing, the Phone
+    key and its power switch. The suggestion to mark the bauble inventory changed was rejected: on this Baubles that
+    only marks the main inventory again, and the client reads a bauble phone's state from the server's phone screen,
+    or the Baubles screen, which sends its slots when it opens.
+  - 0.3's quest triggers weren't in classes without Minecraft: fixed (CallQuestsTest, VideoPlanTest).
+  - No round-trip tests for the new packets: added (PacketRoundTripTest); the reviewer had found them symmetric.
+  - A person seen again in a group call came back with the default skin: fixed (self-test rows walking someone into
+    the Videophone's room, out and back; the server sent their profile twice). The same as code m3.
+  - The Videophone's face had no labels: fixed (client smoke test screenshot).
+  - Signal bars vanished with no service: fixed, unlit bars. Bars near a Videophone are code m2.
+  - The Call tab named one person per Videophone, and an unanswered add told nobody: fixed (self-test rows).
+  - The corner window was large and drawn under open screens: smaller, and hidden under them (client smoke test
+    screenshots; its size stays the owner's call, X29).
+  - DEVIATIONS gaps: X1, X18, X21, X26, X27 and X28 corrected, X30 and X31 added; the Phone key now answers a nearby
+    ringing Telephone or Videophone, as DESIGN.md 11.1 says (self-test rows).
+  - The video "Done when" row overstated what it proves: reworded, and the rest is owner check 2.
+- First round, code review (1 critical, 5 major, 8 minor), "fix first":
+  - C1: a rear picture of a few hundred bytes claiming 4000x4000 pixels made a 48 MB picture on the receiving client,
+    every frame: fixed, the size is read before decoding and anything over the ceilings dropped (RearJpegTest, which
+    decoded the 4000x4000 picture before the fix).
+  - M1: the rear camera never delivered a frame, from a Long.MIN_VALUE overflow (confirmed from the code): fixed in a
+    new pure relay, which also allows two pictures so tick-rounding doesn't drop on-time ones (RearRelayTest, 8 tests;
+    two self-test rows through the real relay).
+  - M2: tones, as design 1.
+  - M3: rejected. The bridge has no AE owner of its own, but GT's machine item hands the placing player to the
+    machine's AE proxy (`ItemMachines.placeBlockAt` calls `getProxy().setOwner`, read in GT 5.09.54.205's
+    bytecode), and AE2 gives the node that player as it makes it. The self-test missed security altogether: it now
+    secures the ME network and places the owner's bridge, which joins, and a stranger's, which AE2 keeps out. The
+    second round found the case this misses (below).
+  - M4: a phone on the mouse cursor wasn't carried, so its call ended at the next look (confirmed from the code): fixed,
+    the cursor counts (self-test row).
+  - M5: a dropped ringing phone left its notice on screen (confirmed from the code): fixed, the call service remembers
+    whose screen shows it (self-test row).
+  - m1, m3 and m4: as design 2, 10 and 3.
+  - m2: anyone near a Videophone in a call got bars, and someone in another call had theirs pulled down: fixed, the
+    server tells each player their own call's bars (self-test row).
+  - m5: power switching and screen opening ran a full look at the player's phones, unlimited: fixed, rate-limited, and
+    opening looks again only when it must (confirmed from the code; the limiter is RateLimiterTest's).
+  - m5b: the world check ran before the rate limit: fixed (CallBookTest, which didn't compile against the old API).
+  - m6: two ME Bridges on a quantum-linked ME network join BeCom networks in any two dimensions: left as a known
+    issue for 0.4, whose DESIGN.md 9.5 rules decide it.
+  - m7: a voiceless player, or one whose phone was ringing, joined a Videophone's room: fixed (self-test row for the
+    voiceless one; the ringing one confirmed from the code).
+- Second round, design review (4 minor), "ready", and code review (4 minor), "ready":
+  - Both: an ME Bridge placed from an item that kept some data (paint, a cover, an upgrade) read its missing AE node
+    as AE2 player 0's, dropping the placer GT had just given it, where GT's own ME hatches check first: fixed the same
+    way. A self-test row places both bridges from such items: without the fix, the stranger's bridge joined the
+    secured network as player 0, the owner in that world, and the run read 191 passed, 2 failed.
+  - Code m-A: a copy of someone's phone, opened before the server's next look, showed the original's call, a
+    regression from m5's fix: fixed, the screen looks again unless it knows the phone in those hands, and shows
+    nothing of a phone the player can't use (self-test row).
+  - Code m-B: the profile counter for the self-test grew for as long as the server ran: it counts only while the
+    self-test asks.
+  - Code m-C: two phones ringing for one player shared one notice, and the first to stop took it away: fixed, the
+    other's notice shows again, and the Phone key answers the phone the notice names (self-test rows).
+  - Design 2: every open phone screen searched paths for its contacts every tick: fixed, a phone's reachable phones
+    are kept a second (self-test row counting the searches).
+  - Design 3 and the code review's note: X26 and X30 said more than DESIGN.md or the code: corrected.
+  - Design 4: a self-test row's name said more than it proved: renamed.
+  - The design review's note on m6: the known issue now says how far it reaches.
+- Third round, design review (4 minor), "ready", and code review (4 minor in the range, 3 from before it), "ready".
+  Every new self-test row below failed on the old code: the run read 192 passed, 11 failed, with 0.3's second-round
+  code and the two changes the second round made for two ringing phones undone, and 203 passed, 0 failed with the
+  fixes.
+  - Design 1, code m2 and m3: in a call while another of the player's carried phones rang, the Phone key tried to
+    answer that one, which the call book refuses, so it did nothing; and that phone's notice, hidden during the call,
+    never came back. Fixed: the key hangs up before it answers, and a player leaving a call sees the notice again
+    (self-test rows).
+  - Design 2 and code m1: the row for the key answering the phone the notice names passed without that fix, since the
+    phone it answered was also the first carried. Reordered: the latest to ring is now the second phone, and the row
+    failed on the old code.
+  - Code m4: the contacts row passed with no search at all, and with a list kept forever: it now needs exactly one
+    search in a second of views, and exactly one more a second later.
+  - Design 3: X26 left out putting a handset down and turning nearby phones down: rewritten with the key's new order.
+  - Design 4: keeping a phone's contacts a second wasn't logged against DESIGN.md 14: X32, which also says what the
+    call graph keeps by itself.
+  - Code O1: an ME Bridge saved by a newer BeCom still joined ME, and saving it lost AE2's node data, its owner and
+    its network: fixed, it makes no node and writes that data back with its keys (self-test row, which loads such a
+    bridge on the cable next to the owner's).
+  - Code O2: a player holding a Telephone's handset could answer or dial on a phone they carry, and the call then hung
+    up as they walked off: fixed, carried phones refuse while a handset is held, and the key puts the handset down
+    first (self-test rows).
+  - Code O3: anyone at a Telephone or Videophone in a call saw who was in it: fixed, anyone else sees it in use
+    (self-test rows at a Telephone and in a Videophone's room).
+- Fourth round, design review (5 minor), "ready", and code review (3 minor, 2 test gaps), "ready". The new rows that
+  check a bug failed on the old code: 206 passed, 8 failed with the third round's code, and 214 passed, 0 failed with
+  the fixes. The rows that fill a test gap pass on both.
+  - Design m1 and code m1: a ringing phone's notice stayed up while its player was in another call they'd made or
+    picked up some other way, saying the Phone key answers, where the key now hangs up that call. Fixed: a notice
+    shows only while its player is in no call and holds no handset, and comes back when they're free (self-test rows:
+    dialling out, holding a handset; X26 logs that this departs from D34 during another call).
+  - Code m2: a ringing phone that changed hands left its notice with the player who had it. Fixed: the notice follows
+    the phone (self-test row).
+  - Design m2: a ringing Telephone or Videophone added to a group call showed the whole call to anyone at its screen.
+    Fixed: a ringing phone's screen shows only who calls, as its notice does (self-test row).
+  - Code m3: someone in a call on their own phone saw a Telephone or Videophone of the same call as "in use by
+    someone else", and someone who dialled or answered a Videophone from 5 to 8 blocks off was dropped from its room
+    at once. Fixed: the call shows to everyone in it, and only someone in a Videophone's room works its screen; anyone
+    else is told to step closer (self-test rows; X28).
+  - Design m3 and the code review's gaps: the contacts rows asked twenty times within one tick, and no row pressed
+    sneak + the Phone key in a call, used the key in a Videophone's room, or looked at a Videophone's screen from its
+    room. Added: the screen asks once a tick for twenty ticks, and rows for the other three.
+  - Design m4: an ME Phone saved by a newer BeCom swallowed an ME charger's power. Fixed: it hands the power back
+    (self-test row).
+  - Design m5: X32 didn't say what the kept contacts cost a Telephone's pick-up: it does now.
+- Fifth round, design review (1 major, 3 minor), "fix first", and code review (4 minor, 1 trivial), "fix first". The
+  five rows that check a bug failed on the old code: 208 passed, 10 failed, the five and five more that follow from
+  them in the same steps. With the fixes, 219 passed, 0 failed.
+  - Design M1 and code m1: someone within 4 blocks of a Videophone but kept out of its call, in another call, holding
+    a handset or without voice, could still hang its call up for everyone, or turn its ring down, from its screen.
+    Fixed: hanging up is for the people in its call, and turning a ring down for someone near it in no call and
+    holding no handset (self-test rows; X28).
+  - Code m2: for up to a second after a ringing phone changed hands, its old holder's Phone key could still answer
+    it, from a list the server hadn't looked at again yet. Fixed: only its holder as the server last saw it can
+    (self-test row).
+  - Design m4 and code m3: Hang up on an offline Videophone told whoever stood next to it to step closer. Fixed
+    (self-test row). The code review's note that the message shows the room in whole blocks was rejected: every
+    distance BeCom shows is in whole blocks, as DESIGN.md 17's are.
+  - Code m4: an ME Phone saved by a newer BeCom gave AE power away without losing any. Nothing takes power out of it
+    today, but it now gives none (self-test row).
+  - Design m2 and m3: X26 now says that during another call a silent phone's hidden notice leaves only a buzz, and
+    that a ringing phone handed over rings on only when the server looks at its new holder first; X32 that a pick-up
+    can also open the dialer where it should ring.
+  - Code, trivial: when the phone that added a ringing one leaves the call, the ringing phone's screen names someone
+    other than its notice does. Rejected: that ring drops once the 3 s drop grace runs out, and a notice can't change
+    without being sent again.
+  - These fixes got no sixth review: none is big or touches threads or saved data, and each has a self-test row that
+    failed on the old code.
+
+**Deviations and GTNH Voice.** DEVIATIONS.md X24 to X32 are 0.3's: carried phones' numbers, owners and copies (X24),
+group calls (X25), carried phones' power, silent mode, drain, notices and the Phone key (X26), the ME Phone's battery,
+linking and range check and what they cost (X27), the Videophone's room, its screen and its number (X28), video's
+choices (X29), tones on phones with no handset (X30), the analyzer's two bands (X31), and a phone's contacts kept a
+second (X32). X1, X16, X18 and X21 were brought up to date. None is a 16.2 fallback: the ME Bridge assumption held,
+and the other three wait on the owner. VOICE.md: nothing new. Video goes on BeCom's own network channel, V2's
+stopgap, and the Videophone's loudspeaker plays with GTNH Voice's falloff and stops at 16 blocks, V3's.
+
+**Known issues.**
+
+- Three of 0.3's 16.2 assumptions wait on the owner and are `blocked` until then: video under Angelica and shader
+  packs, a far-away player's skin from the profile the server sends, and video on BeCom's own channel not lagging the
+  game connection. Their fallbacks are known and not built.
+- No game client has played 0.3 with people. The client smoke test runs the real drawing code on made-up calls with
+  software OpenGL; the server's side runs with fake players, who get no packets. 0.3's second "Done when" is proven
+  up to the server sending each side the other's poses; that they show is owner check 2.
+- The ME Phone can't take an Infinity Booster Card, and doesn't check AE2's security permissions of whoever carries
+  it, as a wireless terminal does (X27).
+- Calls cross dimensions through ME: an ME network spanning two dimensions through a Quantum Network Bridge, with an
+  ME Bridge in each, joins the BeCom networks there at Max, since every bridge of one ME network is one vertex
+  whatever its dimension (code review of 0.3, m6). That reaches any two dimensions the ME network spans, the ones
+  DESIGN.md 9.5 keeps unreachable in v1 included. 0.4 makes calls between dimensions follow 9.5, and decides this
+  with them.
+- A phone in a bauble slot: the client's copy of its stack catches up when the Baubles screen opens. Nothing on the
+  client reads it otherwise; the phone screen's state comes from the server.
+- The Phone key opens a carried phone's screen, never a Telephone's, so a Telephone's settings stay behind sneak +
+  right-click (X1).
+- The corner window's size and the rear picture's inset are the run's choice (X29); D44 asks for a small window.
+- From 0.1 and 0.2, still open: quest text shows default numbers (X14), the IC2 rubber GT-ERR-01 line in the boot
+  log, X22's survey cost, and V1, V3 and V5.
+
+**Owner checks.** Two players with voice chat (three for 5 and 9), a GTNH 2.8 install with GTNH Voice 0.10.1 or newer,
+BeCom from this branch, and the Modernity add-on pack for the second look at the textures:
+
+1. 0.3's first "Done when": build a pylon line from a Telephone's Line Terminal, an Antenna T1 wrench-linked to one of
+   its Pylon Heads, and give the other player a charged Mobile Phone within 60 blocks of the antenna. They dial the
+   Telephone's number: it rings; picking up its handset connects the call, and both hear each other. The phone's
+   signal bars by the hotbar light up to the call's level.
+2. 0.3's second "Done when": a Videophone on its own Line Terminal (Phone Cable, MV power), bridged onto the antenna.
+   The Mobile Phone calls it; standing within 4 blocks, press N or answer on its screen. Both sides see the other:
+   the phone in the corner window and on the phone screen's Video tab, the Videophone on its face. Each person's
+   skin, armor and held item show, the head turns as they look around, an arm swings as they punch, and the head nods
+   while they talk. (16.2: the skin is the player's own, not the default one.)
+3. Walk the phone away from the antenna: Medium is noisy and choppier (48 px, 5 frames a second), Low freezes the
+   picture with "Weak signal" on it while the voice goes on, and a lost frame shows a few frames of blocky glitches.
+4. On the Video tab, switch the front camera off: the other side's tile says "Camera off". Hide the window: it goes,
+   and comes back on the tab's Window button. Change `videoCorner` in the client config: the window moves. With any
+   screen but chat open, the window doesn't show.
+5. Rear camera: two Mobile Phones in a call of two, both within 30 blocks of an antenna, at High or better. Switch the
+   rear camera on: the other side sees your view, without your HUD, in the corner window with your face in an inset,
+   about 2 pictures a second at High. A third person added to the call stops it.
+6. 16.2: with Angelica and a shader pack, the corner window, the Video tab and the Videophone's face still show the
+   people, and the rear camera still sends a view. Watch the game's ping while the rear camera streams (16.2: video
+   doesn't lag the connection).
+7. Ringing: call a Mobile Phone in someone's inventory: it rings from them, players near hear it, and the corner notice
+   shows the caller's name and number with the keys. N answers; sneak + N turns it down, and the caller hears the
+   hang-up click. Silent mode (phone screen, Settings) makes it buzz for its holder only. Call a phone whose holder is
+   in a call: a busy tone for 3 s. With it ringing, pick up a Telephone's handset: the notice goes while the phone
+   rings on, N puts the handset down and the notice comes back, and N again answers.
+8. Group call: in a call, add a third phone from the keypad or contacts, from a Mobile Phone and from a Telephone's
+   handset. The Call tab lists everyone with their bars. Add a phone nobody answers: after 30 s whoever added it reads
+   that it didn't answer.
+9. The Videophone: everyone within 4 blocks is in its call, listed by name on the other side's Call tab; players up
+   to 16 blocks away hear the call from it, and a player there who isn't in the call has no signal bars. Its screen
+   opens from 8 blocks, but dials, answers and hangs up only from within 4; someone near it in another call sees "In
+   use by someone else" and can't hang it up. Everyone walks off: 30 s later it hangs up. Cut its power: it can't be
+   called.
+10. Put a Mobile Phone in a bauble slot: it rings, N answers it and, with no call, opens its screen; its power switch
+    works. Move a phone to another slot with the mouse during a call: the call goes on.
+11. Hold a phone where no antenna reaches: four unlit bars. Stand in the rain: the Signal Analyzer's phone band shows a
+    weather loss, and the radio band doesn't.
+12. The antenna screen's coverage map, on each band, is brightest at the antenna and fades with distance and behind
+    hills.
+13. ME: link an ME Phone at a Security Terminal of a powered ME network with a Wireless Access Point. Within the access
+    point's range it has service at Max; outside, none. Two such phones call each other at Max. Place an ME Bridge
+    on the network's cable (EV, 512 EU/t), wrench-link it to an antenna: the ME Phone calls the Telephone. A bridge
+    placed by a player the network's security doesn't let build stays offline.
+14. Look at the Mobile Phone, ME Phone, Videophone and ME Bridge next to GT's machines, in GT's style and with the
+    Modernity add-on pack; and listen to the ringtone from a few blocks away, and the buzz.
+15. The quest book's BeCom tab shows the seven new quests with their task texts. A video call completes "Seeing Is
+    Believing" for both sides once "Face to Face" is done, even if the first video call came before it.
