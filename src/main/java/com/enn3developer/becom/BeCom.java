@@ -19,7 +19,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
     version = Tags.VERSION,
     name = "Better Communications",
     acceptedMinecraftVersions = "[1.7.10]",
-    dependencies = "required-after:gtnhvoice;required-after:gregtech;required-after:appliedenergistics2;required-after:Baubles;required-after:GalacticraftCore;after:betterquesting")
+    dependencies = "required-after:gtnhvoice@[v0.10.1,);required-after:gregtech;required-after:appliedenergistics2;required-after:Baubles;required-after:GalacticraftCore;after:betterquesting")
 public class BeCom {
 
     public static final String MODID = "becom";
