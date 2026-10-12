@@ -1,8 +1,13 @@
 package com.enn3developer.becom.logic.radio;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Random;
+
 import org.junit.jupiter.api.Test;
+
+import com.enn3developer.becom.logic.WidestPath;
 
 /** DESIGN.md 7 and 8.1: a signal goes up to an antenna, along antenna links, and down; its SNR is the weakest hop. */
 class AntennaMeshTest {
@@ -56,5 +61,36 @@ class AntennaMeshTest {
         mesh.link(0, 1, 18);
         double[] reach = mesh.reach(new double[] { NONE, NONE });
         assertEquals(NONE, AntennaMesh.through(reach, new double[] { 30, 30 }));
+    }
+
+    /** The same widest paths, from a graph built afresh with the device as one more vertex. */
+    private static double[] reachThroughAGraph(AntennaMesh mesh, double[] access) {
+        int n = mesh.antennas();
+        WidestPath paths = new WidestPath(n + 1);
+        for (int a = 0; a < n; a++) {
+            if (access[a] > NONE) paths.addEdge(n, a, access[a], null);
+            for (int b = 0; b < n; b++)
+                if (a != b && mesh.linkSnr(a, b) > NONE) paths.addEdge(a, b, mesh.linkSnr(a, b), null);
+        }
+        WidestPath.Result result = paths.solve(n);
+        double[] reach = new double[n];
+        for (int a = 0; a < n; a++) reach[a] = result.width(a);
+        return reach;
+    }
+
+    @Test
+    void reachIsTheWidestPathFromTheDevice() {
+        Random random = new Random(7);
+        for (int round = 0; round < 300; round++) {
+            int n = 1 + random.nextInt(40);
+            AntennaMesh mesh = new AntennaMesh(n);
+            double density = random.nextDouble() * 0.3;
+            for (int a = 0; a < n; a++) {
+                for (int b = a + 1; b < n; b++) if (random.nextDouble() < density) mesh.link(a, b, random.nextInt(40));
+            }
+            double[] access = new double[n];
+            for (int a = 0; a < n; a++) access[a] = random.nextDouble() < 0.7 ? NONE : random.nextInt(40);
+            assertArrayEquals(reachThroughAGraph(mesh, access), mesh.reach(access), 0, "round " + round);
+        }
     }
 }

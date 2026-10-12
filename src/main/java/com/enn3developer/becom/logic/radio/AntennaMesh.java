@@ -1,7 +1,5 @@
 package com.enn3developer.becom.logic.radio;
 
-import com.enn3developer.becom.logic.WidestPath;
-
 /**
  * The antennas of one dimension on one band, and the links between them (DESIGN.md 7): a radio signal can go from a
  * device up to any antenna it reaches, along the antenna links, and down to another device. The path's SNR is its
@@ -36,21 +34,26 @@ public final class AntennaMesh {
 
     /**
      * For each antenna, the best SNR a signal arrives there with, starting from a device whose access links to the
-     * antennas are {@code access} (negative infinity where it reaches none).
+     * antennas are {@code access} (negative infinity where it reaches none). A widest path over the link matrix as it
+     * stands, with nothing built per call: a radio publish asks this for every keyed radio.
      */
     public double[] reach(double[] access) {
-        int source = antennas;
-        WidestPath paths = new WidestPath(antennas + 1);
-        for (int a = 0; a < antennas; a++) {
-            if (access[a] > Double.NEGATIVE_INFINITY) paths.addEdge(source, a, access[a], null);
+        // Each antenna starts at its own access link; the closest unsettled antenna then passes its width on.
+        double[] best = access.clone();
+        boolean[] settled = new boolean[antennas];
+        for (int round = 0; round < antennas; round++) {
+            int next = -1;
+            for (int a = 0; a < antennas; a++) {
+                if (!settled[a] && (next < 0 || best[a] > best[next])) next = a;
+            }
+            if (best[next] == Double.NEGATIVE_INFINITY) break;
+            settled[next] = true;
+            double[] row = links[next];
             for (int b = 0; b < antennas; b++) {
-                if (a != b && links[a][b] > Double.NEGATIVE_INFINITY) paths.addEdge(a, b, links[a][b], null);
+                if (!settled[b]) best[b] = Math.max(best[b], Math.min(best[next], row[b]));
             }
         }
-        WidestPath.Result result = paths.solve(source);
-        double[] reach = new double[antennas];
-        for (int a = 0; a < antennas; a++) reach[a] = result.width(a);
-        return reach;
+        return best;
     }
 
     /**
