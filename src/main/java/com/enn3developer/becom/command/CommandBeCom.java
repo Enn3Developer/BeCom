@@ -113,18 +113,46 @@ public final class CommandBeCom extends CommandBase {
         sender.addChatMessage(new ChatComponentTranslation("becom.command.hangup.done", id));
     }
 
-    /** DESIGN.md 6.6: the Signal Analyzer's breakdown in chat, and every antenna that reaches the sender. */
+    /**
+     * DESIGN.md 6.6: the Signal Analyzer's breakdown in chat for radios and for phones, and every antenna that reaches
+     * the sender's radio.
+     */
     private static void signal(ICommandSender sender, BeComServer becom) {
         if (!(sender instanceof EntityPlayerMP player)) throw new WrongUsageException("becom.command.usage");
         AnalyzerPacket reading = becom.radio.reading(player);
+        signal(sender, "becom.analyzer.radios", reading.radio());
+        signal(sender, "becom.analyzer.phones", reading.phone());
+        AntennaNetwork.Mesh mesh = becom.antennas.mesh(player.dimension);
+        double[] access = becom.antennas
+            .access(mesh, player.dimension, RadioService.endOf(player), player.getUniqueID());
+        for (int i = 0; i < access.length; i++) {
+            if (access[i] == Double.NEGATIVE_INFINITY) continue;
+            NodeRef ref = mesh.antennas()
+                .get(i)
+                .ref();
+            sender.addChatMessage(
+                new ChatComponentTranslation(
+                    "becom.command.signal.antenna",
+                    mesh.antennas()
+                        .get(i)
+                        .tier(),
+                    BlockPos.toString(ref.pos()),
+                    format(access[i])));
+        }
+    }
+
+    /** One band's breakdown: SNR, level and the serving antenna, the biggest loss, and every term. */
+    private static void signal(ICommandSender sender, String bandKey, AnalyzerPacket.Reading reading) {
+        ChatComponentTranslation band = new ChatComponentTranslation(bandKey);
         if (!reading.served()) {
-            sender.addChatMessage(new ChatComponentTranslation("becom.analyzer.none"));
+            sender.addChatMessage(new ChatComponentTranslation("becom.analyzer.band_none", band));
             return;
         }
         RadioModel.Losses losses = reading.losses();
         sender.addChatMessage(
             new ChatComponentTranslation(
                 "becom.command.signal.best",
+                band,
                 Math.round(losses.snr()),
                 new ChatComponentTranslation(
                     "becom.level." + reading.level()
@@ -150,23 +178,6 @@ public final class CommandBeCom extends CommandBase {
                 format(losses.coverA() + losses.coverB()),
                 format(losses.weather()),
                 format(losses.noise())));
-        AntennaNetwork.Mesh mesh = becom.antennas.mesh(player.dimension);
-        double[] access = becom.antennas
-            .access(mesh, player.dimension, RadioService.endOf(player), player.getUniqueID());
-        for (int i = 0; i < access.length; i++) {
-            if (access[i] == Double.NEGATIVE_INFINITY) continue;
-            NodeRef ref = mesh.antennas()
-                .get(i)
-                .ref();
-            sender.addChatMessage(
-                new ChatComponentTranslation(
-                    "becom.command.signal.antenna",
-                    mesh.antennas()
-                        .get(i)
-                        .tier(),
-                    BlockPos.toString(ref.pos()),
-                    format(access[i])));
-        }
     }
 
     private static String format(double db) {

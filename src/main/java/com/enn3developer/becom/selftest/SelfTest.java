@@ -1480,7 +1480,8 @@ public final class SelfTest {
             "two walkies talk through the antennas, at the weakest hop: the link between them",
             t.antennaBudget(1) - RadioModel.distanceLoss(ANTENNA_GAP),
             link.snr());
-        AnalyzerPacket reading = becom.radio.reading(eve);
+        AnalyzerPacket.Reading reading = becom.radio.reading(eve)
+            .radio();
         double d = distance(X0 + 0.5, Y + 1, RADIO_Z + 0.5, X0 - 19.5, Y + 1.62, RADIO_Z + 0.5);
         check(
             "the Signal Analyzer names the T1 antenna serving the walkie",
@@ -2066,6 +2067,27 @@ public final class SelfTest {
                 .weatherLoss(1, 0),
             becom.carried.serviceOf(monaNumber)
                 .best());
+        AnalyzerPacket reading = becom.radio.reading(mona);
+        check(
+            "...and the Signal Analyzer shows it on the phones' band, not the radios' (DESIGN.md 6.6, D26)",
+            reading.phone()
+                .served()
+                && Math.abs(
+                    reading.phone()
+                        .losses()
+                        .snr()
+                        - becom.carried.serviceOf(monaNumber)
+                            .best())
+                    < 0.01
+                && reading.phone()
+                    .weather() > 0
+                && reading.radio()
+                    .weather() == 0,
+            "phones " + reading.phone()
+                .weather()
+                + " dB of weather, radios "
+                + reading.radio()
+                    .weather());
         clearWeather();
         return 1;
     }

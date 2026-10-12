@@ -10,107 +10,102 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A Signal Analyzer reading (DESIGN.md 6.6, 11.4): the antenna serving the player best and every loss on that link, or
- * nothing in reach. Sent once a refresh period while the player holds an analyzer.
+ * A Signal Analyzer reading (DESIGN.md 6.6, 11.4) on each band: radios on VHF, phones on UHF, where weather counts
+ * (D26). Sent once a refresh period while the player holds an analyzer.
  */
 public final class AnalyzerPacket implements IMessage {
 
-    private boolean served;
-    private int x;
-    private int y;
-    private int z;
-    private int tier;
-    private double budget;
-    private double distanceLoss;
-    private double terrain;
-    private double cover;
-    private double weather;
-    private double noise;
-    private SignalLevel level = SignalLevel.NONE;
+    /** One band: the antenna serving the player best, every loss on that link and the level, or nothing in reach. */
+    public record Reading(boolean served, int x, int y, int z, int tier, double budget, double distance, double terrain,
+        double cover, double weather, double noise, SignalLevel level) {
+
+        public static final Reading NONE = new Reading(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, SignalLevel.NONE);
+
+        public static Reading of(int x, int y, int z, int tier, RadioModel.Losses losses, SignalLevel level) {
+            return new Reading(
+                true,
+                x,
+                y,
+                z,
+                tier,
+                losses.budget(),
+                losses.distance(),
+                losses.terrain(),
+                losses.coverA() + losses.coverB(),
+                losses.weather(),
+                losses.noise(),
+                level);
+        }
+
+        /** Every term again, as the model keeps them; cover counts both ends as one. */
+        public RadioModel.Losses losses() {
+            return new RadioModel.Losses(budget, distance, terrain, cover, 0, weather, noise);
+        }
+
+        static Reading read(ByteBuf buf) {
+            if (!buf.readBoolean()) return NONE;
+            return new Reading(
+                true,
+                buf.readInt(),
+                buf.readShort(),
+                buf.readInt(),
+                buf.readByte(),
+                buf.readFloat(),
+                buf.readFloat(),
+                buf.readFloat(),
+                buf.readFloat(),
+                buf.readFloat(),
+                buf.readFloat(),
+                SignalLevel.byOrdinal(buf.readByte()));
+        }
+
+        void write(ByteBuf buf) {
+            buf.writeBoolean(served);
+            if (!served) return;
+            buf.writeInt(x);
+            buf.writeShort(y);
+            buf.writeInt(z);
+            buf.writeByte(tier);
+            buf.writeFloat((float) budget);
+            buf.writeFloat((float) distance);
+            buf.writeFloat((float) terrain);
+            buf.writeFloat((float) cover);
+            buf.writeFloat((float) weather);
+            buf.writeFloat((float) noise);
+            buf.writeByte(level.ordinal());
+        }
+    }
+
+    private Reading radio = Reading.NONE;
+    private Reading phone = Reading.NONE;
 
     public AnalyzerPacket() {}
 
-    /** Nothing reaches the player. */
-    public static AnalyzerPacket none() {
-        return new AnalyzerPacket();
+    public AnalyzerPacket(Reading radio, Reading phone) {
+        this.radio = radio;
+        this.phone = phone;
     }
 
-    public AnalyzerPacket(int x, int y, int z, int tier, RadioModel.Losses losses, SignalLevel level) {
-        this.served = true;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.tier = tier;
-        this.budget = losses.budget();
-        this.distanceLoss = losses.distance();
-        this.terrain = losses.terrain();
-        this.cover = losses.coverA() + losses.coverB();
-        this.weather = losses.weather();
-        this.noise = losses.noise();
-        this.level = level;
+    /** What a radio gets where the player stands, on VHF. */
+    public Reading radio() {
+        return radio;
     }
 
-    public boolean served() {
-        return served;
-    }
-
-    public int x() {
-        return x;
-    }
-
-    public int y() {
-        return y;
-    }
-
-    public int z() {
-        return z;
-    }
-
-    public int tier() {
-        return tier;
-    }
-
-    public SignalLevel level() {
-        return level;
-    }
-
-    /** Every term again, as the model keeps them; cover counts both ends as one. */
-    public RadioModel.Losses losses() {
-        return new RadioModel.Losses(budget, distanceLoss, terrain, cover, 0, weather, noise);
+    /** What a Mobile Phone gets where the player stands, on UHF. */
+    public Reading phone() {
+        return phone;
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        served = buf.readBoolean();
-        if (!served) return;
-        x = buf.readInt();
-        y = buf.readShort();
-        z = buf.readInt();
-        tier = buf.readByte();
-        budget = buf.readFloat();
-        distanceLoss = buf.readFloat();
-        terrain = buf.readFloat();
-        cover = buf.readFloat();
-        weather = buf.readFloat();
-        noise = buf.readFloat();
-        level = SignalLevel.byOrdinal(buf.readByte());
+        radio = Reading.read(buf);
+        phone = Reading.read(buf);
     }
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(served);
-        if (!served) return;
-        buf.writeInt(x);
-        buf.writeShort(y);
-        buf.writeInt(z);
-        buf.writeByte(tier);
-        buf.writeFloat((float) budget);
-        buf.writeFloat((float) distanceLoss);
-        buf.writeFloat((float) terrain);
-        buf.writeFloat((float) cover);
-        buf.writeFloat((float) weather);
-        buf.writeFloat((float) noise);
-        buf.writeByte(level.ordinal());
+        radio.write(buf);
+        phone.write(buf);
     }
 
     public static final class Handler implements IMessageHandler<AnalyzerPacket, IMessage> {

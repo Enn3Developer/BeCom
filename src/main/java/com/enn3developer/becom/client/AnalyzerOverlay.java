@@ -19,7 +19,8 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
  * The Signal Analyzer's overlay (DESIGN.md 6.6, 11.4, D35): while the player holds one, the server's latest reading in
- * the top-left corner: SNR and level, the antenna serving them, the biggest loss, and every loss term.
+ * the top-left corner, for radios and for phones: SNR and level, the antenna serving them, the biggest loss, and every
+ * loss term.
  */
 public final class AnalyzerOverlay {
 
@@ -66,14 +67,22 @@ public final class AnalyzerOverlay {
             lines.add(StatCollector.translateToLocal("becom.analyzer.reading"));
             return lines;
         }
+        band(lines, "becom.analyzer.radios", r.radio());
+        band(lines, "becom.analyzer.phones", r.phone());
+        return lines;
+    }
+
+    private static void band(List<String> lines, String bandKey, AnalyzerPacket.Reading r) {
+        String band = StatCollector.translateToLocal(bandKey);
         if (!r.served()) {
-            lines.add(StatCollector.translateToLocal("becom.analyzer.none"));
-            return lines;
+            lines.add(StatCollector.translateToLocalFormatted("becom.analyzer.band_none", band));
+            return;
         }
         RadioModel.Losses losses = r.losses();
         lines.add(
             StatCollector.translateToLocalFormatted(
-                "becom.analyzer.snr",
+                "becom.analyzer.band",
+                band,
                 Math.round(losses.snr()),
                 StatCollector.translateToLocal(
                     "becom.level." + r.level()
@@ -96,6 +105,5 @@ public final class AnalyzerOverlay {
                 Math.round(losses.coverA() + losses.coverB()),
                 Math.round(losses.weather()),
                 Math.round(losses.noise())));
-        return lines;
     }
 }

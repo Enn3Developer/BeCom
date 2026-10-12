@@ -32,6 +32,7 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
+import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.radio.AntennaMesh;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Band;
@@ -684,22 +685,35 @@ public final class RadioService {
         }
     }
 
-    /** The best antenna for a player on VHF and every loss on that link; also what {@code /becom signal} says. */
+    /**
+     * The best antenna for a player on each band and every loss on that link; also what {@code /becom signal} says.
+     * Radios use VHF; phones use UHF, where rain where the player stands counts (D26).
+     */
     public AnalyzerPacket reading(EntityPlayer player) {
-        AntennaNetwork.Best best = antennas.best(player.dimension, endOf(player), player.getUniqueID(), vhf);
-        if (best == null) return AnalyzerPacket.none();
+        RadioHops.End end = endOf(player);
+        UUID id = player.getUniqueID();
+        boolean rains = BeComServer
+            .rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
+        return new AnalyzerPacket(
+            // What a radio hears there: radios stop at Medium (D10).
+            reading(antennas.best(player.dimension, end, id, vhf), SignalLevel.MEDIUM),
+            // What a Mobile Phone gets there, the phone that uses antennas.
+            reading(antennas.best(player.dimension, end, id, antennas.uhf(), rains), PhoneKind.MOBILE.cap()));
+    }
+
+    private AnalyzerPacket.Reading reading(AntennaNetwork.Best best, SignalLevel cap) {
+        if (best == null) return AnalyzerPacket.Reading.NONE;
         RadioModel.Losses losses = best.losses();
         NodeRef ref = best.antenna()
             .ref();
-        return new AnalyzerPacket(
+        return AnalyzerPacket.Reading.of(
             BlockPos.x(ref.pos()),
             BlockPos.y(ref.pos()),
             BlockPos.z(ref.pos()),
             best.antenna()
                 .tier(),
             losses,
-            // What a radio hears there: radios stop at Medium (D10).
-            SignalLevel.min(levels.levelOf(losses.snr()), SignalLevel.MEDIUM));
+            SignalLevel.min(levels.levelOf(losses.snr()), cap));
     }
 
     // endregion
