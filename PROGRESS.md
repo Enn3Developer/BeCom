@@ -26,19 +26,19 @@ Branch `milestone/0.1-wired`, from `master`.
 | Phone Cable (5.5)                                      | todo   |
 | Telephone (5.6)                                        | todo   |
 | Their recipes (3.1)                                    | todo   |
-| Numbers (8.2, D25)                                     | todo   |
-| Contacts (8.2, D25)                                    | todo   |
+| Numbers (8.2, D25)                                     | doing  |
+| Contacts (8.2, D25)                                    | doing  |
 | Phone screen (11.2)                                    | todo   |
 | `becom:call` routing (13.3)                            | todo   |
-| Line loss (5.7)                                        | todo   |
-| Levels (4.1)                                           | todo   |
-| Dropouts (4.2)                                         | todo   |
+| Line loss (5.7)                                        | doing  |
+| Levels (4.1)                                           | doing  |
+| Dropouts (4.2)                                         | doing  |
 | Call audio (4.3, 13.5)                                 | todo   |
 | Ownership (12.1)                                       | todo   |
-| Linking rules (12.2)                                   | todo   |
-| Block list (12.3)                                      | todo   |
-| Do-not-disturb (12.3)                                  | todo   |
-| Rate limit (12.3)                                      | todo   |
+| Linking rules (12.2)                                   | doing  |
+| Block list (12.3)                                      | doing  |
+| Do-not-disturb (12.3)                                  | doing  |
+| Rate limit (12.3)                                      | doing  |
 | Quest support: BeCom's task type (D50)                 | todo   |
 | Quest support: the off switch (15.5)                   | todo   |
 | CI runs on milestone branches, newer pushes cancel     | done   |
