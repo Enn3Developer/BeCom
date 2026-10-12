@@ -14,5 +14,13 @@ public enum QuestTask {
     /** A call connects: everyone in it on a Mobile Phone (DESIGN.md 15.5). */
     MOBILE_CALL,
     /** A call connects whose path goes through an ME Bridge: the ME Phone's user (DESIGN.md 15.5). */
-    ME_BRIDGE_CALL
+    ME_BRIDGE_CALL,
+    /** The second Portal Relay of a pair is linked: whoever links it (DESIGN.md 15.5). */
+    PORTAL_RELAY_PAIR,
+    /** A launch from their pad puts a satellite into orbit: the Launch Pad's owner (DESIGN.md 15.5). */
+    FIRST_SATELLITE,
+    /** A launch from their pad leaves its dimension with at least 5 satellites: the pad's owner (DESIGN.md 15.5). */
+    FIVE_SATELLITES,
+    /** A call connects with people in different dimensions: everyone in it (DESIGN.md 15.5). */
+    CALL_BETWEEN_DIMENSIONS
 }

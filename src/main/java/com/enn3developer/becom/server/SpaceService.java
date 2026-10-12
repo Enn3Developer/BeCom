@@ -37,6 +37,18 @@ public final class SpaceService {
         satellites = data.satellites();
     }
 
+    /** A dimension's name for screens, as its world provider gives it, loaded or not. */
+    public static String dimensionName(int dimension) {
+        WorldServer world = DimensionManager.getWorld(dimension);
+        if (world != null) return world.provider.getDimensionName();
+        try {
+            return DimensionManager.createProviderFor(dimension)
+                .getDimensionName();
+        } catch (RuntimeException e) {
+            return String.valueOf(dimension);
+        }
+    }
+
     /** The Overworld's world time, the clock satellites go up and come down by. */
     public static long now() {
         WorldServer overworld = DimensionManager.getWorld(0);

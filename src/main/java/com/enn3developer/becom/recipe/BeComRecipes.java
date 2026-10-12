@@ -226,6 +226,15 @@ public final class BeComRecipes {
             .eut(SPACE_EUT)
             .addTo(assemblerRecipes);
 
+        // Satellite Launch Pad (DESIGN.md 3.1): an HV hull with pumps for the fuel, a robot arm to raise the rocket,
+        // its circuits and gold cables.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.launchPad.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "PRP", "CHC", "TCT", 'P', ItemList.Electric_Pump_HV, 'R', ItemList.Robot_Arm_HV, 'C',
+                OrePrefixes.circuit.get(Materials.HV), 'H', ItemList.Hull_HV, 'T',
+                OrePrefixes.cableGt01.get(Materials.Gold) });
+
         // ME Bridge: an EV hull with an AE2 Wireless Access Point, an emitter and a sensor, its circuits, two cables
         // to the BeCom side and ME glass cable to the AE2 side.
         GTModHandler.addCraftingRecipe(
