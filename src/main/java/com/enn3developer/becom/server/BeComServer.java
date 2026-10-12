@@ -22,7 +22,9 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
  */
 public final class BeComServer {
 
-    private static BeComServer instance;
+    // Volatile and changed under the class lock: in single-player, a world's server thread can start while the last
+    // one's is still stopping.
+    private static volatile BeComServer instance;
     // The server between its stopping and stopped events.
     private static BeComServer stopping;
     // Work handed over from other threads, run at the start of the next server tick.
@@ -73,7 +75,7 @@ public final class BeComServer {
     }
 
     /** Makes BeCom's services for a server about to start, before its worlds load. */
-    public static BeComServer create(MinecraftServer server) {
+    public static synchronized BeComServer create(MinecraftServer server) {
         instance = new BeComServer(server, BeComConfig.get());
         return instance;
     }
@@ -96,7 +98,7 @@ public final class BeComServer {
      * The server is stopping: calls end and radios go quiet while the worlds are still loaded. The services stay
      * until {@link #stopped}, so the height cache follows the chunks the final world save writes.
      */
-    public static void stop() {
+    public static synchronized void stop() {
         LATER.clear();
         stopping = instance;
         if (instance != null) {
@@ -110,7 +112,7 @@ public final class BeComServer {
      * single-player the next world can start while the last one's stopped handlers still run, so only the server
      * that was stopping is forgotten, never a newer one.
      */
-    public static void stopped() {
+    public static synchronized void stopped() {
         BeComServer old = stopping != null ? stopping : instance;
         stopping = null;
         if (old != null) old.heights.saveAll();
