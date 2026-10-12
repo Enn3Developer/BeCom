@@ -38,6 +38,10 @@ public record Tunables(
     double videophoneLoudspeaker, int videophoneEmptySeconds,
     // ME (DESIGN.md 8.3)
     int meBridgePower, int meBridgeChannels,
+    // Space (DESIGN.md 9): levels by number, 1 Low to 4 Max
+    int satellitesLow, int satellitesMax, double satelliteLifetimeDays, double satelliteLifetimeSpread,
+    int launchSeconds, int launchPower, int launchFuel, int dishPower, double dishMaintenanceLoss,
+    int receiverUplinkLevel, int relayPower, double relayPortalDistance, int relayHopLevel,
     // Quests (DESIGN.md 15.5)
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
@@ -58,6 +62,8 @@ public record Tunables(
     public static final int MAX_REAR_BYTES = 32_768;
     // Poses go out at most once a server tick.
     public static final int MAX_POSE_RATE = 20;
+    // A Portal Relay looks for its portal in a cube this many blocks out each way.
+    public static final int MAX_PORTAL_DISTANCE = 8;
 
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;
@@ -154,6 +160,19 @@ public record Tunables(
         d.put("videophoneEmptySeconds", 30);
         d.put("meBridgePower", 512);
         d.put("meBridgeChannels", 1);
+        d.put("satellitesLow", 5);
+        d.put("satellitesMax", 100);
+        d.put("satelliteLifetimeDays", 100.0);
+        d.put("satelliteLifetimeSpread", 0.2);
+        d.put("launchSeconds", 30);
+        d.put("launchPower", 480);
+        d.put("launchFuel", 1000);
+        d.put("dishPower", 512);
+        d.put("dishMaintenanceLoss", 2.0);
+        d.put("receiverUplinkLevel", 3);
+        d.put("relayPower", 32);
+        d.put("relayPortalDistance", 4.0);
+        d.put("relayHopLevel", 3);
         d.put("questlineEnabled", true);
         d.put("questlineRecheckSeconds", 60);
     }
@@ -275,6 +294,29 @@ public record Tunables(
         if (videophoneEmptySeconds < 1) throw invalid("videophoneEmptySeconds", videophoneEmptySeconds, "at least 1");
         if (meBridgePower < 0) throw invalid("meBridgePower", meBridgePower, "0 or more");
         if (meBridgeChannels < 0 || meBridgeChannels > 1) throw invalid("meBridgeChannels", meBridgeChannels, "0 or 1");
+        if (satellitesLow < 1) throw invalid("satellitesLow", satellitesLow, "at least 1");
+        if (satellitesMax <= satellitesLow) throw invalid("satellitesMax", satellitesMax, "more than satellitesLow");
+        if (!(satelliteLifetimeDays > 0)) throw invalid("satelliteLifetimeDays", satelliteLifetimeDays, "more than 0");
+        if (satelliteLifetimeSpread < 0 || satelliteLifetimeSpread >= 1) {
+            throw invalid("satelliteLifetimeSpread", satelliteLifetimeSpread, "0 or more, and less than 1");
+        }
+        if (launchSeconds < 1) throw invalid("launchSeconds", launchSeconds, "at least 1");
+        if (launchPower < 0) throw invalid("launchPower", launchPower, "0 or more");
+        if (launchFuel < 0) throw invalid("launchFuel", launchFuel, "0 or more");
+        if (dishPower < 0) throw invalid("dishPower", dishPower, "0 or more");
+        if (dishMaintenanceLoss < 0) throw invalid("dishMaintenanceLoss", dishMaintenanceLoss, "0 or more");
+        checkLevel("receiverUplinkLevel", receiverUplinkLevel);
+        if (relayPower < 0) throw invalid("relayPower", relayPower, "0 or more");
+        if (relayPortalDistance < 0 || relayPortalDistance > MAX_PORTAL_DISTANCE) {
+            throw invalid("relayPortalDistance", relayPortalDistance, "0 to " + MAX_PORTAL_DISTANCE);
+        }
+        checkLevel("relayHopLevel", relayHopLevel);
+    }
+
+    private static void checkLevel(String key, int level) {
+        if (level < SignalLevel.LOW.ordinal() || level > SignalLevel.MAX.ordinal()) {
+            throw invalid(key, level, SignalLevel.LOW.ordinal() + " (Low) to " + SignalLevel.MAX.ordinal() + " (Max)");
+        }
     }
 
     /**
@@ -301,6 +343,16 @@ public record Tunables(
 
     private static IllegalArgumentException invalid(String key, Object value, String rule) {
         return new IllegalArgumentException(key + " is " + value + ", but must be " + rule);
+    }
+
+    /** The level of a Rocket Radio Receiver's uplink to the Overworld's satellites (DESIGN.md 9.3). */
+    public SignalLevel receiverUplink() {
+        return SignalLevel.byOrdinal(receiverUplinkLevel);
+    }
+
+    /** The level of the hop between a linked pair of Portal Relays (DESIGN.md 9.4). */
+    public SignalLevel relayHop() {
+        return SignalLevel.byOrdinal(relayHopLevel);
     }
 
     /** Every value by its name, for sending to clients (DESIGN.md 14.2). Doubles, ints and booleans only. */

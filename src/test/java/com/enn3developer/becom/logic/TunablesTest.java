@@ -73,6 +73,26 @@ class TunablesTest {
     }
 
     @Test
+    void spaceValuesMustMakeSense() throws Exception {
+        refused("satellitesLow", 0);
+        // Max has to come after Low, or the sky hop's strength curve has no slope.
+        refused("satellitesMax", 5);
+        refused("satelliteLifetimeDays", 0.0);
+        refused("satelliteLifetimeSpread", 1.0);
+        refused("satelliteLifetimeSpread", -0.1);
+        refused("launchSeconds", 0);
+        refused("launchFuel", -1);
+        refused("dishMaintenanceLoss", -1.0);
+        refused("receiverUplinkLevel", 0);
+        refused("receiverUplinkLevel", 5);
+        refused("relayHopLevel", 0);
+        refused("relayPortalDistance", Tunables.MAX_PORTAL_DISTANCE + 1.0);
+        Tunables d = Tunables.defaults();
+        assertEquals(SignalLevel.HIGH, d.receiverUplink());
+        assertEquals(SignalLevel.HIGH, d.relayHop());
+    }
+
+    @Test
     void noCallAttemptsAtAllIsRefused() throws Exception {
         refused("callAttemptsPerMinute", 0);
     }

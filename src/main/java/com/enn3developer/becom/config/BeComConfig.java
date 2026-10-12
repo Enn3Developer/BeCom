@@ -28,6 +28,7 @@ public final class BeComConfig {
     private static final String PHONES = "phones";
     private static final String VIDEO = "video";
     private static final String ME = "me";
+    private static final String SPACE = "space";
     private static final String QUESTS = "quests";
 
     // What this side acts on: the file's values while a server runs here, the server's on a client connected to one,
@@ -206,6 +207,38 @@ public final class BeComConfig {
         integer(config, v, VIDEO, "videophoneEmptySeconds", "Seconds with nobody in the room before it hangs up.");
         integer(config, v, ME, "meBridgePower", "EU/t an ME Bridge draws.");
         integer(config, v, ME, "meBridgeChannels", 0, 1, "ME channels an ME Bridge uses.");
+        integer(config, v, SPACE, "satellitesLow", "Satellites over a dimension for its sky hops to reach Low.");
+        integer(config, v, SPACE, "satellitesMax", "Satellites over a dimension for its sky hops to reach Max.");
+        dbl(config, v, SPACE, "satelliteLifetimeDays", "Minecraft days a satellite stays in orbit.");
+        dbl(
+            config,
+            v,
+            SPACE,
+            "satelliteLifetimeSpread",
+            "How far each satellite's lifetime varies either way, as a share of it, so they don't all come down at once.");
+        integer(config, v, SPACE, "launchSeconds", "Seconds a Satellite Launch Pad takes to launch one satellite.");
+        integer(config, v, SPACE, "launchPower", "EU/t a Satellite Launch Pad draws while it launches.");
+        integer(config, v, SPACE, "launchFuel", "Litres of rocket fuel one launch takes.");
+        integer(config, v, SPACE, "dishPower", "EU/t a Satellite Dish draws.");
+        dbl(config, v, SPACE, "dishMaintenanceLoss", "dB each maintenance problem costs a Satellite Dish's sky hops.");
+        integer(
+            config,
+            v,
+            SPACE,
+            "receiverUplinkLevel",
+            1,
+            4,
+            "Level of a Rocket Radio Receiver's uplink to the Overworld's satellites: 1 Low, 2 Medium, 3 High, 4 Max.");
+        integer(config, v, SPACE, "relayPower", "EU/t a Portal Relay draws.");
+        dbl(config, v, SPACE, "relayPortalDistance", "Blocks from a portal within which a Portal Relay works.");
+        integer(
+            config,
+            v,
+            SPACE,
+            "relayHopLevel",
+            1,
+            4,
+            "Level of the hop between a linked pair of Portal Relays: 1 Low, 2 Medium, 3 High, 4 Max.");
         v.put(
             "questlineEnabled",
             config.getBoolean(
@@ -252,7 +285,9 @@ public final class BeComConfig {
         Map.entry("analyzerRefreshSeconds", 1),
         Map.entry("phoneBattery", 1),
         Map.entry("rearMaxFps", 1),
-        Map.entry("videophoneEmptySeconds", 1));
+        Map.entry("videophoneEmptySeconds", 1),
+        Map.entry("satellitesLow", 1),
+        Map.entry("launchSeconds", 1));
 
     private static void integer(Configuration config, Map<String, Object> values, String category, String key,
         String comment) {
