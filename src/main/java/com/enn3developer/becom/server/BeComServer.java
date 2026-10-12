@@ -1,13 +1,18 @@
 package com.enn3developer.becom.server;
 
+import java.util.ArrayList;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.GlobalSavedData;
+import com.enn3developer.becom.logic.Sweep;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 
@@ -73,5 +78,23 @@ public final class BeComServer {
         network.tick();
         calls.tick();
         if (network.currentTick() % 20 == 0) links.expire();
+        if (network.currentTick() % PHONE_CHECK_TICKS == 0) phoneCheck.add(
+            new ArrayList<>(
+                phones.registry()
+                    .all()));
+        phoneCheck.run(this::checkPhone, System::nanoTime, PHONE_CHECK_BUDGET_NANOS);
+    }
+
+    // Stale phone records are rare, so a check every minute in small slices is plenty.
+    private static final long PHONE_CHECK_TICKS = 60 * 20;
+    private static final long PHONE_CHECK_BUDGET_NANOS = 250_000;
+    private final Sweep<PhoneRecord> phoneCheck = new Sweep<>();
+
+    /** Frees the number of a Telephone that vanished without being broken, ending its call. */
+    public void checkPhone(PhoneRecord record) {
+        if (phones.record(record.number()) != record || !phones.isStale(record)) return;
+        BeCom.LOG.info("Freeing phone number {}: its Telephone is gone", record.number());
+        calls.phoneGone(record.number());
+        phones.unregister(record.number());
     }
 }

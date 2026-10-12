@@ -38,6 +38,7 @@ import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.machine.BeComMachines;
@@ -697,10 +698,21 @@ public final class SelfTest {
         result = calls.dial(owner, a, b);
         check("a handset off the hook is busy", result == CallBook.DialResult.BUSY, result.name());
         calls.hangUpHandset(bob);
+        // Whether a phone rings isn't saved with its chunk; a phone loading mid-ring rings again.
+        calls.dial(owner, a, b);
+        end.setRinging(false);
+        end.restoreRinging();
+        check("a phone that loads while a call rings it rings again", end.ringing(), "");
         calls.hangUpHandset(alice);
         calls.voiceForSelfTest(
             id -> GtnhVoiceApi.session(id)
                 .isPresent());
+
+        // A number whose Telephone vanished without being broken (a rolled-back chunk) is freed.
+        PhoneRecord ghost = registry().create(PhoneKind.TELEPHONE, alice, "ghost", new java.util.Random(7));
+        ghost.setLocation(world.provider.dimensionId, BlockPos.pack(X0 + 3, Y + 1, end.zCoord));
+        becom.checkPhone(ghost);
+        check("a number whose Telephone is gone is freed", registry().get(ghost.number()) == null, "");
 
         // As after a restart: the off-hook bit was saved with the chunk, but nobody holds the handset any more.
         end.setOffHook(true);

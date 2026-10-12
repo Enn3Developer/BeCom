@@ -90,6 +90,14 @@ public final class CallService implements CallBook.Listener {
     // region Handsets
 
     /** Who holds phone {@code phone}'s handset, or null. */
+    /** Whether a call is ringing {@code phone}, waiting for it to answer. */
+    public boolean isRinging(int phone) {
+        Call call = book.callOfPhone(phone);
+        return call != null && call.state() == Call.State.RINGING
+            && call.caller()
+                .phone() != phone;
+    }
+
     public UUID holderOf(int phone) {
         return handsets.get(phone);
     }

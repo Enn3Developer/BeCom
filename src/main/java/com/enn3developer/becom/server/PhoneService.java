@@ -65,6 +65,23 @@ public final class PhoneService {
         return tile instanceof TileTelephone phone && phone.number() == number ? phone : null;
     }
 
+    /**
+     * Whether {@code record}'s Telephone is gone from a loaded chunk without being broken: a chunk rolled back,
+     * trimmed or edited outside the game. Such a record holds its number forever otherwise. A phone in an unloaded
+     * chunk is left alone.
+     */
+    public boolean isStale(PhoneRecord record) {
+        if (record.kind() != PhoneKind.TELEPHONE) return false;
+        WorldServer world = DimensionManager.getWorld(record.dimension());
+        if (world == null) return false;
+        long pos = record.pos();
+        int x = BlockPos.x(pos), y = BlockPos.y(pos), z = BlockPos.z(pos);
+        if (!world.getChunkProvider()
+            .chunkExists(x >> 4, z >> 4)) return false;
+        TileEntity tile = world.getTileEntity(x, y, z);
+        return !(tile instanceof TileTelephone phone && phone.number() == record.number());
+    }
+
     /** The name the contacts list and history show for a phone: its owner's. */
     public String name(int number) {
         PhoneRecord record = registry().get(number);

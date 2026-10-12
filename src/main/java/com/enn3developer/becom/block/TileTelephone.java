@@ -75,6 +75,15 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         if (becom == null || number < 0 || becom.calls.holderOf(number) == null) setOffHook(false);
     }
 
+    /**
+     * Rings again if a call is ringing this phone: whether it rings isn't saved with the chunk, so a phone whose chunk
+     * reloads mid-ring would otherwise stay silent. Runs on the first tick after the phone loads.
+     */
+    public void restoreRinging() {
+        BeComServer becom = BeComServer.get();
+        if (becom != null && number >= 0 && becom.calls.isRinging(number)) setRinging(true);
+    }
+
     /** Whether {@code player} is still within the handset's cord. */
     public boolean withinCord(EntityPlayer player) {
         if (worldObj == null || player.worldObj != worldObj || player.isDead) return false;
@@ -93,6 +102,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         if (!hookChecked) {
             hookChecked = true;
             releaseStaleHandset();
+            restoreRinging();
         }
         if (!ringing) return;
         if (ringTicks++ % RING_PERIOD_TICKS == 0) {
