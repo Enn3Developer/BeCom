@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.RateLimiter;
@@ -147,15 +148,22 @@ public final class CallBook {
         return levels.threshold(SignalLevel.LOW);
     }
 
+    public DialResult dial(UUID caller, int from, int to, long nowMillis, Check worldCheck) {
+        return dial(caller, from, to, nowMillis, () -> worldCheck);
+    }
+
     /**
      * {@code caller} on phone {@code from} dials {@code to}. The rate limit counts every attempt that gets this far,
-     * busy and unreachable ones included, since those are what a flood would be made of.
+     * busy and unreachable ones included, since those are what a flood would be made of; {@code worldCheck}, the costly
+     * part, runs only for an attempt it lets through.
      */
-    public DialResult dial(UUID caller, int from, int to, long nowMillis, Check worldCheck) {
+    public DialResult dial(UUID caller, int from, int to, long nowMillis, Supplier<Check> worldCheck) {
         if (from == to || byPlayer.containsKey(caller) || byPhone.containsKey(from)) return DialResult.INVALID;
         if (!attempts.tryAcquire(caller, nowMillis)) return DialResult.RATE_LIMITED;
-        if (byPhone.containsKey(to) || worldCheck == Check.BUSY) return DialResult.BUSY;
-        if (worldCheck == Check.UNREACHABLE) return DialResult.UNREACHABLE;
+        if (byPhone.containsKey(to)) return DialResult.BUSY;
+        Check check = worldCheck.get();
+        if (check == Check.BUSY) return DialResult.BUSY;
+        if (check == Check.UNREACHABLE) return DialResult.UNREACHABLE;
         Call.Leg callee = Call.Leg.ringing(to, from, nowMillis);
         Call call = new Call(nextId++, Call.Leg.caller(from, caller, nowMillis), callee, nowMillis);
         calls.put(call.id(), call);
@@ -167,19 +175,25 @@ public final class CallBook {
         return DialResult.RINGING;
     }
 
+    public DialResult add(UUID player, int to, long nowMillis, Check worldCheck) {
+        return add(player, to, nowMillis, () -> worldCheck);
+    }
+
     /**
      * {@code player}, in a connected call, adds phone {@code to} to it (DESIGN.md 8.2: group calls), which rings like a
-     * dialled phone. Counted against the same rate limit as dialling.
+     * dialled phone. Counted against the same rate limit as dialling, before {@code worldCheck} runs.
      */
-    public DialResult add(UUID player, int to, long nowMillis, Check worldCheck) {
+    public DialResult add(UUID player, int to, long nowMillis, Supplier<Check> worldCheck) {
         Call call = byPlayer.get(player);
         if (call == null || call.state() != Call.State.CONNECTED) return DialResult.INVALID;
         Call.Leg own = call.legOf(player);
         if (own == null || own.phone() == to || call.legOf(to) != null) return DialResult.INVALID;
         if (call.size() >= groupSize) return DialResult.FULL;
         if (!attempts.tryAcquire(player, nowMillis)) return DialResult.RATE_LIMITED;
-        if (byPhone.containsKey(to) || worldCheck == Check.BUSY) return DialResult.BUSY;
-        if (worldCheck == Check.UNREACHABLE) return DialResult.UNREACHABLE;
+        if (byPhone.containsKey(to)) return DialResult.BUSY;
+        Check check = worldCheck.get();
+        if (check == Check.BUSY) return DialResult.BUSY;
+        if (check == Check.UNREACHABLE) return DialResult.UNREACHABLE;
         Call.Leg leg = Call.Leg.ringing(to, own.phone(), nowMillis);
         call.addLeg(leg);
         byPhone.put(to, call);

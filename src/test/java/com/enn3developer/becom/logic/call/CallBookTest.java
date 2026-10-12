@@ -134,6 +134,18 @@ class CallBookTest {
         assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 60_000, CallBook.Check.OK));
     }
 
+    /** The world check finds a path through the networks: a client flooding dials mustn't get one per attempt. */
+    @Test
+    void theWorldIsCheckedOnlyForAttemptsTheRateLimitLetsThrough() {
+        int[] checks = new int[1];
+        java.util.function.Supplier<CallBook.Check> check = () -> {
+            checks[0]++;
+            return CallBook.Check.UNREACHABLE;
+        };
+        for (int i = 0; i < 20; i++) book.dial(alice, PHONE_A, PHONE_B, i, check);
+        assertEquals(5, checks[0]);
+    }
+
     @Test
     void ringingGivesUpAfterThirtySecondsAsAMissedCall() {
         book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK);
