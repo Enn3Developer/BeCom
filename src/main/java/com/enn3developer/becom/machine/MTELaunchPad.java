@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ListWidget;
@@ -222,6 +223,15 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
 
     // region Screen
 
+    /** The Satellite Rockets in its input buses, waiting to launch (DESIGN.md 11.4). */
+    public int rocketsWaiting() {
+        int rockets = 0;
+        for (ItemStack stack : getStoredInputs()) {
+            if (stack != null && stack.getItem() == BeComItems.satelliteRocket) rockets += stack.stackSize;
+        }
+        return rockets;
+    }
+
     /** Each dimension's satellites, for the screen: its name, how many, and ticks until the next comes down. */
     private String orbit() {
         BeComServer becom = BeComServer.get();
@@ -270,12 +280,21 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
             @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
                 StringSyncValue orbit = new StringSyncValue(MTELaunchPad.this::orbit);
+                IntSyncValue queue = new IntSyncValue(MTELaunchPad.this::rocketsWaiting);
                 sync.syncValue("becomOrbit", orbit);
-                return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(() -> showOrbit(orbit.getValue()))
-                        .asWidget()
-                        .marginBottom(2)
-                        .fullWidth());
+                sync.syncValue("becomQueue", queue);
+                return super.createTerminalTextWidget(sync, parent)
+                    .child(
+                        IKey.dynamic(
+                            () -> StatCollector.translateToLocalFormatted("becom.launch_pad.queue", queue.getValue()))
+                            .asWidget()
+                            .marginBottom(2)
+                            .fullWidth())
+                    .child(
+                        IKey.dynamic(() -> showOrbit(orbit.getValue()))
+                            .asWidget()
+                            .marginBottom(2)
+                            .fullWidth());
             }
         };
     }
