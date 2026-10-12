@@ -18,6 +18,7 @@ import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.util.GTModHandler;
 import gregtech.api.util.GTOreDictUnificator;
+import micdoodle8.mods.galacticraft.core.items.GCItems;
 
 /**
  * BeCom's recipes, from DESIGN.md 3.1 and GT's conventions (D31): controllers are shaped crafting around a machine
@@ -38,6 +39,10 @@ public final class BeComRecipes {
     private static final int MOBILE_SECONDS = 30;
     private static final int ME_PHONE_EUT = 1920;
     private static final int ME_PHONE_SECONDS = 30;
+    private static final int SPACE_EUT = 480;
+    private static final int SATELLITE_SECONDS = 40;
+    private static final int SATELLITE_ROCKET_SECONDS = 60;
+    private static final int RECEIVER_SECONDS = 30;
 
     private BeComRecipes() {}
 
@@ -179,6 +184,46 @@ public final class BeComRecipes {
             .itemOutputs(new ItemStack(BeComItems.mePhone))
             .duration(ME_PHONE_SECONDS * SECONDS)
             .eut(ME_PHONE_EUT)
+            .addTo(assemblerRecipes);
+
+        // Satellite: an HV emitter to send and a sensor to receive, two HV circuits, two solar panels for power in
+        // orbit
+        // and an aluminium frame.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Emitter_HV.get(1),
+                ItemList.Sensor_HV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.HV, 2),
+                ItemList.Cover_SolarPanel.get(2),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 4))
+            .itemOutputs(new ItemStack(BeComItems.satellite))
+            .duration(SATELLITE_SECONDS * SECONDS)
+            .eut(SPACE_EUT)
+            .addTo(assemblerRecipes);
+
+        // Satellite Rocket (D30): a Satellite on Galacticraft's Tier 1 rocket parts.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                new ItemStack(BeComItems.satellite),
+                new ItemStack(GCItems.partNoseCone),
+                new ItemStack(GCItems.rocketEngine, 1, 0),
+                new ItemStack(GCItems.partFins, 4),
+                new ItemStack(GCItems.heavyPlatingTier1, 4))
+            .itemOutputs(new ItemStack(BeComItems.satelliteRocket))
+            .duration(SATELLITE_ROCKET_SECONDS * SECONDS)
+            .eut(SPACE_EUT)
+            .addTo(assemblerRecipes);
+
+        // Rocket Radio Receiver: an HV emitter and sensor, two HV circuits, in stainless steel to fly in a rocket.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Emitter_HV.get(1),
+                ItemList.Sensor_HV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.HV, 2),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.StainlessSteel, 4))
+            .itemOutputs(new ItemStack(BeComItems.rocketRadioReceiver))
+            .duration(RECEIVER_SECONDS * SECONDS)
+            .eut(SPACE_EUT)
             .addTo(assemblerRecipes);
 
         // ME Bridge: an EV hull with an AE2 Wireless Access Point, an emitter and a sensor, its circuits, two cables

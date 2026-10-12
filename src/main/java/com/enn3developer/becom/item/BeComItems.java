@@ -3,13 +3,16 @@ package com.enn3developer.becom.item;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.GregTechAPI;
 
-/** BeCom's items (DESIGN.md 15.1): the handhelds. */
+/** BeCom's items (DESIGN.md 15.1): the handhelds, and the parts for space. */
 public final class BeComItems {
 
     public static ItemWalkieTalkie walkieTalkie;
     public static ItemSignalAnalyzer signalAnalyzer;
     public static ItemMobilePhone mobilePhone;
     public static ItemMePhone mePhone;
+    public static ItemSpacePart satellite;
+    public static ItemSpacePart satelliteRocket;
+    public static ItemSpacePart rocketRadioReceiver;
 
     private BeComItems() {}
 
@@ -26,5 +29,14 @@ public final class BeComItems {
         mePhone = new ItemMePhone();
         mePhone.setCreativeTab(GregTechAPI.TAB_GREGTECH);
         GameRegistry.registerItem(mePhone, "me_phone");
+        satellite = new ItemSpacePart("satellite");
+        satelliteRocket = new ItemSpacePart("satellite_rocket");
+        rocketRadioReceiver = new ItemSpacePart("rocket_radio_receiver");
+        for (ItemSpacePart part : new ItemSpacePart[] { satellite, satelliteRocket, rocketRadioReceiver }) {
+            part.setCreativeTab(GregTechAPI.TAB_GREGTECH);
+        }
+        GameRegistry.registerItem(satellite, "satellite");
+        GameRegistry.registerItem(satelliteRocket, "satellite_rocket");
+        GameRegistry.registerItem(rocketRadioReceiver, "rocket_radio_receiver");
     }
 }

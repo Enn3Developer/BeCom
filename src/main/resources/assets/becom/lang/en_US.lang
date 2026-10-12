@@ -15,6 +15,9 @@ item.becom.walkie_talkie.name=Walkie-Talkie
 item.becom.signal_analyzer.name=Signal Analyzer
 item.becom.mobile_phone.name=Mobile Phone
 item.becom.me_phone.name=ME Phone
+item.becom.satellite.name=Satellite
+item.becom.satellite_rocket.name=Satellite Rocket
+item.becom.rocket_radio_receiver.name=Rocket Radio Receiver
 
 # Machine tooltips
 becom.machine.pylon.type=Pylon
@@ -267,3 +270,6 @@ becom.task.video_call=See someone live in a video call.
 becom.task.mobile_call=Make or take a call on a Mobile Phone.
 becom.task.me_bridge_call=Call through an ME Bridge from an ME Phone.
 becom.world.refused=BeCom can't start this world: %s
+becom.satellite.info=Goes up on a Satellite Rocket.
+becom.satellite_rocket.info=A Satellite Launch Pad puts it into orbit, with %s L of rocket fuel.
+becom.rocket_radio_receiver.info=In a rocket's cargo, landed on a launch pad on another planet: an antenna there, and an uplink to the Overworld's satellites.
