@@ -15,13 +15,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 
 import com.enn3developer.becom.logic.DropoutModel;
-import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.phone.PhoneKind;
+import com.enn3developer.becom.logic.video.RearRelay;
 import com.enn3developer.becom.logic.video.VideoPlan;
-import com.enn3developer.becom.logic.video.VideoQuality;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.RearFramePacket;
 import com.enn3developer.becom.packet.VideoEquipmentPacket;
@@ -42,19 +41,15 @@ public final class VideoService {
 
     private static final int TICKS_PER_SECOND = 20;
     private static final long MILLIS_PER_SECOND = 1000L;
-    // A rear picture samples the dropout chain run on since the one before; past this many voice frames the chain has
-    // long forgotten where it was.
-    private static final int MAX_CHAIN_STEPS = 50;
     // Armor slots and the held item, in EntityLivingBase's order: held item, boots, leggings, chestplate, helmet.
     private static final int EQUIPMENT_SLOTS = VideoEquipmentPacket.SLOTS;
 
     private final CallService calls;
-    private final Tunables tunables;
     private final DropoutModel dropouts;
     private final Random random = new Random();
     private final int poseTicks;
     private final int framesPerPose;
-    private final RateLimiter<UUID> rearUploads;
+    private final RearRelay rear;
 
     private final Map<UUID, VideoPlan.Cameras> cameras = new HashMap<>();
     private final Map<UUID, Viewer> viewers = new HashMap<>();
@@ -81,28 +76,23 @@ public final class VideoService {
         int equipmentVersion;
     }
 
-    /** One person and one viewer: their loss chains, what has reached the viewer, and when. */
+    /** One person and one viewer: their poses' loss chain, and what has reached the viewer. */
     private static final class Link {
 
         final DropoutModel.Chain poses = new DropoutModel.Chain();
-        final DropoutModel.Chain rear = new DropoutModel.Chain();
-        long rearChainMillis = -1;
-        long lastRearMillis = Long.MIN_VALUE;
         int equipmentSent = -1;
         int posesDelivered;
-        int rearDelivered;
     }
 
     private record Pair(UUID source, UUID viewer) {}
 
     public VideoService(CallService calls, Tunables tunables) {
         this.calls = calls;
-        this.tunables = tunables;
         this.dropouts = tunables.dropoutModel(Tunables.FRAME_MILLIS);
         this.poseTicks = Math.max(1, Math.round((float) TICKS_PER_SECOND / tunables.videoPoseRate()));
         this.framesPerPose = Math
             .max(1, Math.round((float) MILLIS_PER_SECOND * poseTicks / TICKS_PER_SECOND / Tunables.FRAME_MILLIS));
-        this.rearUploads = new RateLimiter<>(tunables.rearMaxFps(), MILLIS_PER_SECOND);
+        this.rear = new RearRelay(tunables, random::nextDouble);
     }
 
     private static long now() {
@@ -171,6 +161,7 @@ public final class VideoService {
         }
         links.keySet()
             .removeIf(pair -> !seen(pair.source(), pair.viewer()));
+        rear.keep(plan);
         sources.keySet()
             .removeIf(
                 source -> !links.keySet()
@@ -328,30 +319,8 @@ public final class VideoService {
      */
     public void rearFrame(EntityPlayerMP sender, byte[] jpeg) {
         UUID id = sender.getUniqueID();
-        long now = now();
-        if (jpeg.length == 0 || jpeg.length > tunables.rearMaxBytes()) return;
-        rearUploads.sweep(now);
-        if (!rearUploads.tryAcquire(id, now)) return;
-        if (plan.rearSendOf(id) == null) return;
-        for (UUID viewer : plan.viewers()) {
-            for (VideoPlan.Tile tile : plan.tilesOf(viewer)) {
-                if (!tile.source()
-                    .equals(id) || !tile.rear()) continue;
-                Link link = links.computeIfAbsent(new Pair(id, viewer), p -> new Link());
-                if (now - link.lastRearMillis < VideoQuality.of(tunables, tile.level())
-                    .rearGapMillis()) continue;
-                int steps = link.rearChainMillis < 0 ? 1
-                    : (int) Math
-                        .max(1, Math.min(MAX_CHAIN_STEPS, (now - link.rearChainMillis) / Tunables.FRAME_MILLIS));
-                link.rearChainMillis = now;
-                double loss = dropouts.lossRate(snr(id, viewer));
-                if (link.rear
-                    .dropAfter(steps, dropouts.enterBadChance(loss), dropouts.leaveBadChance(), random::nextDouble))
-                    continue;
-                link.lastRearMillis = now;
-                link.rearDelivered++;
-                send(viewer, new RearFramePacket(id, jpeg));
-            }
+        for (UUID viewer : rear.relay(id, jpeg.length, now(), plan, this::snr)) {
+            send(viewer, new RearFramePacket(id, jpeg));
         }
     }
 
@@ -364,6 +333,7 @@ public final class VideoService {
         viewers.clear();
         sources.clear();
         links.clear();
+        rear.clear();
         sawVideo.clear();
         plan = VideoPlan.EMPTY;
     }
@@ -372,6 +342,11 @@ public final class VideoService {
     public int posesDelivered(UUID source, UUID viewer) {
         Link link = links.get(new Pair(source, viewer));
         return link == null ? 0 : link.posesDelivered;
+    }
+
+    /** How many of {@code source}'s rear pictures have gone to {@code viewer}; for the self-test. */
+    public int rearDelivered(UUID source, UUID viewer) {
+        return rear.delivered(source, viewer);
     }
 
     // endregion

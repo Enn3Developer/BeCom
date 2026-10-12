@@ -2106,6 +2106,7 @@ public final class SelfTest {
             between == CallBook.DialResult.RINGING && call != null
                 && call.level(odo.getUniqueID(), pia.getUniqueID()) == SignalLevel.MAX,
             between + ", " + (call == null ? "no call" : call.level(odo.getUniqueID(), pia.getUniqueID())));
+        checkRearCamera();
         becom.calls.hangUp(odo);
         int telephone = phoneTelephone.number();
         CallBook.DialResult result = becom.calls.dialCarried(odo, odoNumber, telephone);
@@ -2137,6 +2138,34 @@ public final class SelfTest {
                 .isEmpty(),
             "");
         return 1;
+    }
+
+    /**
+     * DESIGN.md 10.1, 14: in the ME Phones' one-to-one call at Max, the rear camera's pictures reach the other side
+     * through the server's relay, within the size cap and no faster than the level allows.
+     */
+    private void checkRearCamera() {
+        UUID o = odo.getUniqueID(), p = pia.getUniqueID();
+        PhoneScreenActions.setCamera(odo, new PhoneHandle.CarriedPhone(odoNumber), true, true);
+        SignalLevel sent = becom.video.plan()
+            .rearSendOf(o);
+        becom.video.rearFrame(
+            odo,
+            new byte[BeComConfig.get()
+                .rearMaxBytes() + 1]);
+        int oversized = becom.video.rearDelivered(o, p);
+        becom.video.rearFrame(odo, new byte[100]);
+        int first = becom.video.rearDelivered(o, p);
+        check(
+            "a rear picture goes on to the other side of a one-to-one call at Max, one over the size cap doesn't",
+            sent == SignalLevel.MAX && oversized == 0 && first == 1,
+            "sent at " + sent + ", oversized " + oversized + ", then " + first);
+        for (int i = 0; i < 4; i++) becom.video.rearFrame(odo, new byte[100]);
+        int burst = becom.video.rearDelivered(o, p);
+        check(
+            "...and pictures sent all at once don't go faster than the level allows",
+            burst == 2,
+            burst + " of 5 went on");
     }
 
     /** What the ME network and the bridge's node look like, for a failed check. */
