@@ -63,7 +63,7 @@ public final class ClientAudio {
 
     private static SignalLevel callLevel(IPlaybackFrame frame) {
         if (!CallGroup.NAME.equals(frame.groupName())) return SignalLevel.NONE;
-        return ClientLevels.get(frame.sourceId(), frame.groupName());
+        return ClientLevels.call(frame.sourceId(), frame.groupName());
     }
 
     private static SignalLevel radioLevel(IPlaybackFrame frame) {

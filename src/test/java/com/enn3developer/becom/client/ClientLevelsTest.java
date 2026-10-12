@@ -26,4 +26,12 @@ class ClientLevelsTest {
         ClientLevels.set(speaker, "becom:radio.3", SignalLevel.NONE);
         assertEquals(SignalLevel.MEDIUM, ClientLevels.radio(speaker, "becom:radio.3"));
     }
+
+    @Test
+    void aCallFrameWhoseLevelHasntArrivedPlaysAtLowNotClean() {
+        UUID speaker = UUID.randomUUID();
+        assertEquals(SignalLevel.LOW, ClientLevels.call(speaker, "becom:call"));
+        ClientLevels.set(speaker, "becom:call", SignalLevel.MAX);
+        assertEquals(SignalLevel.MAX, ClientLevels.call(speaker, "becom:call"));
+    }
 }

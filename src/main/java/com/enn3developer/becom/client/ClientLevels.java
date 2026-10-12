@@ -39,6 +39,15 @@ public final class ClientLevels {
         return level == SignalLevel.NONE ? SignalLevel.MEDIUM : level;
     }
 
+    /**
+     * The level to filter a call frame at. A call's first frames can arrive before its levels, which come over the game
+     * connection; they play at Low, the lowest a connected call sounds, never clean.
+     */
+    public static SignalLevel call(UUID source, String group) {
+        SignalLevel level = get(source, group);
+        return level == SignalLevel.NONE ? SignalLevel.LOW : level;
+    }
+
     /** The weakest level this player hears anyone at through {@code group}, or NONE when it hears no one. */
     public static SignalLevel weakest(String group) {
         SignalLevel weakest = null;
