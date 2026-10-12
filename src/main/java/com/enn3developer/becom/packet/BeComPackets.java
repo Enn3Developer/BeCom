@@ -39,6 +39,7 @@ public final class BeComPackets {
         CHANNEL.registerMessage(VideoProfilePacket.Handler.class, VideoProfilePacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(RearFramePacket.Handler.class, RearFramePacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(RearUploadPacket.Handler.class, RearUploadPacket.class, id++, Side.SERVER);
+        CHANNEL.registerMessage(CallBarsPacket.Handler.class, CallBarsPacket.class, id++, Side.CLIENT);
     }
 
     public static void send(IMessage message, EntityPlayerMP player) {

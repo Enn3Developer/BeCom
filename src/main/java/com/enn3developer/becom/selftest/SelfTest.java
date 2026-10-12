@@ -2476,6 +2476,12 @@ public final class SelfTest {
                     .callOf(wes.getUniqueID()) == null
                 && call.legOf(vic.getUniqueID()) != null,
             call == null ? "no call" : call.participants() + "");
+        SignalLevel vicBars = becom.calls.callBarsForSelfTest(vic.getUniqueID());
+        SignalLevel wesBars = becom.calls.callBarsForSelfTest(wes.getUniqueID());
+        check(
+            "...the room's signal bars show the call's level, and someone near the loudspeaker but out of it gets none",
+            call != null && vicBars == call.level(pia.getUniqueID(), vic.getUniqueID()) && wesBars == null,
+            "Vic " + vicBars + ", Wes " + wesBars);
         vic.setPosition(X0 + 10.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
         return TICKS_PER_SECOND + 5;
     }

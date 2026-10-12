@@ -16,6 +16,7 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.BeComPackets;
+import com.enn3developer.becom.packet.CallBarsPacket;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.PhoneStatusPacket;
@@ -135,6 +136,8 @@ public class CommonProxy {
     public void onRing(RingPacket packet) {}
 
     public void onPhoneStatus(PhoneStatusPacket packet) {}
+
+    public void onCallBars(CallBarsPacket packet) {}
 
     public void onVideoState(VideoStatePacket packet) {}
 

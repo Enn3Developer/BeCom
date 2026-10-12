@@ -31,6 +31,7 @@ import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
+import com.enn3developer.becom.packet.CallBarsPacket;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.PhoneStatusPacket;
@@ -149,6 +150,11 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void onPhoneStatus(PhoneStatusPacket packet) {
         ClientPhone.service(packet.service());
+    }
+
+    @Override
+    public void onCallBars(CallBarsPacket packet) {
+        ClientPhone.callBars(packet.inCall() ? packet.level() : null);
     }
 
     @Override

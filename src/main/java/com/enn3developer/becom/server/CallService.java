@@ -38,6 +38,7 @@ import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.packet.BeComPackets;
+import com.enn3developer.becom.packet.CallBarsPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
@@ -86,6 +87,8 @@ public final class CallService implements CallBook.Listener {
     private final Map<Integer, Videophone> videophones = new HashMap<>();
     // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
     private final Map<Heard, SignalLevel> loudspeakerLevels = new HashMap<>();
+    // The bars each player in a call was last told: the weakest level they hear their call at (DESIGN.md 11.2).
+    private final Map<UUID, SignalLevel> callBars = new HashMap<>();
     // Players hearing a tone that stops by itself, and the tick it stops.
     private final Map<UUID, Long> toneStops = new HashMap<>();
     // The last tone each player was played, the last thing they were told and whether a ringing notice shows for them,
@@ -981,6 +984,7 @@ public final class CallService implements CallBook.Listener {
         toneStops.clear();
         videophones.clear();
         loudspeakerLevels.clear();
+        callBars.clear();
         selfTestPlayers.clear();
         talked.clear();
         recorded.clear();
@@ -1030,6 +1034,45 @@ public final class CallService implements CallBook.Listener {
         }
         group.publish(builder.build());
         publishedVersion = book.version();
+        sendCallBars();
+    }
+
+    /**
+     * Tells each player in a connected call the weakest level they hear it at, for their signal bars, and those no
+     * longer in one that they aren't. Someone in a Videophone's room hears the others in it directly, not through it.
+     */
+    private void sendCallBars() {
+        Map<UUID, SignalLevel> current = new HashMap<>();
+        for (Call call : book.calls()) {
+            if (call.state() != Call.State.CONNECTED) continue;
+            List<Call.Leg> active = call.activeLegs();
+            for (Call.Leg own : active) {
+                SignalLevel weakest = null;
+                for (Call.Leg other : active) {
+                    if (other == own) continue;
+                    SignalLevel level = call.level(other, own);
+                    weakest = weakest == null ? level : SignalLevel.min(weakest, level);
+                }
+                for (UUID player : own.players()) current.put(player, weakest == null ? SignalLevel.NONE : weakest);
+            }
+        }
+        for (Map.Entry<UUID, SignalLevel> entry : current.entrySet()) {
+            if (entry.getValue() == callBars.get(entry.getKey())) continue;
+            EntityPlayerMP mp = player(entry.getKey());
+            if (mp != null) BeComPackets.send(new CallBarsPacket(true, entry.getValue()), mp);
+        }
+        for (UUID gone : callBars.keySet()) {
+            if (current.containsKey(gone)) continue;
+            EntityPlayerMP mp = player(gone);
+            if (mp != null) BeComPackets.send(new CallBarsPacket(false, SignalLevel.NONE), mp);
+        }
+        callBars.clear();
+        callBars.putAll(current);
+    }
+
+    /** The bars {@code player} was last told their call shows, or null when they're in none; for the self-test. */
+    public SignalLevel callBarsForSelfTest(UUID player) {
+        return callBars.get(player);
     }
 
     // endregion

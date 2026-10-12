@@ -48,16 +48,6 @@ public final class ClientLevels {
         return level == SignalLevel.NONE ? SignalLevel.LOW : level;
     }
 
-    /** The weakest level this player hears anyone at through {@code group}, or NONE when it hears no one. */
-    public static SignalLevel weakest(String group) {
-        SignalLevel weakest = null;
-        for (Map.Entry<Key, SignalLevel> entry : LEVELS.entrySet()) {
-            if (!entry.getKey().group.equals(group)) continue;
-            weakest = weakest == null ? entry.getValue() : SignalLevel.min(weakest, entry.getValue());
-        }
-        return weakest == null ? SignalLevel.NONE : weakest;
-    }
-
     public static void clear() {
         LEVELS.clear();
     }

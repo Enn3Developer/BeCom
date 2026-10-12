@@ -38,6 +38,8 @@ public final class ClientPhone {
     private static KeyBinding key;
     private static volatile RingPacket ringing;
     private static volatile SignalLevel service = SignalLevel.NONE;
+    // The weakest level the player hears their call at, or null while they're in none.
+    private static volatile SignalLevel call;
 
     public static void register() {
         key = new KeyBinding("key.becom.phone", DEFAULT_KEY, "key.categories.becom");
@@ -52,16 +54,26 @@ public final class ClientPhone {
         service = level;
     }
 
-    /** The service of the phone the player carries first, shown while they hold a phone. */
+    public static void callBars(SignalLevel level) {
+        call = level;
+    }
+
+    /** The weakest level the player hears their call at, or null while they're in none. */
+    public static SignalLevel callLevel() {
+        return call;
+    }
+
+    /** The service of the phone the player carries first, or null while they hold no phone to show it. */
     public static SignalLevel heldService() {
         Minecraft mc = Minecraft.getMinecraft();
-        if (mc.thePlayer == null || !ItemCarriedPhone.is(mc.thePlayer.getHeldItem())) return SignalLevel.NONE;
+        if (mc.thePlayer == null || !ItemCarriedPhone.is(mc.thePlayer.getHeldItem())) return null;
         return service;
     }
 
     public static void reset() {
         ringing = null;
         service = SignalLevel.NONE;
+        call = null;
     }
 
     @SubscribeEvent
