@@ -5,7 +5,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraftforge.common.DimensionManager;
 
 import com.enn3developer.becom.config.BeComConfig;
@@ -60,6 +62,19 @@ public final class BeComServer {
                 WorldServer world = DimensionManager.getWorld(dimension);
                 return world != null && world.provider.hasNoSky;
             }
+
+            @Override
+            public double weather(int dimension) {
+                WorldServer world = DimensionManager.getWorld(dimension);
+                if (world == null) return 0;
+                return tunables.weatherLoss(world.getRainStrength(1), world.getWeightedThunderStrength(1));
+            }
+
+            @Override
+            public boolean rains(int dimension, int x, int z) {
+                WorldServer world = DimensionManager.getWorld(dimension);
+                return world != null && BeComServer.rains(world, x, z);
+            }
         }, Ownership::sameTeam);
         this.network = new NetworkService(tunables, antennas);
         this.links = new LinkService(network, tunables);
@@ -71,6 +86,12 @@ public final class BeComServer {
                 .nextDouble());
         this.calls = new CallService(server, network, phones, callGroup, tunables);
         this.radio = new RadioService(server, tunables, antennas, heights);
+    }
+
+    /** Whether rain or snow falls at a column, so the weather can cost a link there (DESIGN.md 6.1, D26). */
+    public static boolean rains(World world, int x, int z) {
+        BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
+        return biome.canSpawnLightningBolt() || biome.getEnableSnow();
     }
 
     /** The running server's BeCom, or null on a client or between servers. */

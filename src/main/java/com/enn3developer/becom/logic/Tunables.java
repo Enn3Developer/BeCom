@@ -342,6 +342,14 @@ public record Tunables(
         }
     }
 
+    /**
+     * The weather's loss on calls and satellite hops (D26, DESIGN.md 6.1), from Minecraft's rain strength and its
+     * thunder strength (already weighed by the rain), each 0 to 1: the rain's loss in rain, the storm's in a storm.
+     */
+    public double weatherLoss(double rain, double thunder) {
+        return weatherRainLoss * rain + (weatherStormLoss - weatherRainLoss) * thunder;
+    }
+
     public LevelScale levelScale() {
         return new LevelScale(levelLow, levelMedium, levelHigh, levelMax, levelHysteresis);
     }

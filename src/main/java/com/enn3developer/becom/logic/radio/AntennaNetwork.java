@@ -38,6 +38,16 @@ public final class AntennaNetwork {
         Terrain terrain(int dimension);
 
         boolean noSky(int dimension);
+
+        /** The weather's loss on UHF in a dimension now, in dB (D26): 0 in clear skies. */
+        default double weather(int dimension) {
+            return 0;
+        }
+
+        /** Whether rain or snow falls at a column: weather costs a link only if an end stands where it does. */
+        default boolean rains(int dimension, int x, int z) {
+            return false;
+        }
     }
 
     /** Two antennas of one dimension, by position, in a fixed order. */
@@ -65,6 +75,7 @@ public final class AntennaNetwork {
         private long seenAt = Long.MIN_VALUE;
         private boolean queued;
         private boolean wasWorking;
+        private boolean rains;
 
         Antenna(NodeRef ref) {
             this.ref = ref;
@@ -120,6 +131,8 @@ public final class AntennaNetwork {
     private final Map<Integer, Map<LinkKey, Link>> links = new HashMap<>();
     private final Deque<Job> jobs = new ArrayDeque<>();
     private final Map<Integer, Mesh> meshes = new HashMap<>();
+    // Each dimension's weather loss as last looked at, a second at most out of date.
+    private final Map<Integer, Double> weather = new HashMap<>();
     private long meshesVersion = -1;
     private long version;
     private long tick;
@@ -161,6 +174,7 @@ public final class AntennaNetwork {
             antenna.tier = tier;
             antenna.budget = tunables.antennaBudget(tier);
             antenna.end = end;
+            antenna.rains = dimensions.rains(ref.dimension(), (int) Math.floor(end.x()), (int) Math.floor(end.z()));
             antenna.survey = null;
             antenna.surveyedAt = Long.MIN_VALUE;
             antenna.queued = false;
@@ -234,8 +248,34 @@ public final class AntennaNetwork {
                     queue(antenna);
                 }
             }
+            lookAtTheWeather();
         }
         runSurveys(budgetNanos, clock);
+    }
+
+    // Weather changes in steps this small move calls' paths; finer ones would rebuild them every second of a fade.
+    private static final double WEATHER_STEP = 0.1;
+
+    /** Once a second: each dimension's weather loss, which moves calls' paths when it changes (D26). */
+    private void lookAtTheWeather() {
+        Map<Integer, Double> now = new HashMap<>();
+        for (Antenna antenna : antennas.values()) {
+            int dimension = antenna.ref.dimension();
+            if (!now.containsKey(dimension)) {
+                double loss = dimensions.weather(dimension);
+                now.put(dimension, Math.round(loss / WEATHER_STEP) * WEATHER_STEP);
+            }
+        }
+        if (!now.equals(weather)) {
+            weather.clear();
+            weather.putAll(now);
+            version++;
+        }
+    }
+
+    /** A dimension's weather loss on UHF, in dB, as last looked at. */
+    public double weatherOf(int dimension) {
+        return weather.getOrDefault(dimension, 0.0);
     }
 
     /** Runs survey steps until the queue is empty or the budget is spent, always at least one. */
@@ -353,11 +393,11 @@ public final class AntennaNetwork {
         Map<LinkKey, Link> found = links.get(dimension);
         if (found == null) return;
         double low = tunables.levelLow();
+        double rain = weatherOf(dimension);
         for (Map.Entry<LinkKey, Link> entry : found.entrySet()) {
-            double snr = entry.getValue()
+            double clear = entry.getValue()
                 .uhf()
                 .snr();
-            if (snr < low) continue;
             Antenna a = antennas.get(
                 new NodeRef(
                     dimension,
@@ -368,7 +408,11 @@ public final class AntennaNetwork {
                     dimension,
                     entry.getKey()
                         .b()));
-            if (a != null && b != null && working(a) && working(b)) {
+            if (a == null || b == null) continue;
+            // Rain weakens calls between antennas when either stands where it rains (D26).
+            double snr = a.rains || b.rains ? clear - rain : clear;
+            if (snr < low) continue;
+            if (working(a) && working(b)) {
                 consumer.accept(
                     entry.getKey()
                         .a(),
@@ -436,29 +480,56 @@ public final class AntennaNetwork {
                 device,
                 user,
                 vhf,
+                0,
                 noSky);
             access[i] = losses == null ? Double.NEGATIVE_INFINITY : losses.snr();
         }
         return access;
     }
 
-    /** The antenna that serves a device best on {@code band}, or null when none reaches it. */
-    public Best best(int dimension, RadioHops.End device, UUID user, Band band) {
+    /**
+     * The antenna that serves a device best on {@code band}, or null when none reaches it. On UHF, rain costs the
+     * link where either end stands in rain (D26); {@code deviceRains} says whether the device does.
+     */
+    public Best best(int dimension, RadioHops.End device, UUID user, Band band, boolean deviceRains) {
         Best best = null;
-        boolean noSky = dimensions.noSky(dimension);
-        for (Antenna antenna : mesh(dimension).antennas()) {
-            RadioModel.Losses losses = losses(antenna, device, user, band, noSky);
-            if (losses != null && (best == null || losses.snr() > best.losses()
-                .snr())) best = new Best(antenna, losses);
+        for (Best reached : reach(dimension, device, user, band, deviceRains)) {
+            if (best == null || reached.losses()
+                .snr()
+                > best.losses()
+                    .snr())
+                best = reached;
         }
         return best;
     }
 
-    private RadioModel.Losses losses(Antenna antenna, RadioHops.End device, UUID user, Band band, boolean noSky) {
+    /** The antenna that serves a device best on VHF, or null when none reaches it. */
+    public Best best(int dimension, RadioHops.End device, UUID user, Band band) {
+        return best(dimension, device, user, band, false);
+    }
+
+    /**
+     * Every working antenna that reaches a device on {@code band}, with every loss on each link: a phone's service
+     * (DESIGN.md 8.2). Rain counts on UHF as in {@link #best}.
+     */
+    public List<Best> reach(int dimension, RadioHops.End device, UUID user, Band band, boolean deviceRains) {
+        List<Best> found = new ArrayList<>();
+        boolean noSky = dimensions.noSky(dimension);
+        double rain = band.equals(uhf) ? weatherOf(dimension) : 0;
+        for (Antenna antenna : mesh(dimension).antennas()) {
+            double loss = deviceRains || antenna.rains ? rain : 0;
+            RadioModel.Losses losses = losses(antenna, device, user, band, loss, noSky);
+            if (losses != null) found.add(new Best(antenna, losses));
+        }
+        return found;
+    }
+
+    private RadioModel.Losses losses(Antenna antenna, RadioHops.End device, UUID user, Band band, double weather,
+        boolean noSky) {
         if (antenna.survey == null) return null;
         if (antenna.locked && !sameTeam.test(user, antenna.owner)) return null;
         if (antenna.end.distanceTo(device) > tunables.rangeToHold(antenna.budget)) return null;
-        return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, 0, noSky);
+        return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, weather, noSky);
     }
 
     public Band vhf() {
