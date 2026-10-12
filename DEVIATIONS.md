@@ -182,14 +182,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X16: Saved data that can't be read stops the server; a newer Telephone is left alone
 
-- **Where:** 0.1, DESIGN.md 14.2
+- **Where:** 0.1, 0.2, DESIGN.md 14.2
 - **Design says:** data newer than BeCom understands stops the server instead of being overwritten.
 - **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
   load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
   holding something this BeCom doesn't know: a node, phone or history kind, more links than a kind has slots, or an
   invalid or repeated phone number (reported as a damaged file, since no BeCom writes those). The one exception is a
   Telephone block saved by a newer BeCom: its tile entity is kept as it was (only its position is written fresh),
-  never given a number, and tells whoever uses it to update BeCom.
+  never given a number, and tells whoever uses it to update BeCom. From 0.2, the same holds for an antenna, a
+  Transceiver or a walkie-talkie whose BeCom keys a newer BeCom wrote: the machine stays offline and the walkie
+  dead, their keys are written back as they were, and a scanner or tooltip says to update BeCom. Their keys, which
+  share GT's machine NBT or IC2's charge tag, carry `becomFormat` (the 0.2 design review found them unversioned).
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
   a backup, or delete the file to start with none (for the phone registry, every Telephone then goes to the first

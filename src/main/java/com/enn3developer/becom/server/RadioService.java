@@ -609,7 +609,8 @@ public final class RadioService {
             ItemStack[] inventory = player.inventory.mainInventory;
             for (int i = 0; i < inventory.length; i++) {
                 ItemStack stack = inventory[i];
-                if (!ItemWalkieTalkie.is(stack) || !ItemWalkieTalkie.on(stack)) continue;
+                if (!ItemWalkieTalkie.is(stack) || ItemWalkieTalkie.isTooNew(stack) || !ItemWalkieTalkie.on(stack))
+                    continue;
                 int perTick = tunables.walkieStandbyDrain();
                 if (i == activeSlot) {
                     if (transmitting) perTick = tunables.walkieTransmitDrain();

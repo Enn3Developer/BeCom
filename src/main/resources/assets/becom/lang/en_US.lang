@@ -50,6 +50,7 @@ becom.info.too_much_cable=More than %s blocks of Phone Cable in all: a terminal 
 becom.info.phone_shared=Phone %s is on another terminal's cable too: a phone hangs off exactly one terminal
 becom.info.mast=Mast height: %s
 becom.info.locked=Locked to its owner's team
+becom.info.too_new=Saved by a newer BeCom: update BeCom to use it
 becom.info.loudspeaker_on=Loudspeaker on
 becom.info.loudspeaker_off=Loudspeaker off
 

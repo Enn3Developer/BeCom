@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
@@ -76,7 +77,11 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     private static final IStructureDefinition<MTEAntenna>[] STRUCTURES = new IStructureDefinition[] { null,
         structure(1), structure(2), structure(3) };
 
+    public static final int FORMAT = 1;
+
     private final int tier;
+    // BeCom's keys from a newer BeCom: kept as they were, and the antenna left alone (X16).
+    private NBTTagCompound tooNew;
     private int mast;
     private boolean working;
     private boolean registered;
@@ -153,8 +158,14 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     }
 
     public void setLocked(boolean locked) {
+        if (tooNew != null) return;
         this.locked = locked;
         markDirty();
+    }
+
+    /** Saved by a newer BeCom: this one leaves it alone. */
+    public boolean isTooNew() {
+        return tooNew != null;
     }
 
     public UUID owner() {
@@ -245,7 +256,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null) return;
+        if (becom == null || tooNew != null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
@@ -418,6 +429,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     @Override
     public String[] getInfoData() {
         List<String> info = new ArrayList<>();
+        if (tooNew != null) info.add(StatCollector.translateToLocal("becom.info.too_new"));
         info.add(StatCollector.translateToLocalFormatted("becom.info.mast", mMachine ? mast : 0));
         info.add(StatCollector.translateToLocal(working ? "becom.info.online" : "becom.info.offline"));
         if (locked) info.add(StatCollector.translateToLocal("becom.info.locked"));
@@ -432,12 +444,22 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
         super.saveNBTData(nbt);
+        if (tooNew != null) {
+            BeComNbt.restore(nbt, tooNew);
+            return;
+        }
+        BeComNbt.write(nbt, FORMAT);
         nbt.setBoolean("becomLocked", locked);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
         super.loadNBTData(nbt);
+        if (BeComNbt.tooNew(nbt, FORMAT)) {
+            tooNew = BeComNbt.ours(nbt);
+            return;
+        }
+        tooNew = null;
         locked = nbt.getBoolean("becomLocked");
     }
 
