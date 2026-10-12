@@ -111,6 +111,7 @@ public final class SelfTest {
     private final List<Step> steps = new ArrayList<>();
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
     private int index;
+    private long edgeHoldStart;
     private long tick;
     private long waitUntil;
     private int passed;
@@ -211,8 +212,8 @@ public final class SelfTest {
         steps.add(this::keyEdge);
         steps.add(this::checkEdge);
         steps.add(this::startEdgeHold);
-        // Four seconds of evaluations with the link at 5.8 dB, inside the hysteresis but below Low.
-        for (int i = 0; i < 16; i++) steps.add(this::holdEdge);
+        // Evaluations with the link at 5.8 dB, inside the hysteresis but below Low, until the drop delay has passed.
+        steps.add(this::holdEdge);
         steps.add(this::checkEdgeDrop);
         steps.add(this::checkNewerAntenna);
     }
@@ -1504,20 +1505,27 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 4.2: below Low for more than 3 s, a link drops, radio as well as wire. */
+    /** DESIGN.md 4.2: below Low for longer than the drop delay, a link drops, radio as well as wire. */
     private int startEdgeHold() {
         iris.setPosition(X0 + 78.5, Y, DIRECT_Z + 10.5);
         becom.radio.refreshForSelfTest(iris);
         becom.radio.keyForSelfTest(hank.getUniqueID());
         becom.radio.publishForSelfTest();
         iris.setPosition(X0 + 81.5, Y, DIRECT_Z + 10.5);
-        return holdEdge();
+        edgeHoldStart = System.nanoTime();
+        return 1;
     }
 
+    /**
+     * Repeats itself until the hold has lasted half a second past the drop delay, by the clock the drop timer reads:
+     * a server catching up on lag runs ticks back to back.
+     */
     private int holdEdge() {
         becom.radio.refreshForSelfTest(iris);
         becom.radio.keyForSelfTest(hank.getUniqueID());
         becom.radio.publishForSelfTest();
+        long hold = (long) ((becom.tunables.dropAfterSeconds() + 0.5) * 1_000_000_000L);
+        if (System.nanoTime() - edgeHoldStart < hold) steps.add(index, this::holdEdge);
         return 5;
     }
 
@@ -1525,7 +1533,7 @@ public final class SelfTest {
         becom.radio.keyForSelfTest(hank.getUniqueID());
         becom.radio.publishForSelfTest();
         check(
-            "a walkie link held below Low drops after 3 s, though it's inside the hysteresis",
+            "a walkie link held below Low drops after the drop delay, though it's inside the hysteresis",
             linkTo(
                 becom.radio.published()
                     .transmission(hank.getUniqueID()),
