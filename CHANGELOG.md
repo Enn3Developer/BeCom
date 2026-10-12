@@ -104,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A radio frame finds the players around each receiving walkie and Transceiver loudspeaker by 16-block cells instead
+  of looking at every player, so a crowded channel costs GTNH Voice's thread a quarter of what it did.
 - Three big quests offer their coins as a choice: First call against two Pylon Heads, Radio contact against a
   Walkie-Talkie, Five satellites against a Satellite Rocket. A choice keeps only the options whose items are installed.
 - An ME network now joins calls only within each dimension it spans, so a Quantum Network Bridge no longer carries

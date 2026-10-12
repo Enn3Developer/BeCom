@@ -110,13 +110,16 @@ public final class RadioGroup implements IGroup {
             // VOICE.md V5: GTNH Voice doesn't say whether this send went through or a higher group had served them.
             shared.contact(speaker, holder, now);
         }
+        Nearby nearby = null;
         for (int i = 0; i < tx.walkies().length; i++) {
             if (!walkieHeld[i]) continue;
             UUID holder = tx.walkies()[i].holder();
             PlayerSnapshot at = positions.get(holder);
             if (at == null) continue;
+            if (nearby == null) nearby = new Nearby(positions.values());
             playAround(
                 context,
+                nearby,
                 speaker,
                 from,
                 direct,
@@ -133,8 +136,10 @@ public final class RadioGroup implements IGroup {
         for (int i = 0; i < tx.transceivers().length; i++) {
             RadioSnapshot.Transceiver t = tx.transceivers()[i].transceiver();
             if (!transceiverHeld[i] || !t.loudspeaker()) continue;
+            if (nearby == null) nearby = new Nearby(positions.values());
             playAround(
                 context,
+                nearby,
                 speaker,
                 from,
                 direct,
@@ -170,14 +175,12 @@ public final class RadioGroup implements IGroup {
      * hold even when this frame didn't get through ({@code send} false), or they hear the speaker in person. VOICE.md
      * V3: GTNH Voice plays it with its own falloff, so BeCom can only stop sending past the device's range.
      */
-    private void playAround(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct, UUID holder,
-        int dimension, double x, double y, double z, double range, double snr, long now, boolean send) {
+    private void playAround(RoutingContext context, Nearby nearby, UUID speaker, PlayerSnapshot from, double direct,
+        UUID holder, int dimension, double x, double y, double z, double range, double snr, long now, boolean send) {
         // VOICE.md V3
         double rangeSq = range * range;
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
-        for (PlayerSnapshot p : context.getPositionSnapshot()
-            .values()) {
-            if (p.getDimensionId() != dimension) continue;
+        for (PlayerSnapshot p : nearby.around(dimension, x, z, range)) {
             UUID id = p.getUuid();
             if (id.equals(speaker) || id.equals(holder)) continue;
             double dx = p.getX() - x;
