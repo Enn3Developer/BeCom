@@ -83,7 +83,7 @@ public final class PhoneScreenActions {
             record.ownerName(),
             manage,
             state,
-            otherNumber < 0 ? "" : becom.phones.name(otherNumber),
+            otherName(becom, call, otherNumber),
             otherNumber,
             hearing,
             record.doNotDisturb(),
@@ -91,6 +91,17 @@ public final class PhoneScreenActions {
             contacts,
             recent,
             blocked);
+    }
+
+    /**
+     * Who the screen names on the other end: the player on that phone once there is one (the caller, or whoever
+     * answered), as the call history does; the phone's owner while it still rings.
+     */
+    private static String otherName(BeComServer becom, Call call, int otherNumber) {
+        if (otherNumber < 0) return "";
+        Call.Leg other = call == null ? null : call.legOf(otherNumber);
+        String owner = becom.phones.name(otherNumber);
+        return other != null && other.player() != null ? becom.calls.nameOf(other.player(), owner) : owner;
     }
 
     public static void dial(EntityPlayer player, TileTelephone tile, int target) {

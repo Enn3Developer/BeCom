@@ -51,6 +51,7 @@ import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.LinkService;
+import com.enn3developer.becom.server.PhoneScreenActions;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
@@ -650,6 +651,13 @@ public final class SelfTest {
             result == CallBook.DialResult.RINGING && end.ringing(),
             result.name());
         check("answering connects", calls.takeHandset(stranger, end) == CallService.Pickup.ANSWERED, "");
+        // Both Telephones are the owner's; the screen names the player on the other end, as the history does.
+        String shown = PhoneScreenActions.view(owner, start)
+            .otherName();
+        check(
+            "the phone screen names the player on the other end, not the phone's owner",
+            shown.equals(stranger.getCommandSenderName()),
+            shown);
         Call call = book.callOf(alice);
         // No tick and no evaluation in between: a call carries voice from its first frame.
         check(

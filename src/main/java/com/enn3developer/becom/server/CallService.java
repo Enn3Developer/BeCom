@@ -280,7 +280,7 @@ public final class CallService implements CallBook.Listener {
                     : call.wasConnected() ? PhoneRecord.Direction.INCOMING : PhoneRecord.Direction.MISSED;
                 // The player on the other end, so blocking this row blocks whoever called, whosever phone it was.
                 UUID otherPlayer = other.player();
-                String name = otherPlayer != null ? playerName(otherPlayer, phones.name(other.phone()))
+                String name = otherPlayer != null ? nameOf(otherPlayer, phones.name(other.phone()))
                     : phones.name(other.phone());
                 record.addHistory(new PhoneRecord.HistoryEntry(time, other.phone(), name, direction, otherPlayer));
             }
@@ -435,7 +435,8 @@ public final class CallService implements CallBook.Listener {
         return record == null ? null : record.kind();
     }
 
-    private String playerName(UUID id, String fallback) {
+    /** A player's name: online, else the last one Forge saw, else {@code fallback}. */
+    public String nameOf(UUID id, String fallback) {
         EntityPlayerMP online = player(id);
         if (online != null) return online.getCommandSenderName();
         String cached = UsernameCache.getLastKnownUsername(id);
