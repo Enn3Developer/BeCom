@@ -2683,6 +2683,16 @@ public final class SelfTest {
             "...and an ME Phone saved by a newer BeCom takes no AE power, so a charger loses none to it (X16)",
             handedBack == offered && BeComItems.mePhone.getAECurrentPower(newerPhone) == 0,
             handedBack + " AE of " + offered + " handed back");
+        // One charged before a newer BeCom wrote to it gives none of its charge away either.
+        ItemStack chargedNewer = new ItemStack(BeComItems.mePhone);
+        BeComItems.mePhone.injectAEPower(chargedNewer, offered);
+        chargedNewer.getTagCompound()
+            .setInteger(BeComNbt.KEY, ItemCarriedPhone.FORMAT + 1);
+        double given = BeComItems.mePhone.extractAEPower(chargedNewer, offered);
+        check(
+            "...nor gives any away, keeping the charge it was saved with (X16)",
+            given == 0 && BeComItems.mePhone.getAECurrentPower(chargedNewer) == offered,
+            given + " AE given");
         return 1;
     }
 

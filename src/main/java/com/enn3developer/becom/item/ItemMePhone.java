@@ -70,6 +70,8 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     @Override
     public double extractAEPower(ItemStack stack, double amount) {
+        // Nor does it give any away, which it couldn't take off its charge.
+        if (isTooNew(stack)) return 0;
         double stored = getAECurrentPower(stack);
         double given = Math.min(amount, stored);
         setPower(stack, stored - given);
