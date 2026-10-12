@@ -957,12 +957,27 @@ final class SpaceSelfTest {
         becom.links.wrench(owner, overworld, pos(relayTwilight));
         LinkService.Outcome taken = becom.links.wrench(owner, nether, pos(relayNether));
         t.check("a relay already paired refuses a second partner", taken == LinkService.Outcome.REFUSED, taken + "");
-        becom.links.wrench(owner, overworld, pos(relayOverworld));
-        LinkService.Outcome unpaired = becom.links.wrench(owner, nether, pos(relayNether));
+        // Saving switched off, as /save-off does, or a backup while it copies the world.
+        overworld.levelSaving = true;
+        nether.levelSaving = true;
+        LinkService.Outcome unpaired;
+        boolean waited;
+        try {
+            becom.links.wrench(owner, overworld, pos(relayOverworld));
+            unpaired = becom.links.wrench(owner, nether, pos(relayNether));
+            waited = NetworkSavedData.get(overworld)
+                .isDirty()
+                && NetworkSavedData.get(nether)
+                    .isDirty();
+        } finally {
+            overworld.levelSaving = false;
+            nether.levelSaving = false;
+        }
         t.check(
             "wrenching both relays of a pair again unpairs them",
             unpaired == LinkService.Outcome.UNLINKED && becom.network.partnerOf(relayOverworld.ref()) == null,
             unpaired + "");
+        t.check("...and with saving switched off, as during a backup, both halves wait for the next save", waited, "");
         // DESIGN.md 9.4: on opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
         becom.links.wrench(owner, overworld, pos(relayBare));
         LinkService.Outcome far = becom.links.wrench(owner, nether, pos(relayFarNether));
