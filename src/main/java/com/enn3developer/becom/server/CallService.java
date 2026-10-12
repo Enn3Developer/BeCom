@@ -81,8 +81,10 @@ public final class CallService implements CallBook.Listener {
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
     // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
     private final Map<Integer, Long> ringingCarried = new HashMap<>();
-    // Who was shown each ringing carried phone's notice: it goes from their screen however the phone left them.
-    private final Map<Integer, UUID> notices = new HashMap<>();
+    // Each ringing carried phone's notice and who was shown it: it goes from their screen however the phone left them.
+    // A client shows one notice, the latest; when it goes, another phone still ringing for them shows again.
+    private final Map<Integer, Notice> notices = new HashMap<>();
+    private long noticesShown;
     // Working Videophones, where they stand, and the tick each last reported in (DESIGN.md 10.2).
     private final Map<Integer, Videophone> videophones = new HashMap<>();
     // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
@@ -393,10 +395,25 @@ public final class CallService implements CallBook.Listener {
         }
     }
 
-    /** The carried phone ringing for {@code player}, or -1. */
+    /** The carried phone ringing for {@code player}: the one their notice names, or the first they carry; or -1. */
     public int ringingFor(EntityPlayer player) {
+        Notice shown = latestNotice(player.getUniqueID());
+        if (shown != null && carries(player, shown.phone()) && isRinging(shown.phone())) return shown.phone();
         for (int number : carried.carriedBy(player.getUniqueID())) if (isRinging(number)) return number;
         return -1;
+    }
+
+    /** A ringing carried phone's notice: whose screen shows it, what it says, and in which order it came. */
+    private record Notice(int phone, UUID holder, RingPacket packet, long order) {}
+
+    /** The latest notice shown to {@code holder} that is still up, or null. */
+    private Notice latestNotice(UUID holder) {
+        Notice latest = null;
+        for (Notice notice : notices.values()) {
+            if (notice.holder()
+                .equals(holder) && (latest == null || notice.order() > latest.order())) latest = notice;
+        }
+        return latest;
     }
 
     /** {@code player} answers phone {@code number}, which they carry and which rings. */
@@ -500,11 +517,14 @@ public final class CallService implements CallBook.Listener {
 
     private void stopRinging(int number) {
         ringingCarried.remove(number);
-        UUID shown = notices.remove(number);
-        if (shown == null) return;
-        if (noticeLog != null) noticeLog.put(shown, false);
-        EntityPlayerMP mp = player(shown);
-        if (mp != null) BeComPackets.send(RingPacket.stop(), mp);
+        Notice gone = notices.remove(number);
+        if (gone == null) return;
+        // Another phone still ringing for them, and not in a call they'd have to leave to answer it, shows again.
+        Notice next = latestNotice(gone.holder());
+        if (next != null && book.callOf(gone.holder()) != null) next = null;
+        if (noticeLog != null) noticeLog.put(gone.holder(), next != null);
+        EntityPlayerMP mp = player(gone.holder());
+        if (mp != null) BeComPackets.send(next != null ? next.packet() : RingPacket.stop(), mp);
     }
 
     // endregion
@@ -731,10 +751,11 @@ public final class CallService implements CallBook.Listener {
         if (holder != null && ringer != null) {
             String name = ringer.player() != null ? nameOf(ringer.player(), phones.name(ringer.phone()))
                 : phones.name(ringer.phone());
-            notices.put(leg.phone(), holder);
+            RingPacket packet = RingPacket.ringing(name, ringer.phone());
+            notices.put(leg.phone(), new Notice(leg.phone(), holder, packet, ++noticesShown));
             if (noticeLog != null) noticeLog.put(holder, true);
             EntityPlayerMP mp = player(holder);
-            if (mp != null) BeComPackets.send(RingPacket.ringing(name, ringer.phone()), mp);
+            if (mp != null) BeComPackets.send(packet, mp);
         }
     }
 

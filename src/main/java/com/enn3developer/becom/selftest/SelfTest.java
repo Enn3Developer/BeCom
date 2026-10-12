@@ -258,6 +258,7 @@ public final class SelfTest {
         steps.add(this::checkBusyToneStops);
         steps.add(this::checkPhoneMoves);
         steps.add(this::checkBaublePhone);
+        steps.add(this::checkTwoRinging);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -2091,6 +2092,44 @@ public final class SelfTest {
             "service " + service + ", rang " + rang + ", answered " + answered + ", off " + off);
         baubles.setInventorySlotContents(0, null);
         becom.carried.refreshForSelfTest(quin);
+        return 1;
+    }
+
+    /**
+     * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest; when one stops, the other's
+     * shows again, and the Phone key answers the phone the notice names.
+     */
+    private int checkTwoRinging() {
+        FakePlayer rex = phonePlayer("BeComRex", 5, X0 - 19.5, phoneZ + 0.5);
+        ItemStack second = new ItemStack(BeComItems.mobilePhone);
+        ElectricItem.manager
+            .charge(second, BeComItems.mobilePhone.getMaxCharge(second), Integer.MAX_VALUE, true, false);
+        rex.inventory.mainInventory[1] = second;
+        becom.carried.refreshForSelfTest(rex);
+        int first = ItemCarriedPhone.number(rex.inventory.mainInventory[0]);
+        int other = ItemCarriedPhone.number(second);
+        FakePlayer sid = phonePlayer("BeComSid", 6, X0 - 19.5, phoneZ + 2.5);
+        int sidNumber = ItemCarriedPhone.number(sid.inventory.mainInventory[0]);
+        UUID r = rex.getUniqueID();
+        becom.calls.dialCarried(olga, olgaNumber, first);
+        becom.calls.dialCarried(sid, sidNumber, other);
+        becom.calls.hangUp(olga);
+        boolean stillShown = becom.calls.noticeForSelfTest(r) && becom.calls.isRinging(other);
+        check(
+            "when one of two phones ringing for a player stops, the other's notice shows again",
+            stillShown && !becom.calls.isRinging(first),
+            "shown " + becom.calls.noticeForSelfTest(r) + ", the other ringing " + becom.calls.isRinging(other));
+        becom.calls.dialCarried(olga, olgaNumber, first);
+        becom.calls.phoneKey(rex, false);
+        Call call = becom.calls.book()
+            .callOf(r);
+        Call.Leg answered = call == null ? null : call.legOf(r);
+        check(
+            "...and the Phone key answers the phone the notice names, the latest to ring",
+            answered != null && answered.phone() == first && becom.calls.isRinging(other),
+            answered == null ? "nothing answered" : "answered " + answered.phone() + ", first " + first);
+        becom.calls.hangUp(rex);
+        becom.calls.hangUp(sid);
         return 1;
     }
 
