@@ -1,8 +1,10 @@
 package com.enn3developer.becom.selftest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -174,6 +176,8 @@ final class SpaceSelfTest {
         steps.add(this::checkLaunchHeld);
         steps.add(this::checkLaunch);
         steps.add(this::checkNoSkyNoLaunch);
+        steps.add(this::startFreeLaunch);
+        steps.add(this::checkFreeLaunch);
         steps.add(this::startDecay);
         steps.add(this::checkDecay);
         steps.add(this::checkSkyHops);
@@ -507,6 +511,39 @@ final class SpaceSelfTest {
             "open sky " + pad.openSky() + ", satellites " + becom.space.count(0) + ", running " + pad.mMaxProgresstime);
         padBus.setInventorySlotContents(0, null);
         overworld.setBlockToAir(SX - 2, Y + 3, SZ + 4);
+        return 1;
+    }
+
+    private Tunables configBefore;
+    private int countBeforeFree;
+
+    /** DESIGN.md 17: a server that sets launches to need no fuel launches from an empty hatch. */
+    private int startFreeLaunch() {
+        configBefore = BeComConfig.get();
+        Map<String, Object> values = new HashMap<>(configBefore.toMap());
+        values.put("launchFuel", 0);
+        // A launch of a second, so the checks after it don't wait on it.
+        values.put("launchSeconds", 1);
+        BeComConfig.set(Tunables.fromMap(values));
+        padHatch.setFillableStack(null);
+        padBus.setInventorySlotContents(0, new ItemStack(BeComItems.satelliteRocket, 1));
+        countBeforeFree = becom.space.count(0);
+        // GT looks for work every 5 s while idle.
+        return 8 * SelfTest.TICKS_PER_SECOND;
+    }
+
+    private int checkFreeLaunch() {
+        try {
+            FluidStack left = padHatch.getFluid();
+            t.check(
+                "set to need no fuel, a launch goes up from an empty hatch",
+                becom.space.count(0) == countBeforeFree + 1 && pad.rocketsWaiting() == 0
+                    && (left == null || left.amount == 0),
+                "satellites " + becom.space
+                    .count(0) + " from " + countBeforeFree + ", rockets " + pad.rocketsWaiting());
+        } finally {
+            BeComConfig.set(configBefore);
+        }
         return 1;
     }
 
