@@ -62,7 +62,8 @@ public final class LinkRules {
             || b.kind()
                 .linkSlots() == 0)
             return Result.INCOMPATIBLE;
-        // An ME Bridge bridges any other BeCom node (DESIGN.md 8.3); two of them would join ME networks, not lines.
+        // An ME Bridge bridges a Pylon Head, a Line Terminal or an antenna (DESIGN.md 8.3, X40); two of them would join
+        // ME networks, not lines.
         if (a.kind() == NodeKind.ME_BRIDGE || b.kind() == NodeKind.ME_BRIDGE) {
             if (a.kind() == b.kind()) return Result.INCOMPATIBLE;
             // A dish or a relay links onto an antenna, a Pylon Head or a Line Terminal only (DESIGN.md 9.2, X36).

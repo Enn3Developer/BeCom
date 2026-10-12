@@ -234,20 +234,21 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   second (one a server tick), and `meBridgeChannels` 0 or 1. From 0.4: `relayPortalDistance` up to 8 blocks, so a
   relay's search for portals stays a few thousand blocks a second (a larger value refuses the world, as for the other
   decimal options), the receiver's uplink and the relay pair's levels written 1 (Low) to 4 (Max), at least 1 satellite
-  for Low and 1 second a launch, and `/becom satellites` at most 1,000 over a dimension. Every whole-number option shows
-  its range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value
-  outside it is used at the nearest end with a warning naming what was written. The checks no single range can hold
-  (ordered level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this
-  BeCom understands and so on) run when a server is about to start with the file. A bad file refuses the world through
-  FML's own startup notice, naming the key: on the console for a dedicated server, and on screen in single-player, where
-  the client's file is the server's, leading back to the menu. A client joining a server never acts on its own file, so
-  a bad one doesn't stop it.
+  for Low and 1 second a launch, a satellite's lifetime above 0 days and its spread below 1, so none comes down the
+  moment it goes up, and `/becom satellites` at most 1,000 over a dimension. Every whole-number option shows its range
+  in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value outside it is
+  used at the nearest end with a warning naming what was written. The checks no single range can hold (ordered level
+  thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this BeCom understands
+  and so on) run when a server is about to start with the file. A bad file refuses the world through FML's own startup
+  notice, naming the key: on the console for a dedicated server, and on screen in single-player, where the client's file
+  is the server's, leading back to the menu. A client joining a server never acts on its own file, so a bad one doesn't
+  stop it.
 - **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
   make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
   code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.
 - **To match the design:** raise `Tunables.MAX_COLUMN`, `MAX_CABLE` and the later `MAX_` ceilings beside them, 0.4's
   `MAX_PORTAL_DISTANCE` among them; the 1 to 4 ranges of `receiverUplinkLevel` and `relayHopLevel` and the minimums
-  in `BeComConfig`; and `CommandBeCom.MAX_TEST_SATELLITES`.
+  in `BeComConfig`; the satellite lifetime checks in `Tunables.validate`; and `CommandBeCom.MAX_TEST_SATELLITES`.
 
 ### X19: Antennas take up to 15 bridges and route like a Router
 
@@ -579,16 +580,19 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   hop between the two dimensions' networks. It doesn't say how a relay joins the network of its own dimension.
 - **Built:** like a Satellite Dish, a relay has one wrench link, a bridge onto an antenna, a Pylon Head or a Line
   Terminal within 16 blocks, which joins it to that network. Its partner through the portal is apart from that link. A
-  pair carries calls while both relays are powered and each has the portal between their dimensions in reach: a
-  Nether portal for the Nether, an End portal for the End, and the Twilight Forest's or Personal Space's own portal
-  for theirs. "Opposite sides of a portal" is checked when they pair: through the Nether or the Twilight Forest, one
-  relay must stand where its portal leads, its coordinates scaled the way Minecraft scales a trip (an eighth in the
-  Nether), within the 128 blocks Minecraft searches for the far Nether portal, or the 616 Twilight Forest may put its
-  far portal off: it looks 200 blocks around, and moves a new portal up to 600 blocks out of a biome the player can't
-  enter yet. Each relay may stand by the far end of the widest portal, 21 blocks across for the Nether and 15 for the
-  Twilight Forest. Any End portal will do, since the End is reached at one place. A personal dimension has portals of
-  its own, so the Overworld relay must stand by one that leads into the far relay's dimension, which BeCom reads from
-  the portal's tile.
+  pair carries calls while both relays are powered and each has the portal between their dimensions in reach: a Nether
+  portal for the Nether, an End portal for the End, and the Twilight Forest's or Personal Space's own portal for theirs.
+  "Opposite sides of a portal" is checked when they pair: through the Nether or the Twilight Forest, one relay must
+  stand where its portal leads, its coordinates scaled the way Minecraft scales a trip (an eighth in the Nether), within
+  the 128 blocks Minecraft searches for the far Nether portal, or the 616 Twilight Forest may put its far portal off: it
+  looks 200 blocks around, and moves a new portal up to 600 blocks out of a biome the player can't enter yet. Each relay
+  may stand by the far end of the widest portal: 21 blocks across for the Nether, and 15 for the Twilight Forest, its
+  `portalMaxSize` by default, which BeCom doesn't read, so a server that raises it can see a relay by the far end of a
+  larger pool refused. Any End portal will do, since the End is reached at one place. A personal dimension has portals
+  of its own, so the Overworld relay must stand by one that leads into the far relay's dimension, both when they pair
+  and while the pair carries calls: BeCom reads that from the portal's tile, by field name. A portal whose tile BeCom
+  can't read, from a Personal Space that changed it, leads anywhere, with one warning in the log; relays then join any
+  personal dimension through any Personal Space portal, as before they read them.
 - **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
   ends.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.
@@ -634,11 +638,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X40: An ME Bridge doesn't link onto a dish or a relay
 
-- **Where:** 0.4, DESIGN.md 8.3, 9.2, X36
+- **Where:** 0.3, 0.4, DESIGN.md 8.3, 9.2, X36
 - **Design says:** an ME Bridge is wrench-linked to a BeCom node within 16 blocks (8.3). A Satellite Dish is
   wrench-linked to an antenna, a Pylon Head or a Line Terminal (9.2).
-- **Built:** an ME Bridge links to a Pylon Head (a Repeater's or a Router's too), a Line Terminal or an antenna, not
-  to a Satellite Dish, a Portal Relay or another ME Bridge.
+- **Built:** an ME Bridge links to a Pylon Head (a Repeater's or a Router's too), a Line Terminal or an antenna: not
+  to another ME Bridge, since 0.3, and not to a Satellite Dish or a Portal Relay, since 0.4.
 - **Why:** 9.2 limits what a dish links to, and X36 gives a relay the same link, so 8.3's "a BeCom node" can't hold
   for them both ways. Two ME Bridges would join two ME networks, not a line, which is what ME's own cables are for.
 - **To match the design:** let a dish's or a relay's one link be an ME Bridge in `LinkRules`, and a bridge's another

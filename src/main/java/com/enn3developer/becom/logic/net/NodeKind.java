@@ -25,7 +25,8 @@ public enum NodeKind {
     TRANSCEIVER(0, true, false, 0),
     /**
      * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network. Its one wrench link is a bridge onto
-     * any other node within the bridge distance, a short stretch of line it drives, like an antenna's.
+     * a Pylon Head, a Line Terminal or an antenna within the bridge distance (X40), a short stretch of line it drives,
+     * like an antenna's.
      */
     ME_BRIDGE(1, true, false, 0),
     /**

@@ -38,8 +38,8 @@ import gregtech.api.render.TextureFactory;
 /**
  * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network, so ME Phones on it can call any phone.
  * It connects to ME cable on any side the way GT's ME hatches do, with an AE2 grid proxy of its own that takes one
- * channel, and is wrench-linked to a BeCom node within 16 blocks. Late EV, 512 EU/t; works only while loaded, powered
- * and online in its ME network (D11).
+ * channel, and is wrench-linked to a Pylon Head, a Line Terminal or an antenna within 16 blocks (X40). Late EV, 512
+ * EU/t; works only while loaded, powered and online in its ME network (D11).
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription

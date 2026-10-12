@@ -330,8 +330,10 @@ public final class NetworkService {
     /**
      * Writes two dimensions' networks to disk now. A pair's two halves live in two dimensions' files, which Minecraft
      * saves at different times: a far side loaded for a pairing unloads, and saves, at once, while the near side waits
-     * for the next autosave. Saving both together leaves no window where a crash keeps only one half. While saving is
-     * switched off, by /save-off or a backup copying the world, both wait for the next save instead.
+     * for the next autosave. Saving both together leaves no window where a crash keeps only one half. While either has
+     * saving switched off, by /save-off or a backup copying the world, neither is written now. A world loaded since a
+     * /save-off still saves, though, so its half can reach disk alone as it unloads, and a crash before the other's
+     * next save keeps one half: the pair is lost, and pairs again.
      */
     private static void saveNow(int a, int b) {
         List<WorldServer> worlds = new ArrayList<>();

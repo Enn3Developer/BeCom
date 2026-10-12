@@ -72,9 +72,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Milestone 0.4, space, with Galacticraft as a dependency: the Satellite, the Satellite Rocket (a Satellite on
   Galacticraft's Tier 1 rocket parts) and the Rocket Radio Receiver, from the assembler.
 - The Satellite Launch Pad, a 5 by 5 multiblock under open sky: each launch takes a Satellite Rocket and 1,000 L of
-  rocket fuel, runs 30 s at 480 EU/t, and puts a satellite into orbit over its dimension. Its screen shows the
-  rockets waiting, each dimension's satellites and when the next comes down. Satellites come down after about 100
-  days of world time, give or take a fifth.
+  rocket fuel, runs 30 s at 480 EU/t, and puts a satellite into orbit over its dimension. Anything covering the pad
+  holds a launch, which goes on once the sky clears. Its screen shows the rockets waiting, a launch on hold, each
+  dimension's satellites and when the next comes down. Satellites come down after about 100 days of world time, give
+  or take a fifth.
 - Sky hops: with at least 5 satellites over a dimension, Mobile Phones, walkies and Transceivers under open sky reach
   them, at Low with 5 and up to Max with 100, less a roof's cover and the rain. Radios under open sky hear each other
   through them. The Signal Analyzer and `/becom signal` show the satellites when they serve better than any antenna.
