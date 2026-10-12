@@ -197,6 +197,7 @@ public final class Call {
         private State state;
         private boolean answered;
         private DropTimer ringTimer;
+        private long emptySinceMillis = -1;
 
         /** The caller's own phone, in the call from the start. */
         static Leg caller(int phone, UUID player, long nowMillis) {
@@ -276,6 +277,15 @@ public final class Call {
 
         Set<UUID> room() {
             return room;
+        }
+
+        /** Since when a speakerphone's room has been empty, on the call book's clock, or -1 while someone is in it. */
+        public long emptySinceMillis() {
+            return emptySinceMillis;
+        }
+
+        void setEmptySinceMillis(long millis) {
+            emptySinceMillis = millis;
         }
 
         void leave() {

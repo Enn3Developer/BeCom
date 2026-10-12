@@ -93,6 +93,7 @@ public final class CallBook {
     private final long dropGraceMillis;
     private final long sessionGraceMillis;
     private final int groupSize;
+    private final long emptyRoomMillis;
     private final Listener listener;
 
     private final Map<Long, Call> calls = new LinkedHashMap<>();
@@ -102,14 +103,18 @@ public final class CallBook {
     private long nextId = 1;
     private long version;
 
+    /**
+     * @param emptyRoomMillis how long a speakerphone stays in its call with nobody in its room (DESIGN.md 10.2)
+     */
     public CallBook(LevelScale levels, int attemptsPerMinute, long ringMillis, long dropGraceMillis,
-        long sessionGraceMillis, int groupSize, Listener listener) {
+        long sessionGraceMillis, int groupSize, long emptyRoomMillis, Listener listener) {
         this.levels = levels;
         this.attempts = new RateLimiter<>(attemptsPerMinute, MILLIS_PER_MINUTE);
         this.ringMillis = ringMillis;
         this.dropGraceMillis = dropGraceMillis;
         this.sessionGraceMillis = sessionGraceMillis;
         this.groupSize = groupSize;
+        this.emptyRoomMillis = emptyRoomMillis;
         this.listener = listener;
     }
 
@@ -285,9 +290,10 @@ public final class CallBook {
 
     /**
      * Who is in a speakerphone's room now (DESIGN.md 10.2): those within reach join its call unless they're in another
-     * call or the call is full; those gone leave it. The phone must be in a call, ringing out or connected.
+     * call or the call is full; those gone leave it. The phone must be in a call, ringing out or connected. A room that
+     * stays empty hangs the phone up, in {@link #tick}.
      */
-    public void setRoom(int phone, Collection<UUID> wanted) {
+    public void setRoom(int phone, Collection<UUID> wanted, long nowMillis) {
         Call call = byPhone.get(phone);
         if (call == null) return;
         Call.Leg leg = call.legOf(phone);
@@ -309,6 +315,11 @@ public final class CallBook {
             byPlayer.put(player, call);
             joined.add(player);
         }
+        if (room.isEmpty()) {
+            if (leg.emptySinceMillis() < 0) leg.setEmptySinceMillis(nowMillis);
+        } else {
+            leg.setEmptySinceMillis(-1);
+        }
         if (joined.isEmpty() && left.isEmpty()) return;
         version++;
         listener.roomChanged(call, leg, joined, left);
@@ -323,12 +334,18 @@ public final class CallBook {
         listener.roomChanged(call, leg, Collections.emptySet(), Collections.singleton(player));
     }
 
-    /** Ring timeouts and session grace; run every tick or so. */
+    /** Ring timeouts, empty speakerphone rooms and session grace; run every tick or so. */
     public void tick(long nowMillis) {
         for (Call call : new ArrayList<>(calls.values())) {
             for (Call.Leg leg : call.ringingLegs()) {
                 if (nowMillis - leg.ringSinceMillis() >= ringMillis) leave(call, leg, EndReason.NO_ANSWER);
                 if (call.state() == Call.State.ENDED) break;
+            }
+            for (Call.Leg leg : call.activeLegs()) {
+                if (call.state() == Call.State.ENDED) break;
+                // Nobody has been near it for a while: it hangs itself up (DESIGN.md 10.2).
+                if (leg.speakerphone() && leg.emptySinceMillis() >= 0
+                    && nowMillis - leg.emptySinceMillis() >= emptyRoomMillis) leave(call, leg, EndReason.HUNG_UP);
             }
         }
         Iterator<Map.Entry<UUID, Long>> it = sessionLostAt.entrySet()

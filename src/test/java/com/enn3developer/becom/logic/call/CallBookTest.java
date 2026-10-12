@@ -40,6 +40,7 @@ class CallBookTest {
         3_000,
         10_000,
         4,
+        30_000,
         new CallBook.Listener() {
 
             @Override
@@ -450,7 +451,7 @@ class CallBookTest {
     @Test
     void aSpeakerphonesRoomJoinsAndLeavesItsCall() {
         Call call = connect();
-        book.setRoom(PHONE_B, List.of(bob, carol));
+        book.setRoom(PHONE_B, List.of(bob, carol), 1500);
         assertEquals(List.of(alice, bob, carol), call.participants());
         assertEquals(call, book.callOf(carol));
         assertTrue(
@@ -460,7 +461,7 @@ class CallBookTest {
         assertEquals(SignalLevel.LOW, call.level(alice, carol));
         assertEquals(SignalLevel.LOW, levels.get(alice + ">" + carol));
         // Bob walks away: he's out, though he answered; the phone stays in the call.
-        book.setRoom(PHONE_B, List.of(carol));
+        book.setRoom(PHONE_B, List.of(carol), 2500);
         assertNull(book.callOf(bob));
         assertEquals(List.of(alice, carol), call.participants());
         assertTrue(events.contains("room " + PHONE_B + " +0 -1"), events.toString());
@@ -472,7 +473,7 @@ class CallBookTest {
         assertEquals(CallBook.DialResult.RINGING, book.dial(dave, PHONE_D, PHONE_E, 1500, CallBook.Check.OK));
         UUID erin = UUID.randomUUID();
         UUID frank = UUID.randomUUID();
-        book.setRoom(PHONE_B, List.of(bob, dave, carol, erin, frank));
+        book.setRoom(PHONE_B, List.of(bob, dave, carol, erin, frank), 2000);
         // Dave is ringing someone; Alice, Bob, Carol and Erin make four.
         assertEquals(List.of(alice, bob, carol, erin), call.participants());
         assertNull(book.callOf(frank));
@@ -481,12 +482,52 @@ class CallBookTest {
     @Test
     void aRoomPlayerLoggingOutLeavesTheRoomNotTheCall() {
         Call call = connect();
-        book.setRoom(PHONE_B, List.of(bob, carol));
+        book.setRoom(PHONE_B, List.of(bob, carol), 1500);
         book.logout(carol);
         assertEquals(Call.State.CONNECTED, call.state());
         assertEquals(List.of(alice, bob), call.participants());
         // Hanging up from the room hangs up the speakerphone.
         assertTrue(book.hangUp(bob));
         assertEquals(Call.State.ENDED, call.state());
+    }
+
+    @Test
+    void anEmptyRoomHangsUpItsSpeakerphoneAfterAWhile() {
+        Call call = connect();
+        book.setRoom(PHONE_B, List.of(bob), 1500);
+        book.setRoom(PHONE_B, List.of(), 3000);
+        assertEquals(List.of(alice), call.participants());
+        book.tick(3000 + 29_999);
+        assertEquals(Call.State.CONNECTED, call.state());
+        book.tick(3000 + 30_000);
+        assertEquals(Call.State.ENDED, call.state());
+        assertTrue(events.contains("ended HUNG_UP after connecting"), events.toString());
+    }
+
+    @Test
+    void someoneComingBackRestartsTheEmptyRoomClock() {
+        Call call = connect();
+        book.setRoom(PHONE_B, List.of(), 3000);
+        book.setRoom(PHONE_B, List.of(carol), 20_000);
+        // Still empty a second later: the clock started when the room emptied, not at each look.
+        book.setRoom(PHONE_B, List.of(), 25_000);
+        book.setRoom(PHONE_B, List.of(), 26_000);
+        book.tick(54_999);
+        assertEquals(Call.State.CONNECTED, call.state());
+        book.tick(55_000);
+        assertEquals(Call.State.ENDED, call.state());
+    }
+
+    @Test
+    void anEmptySpeakerphoneLeavesAGroupCallThatGoesOn() {
+        Call call = connect();
+        assertEquals(CallBook.DialResult.RINGING, book.add(alice, PHONE_C, 1500, CallBook.Check.OK));
+        assertTrue(book.answer(carol, PHONE_C, 2000));
+        book.setRoom(PHONE_B, List.of(), 3000);
+        book.tick(33_000);
+        assertEquals(Call.State.CONNECTED, call.state());
+        assertNull(call.legOf(PHONE_B));
+        assertEquals(List.of(alice, carol), call.participants());
+        assertTrue(events.contains("left " + PHONE_B + " HUNG_UP"), events.toString());
     }
 }

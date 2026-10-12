@@ -89,6 +89,7 @@ public final class CallService implements CallBook.Listener {
             (long) (tunables.dropAfterSeconds() * MILLIS_PER_SECOND),
             tunables.sessionGraceSeconds() * MILLIS_PER_SECOND,
             tunables.groupCallSize(),
+            tunables.videophoneEmptySeconds() * MILLIS_PER_SECOND,
             this);
         carried.setCalls(new CarriedPhones.Calls() {
 
