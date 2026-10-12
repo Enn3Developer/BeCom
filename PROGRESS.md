@@ -505,3 +505,60 @@ branch, and the Modernity add-on pack for the second look at the textures:
     antenna is in reach, though the two walkies talk. Decide whether it should explain the direct link (Known issues).
 16. In single-player, open a world with a walkie, leave to the menu and open another world: the radio and the quest
     book's BeCom tab work in the second one.
+
+## 0.3 Phones
+
+Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
+
+### Contents (DESIGN.md 16)
+
+| Item                                                                         | Status |
+|------------------------------------------------------------------------------|--------|
+| AE2 and Baubles Expanded as hard dependencies (16.4, D27)                    | doing  |
+| Mobile Phone: item, number, owner, power, recipe (8, 8.2, 3.1)               | todo   |
+| Mobile service through antennas, on UHF (8.2)                                | todo   |
+| Baubles slots for phones and walkies (D14, 8)                                | todo   |
+| Ringing from the player, the incoming-call notice, silent mode (11.2)        | todo   |
+| The Phone key, and sneak + Phone to reject (11.1, D34)                       | todo   |
+| Phone screen for carried phones: power, silent mode, everyone in a call (11.2) | todo |
+| Group calls of up to 8 (8.2, 10.1)                                           | todo   |
+| Weather loss on UHF links (6.1, D26)                                         | todo   |
+| Coverage map in the antenna screen (6.6, 11.4)                               | todo   |
+| Battery drain for phones (D36, 11.3)                                         | todo   |
+| Signal bars while holding a phone or in a call (11.2)                        | todo   |
+| ME Phone (8.3, D13)                                                          | todo   |
+| ME Bridge (8.3, D45)                                                         | todo   |
+| Video: front camera (10.1, D41, D43)                                         | todo   |
+| Video: rear camera (10.1)                                                    | todo   |
+| Video: the corner window and the full-size view, camera switches (11.2, D44) | todo   |
+| Videophone (10.2, D42)                                                       | todo   |
+| The 0.3 tunables in the config (17)                                          | todo   |
+| Self-test rows for 0.3 (16.3)                                                | todo   |
+
+### Untested assumptions (DESIGN.md 16.2)
+
+| Assumption                                                                     | Status |
+|--------------------------------------------------------------------------------|--------|
+| The ME Bridge joins an ME network on ME cable, the way GT's ME hatches do       | todo   |
+| Video renders under Angelica and shader packs                                  | todo   |
+| A far-away player's skin can be drawn from the profile the server sends        | todo   |
+| Video on BeCom's own network channel doesn't lag the game connection           | todo   |
+
+### Quests (DESIGN.md 15.5)
+
+| Item                                                                         | Status |
+|------------------------------------------------------------------------------|--------|
+| The phone quests, with the Mobile call task                                  | todo   |
+| The video quests, with the Video call task                                   | todo   |
+| The ME quests, with the ME Bridge call task                                  | todo   |
+
+### Assets (DESIGN.md 15)
+
+| Item                                                                         | Status |
+|------------------------------------------------------------------------------|--------|
+| Mobile Phone and ME Phone icons                                              | todo   |
+| Videophone overlay and glow                                                  | todo   |
+| ME Bridge overlay and glow                                                   | todo   |
+| Modernity style of all of the above                                          | todo   |
+| Sounds: the ringtone from a carried phone, the silent-mode buzz             | todo   |
+| English language entries                                                     | todo   |
