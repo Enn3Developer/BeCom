@@ -1751,6 +1751,17 @@ public final class SelfTest {
     private static final int PHONE_Z_TRIES = 64;
     private int phoneZ = PHONE_Z_FROM;
     private boolean phoneRains;
+
+    /** Where 0.3's phone checks stand: the first stretch north whose biome rains. */
+    int phoneZ() {
+        return phoneZ;
+    }
+
+    /** Whether 0.3's search found a stretch where it rains. */
+    boolean phoneRains() {
+        return phoneRains;
+    }
+
     private static final int PHONE_PYLON_DX = 10;
     private static final int PHONE_TERMINAL_DX = 40;
     private MTEAntenna phoneAntenna;

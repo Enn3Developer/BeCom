@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockEndPortal;
 import net.minecraft.block.BlockPortal;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemBlock;
@@ -126,6 +127,13 @@ final class SpaceSelfTest {
     private MTEPortalRelay relayPersonal;
     private MTEPortalRelay relayBare;
     private MTEPortalRelay relayFarNether;
+    private MTEPortalRelay relayTwilightFar;
+    private MTEPortalRelay relayEnd;
+    private MTEPortalRelay relayEndFar;
+    private WorldServer twilight;
+    private WorldServer end;
+    private LinkService.Outcome pairedTwilight;
+    private LinkService.Outcome pairedEnd;
     private MTELineTerminal relayTerminalOverworld;
     private MTELineTerminal relayTerminalNether;
     private TileTelephone relayPhoneOverworld;
@@ -158,6 +166,7 @@ final class SpaceSelfTest {
         steps.add(this::buildMoon);
         steps.add(this::landRocket);
         steps.add(this::buildNether);
+        steps.add(this::buildTwilightAndEnd);
         steps.add(this::form);
         steps.add(this::startLaunch);
         steps.add(this::coverLaunch);
@@ -302,6 +311,56 @@ final class SpaceSelfTest {
         return 5;
     }
 
+    /**
+     * DESIGN.md 9.4, D46: relays at the Twilight Forest's and the End's portals, on both sides. The Twilight Forest
+     * keeps the Overworld's coordinates, so its relay stands where the Overworld one's portal leads.
+     */
+    private int buildTwilightAndEnd() {
+        twilight = null;
+        for (Integer id : DimensionManager.getStaticDimensionIDs()) {
+            String provider;
+            try {
+                provider = DimensionManager.createProviderFor(id)
+                    .getClass()
+                    .getName();
+            } catch (RuntimeException e) {
+                continue;
+            }
+            if (Portals.TWILIGHT_WORLD.equals(provider)) twilight = load(id);
+        }
+        if (twilight == null) {
+            t.fail("the Twilight Forest loads in the dev server", "no dimension has its world provider");
+        } else {
+            for (int cx = (SX + 8) >> 4; cx <= (SX + 72) >> 4; cx++) {
+                for (int cz = (RELAY_Z - 32) >> 4; cz <= (RELAY_Z + 32) >> 4; cz++) t.keepLoaded(twilight, cx, cz);
+            }
+            clear(twilight, SX + 32, Y - 2, RELAY_Z - 4, SX + 48, Y + 4, RELAY_Z + 4);
+            forgetNodes(twilight, SX + 32, RELAY_Z - 4, SX + 48, RELAY_Z + 4);
+            relayTwilightFar = relay(twilight, SX + 40, Y, RELAY_Z);
+            placeByClass(twilight, SX + 42, Y, RELAY_Z, Portals.TWILIGHT_PORTAL);
+        }
+        // The End: any of its portals will do, so an Overworld relay by an End portal far from a stronghold counts.
+        relayEnd = relay(overworld, SX + 100, Y, RELAY_Z);
+        overworld.setBlock(SX + 102, Y, RELAY_Z, Blocks.end_portal, 0, 2);
+        end = load(1);
+        if (end == null) {
+            t.fail("the End loads in the dev server", "no world for dimension 1");
+        } else {
+            for (int cx = (MX - 16) >> 4; cx <= (MX + 16) >> 4; cx++) {
+                for (int cz = (MZ - 16) >> 4; cz <= (MZ + 16) >> 4; cz++) t.keepLoaded(end, cx, cz);
+            }
+            clear(end, MX - 4, MY - 2, MZ - 4, MX + 4, MY + 4, MZ + 4);
+            forgetNodes(end, MX - 4, MZ - 4, MX + 4, MZ + 4);
+            relayEndFar = relay(end, MX, MY, MZ);
+            // Outside the Overworld an End portal block takes itself away unless it's the exit portal being made.
+            BlockEndPortal.field_149948_a = true;
+            end.setBlock(MX + 2, MY, MZ, Blocks.end_portal, 0, 2);
+            BlockEndPortal.field_149948_a = false;
+        }
+        // Machines join the network as they first tick.
+        return 5;
+    }
+
     private int form() {
         for (MTEEnhancedMultiBlockBase<?> machine : List.<MTEEnhancedMultiBlockBase<?>>of(pad, dishA, dishB)) {
             machine.checkStructure(true, machine.getBaseMetaTileEntity());
@@ -329,6 +388,16 @@ final class SpaceSelfTest {
                 .isDirty()
                 && !NetworkSavedData.get(nether)
                     .isDirty();
+        }
+        if (twilight != null) {
+            becom.links.forget(owner.getUniqueID());
+            becom.links.wrench(owner, overworld, pos(relayTwilight));
+            pairedTwilight = becom.links.wrench(owner, twilight, pos(relayTwilightFar));
+        }
+        if (end != null) {
+            becom.links.forget(owner.getUniqueID());
+            becom.links.wrench(owner, overworld, pos(relayEnd));
+            pairedEnd = becom.links.wrench(owner, end, pos(relayEndFar));
         }
         for (WorldServer w : new WorldServer[] { overworld, moon, nether }) {
             if (w == null) continue;
@@ -466,6 +535,18 @@ final class SpaceSelfTest {
                 .coverPerBlock(),
             skyEntry(ItemCarriedPhone.number(roofed.inventory.mainInventory[0])));
         overworld.setBlockToAir(SX + 170, Y + ROOF, SKY_Z);
+        // Out here the biome may not rain, so the rain check stands where 0.3's phone checks found one that does.
+        if (!t.phoneRains()) {
+            t.fail("rain costs a Mobile Phone's sky hop 3 dB where it falls (D26)", "no rainy biome found to test in");
+            return 1;
+        }
+        startRain();
+        FakePlayer rained = phonePlayer(overworld, "BeComRained", 5, SelfTest.X0 - 19.5, Y, t.phoneZ() + 1.5);
+        t.near(
+            "rain costs a Mobile Phone's sky hop 3 dB where it falls (D26)",
+            cfg.levelMax() - cfg.weatherLoss(1, 0),
+            skyEntry(ItemCarriedPhone.number(rained.inventory.mainInventory[0])));
+        clearWeather();
         return 1;
     }
 
@@ -720,6 +801,28 @@ final class SpaceSelfTest {
             personalPlaced && relayPersonal.look()
                 .contains(Portals.Kind.PERSONAL_SPACE),
             "placed " + personalPlaced + ", " + relayPersonal.portals());
+        if (twilight != null) {
+            t.check(
+                "relays at a Twilight Forest portal on both sides pair into the Twilight Forest, a High hop",
+                pairedTwilight == LinkService.Outcome.LINKED && relayTwilightFar.isWorking()
+                    && Math.abs(
+                        becom.network.graph()
+                            .width(vertex(relayTwilight), vertex(relayTwilightFar)) - high())
+                        < SelfTest.EPS,
+                pairedTwilight + ", working " + relayTwilightFar.isWorking());
+        }
+        if (end != null) {
+            t.check(
+                "relays at an End portal and at one in the End pair into the End, a High hop",
+                pairedEnd == LinkService.Outcome.LINKED && relayEndFar.isWorking()
+                    && relayEnd.look()
+                        .contains(Portals.Kind.END)
+                    && Math.abs(
+                        becom.network.graph()
+                            .width(vertex(relayEnd), vertex(relayEndFar)) - high())
+                        < SelfTest.EPS,
+                pairedEnd + ", working " + relayEndFar.isWorking());
+        }
         t.check(
             "a relay by no portal doesn't work",
             relayBare.portals()
@@ -819,6 +922,17 @@ final class SpaceSelfTest {
     }
 
     // region Helpers
+
+    private static CallGraph.NodeVertex vertex(MTEPortalRelay relay) {
+        NodeRef ref = relay.ref();
+        return new CallGraph.NodeVertex(ref.dimension(), ref.pos());
+    }
+
+    private static double high() {
+        return BeComConfig.get()
+            .levelScale()
+            .threshold(SignalLevel.HIGH);
+    }
 
     private static WorldServer load(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);
@@ -977,6 +1091,19 @@ final class SpaceSelfTest {
         player.inventory.mainInventory[0] = walkie;
         becom.radio.refreshForSelfTest(player);
         return player;
+    }
+
+    /** Steady rain over the Overworld, no thunder, until {@link #clearWeather()}. */
+    private void startRain() {
+        WorldInfo info = overworld.getWorldInfo();
+        info.setRaining(true);
+        info.setRainTime(1_000_000);
+        info.setThundering(false);
+        info.setThunderTime(1_000_000);
+        overworld.prevRainingStrength = 1;
+        overworld.rainingStrength = 1;
+        overworld.prevThunderingStrength = 0;
+        overworld.thunderingStrength = 0;
     }
 
     private void clearWeather() {
