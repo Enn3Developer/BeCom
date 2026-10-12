@@ -289,6 +289,65 @@ class SavedDataTest {
     }
 
     @Test
+    void satellitesRoundTripWithTheirDimensionsAndTimes(@TempDir File dir) {
+        SatelliteSavedData data = new SatelliteSavedData(SatelliteSavedData.NAME);
+        data.satellites()
+            .launch(0, 100, 2_400_000);
+        data.satellites()
+            .launch(-28, 200, 2_000_000);
+        assertTrue(data.isDirty());
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        assertFalse(data.isDirty());
+        SatelliteSavedData read = new SatelliteSavedData(SatelliteSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertEquals(
+            data.satellites()
+                .all(),
+            read.satellites()
+                .all());
+        assertFalse(read.isDirty());
+        // A file of its own: a world with no satellites yet starts with none.
+        StorageFixture fixture = new StorageFixture(dir);
+        File file = fixture.file(SatelliteSavedData.NAME);
+        assertEquals(
+            0,
+            SatelliteSavedData.load(fixture.storage(), file)
+                .satellites()
+                .all()
+                .size());
+    }
+
+    @Test
+    void newerSatellitesAreKeptAsTheyWereAndStopTheLoad(@TempDir File dir) throws Exception {
+        NBTTagCompound nbt = new NBTTagCompound();
+        nbt.setInteger(SavedDataFormat.KEY, SatelliteSavedData.FORMAT + 1);
+        nbt.setString("fromTheFuture", "kept");
+        SatelliteSavedData read = new SatelliteSavedData(SatelliteSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertTrue(read.isTooNew());
+        read.markDirty();
+        assertFalse(read.isDirty());
+        NBTTagCompound written = new NBTTagCompound();
+        read.writeToNBT(written);
+        assertEquals("kept", written.getString("fromTheFuture"));
+        StorageFixture fixture = new StorageFixture(dir);
+        File file = fixture.file(SatelliteSavedData.NAME);
+        NBTTagCompound root = new NBTTagCompound();
+        root.setTag("data", nbt);
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            CompressedStreamTools.writeCompressed(root, out);
+        }
+        IllegalStateException e = assertThrows(
+            IllegalStateException.class,
+            () -> SatelliteSavedData.load(fixture.storage(), file));
+        assertTrue(
+            e.getMessage()
+                .contains("satellites"),
+            e.getMessage());
+    }
+
+    @Test
     void noFileIsANewWorld(@TempDir File dir) {
         StorageFixture fixture = new StorageFixture(dir);
         File file = fixture.file(GlobalSavedData.NAME);

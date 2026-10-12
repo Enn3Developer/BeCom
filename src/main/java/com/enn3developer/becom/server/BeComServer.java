@@ -13,6 +13,7 @@ import net.minecraftforge.common.DimensionManager;
 
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.GlobalSavedData;
+import com.enn3developer.becom.data.SatelliteSavedData;
 import com.enn3developer.becom.item.ItemMePhone;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.CallGraph;
@@ -53,12 +54,14 @@ public final class BeComServer {
     public final RadioService radio;
     public final CarriedPhones carried;
     public final MeGrids meGrids = new MeGrids();
+    public final SpaceService space;
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
         this.thread = Thread.currentThread();
         this.tunables = tunables;
         this.heights = new HeightCaches();
+        this.space = new SpaceService(tunables);
         this.antennas = new AntennaNetwork(tunables, new AntennaNetwork.Dimensions() {
 
             @Override
@@ -131,14 +134,15 @@ public final class BeComServer {
 
     /**
      * Starts BeCom for a server whose worlds have loaded (DESIGN.md 13.1): GTNH Voice forgets every group when its
-     * server stops, so the groups are registered again on every start. Loading the phone registry here stops the
-     * server early if it was saved by a newer BeCom (DESIGN.md 14.2).
+     * server stops, so the groups are registered again on every start. Loading the phone registry and the satellites
+     * here stops the server early if a newer BeCom saved them (DESIGN.md 14.2).
      */
     public static void start() {
         BeComServer becom = mine();
         if (becom == null) return;
         for (WorldServer world : DimensionManager.getWorlds()) becom.network.worldLoaded(world);
         becom.phones.attach(GlobalSavedData.get(DimensionManager.getWorld(0)));
+        becom.space.attach(SatelliteSavedData.get(DimensionManager.getWorld(0)));
         GtnhVoiceApi.groupManager()
             .registerGroup(becom.calls.group());
         becom.radio.start();
@@ -185,6 +189,7 @@ public final class BeComServer {
         Runnable task;
         while ((task = LATER.poll()) != null) task.run();
         heights.tick();
+        space.tick();
         // DESIGN.md 6.5: surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
         // share it: up to half for them, the rest for surveys.
         long budget = (long) (tunables.surveyBudgetMillis() * 1_000_000);
