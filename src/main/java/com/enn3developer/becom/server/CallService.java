@@ -915,13 +915,22 @@ public final class CallService implements CallBook.Listener {
             call,
             this::kindOf,
             (from, to) -> graph.hops(entriesOf(from), entriesOf(to))
-                .contains(CallGraph.HopKind.ME_BRIDGE));
+                .contains(CallGraph.HopKind.ME_BRIDGE),
+            this::dimensionOf);
         if (!done.firstCall()
             .isEmpty()) BeComQuests.complete(QuestTask.FIRST_CALL, done.firstCall());
         if (!done.mobileCall()
             .isEmpty()) BeComQuests.complete(QuestTask.MOBILE_CALL, done.mobileCall());
         if (!done.meBridgeCall()
             .isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, done.meBridgeCall());
+        if (!done.betweenDimensions()
+            .isEmpty()) BeComQuests.complete(QuestTask.CALL_BETWEEN_DIMENSIONS, done.betweenDimensions());
+    }
+
+    /** The dimension a player is in, or null when they aren't online. */
+    private Integer dimensionOf(UUID id) {
+        EntityPlayer player = playerOrPresent(id);
+        return player == null ? null : player.dimension;
     }
 
     /** A phone added to a call stopped ringing unanswered: whoever added it hears why (DESIGN.md 11.2). */
@@ -1011,7 +1020,12 @@ public final class CallService implements CallBook.Listener {
                 .join(player, group);
             showNotice(player);
         }
-        if (call.state() == Call.State.CONNECTED) BeComQuests.complete(QuestTask.FIRST_CALL, new ArrayList<>(joined));
+        if (call.state() == Call.State.CONNECTED) {
+            BeComQuests.complete(QuestTask.FIRST_CALL, new ArrayList<>(joined));
+            if (CallQuests.spansDimensions(players, this::dimensionOf)) {
+                BeComQuests.complete(QuestTask.CALL_BETWEEN_DIMENSIONS, new ArrayList<>(joined));
+            }
+        }
         // Newcomers hear and are heard at the levels the speakerphone already has.
         for (Call.Leg other : call.activeLegs()) {
             if (other == leg) continue;

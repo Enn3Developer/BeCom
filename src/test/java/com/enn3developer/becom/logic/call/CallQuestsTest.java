@@ -13,7 +13,10 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
-/** DESIGN.md 15.5: who First call, Mobile call and ME Bridge call complete for as a call connects. */
+/**
+ * DESIGN.md 15.5: who First call, Mobile call, ME Bridge call and Call between dimensions complete for as a call
+ * connects.
+ */
 class CallQuestsTest {
 
     private static final int MOBILE = 111_111;
@@ -76,7 +79,7 @@ class CallQuestsTest {
     @Test
     void aMobilePhoneCallCompletesMobileCallForItsUserOnly() {
         Call call = call(alice, MOBILE, bob, TELEPHONE);
-        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> false);
+        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> false, p -> 0);
         assertEquals(List.of(alice, bob), done.firstCall());
         assertEquals(List.of(alice), done.mobileCall());
         assertEquals(List.of(), done.meBridgeCall());
@@ -85,7 +88,7 @@ class CallQuestsTest {
     @Test
     void anMePhoneCallThroughABridgeCompletesForTheMePhonesUser() {
         Call call = call(alice, TELEPHONE, bob, ME_A);
-        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> from == ME_A && to == TELEPHONE);
+        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> from == ME_A && to == TELEPHONE, p -> 0);
         assertEquals(List.of(bob), done.meBridgeCall());
         assertEquals(List.of(), done.mobileCall());
     }
@@ -95,7 +98,7 @@ class CallQuestsTest {
         Call call = call(alice, ME_A, bob, ME_B);
         assertEquals(
             List.of(),
-            CallQuests.of(call, kinds::get, (from, to) -> false)
+            CallQuests.of(call, kinds::get, (from, to) -> false, p -> 0)
                 .meBridgeCall());
     }
 
@@ -103,14 +106,51 @@ class CallQuestsTest {
     void aSpeakerphonesRoomCountsForFirstCall() {
         Call call = call(alice, MOBILE, bob, VIDEOPHONE);
         book.setRoom(VIDEOPHONE, List.of(bob, carol), 200);
-        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> false);
+        CallQuests.Done done = CallQuests.of(call, kinds::get, (from, to) -> false, p -> 0);
         assertEquals(List.of(alice, bob, carol), done.firstCall());
         assertEquals(List.of(alice), done.mobileCall());
     }
 
     @Test
+    void aCallBetweenDimensionsCompletesForEveryoneInIt() {
+        Call call = call(alice, MOBILE, bob, TELEPHONE);
+        Map<UUID, Integer> where = Map.of(alice, 0, bob, -28);
+        assertEquals(
+            List.of(alice, bob),
+            CallQuests.of(call, kinds::get, (from, to) -> false, where::get)
+                .betweenDimensions());
+        // Both in the Overworld: no.
+        assertEquals(
+            List.of(),
+            CallQuests.of(call, kinds::get, (from, to) -> false, p -> 0)
+                .betweenDimensions());
+    }
+
+    @Test
+    void someoneOfflineDoesntMakeACallSpanDimensions() {
+        Call call = call(alice, MOBILE, bob, TELEPHONE);
+        Map<UUID, Integer> where = Map.of(alice, -1);
+        assertEquals(
+            List.of(),
+            CallQuests.of(call, kinds::get, (from, to) -> false, where::get)
+                .betweenDimensions());
+    }
+
+    @Test
+    void aSpeakerphonesRoomInAnotherDimensionCounts() {
+        // Carol joins the Videophone's room; she and Bob are in the Nether, Alice in the Overworld.
+        Call call = call(alice, MOBILE, bob, VIDEOPHONE);
+        book.setRoom(VIDEOPHONE, List.of(bob, carol), 200);
+        Map<UUID, Integer> where = Map.of(alice, 0, bob, -1, carol, -1);
+        assertEquals(
+            List.of(alice, bob, carol),
+            CallQuests.of(call, kinds::get, (from, to) -> false, where::get)
+                .betweenDimensions());
+    }
+
+    @Test
     void aRingingCallCompletesNothing() {
         book.dial(alice, MOBILE, TELEPHONE, 0, CallBook.Check.OK);
-        assertEquals(CallQuests.Done.NONE, CallQuests.of(book.callOf(alice), kinds::get, (from, to) -> true));
+        assertEquals(CallQuests.Done.NONE, CallQuests.of(book.callOf(alice), kinds::get, (from, to) -> true, p -> 1));
     }
 }
