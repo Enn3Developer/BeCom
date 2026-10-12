@@ -83,6 +83,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     @Override
     public void serverStarted() {
         ticks = 0;
+        questline = null;
         progressCopy.clear();
         if (!enabled()) {
             BeCom.LOG.info("BeCom's questline is switched off in the config: the quest book is left alone");

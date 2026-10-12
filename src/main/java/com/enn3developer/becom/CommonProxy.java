@@ -106,7 +106,8 @@ public class CommonProxy {
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
-        BeComServer.stopped();
+        // The quest backend is shared too: a newer world's questline stays.
+        if (!BeComServer.stopped()) return;
         BeComQuests.backend()
             .serverStopped();
     }

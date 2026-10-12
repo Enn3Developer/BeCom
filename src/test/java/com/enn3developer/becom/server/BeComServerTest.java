@@ -1,7 +1,9 @@
 package com.enn3developer.becom.server;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,15 @@ class BeComServerTest {
         BeComServer.create(null);
         BeComServer.stop();
         BeComServer next = BeComServer.create(null);
-        BeComServer.stopped();
+        // The caller leaves the shared quest state alone too.
+        assertFalse(BeComServer.stopped());
         assertSame(next, BeComServer.get());
+    }
+
+    @Test
+    void stoppingTheCurrentServerSaysSo() {
+        BeComServer.create(null);
+        BeComServer.stop();
+        assertTrue(BeComServer.stopped());
     }
 }

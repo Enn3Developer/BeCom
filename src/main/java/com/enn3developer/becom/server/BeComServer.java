@@ -111,12 +111,16 @@ public final class BeComServer {
      * The worlds are saved and unloaded: the height cache's last regions go to disk, and BeCom forgets the server. In
      * single-player the next world can start while the last one's stopped handlers still run, so only the server
      * that was stopping is forgotten, never a newer one.
+     *
+     * @return false when a newer server has already started, so its state must be left alone
      */
-    public static synchronized void stopped() {
+    public static synchronized boolean stopped() {
         BeComServer old = stopping != null ? stopping : instance;
         stopping = null;
         if (old != null) old.heights.saveAll();
-        if (instance == old) instance = null;
+        if (instance != old) return false;
+        instance = null;
+        return true;
     }
 
     /** Runs {@code task} on the server thread at the start of the next tick; dropped if no server is running. */
