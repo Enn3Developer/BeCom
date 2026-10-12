@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
 
@@ -572,5 +573,32 @@ class RadioGroupTest {
             !fixture.recipients()
                 .contains(bob),
             "and Cat, no stronger than Alice on Bob's walkie, doesn't take him");
+    }
+
+    @Test
+    void aListenerGetsTheLevelOfTheDeviceTheyActuallyHear() {
+        // Bob's own walkie holds Alice, so Cat reaches him only through Dan's walkie: Cat's level for Bob is that
+        // walkie's (DESIGN.md 13.5).
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 7))
+                .link(cat, walkie(dan, 20))
+                .build());
+        fixture.route(one, alice, RADIO);
+        now += 10 * MS;
+        fixture.route(one, cat, RADIO);
+        assertEquals(
+            SignalLevel.MEDIUM,
+            shared.heardThrough(cat, 1, List.of(bob, dan), List.of(SignalLevel.LOW, SignalLevel.MEDIUM)));
+        assertEquals(
+            SignalLevel.LOW,
+            shared.heardThrough(alice, 1, List.of(bob, dan), List.of(SignalLevel.LOW, SignalLevel.MEDIUM)));
     }
 }

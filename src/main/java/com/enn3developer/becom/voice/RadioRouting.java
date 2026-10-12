@@ -1,5 +1,6 @@
 package com.enn3developer.becom.voice;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.LongSupplier;
 
 import com.enn3developer.becom.logic.DropoutModel;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.radio.Capture;
 
 /**
@@ -101,6 +103,20 @@ public final class RadioRouting {
      */
     public boolean listenerHeldBy(UUID player, int channel, UUID speaker) {
         return speaker.equals(listeners.holder(player, channel));
+    }
+
+    /**
+     * Server thread: the level a listener hears {@code speaker} at, given the devices that could carry it to them in
+     * the order {@code route()} sends through them (their own walkie, walkies around them, loudspeakers) and each one's
+     * level. route() sends nothing through a device whose capture holds another speaker, so the first device that
+     * doesn't is the one they hear (DESIGN.md 13.5: that device's level).
+     */
+    public SignalLevel heardThrough(UUID speaker, int channel, List<?> devices, List<SignalLevel> levels) {
+        for (int i = 0; i < devices.size(); i++) {
+            Object holder = capture.holder(devices.get(i), channel);
+            if (holder == null || holder.equals(speaker)) return levels.get(i);
+        }
+        return SignalLevel.NONE;
     }
 
     /** Server thread: whether a receiving device's capture is held by {@code speaker} on {@code channel}. */
