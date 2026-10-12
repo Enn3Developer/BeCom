@@ -175,14 +175,17 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
             if (fluid != null && fluid.amount >= t.launchFuel()
                 && FluidUtil.testFuel(FluidRegistry.getFluidName(fluid))) fuel = fluid;
         }
-        if (fuel == null) return SimpleCheckRecipeResult.ofFailure("becom_no_fuel");
+        // A server that sets launches to need no fuel launches from an empty hatch.
+        if (fuel == null && t.launchFuel() > 0) return SimpleCheckRecipeResult.ofFailure("becom_no_fuel");
         // The very rocket and fuel found: GT takes only stacks equal down to their tags, so a renamed rocket counts.
         ItemStack one = rocket.copy();
         one.stackSize = 1;
         if (!depleteInput(one)) return CheckRecipeResultRegistry.NO_RECIPE;
-        FluidStack burn = fuel.copy();
-        burn.amount = t.launchFuel();
-        if (t.launchFuel() > 0 && !depleteInput(burn)) return CheckRecipeResultRegistry.NO_RECIPE;
+        if (t.launchFuel() > 0) {
+            FluidStack burn = fuel.copy();
+            burn.amount = t.launchFuel();
+            if (!depleteInput(burn)) return CheckRecipeResultRegistry.NO_RECIPE;
+        }
         updateSlots();
         int problems = getIdealStatus() - getRepairStatus();
         mEfficiency = Math.max(EFFICIENCY_PER_PROBLEM, FULL_EFFICIENCY - problems * EFFICIENCY_PER_PROBLEM);
