@@ -104,14 +104,36 @@ public final class PhoneService {
      * whoever uses it first. Its history stays with the original.
      */
     public PhoneRecord registerCopy(World world, long pos, PhoneRecord original) {
-        PhoneRecord record = registry().create(PhoneKind.TELEPHONE, original.owner(), original.ownerName(), random);
+        PhoneRecord record = copyOf(original);
         record.setLocation(world.provider.dimensionId, pos);
+        registry().changed();
+        return record;
+    }
+
+    /** A number for a carried phone used for the first time: its first user owns it (DESIGN.md 12.1, D25). */
+    public PhoneRecord registerCarried(PhoneKind kind, EntityPlayer user) {
+        PhoneRecord record = registry().create(kind, user.getUniqueID(), user.getCommandSenderName(), random);
+        registry().changed();
+        return record;
+    }
+
+    /**
+     * A fresh number for a copy of a carried phone, as for a copied Telephone (X17): its original's owner and settings.
+     */
+    public PhoneRecord registerCarriedCopy(PhoneRecord original) {
+        PhoneRecord record = copyOf(original);
+        registry().changed();
+        return record;
+    }
+
+    private PhoneRecord copyOf(PhoneRecord original) {
+        PhoneRecord record = registry().create(original.kind(), original.owner(), original.ownerName(), random);
         // The owner's settings come along, so a renumbered phone doesn't turn up in the contacts of players it blocks.
         record.setDoNotDisturb(original.doNotDisturb());
         record.setHidden(original.hidden());
+        record.setSilent(original.silent());
         for (java.util.Map.Entry<java.util.UUID, String> blocked : original.blocked()
             .entrySet()) record.restoreBlock(blocked.getKey(), blocked.getValue());
-        registry().changed();
         return record;
     }
 

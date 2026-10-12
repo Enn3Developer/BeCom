@@ -32,6 +32,8 @@ public final class BeComRecipes {
     private static final int TELEPHONE_SECONDS = 10;
     private static final int HANDHELD_EUT = 120;
     private static final int HANDHELD_SECONDS = 20;
+    private static final int MOBILE_EUT = 480;
+    private static final int MOBILE_SECONDS = 30;
 
     private BeComRecipes() {}
 
@@ -132,6 +134,21 @@ public final class BeComRecipes {
             .itemOutputs(new ItemStack(BeComItems.walkieTalkie))
             .duration(HANDHELD_SECONDS * SECONDS)
             .eut(HANDHELD_EUT)
+            .addTo(assemblerRecipes);
+
+        // Mobile Phone (DESIGN.md 3.1): an MV emitter and sensor are enough for UHF; the screen, an HV circuit and
+        // battery make it a phone, in the walkie's polyethylene case.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Emitter_MV.get(1),
+                ItemList.Sensor_MV.get(1),
+                ItemList.Cover_Screen.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.HV, 1),
+                ItemList.Battery_RE_HV_Lithium.get(1),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polyethylene, 2))
+            .itemOutputs(new ItemStack(BeComItems.mobilePhone))
+            .duration(MOBILE_SECONDS * SECONDS)
+            .eut(MOBILE_EUT)
             .addTo(assemblerRecipes);
     }
 

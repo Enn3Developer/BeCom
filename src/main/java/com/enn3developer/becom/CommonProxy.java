@@ -17,6 +17,8 @@ import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
+import com.enn3developer.becom.packet.PhoneStatusPacket;
+import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
@@ -123,6 +125,10 @@ public class CommonProxy {
     public void onConfig(ConfigSyncPacket packet) {}
 
     public void onAnalyzer(AnalyzerPacket packet) {}
+
+    public void onRing(RingPacket packet) {}
+
+    public void onPhoneStatus(PhoneStatusPacket packet) {}
 
     /** Whether this client is transmitting on that walkie, for its TX light (DESIGN.md 11.3); never on a server. */
     public boolean isTransmittingOn(ItemStack stack) {

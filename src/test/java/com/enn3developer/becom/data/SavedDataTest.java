@@ -198,6 +198,7 @@ class SavedDataTest {
         record.setLocation(-1, BlockPos.pack(10, 20, 30));
         record.setDoNotDisturb(true);
         record.setHidden(true);
+        record.setSilent(true);
         record.block(pest, "pest");
         UUID carol = UUID.randomUUID();
         record.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.OUTGOING, null));
@@ -215,6 +216,7 @@ class SavedDataTest {
         assertEquals(BlockPos.pack(10, 20, 30), back.pos());
         assertTrue(back.doNotDisturb());
         assertTrue(back.hidden());
+        assertTrue(back.silent());
         assertTrue(back.blocks(pest));
         assertEquals(
             2,

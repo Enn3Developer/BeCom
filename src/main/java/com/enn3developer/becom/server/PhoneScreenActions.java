@@ -7,10 +7,11 @@ import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentTranslation;
 
-import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.gui.PhoneView;
+import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -20,48 +21,46 @@ import com.enn3developer.becom.logic.phone.PhoneRegistry;
 
 /**
  * What the phone screen may do, checked on the server (DESIGN.md 14: client input). Every action re-checks that the
- * player is at the phone and allowed to do it, whatever their client sent.
+ * player can use the phone, at a Telephone or carrying the phone, and is allowed to do it, whatever their client sent.
  */
 public final class PhoneScreenActions {
 
-    // The same 8 blocks ModularUI allows a block screen to stay open from.
-    private static final double REACH_SQ = 64;
-
     private PhoneScreenActions() {}
 
-    private static boolean near(EntityPlayer player, TileTelephone tile) {
-        return !tile.isInvalid() && player.worldObj == tile.getWorldObj()
-            && player.getDistanceSq(tile.xCoord + 0.5, tile.yCoord + 0.5, tile.zCoord + 0.5) <= REACH_SQ;
-    }
-
-    public static PhoneView view(EntityPlayer player, TileTelephone tile) {
+    public static PhoneView view(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || tile.number() < 0) return PhoneView.EMPTY;
-        int number = tile.number();
+        int number = handle.number();
+        if (becom == null || number < 0) return PhoneView.EMPTY;
         PhoneRecord record = becom.phones.record(number);
         if (record == null) return PhoneView.EMPTY;
         boolean manage = Ownership.mayManage(player, record.owner());
-        UUID holder = becom.calls.holderOf(number);
         Call call = becom.calls.book()
             .callOfPhone(number);
+        Call.Leg own = call == null ? null : call.legOf(number);
         PhoneView.State state;
-        int otherNumber = -1;
-        SignalLevel hearing = SignalLevel.NONE;
-        if (call != null) {
-            for (Call.Leg leg : call.legs()) if (leg.phone() != number) otherNumber = leg.phone();
-            if (call.state() == Call.State.RINGING) {
-                state = call.caller()
-                    .phone() == number ? PhoneView.State.RINGING_OUT : PhoneView.State.RINGING_IN;
-            } else {
-                state = PhoneView.State.CONNECTED;
-                Call.Leg other = call.legOf(otherNumber);
-                if (other != null && other.player() != null) hearing = call.level(other.player(), player.getUniqueID());
+        List<PhoneView.Member> members = new ArrayList<>();
+        if (own != null) {
+            if (own.state() == Call.Leg.State.RINGING) state = PhoneView.State.RINGING_IN;
+            else if (call.state() == Call.State.RINGING) state = PhoneView.State.RINGING_OUT;
+            else state = PhoneView.State.CONNECTED;
+            for (Call.Leg leg : call.legs()) {
+                if (leg == own || leg.state() == Call.Leg.State.LEFT) continue;
+                boolean talking = own.state() == Call.Leg.State.ACTIVE && leg.state() == Call.Leg.State.ACTIVE;
+                members.add(
+                    new PhoneView.Member(
+                        leg.phone(),
+                        nameOn(becom, leg),
+                        talking ? call.level(leg, own) : SignalLevel.NONE,
+                        leg.state() == Call.Leg.State.RINGING));
             }
-        } else if (holder != null) {
-            state = holder.equals(player.getUniqueID()) ? PhoneView.State.OFF_HOOK : PhoneView.State.IN_USE;
+        } else if (handle instanceof PhoneHandle.Telephone) {
+            UUID holder = becom.calls.holderOf(number);
+            state = holder == null ? PhoneView.State.IDLE
+                : holder.equals(player.getUniqueID()) ? PhoneView.State.OFF_HOOK : PhoneView.State.IN_USE;
         } else {
             state = PhoneView.State.IDLE;
         }
+        PhoneView.Member first = members.isEmpty() ? null : members.get(0);
         List<PhoneView.Contact> contacts = new ArrayList<>();
         for (PhoneRegistry.Contact contact : becom.phones.registry()
             .contacts(player.getUniqueID(), number, becom.calls.reachableFrom(number))) {
@@ -80,57 +79,100 @@ public final class PhoneScreenActions {
             for (Map.Entry<UUID, String> entry : record.blocked()
                 .entrySet()) blocked.add(new PhoneView.Blocked(entry.getKey(), entry.getValue()));
         }
+        boolean carried = handle instanceof PhoneHandle.CarriedPhone;
+        ItemStack stack = handle instanceof PhoneHandle.CarriedPhone phone ? phone.stack(player) : null;
         return new PhoneView(
             number,
             record.ownerName(),
             manage,
             state,
-            otherName(becom, call, otherNumber),
-            otherNumber,
-            hearing,
+            first == null ? "" : first.name(),
+            first == null ? -1 : first.number(),
+            first == null ? SignalLevel.NONE : first.level(),
             record.doNotDisturb(),
             record.hidden(),
             contacts,
             recent,
-            blocked);
+            blocked,
+            carried,
+            stack != null && ItemCarriedPhone.on(stack),
+            record.silent(),
+            carried ? becom.carried.serviceOf(number)
+                .level() : SignalLevel.NONE,
+            members);
     }
 
     /**
-     * Who the screen names on the other end: the player on that phone once there is one (the caller, or whoever
+     * Who the screen names on a phone of the call: the player on it once there is one (the caller, or whoever
      * answered), as the call history does; the phone's owner while it still rings.
      */
-    private static String otherName(BeComServer becom, Call call, int otherNumber) {
-        if (otherNumber < 0) return "";
-        Call.Leg other = call == null ? null : call.legOf(otherNumber);
-        String owner = becom.phones.name(otherNumber);
-        return other != null && other.player() != null ? becom.calls.nameOf(other.player(), owner) : owner;
+    private static String nameOn(BeComServer becom, Call.Leg leg) {
+        String owner = becom.phones.name(leg.phone());
+        return leg.player() != null ? becom.calls.nameOf(leg.player(), owner) : owner;
     }
 
-    public static void dial(EntityPlayer player, TileTelephone tile, int target) {
+    /**
+     * Dials {@code target}: from a Telephone, taking its handset if needed; from a carried phone, or adds it to the
+     * call.
+     */
+    public static void dial(EntityPlayer player, PhoneHandle handle, int target) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || !(player instanceof EntityPlayerMP mp) || !near(player, tile)) return;
+        if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
         if (!PhoneNumbers.isValid(target)) return;
-        Integer held = becom.calls.handsetOf(player.getUniqueID());
-        if (held == null) {
-            if (becom.calls.takeHandset(mp, tile) != CallService.Pickup.TAKEN) return;
-        } else if (held != tile.number()) {
+        if (handle instanceof PhoneHandle.Telephone telephone) {
+            Integer held = becom.calls.handsetOf(player.getUniqueID());
+            if (held == null) {
+                if (becom.calls.takeHandset(mp, telephone.tile()) != CallService.Pickup.TAKEN) return;
+            } else if (held != handle.number()) {
+                return;
+            }
+            becom.calls.dial(mp, handle.number(), target);
             return;
         }
-        becom.calls.dial(mp, tile.number(), target);
+        becom.calls.dialCarried(mp, handle.number(), target);
     }
 
-    /** Picks up: answers a ringing phone, or takes the handset to dial. */
-    public static void pickUp(EntityPlayer player, TileTelephone tile) {
+    /** Picks up: answers a ringing phone, or takes a Telephone's handset to dial. */
+    public static void pickUp(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || !(player instanceof EntityPlayerMP mp) || !near(player, tile)) return;
-        becom.calls.takeHandset(mp, tile);
+        if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
+        if (handle instanceof PhoneHandle.Telephone telephone) {
+            becom.calls.takeHandset(mp, telephone.tile());
+            return;
+        }
+        becom.calls.answerCarried(mp, handle.number());
     }
 
-    public static void hangUp(EntityPlayer player, TileTelephone tile) {
+    /** Hangs up: puts a Telephone's handset back, or ends the carried phone's call, or turns down its ringing one. */
+    public static void hangUp(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || !near(player, tile)) return;
-        Integer held = becom.calls.handsetOf(player.getUniqueID());
-        if (held != null && held == tile.number()) becom.calls.hangUpHandset(player.getUniqueID());
+        if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
+        if (handle instanceof PhoneHandle.Telephone) {
+            Integer held = becom.calls.handsetOf(player.getUniqueID());
+            if (held != null && held == handle.number()) becom.calls.hangUpHandset(player.getUniqueID());
+            return;
+        }
+        if (becom.calls.isRinging(handle.number())) {
+            becom.calls.rejectCarried(player, handle.number());
+            return;
+        }
+        Call call = becom.calls.book()
+            .callOf(player.getUniqueID());
+        Call.Leg own = call == null ? null : call.legOf(player.getUniqueID());
+        if (own != null && own.phone() == handle.number()) becom.calls.hangUp(mp);
+    }
+
+    /** Switches a carried phone on or off (DESIGN.md 11.3): whoever carries it may, as with a walkie. */
+    public static void setPower(EntityPlayer player, PhoneHandle handle, boolean on) {
+        BeComServer becom = BeComServer.get();
+        if (becom == null || !(player instanceof EntityPlayerMP mp)
+            || !(handle instanceof PhoneHandle.CarriedPhone phone)) return;
+        ItemStack stack = phone.stack(player);
+        if (stack == null) return;
+        ItemCarriedPhone.setOn(stack, on);
+        player.inventory.markDirty();
+        // Now, not at the next second: a phone switched off can't ring or stay in its call (DESIGN.md 11.3).
+        becom.carried.refresh(mp);
     }
 
     // Settings and block-list changes are cheap one by one, but each recomputes contacts or the view: a client that
@@ -138,36 +180,46 @@ public final class PhoneScreenActions {
     private static final int SETTINGS_CHANGES_PER_MINUTE = 60;
     private static final RateLimiter<UUID> SETTINGS_CHANGES = new RateLimiter<>(SETTINGS_CHANGES_PER_MINUTE, 60_000);
 
-    private static PhoneRecord managed(EntityPlayer player, TileTelephone tile) {
+    private static PhoneRecord managed(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || !near(player, tile)) return null;
+        if (becom == null || !handle.usableBy(player)) return null;
         long now = System.nanoTime() / 1_000_000L;
         SETTINGS_CHANGES.sweep(now);
         if (!SETTINGS_CHANGES.tryAcquire(player.getUniqueID(), now)) return null;
-        PhoneRecord record = becom.phones.record(tile.number());
+        PhoneRecord record = becom.phones.record(handle.number());
         if (record == null || !Ownership.mayManage(player, record.owner())) return null;
         return record;
     }
 
-    public static void setDoNotDisturb(EntityPlayer player, TileTelephone tile, boolean on) {
-        PhoneRecord record = managed(player, tile);
+    public static void setDoNotDisturb(EntityPlayer player, PhoneHandle handle, boolean on) {
+        PhoneRecord record = managed(player, handle);
         if (record == null) return;
         record.setDoNotDisturb(on);
         BeComServer.get().phones.registry()
             .changed();
     }
 
-    public static void setHidden(EntityPlayer player, TileTelephone tile, boolean on) {
-        PhoneRecord record = managed(player, tile);
+    public static void setHidden(EntityPlayer player, PhoneHandle handle, boolean on) {
+        PhoneRecord record = managed(player, handle);
         if (record == null) return;
         record.setHidden(on);
         BeComServer.get().phones.registry()
             .changed();
     }
 
+    /** Silent mode, for a carried phone (DESIGN.md 11.2): it buzzes for its holder instead of ringing out loud. */
+    public static void setSilent(EntityPlayer player, PhoneHandle handle, boolean on) {
+        if (!(handle instanceof PhoneHandle.CarriedPhone)) return;
+        PhoneRecord record = managed(player, handle);
+        if (record == null) return;
+        record.setSilent(on);
+        BeComServer.get().phones.registry()
+            .changed();
+    }
+
     /** Blocks the owner of a phone in this player's contacts (DESIGN.md 12.3, X9). */
-    public static void blockContact(EntityPlayer player, TileTelephone tile, int number) {
-        PhoneRecord record = managed(player, tile);
+    public static void blockContact(EntityPlayer player, PhoneHandle handle, int number) {
+        PhoneRecord record = managed(player, handle);
         if (record == null) return;
         BeComServer becom = BeComServer.get();
         PhoneRegistry.Blockable target = becom.phones.registry()
@@ -176,8 +228,8 @@ public final class PhoneScreenActions {
     }
 
     /** Blocks whoever the recent call at {@code time} with {@code number} recorded on the other end. */
-    public static void blockRecent(EntityPlayer player, TileTelephone tile, long time, int number) {
-        PhoneRecord record = managed(player, tile);
+    public static void blockRecent(EntityPlayer player, PhoneHandle handle, long time, int number) {
+        PhoneRecord record = managed(player, handle);
         if (record == null) return;
         block(
             player,
@@ -196,8 +248,8 @@ public final class PhoneScreenActions {
             .changed();
     }
 
-    public static void unblock(EntityPlayer player, TileTelephone tile, UUID blocked) {
-        PhoneRecord record = managed(player, tile);
+    public static void unblock(EntityPlayer player, PhoneHandle handle, UUID blocked) {
+        PhoneRecord record = managed(player, handle);
         if (record == null) return;
         if (record.unblock(blocked)) BeComServer.get().phones.registry()
             .changed();

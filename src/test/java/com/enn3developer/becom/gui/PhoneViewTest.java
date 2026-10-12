@@ -38,7 +38,14 @@ class PhoneViewTest {
             true,
             c,
             r,
-            b);
+            b,
+            true,
+            true,
+            false,
+            SignalLevel.HIGH,
+            List.of(
+                new PhoneView.Member(123_456, "bob", SignalLevel.LOW, false),
+                new PhoneView.Member(222_222, "carol", SignalLevel.NONE, true)));
     }
 
     private static PhoneView roundTrip(PhoneView view) {

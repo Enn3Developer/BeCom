@@ -11,8 +11,9 @@ import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
 
 /**
- * BeCom's own network channel. Messages go from the server to clients, but for sneak + scroll on a walkie-talkie;
- * otherwise clients act on the server only through ModularUI's synced actions. The server checks both (DESIGN.md 14:
+ * BeCom's own network channel. Messages go from the server to clients, but for sneak + scroll on a walkie-talkie and
+ * the Phone key; otherwise clients act on the server only through ModularUI's synced actions. The server checks both
+ * (DESIGN.md 14:
  * client input).
  */
 public final class BeComPackets {
@@ -29,6 +30,9 @@ public final class BeComPackets {
         CHANNEL.registerMessage(ConfigSyncPacket.Handler.class, ConfigSyncPacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(AnalyzerPacket.Handler.class, AnalyzerPacket.class, id++, Side.CLIENT);
         CHANNEL.registerMessage(WalkieChannelPacket.Handler.class, WalkieChannelPacket.class, id++, Side.SERVER);
+        CHANNEL.registerMessage(RingPacket.Handler.class, RingPacket.class, id++, Side.CLIENT);
+        CHANNEL.registerMessage(PhoneKeyPacket.Handler.class, PhoneKeyPacket.class, id++, Side.SERVER);
+        CHANNEL.registerMessage(PhoneStatusPacket.Handler.class, PhoneStatusPacket.class, id++, Side.CLIENT);
     }
 
     public static void send(IMessage message, EntityPlayerMP player) {

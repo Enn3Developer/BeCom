@@ -8,6 +8,7 @@ public final class BeComItems {
 
     public static ItemWalkieTalkie walkieTalkie;
     public static ItemSignalAnalyzer signalAnalyzer;
+    public static ItemMobilePhone mobilePhone;
 
     private BeComItems() {}
 
@@ -18,5 +19,8 @@ public final class BeComItems {
         signalAnalyzer.setCreativeTab(GregTechAPI.TAB_GREGTECH);
         GameRegistry.registerItem(walkieTalkie, "walkie_talkie");
         GameRegistry.registerItem(signalAnalyzer, "signal_analyzer");
+        mobilePhone = new ItemMobilePhone();
+        mobilePhone.setCreativeTab(GregTechAPI.TAB_GREGTECH);
+        GameRegistry.registerItem(mobilePhone, "mobile_phone");
     }
 }

@@ -44,6 +44,7 @@ public final class BeComServer {
     public final PhoneService phones;
     public final CallService calls;
     public final RadioService radio;
+    public final CarriedPhones carried;
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
@@ -84,8 +85,9 @@ public final class BeComServer {
             tunables.directHearingRange(),
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());
-        this.calls = new CallService(server, network, phones, callGroup, tunables);
         this.radio = new RadioService(server, tunables, antennas, heights);
+        this.carried = new CarriedPhones(server, tunables, phones, antennas, RadioService::endOf);
+        this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
     }
 
     /** Whether rain or snow falls at a column, so the weather can cost a link there (DESIGN.md 6.1, D26). */
@@ -137,6 +139,7 @@ public final class BeComServer {
         stopping = becom;
         becom.calls.stop();
         becom.radio.stop();
+        becom.carried.stop();
     }
 
     /**
@@ -171,6 +174,7 @@ public final class BeComServer {
         long start = System.nanoTime();
         network.tick(budget / 2);
         antennas.tick(Math.max(0, budget - (System.nanoTime() - start)), System::nanoTime);
+        carried.tick();
         calls.tick();
         radio.tick();
         if (network.currentTick() % 20 == 0) links.expire();

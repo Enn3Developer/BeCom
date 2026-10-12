@@ -9,12 +9,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraftforge.common.UsernameCache;
 
+import com.cleanroommc.modularui.factory.GuiFactories;
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.TileTelephone;
+import com.enn3developer.becom.item.Carried;
+import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -22,11 +28,13 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.call.CallHistory;
+import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.LevelPacket;
+import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
@@ -48,6 +56,7 @@ public final class CallService implements CallBook.Listener {
     private final MinecraftServer server;
     private final NetworkService network;
     private final PhoneService phones;
+    private final CarriedPhones carried;
     private final CallGroup group;
     private final LevelScale levels;
     private final DropoutModel dropouts;
@@ -59,14 +68,17 @@ public final class CallService implements CallBook.Listener {
     // Per call, the pairs of phones that were in it at the same time, and those whose history is written.
     private final Map<Long, Set<Pair>> talked = new HashMap<>();
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
+    // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
+    private final Map<Integer, Long> ringingCarried = new HashMap<>();
     private long ticks;
     private long publishedVersion = -1;
 
-    public CallService(MinecraftServer server, NetworkService network, PhoneService phones, CallGroup group,
-        Tunables tunables) {
+    public CallService(MinecraftServer server, NetworkService network, PhoneService phones, CarriedPhones carried,
+        CallGroup group, Tunables tunables) {
         this.server = server;
         this.network = network;
         this.phones = phones;
+        this.carried = carried;
         this.group = group;
         this.levels = tunables.levelScale();
         this.dropouts = tunables.dropoutModel(Tunables.FRAME_MILLIS);
@@ -78,6 +90,19 @@ public final class CallService implements CallBook.Listener {
             tunables.sessionGraceSeconds() * MILLIS_PER_SECOND,
             tunables.groupCallSize(),
             this);
+        carried.setCalls(new CarriedPhones.Calls() {
+
+            @Override
+            public boolean inCall(int number) {
+                return book.callOfPhone(number) != null;
+            }
+
+            @Override
+            public void lost(int number) {
+                // Switched off, flat, dropped or stored: it can't ring or carry a call any more (DESIGN.md 11.3).
+                book.phoneGone(number);
+            }
+        });
     }
 
     public CallBook book() {
@@ -194,14 +219,40 @@ public final class CallService implements CallBook.Listener {
 
     // region Dialling
 
-    /** The phones {@code phone} can reach at Low or better, other than itself. */
+    /**
+     * Where a phone joins the call graph: a carried one at whatever gives it service where its player stands, none
+     * when it has no service; a phone on a line at its own vertex.
+     */
+    public List<CallGraph.Entry> entriesOf(int phone) {
+        PhoneRecord record = phones.record(phone);
+        if (record != null && record.kind()
+            .carried()) {
+            return carried.serviceOf(phone)
+                .entries();
+        }
+        return CallGraph.Entry.of(phone);
+    }
+
+    /** The weakest hop on the best path from one phone to another, whatever kind each is. */
+    public double width(int from, int to) {
+        return network.graph()
+            .width(entriesOf(from), entriesOf(to));
+    }
+
+    /** The phones {@code phone} can reach at Low or better, other than itself: on lines, and carried ones. */
     public List<Integer> reachableFrom(int phone) {
         List<Integer> reachable = new ArrayList<>();
         double low = levels.threshold(SignalLevel.LOW);
-        for (Map.Entry<Integer, Double> entry : network.graph()
-            .phonesFrom(phone)
+        List<CallGraph.Entry> own = entriesOf(phone);
+        CallGraph graph = network.graph();
+        for (Map.Entry<Integer, Double> entry : graph.phonesFrom(own)
             .entrySet()) {
             if (entry.getValue() >= low && phones.record(entry.getKey()) != null) reachable.add(entry.getKey());
+        }
+        for (int other : carried.working()) {
+            if (other != phone && phones.record(other) != null && graph.width(own, entriesOf(other)) >= low) {
+                reachable.add(other);
+            }
         }
         return reachable;
     }
@@ -233,12 +284,154 @@ public final class CallService implements CallBook.Listener {
         }
         PhoneRegistry registry = phones.registry();
         if (registry.refusal(caller.getUniqueID(), to) != PhoneRegistry.Refusal.NONE) return CallBook.Check.UNREACHABLE;
+        PhoneRecord target = registry.get(to);
+        if (target.kind()
+            .carried()) {
+            // Unreachable when nobody carries it switched on and charged, or its holder has no voice (DESIGN.md 10);
+            // busy when its holder is in a call on another phone.
+            UUID holder = carried.holderOf(to);
+            if (holder == null || !carried.working()
+                .contains(to) || !hasVoice.test(holder)) return CallBook.Check.UNREACHABLE;
+            if (book.callOf(holder) != null || handsetOf.containsKey(holder)) return CallBook.Check.BUSY;
+        }
         // Someone holding the other handset without a call is dialling out (DESIGN.md 10: busy).
         if (handsets.containsKey(to)) return CallBook.Check.BUSY;
-        double width = network.graph()
-            .width(from, to);
-        if (width < levels.threshold(SignalLevel.LOW)) return CallBook.Check.UNREACHABLE;
+        if (width(from, to) < levels.threshold(SignalLevel.LOW)) return CallBook.Check.UNREACHABLE;
         return CallBook.Check.OK;
+    }
+
+    // endregion
+
+    // region Carried phones
+
+    /** Whether {@code player} carries phone {@code number} right now. */
+    public boolean carries(EntityPlayer player, int number) {
+        return carried.carriedBy(player.getUniqueID())
+            .contains(number);
+    }
+
+    /**
+     * {@code player} dials {@code to} from the phone they carry (DESIGN.md 11.2): a call, or, while they're in one on
+     * it, another phone added to it (group calls).
+     */
+    public CallBook.DialResult dialCarried(EntityPlayerMP player, int from, int to) {
+        if (!carries(player, from) || !carried.working()
+            .contains(from)) return CallBook.DialResult.INVALID;
+        UUID id = player.getUniqueID();
+        Call call = book.callOf(id);
+        CallBook.DialResult result;
+        if (call != null) {
+            Call.Leg own = call.legOf(id);
+            if (own == null || own.phone() != from) return CallBook.DialResult.INVALID;
+            result = book.add(id, to, now(), worldCheck(player, from, to));
+            if (result == CallBook.DialResult.FULL) tell(player, "becom.call.full", book.groupSize());
+            else if (result != CallBook.DialResult.RINGING) report(player, result);
+            return result;
+        }
+        result = book.dial(id, from, to, now(), worldCheck(player, from, to));
+        report(player, result);
+        return result;
+    }
+
+    private void report(EntityPlayerMP player, CallBook.DialResult result) {
+        switch (result) {
+            case RINGING -> tone(player, TonePacket.Tone.RINGBACK);
+            case BUSY -> tone(player, TonePacket.Tone.BUSY);
+            case UNREACHABLE -> tone(player, TonePacket.Tone.UNREACHABLE);
+            case RATE_LIMITED -> {
+                tell(player, "becom.call.rate_limited");
+                tone(player, TonePacket.Tone.UNREACHABLE);
+            }
+            case INVALID -> tell(player, "becom.call.invalid");
+            case FULL -> tell(player, "becom.call.full", book.groupSize());
+        }
+    }
+
+    /** The carried phone ringing for {@code player}, or -1. */
+    public int ringingFor(EntityPlayer player) {
+        for (int number : carried.carriedBy(player.getUniqueID())) if (isRinging(number)) return number;
+        return -1;
+    }
+
+    /** {@code player} answers phone {@code number}, which they carry and which rings. */
+    public boolean answerCarried(EntityPlayerMP player, int number) {
+        if (!carries(player, number) || !isRinging(number)) return false;
+        if (!hasVoice.test(player.getUniqueID())) {
+            tell(player, "becom.call.no_voice");
+            return false;
+        }
+        return book.answer(player.getUniqueID(), number, now());
+    }
+
+    /** {@code player} turns down a call ringing phone {@code number}, which they carry (D34). */
+    public boolean rejectCarried(EntityPlayer player, int number) {
+        return carries(player, number) && book.reject(number);
+    }
+
+    /** {@code player} hangs up whatever call they're in: a handset goes back, a carried phone leaves its call. */
+    public void hangUp(EntityPlayerMP player) {
+        UUID id = player.getUniqueID();
+        if (handsetOf.containsKey(id)) {
+            hangUpHandset(id);
+            return;
+        }
+        if (book.hangUp(id)) tone(player, TonePacket.Tone.HANG_UP);
+    }
+
+    /**
+     * The Phone key (DESIGN.md 11.1, D34): answers the player's ringing phone, or with sneak rejects it; hangs up
+     * during a call; otherwise opens the screen of the first phone they carry.
+     */
+    public void phoneKey(EntityPlayerMP player, boolean sneaking) {
+        int ringing = ringingFor(player);
+        if (ringing >= 0) {
+            if (sneaking) rejectCarried(player, ringing);
+            else answerCarried(player, ringing);
+            return;
+        }
+        UUID id = player.getUniqueID();
+        if (book.callOf(id) != null || handsetOf.containsKey(id)) {
+            hangUp(player);
+            return;
+        }
+        Carried.Slot slot = Carried.first(player, ItemCarriedPhone::is);
+        if (slot == null) return;
+        if (slot.inventory() == player.inventory) {
+            GuiFactories.playerInventory()
+                .openFromPlayerInventory(player, slot.index());
+        } else {
+            GuiFactories.playerInventory()
+                .openFromBaubles(player, slot.index());
+        }
+    }
+
+    /**
+     * Starts or keeps a carried phone ringing at its holder: everyone near hears it, or in silent mode only they do.
+     */
+    private void ringCarried(int number) {
+        Long since = ringingCarried.get(number);
+        if (since == null || (ticks - since) % TileTelephone.RING_PERIOD_TICKS != 0) return;
+        EntityPlayerMP holder = player(carried.holderOf(number));
+        PhoneRecord record = phones.record(number);
+        if (holder == null || record == null) return;
+        if (record.silent()) {
+            holder.playerNetServerHandler.sendPacket(
+                new S29PacketSoundEffect(
+                    BeCom.MODID + ":phone.buzz",
+                    holder.posX,
+                    holder.posY,
+                    holder.posZ,
+                    1.0f,
+                    1.0f));
+        } else {
+            holder.worldObj.playSoundAtEntity(holder, BeCom.MODID + ":phone.ring", 1.0f, 1.0f);
+        }
+    }
+
+    private void stopRinging(int number) {
+        if (ringingCarried.remove(number) == null) return;
+        EntityPlayerMP holder = player(carried.holderOf(number));
+        if (holder != null) BeComPackets.send(RingPacket.stop(), holder);
     }
 
     // endregion
@@ -249,12 +442,26 @@ public final class CallService implements CallBook.Listener {
     public void ringing(Call call, Call.Leg leg) {
         TileTelephone telephone = phones.telephone(leg.phone());
         if (telephone != null) telephone.setRinging(true);
+        PhoneRecord record = phones.record(leg.phone());
+        if (record == null || !record.kind()
+            .carried()) return;
+        ringingCarried.put(leg.phone(), ticks);
+        ringCarried(leg.phone());
+        // The notice in the corner (DESIGN.md 11.2): who calls, and from which number.
+        EntityPlayerMP holder = player(carried.holderOf(leg.phone()));
+        Call.Leg ringer = call.legOf(leg.invitedBy());
+        if (holder != null && ringer != null) {
+            String name = ringer.player() != null ? nameOf(ringer.player(), phones.name(ringer.phone()))
+                : phones.name(ringer.phone());
+            BeComPackets.send(RingPacket.ringing(name, ringer.phone()), holder);
+        }
     }
 
     @Override
     public void connected(Call call, Call.Leg answered) {
         TileTelephone telephone = phones.telephone(answered.phone());
         if (telephone != null) telephone.setRinging(false);
+        stopRinging(answered.phone());
         Set<Pair> pairs = talked.computeIfAbsent(call.id(), id -> new HashSet<>());
         for (Call.Leg other : call.activeLegs()) {
             if (other != answered) pairs.add(Pair.of(answered.phone(), other.phone()));
@@ -277,6 +484,7 @@ public final class CallService implements CallBook.Listener {
     public void legLeft(Call call, Call.Leg leg, Set<UUID> players, CallBook.EndReason reason) {
         TileTelephone telephone = phones.telephone(leg.phone());
         if (telephone != null) telephone.setRinging(false);
+        stopRinging(leg.phone());
         // Its rows are written now, while everyone's names are still known; the rest when the call ends.
         for (Call.Leg other : call.legs()) if (other != leg) record(call, leg, other);
         phones.registry()
@@ -296,6 +504,7 @@ public final class CallService implements CallBook.Listener {
         for (Call.Leg leg : call.legs()) {
             TileTelephone telephone = phones.telephone(leg.phone());
             if (telephone != null) telephone.setRinging(false);
+            stopRinging(leg.phone());
         }
         for (Call.Leg leg : call.legs()) {
             for (Call.Leg other : call.legs()) if (other != leg) record(call, leg, other);
@@ -406,6 +615,7 @@ public final class CallService implements CallBook.Listener {
         ticks++;
         long now = now();
         book.tick(now);
+        for (int number : new ArrayList<>(ringingCarried.keySet())) ringCarried(number);
         if (ticks % CORD_CHECK_TICKS == 0) checkCords();
         if (ticks % TICKS_PER_SECOND == 0) {
             book.evaluate(now, quality);
@@ -430,8 +640,7 @@ public final class CallService implements CallBook.Listener {
 
         @Override
         public double snr(Call call, Call.Leg speaker, Call.Leg listener) {
-            return network.graph()
-                .width(speaker.phone(), listener.phone());
+            return width(speaker.phone(), listener.phone());
         }
 
         @Override
@@ -487,6 +696,7 @@ public final class CallService implements CallBook.Listener {
         handsets.clear();
         handsetOf.clear();
         names.clear();
+        ringingCarried.clear();
         talked.clear();
         recorded.clear();
         group.clear();

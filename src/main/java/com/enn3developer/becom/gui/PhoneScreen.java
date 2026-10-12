@@ -11,7 +11,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.drawable.IKey;
-import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
@@ -22,14 +21,15 @@ import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 
 /**
- * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, and settings, with the call's state on
- * top. Built on both sides; the server registers the actions and checks each one, the client only draws and asks.
+ * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, everyone in the call, and settings,
+ * with the call's state on top. The same screen for a Telephone and for a carried phone, which adds power and silent
+ * mode. Built on both sides; the server registers the actions and checks each one, the client only draws and asks.
  */
 public final class PhoneScreen {
 
@@ -40,7 +40,7 @@ public final class PhoneScreen {
     // The settings page has two toggles and a heading above its block list.
     private static final int BLOCKED_ROWS = ROWS - 4;
     private static final int KEY_SIZE = 22;
-    private static final int TAB_COUNT = 4;
+    private static final int TAB_COUNT = 5;
     private static final int BARS_WIDTH = 14;
 
     private static final String DIAL = "dial";
@@ -51,16 +51,28 @@ public final class PhoneScreen {
     private static final String BLOCK_CONTACT = "block_contact";
     private static final String BLOCK_RECENT = "block_recent";
     private static final String UNBLOCK = "unblock";
+    private static final String POWER = "power";
+    private static final String SILENT = "silent";
 
     private PhoneScreen() {}
 
-    public static ModularPanel build(TileTelephone tile, PosGuiData data, PanelSyncManager sync) {
-        EntityPlayer player = data.getPlayer();
+    /** @param handle the phone; on the client only its kind matters, the server checks every action against it */
+    public static ModularPanel build(PhoneHandle tile, EntityPlayer player, PanelSyncManager sync) {
         PhoneViewSync viewSync = new PhoneViewSync(() -> PhoneScreenActions.view(player, tile));
         sync.syncValue("view", viewSync);
         sync.registerSyncedAction(DIAL, false, true, buf -> PhoneScreenActions.dial(player, tile, buf.readInt()));
         sync.registerSyncedAction(PICK_UP, false, true, buf -> PhoneScreenActions.pickUp(player, tile));
         sync.registerSyncedAction(HANG_UP, false, true, buf -> PhoneScreenActions.hangUp(player, tile));
+        sync.registerSyncedAction(
+            POWER,
+            false,
+            true,
+            buf -> PhoneScreenActions.setPower(player, tile, buf.readBoolean()));
+        sync.registerSyncedAction(
+            SILENT,
+            false,
+            true,
+            buf -> PhoneScreenActions.setSilent(player, tile, buf.readBoolean()));
         sync.registerSyncedAction(
             DND,
             false,
@@ -117,12 +129,14 @@ public final class PhoneScreen {
                 .asWidget()
                 .width(WIDTH - 12 - BARS_WIDTH)
                 .height(10));
-        // The call's signal bars (DESIGN.md 11.2), drawn only on the client.
+        // The call's signal bars, or a carried phone's service (DESIGN.md 11.2), drawn only on the client.
         statusRow.child(
             BeCom.proxy.signalBars(
                 () -> view.get()
                     .state() == PhoneView.State.CONNECTED ? view.get()
-                        .hearing() : SignalLevel.NONE)
+                        .hearing()
+                        : view.get()
+                            .service())
                 .asWidget()
                 .size(BARS_WIDTH, 10));
         column.child(statusRow);
@@ -130,7 +144,7 @@ public final class PhoneScreen {
             .widthRel(1f)
             .height(14)
             .childPadding(2);
-        String[] tabNames = { "keypad", "contacts", "recent", "settings" };
+        String[] tabNames = { "keypad", "contacts", "recent", "call", "settings" };
         for (int i = 0; i < TAB_COUNT; i++) {
             tabRow.child(
                 new PageButton(i, tabs).size((WIDTH - 12 - 2 * (TAB_COUNT - 1)) / TAB_COUNT, 14)
@@ -194,6 +208,7 @@ public final class PhoneScreen {
                             });
                         },
                         view))
+                .addPage(members(view))
                 .addPage(settings(sync, view)));
         panel.child(column);
         return panel;
@@ -202,8 +217,15 @@ public final class PhoneScreen {
     private static String status(PhoneView view) {
         String other = view.otherName()
             .isEmpty() ? String.valueOf(view.otherNumber()) : view.otherName();
+        if (view.carried() && !view.on()) return StatCollector.translateToLocal("becom.phone.state.off");
+        int more = view.members()
+            .size() - 1;
+        if (view.state() == PhoneView.State.CONNECTED && more > 0) {
+            return StatCollector.translateToLocalFormatted("becom.phone.state.connected_group", other, more);
+        }
         return switch (view.state()) {
-            case IDLE -> StatCollector.translateToLocal("becom.phone.state.idle");
+            case IDLE -> StatCollector
+                .translateToLocal(view.carried() ? "becom.phone.state.ready" : "becom.phone.state.idle");
             case OFF_HOOK -> StatCollector.translateToLocal("becom.phone.state.off_hook");
             case RINGING_OUT -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_out", other);
             case RINGING_IN -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_in", other);
@@ -250,9 +272,14 @@ public final class PhoneScreen {
         Flow actions = Flow.row()
             .coverChildren()
             .childPadding(2);
+        // During a call, the same button adds the number to it (DESIGN.md 8.2: group calls).
         actions.child(
             new ButtonWidget<>().size(54, 14)
-                .overlay(IKey.lang("becom.phone.call"))
+                .overlay(
+                    IKey.dynamic(
+                        () -> StatCollector.translateToLocal(
+                            view.get()
+                                .state() == PhoneView.State.CONNECTED ? "becom.phone.add" : "becom.phone.call")))
                 .onMousePressed(button -> {
                     int number = PhoneNumbers.parse(typed.toString());
                     if (number >= 0) sync.callSyncedAction(DIAL, buf -> buf.writeInt(number));
@@ -358,26 +385,99 @@ public final class PhoneScreen {
         return pager;
     }
 
+    /** Everyone else in the call (DESIGN.md 11.2): who, at what level, or still ringing. */
+    private static ParentWidget<?> members(Supplier<PhoneView> view) {
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .childPadding(1);
+        for (int r = 0; r < PhoneView.MAX_MEMBERS && r < ROWS + 3; r++) {
+            int row = r;
+            Flow line = Flow.row()
+                .widthRel(1f)
+                .height(ROW_HEIGHT - 3)
+                .childPadding(2);
+            line.child(IKey.dynamic(() -> {
+                List<PhoneView.Member> members = view.get()
+                    .members();
+                if (row >= members.size()) return "";
+                PhoneView.Member member = members.get(row);
+                String name = member.name()
+                    .isEmpty() ? String.valueOf(member.number()) : member.name();
+                return member.ringing() ? StatCollector.translateToLocalFormatted("becom.phone.member_ringing", name)
+                    : name;
+            })
+                .asWidget()
+                .width(WIDTH - 12 - BARS_WIDTH - 2)
+                .height(ROW_HEIGHT - 3));
+            line.child(BeCom.proxy.signalBars(() -> {
+                List<PhoneView.Member> members = view.get()
+                    .members();
+                return row < members.size() ? members.get(row)
+                    .level() : SignalLevel.NONE;
+            })
+                .asWidget()
+                .size(BARS_WIDTH, ROW_HEIGHT - 3));
+            column.child(line);
+        }
+        return column;
+    }
+
     private static ParentWidget<?> settings(PanelSyncManager sync, Supplier<PhoneView> view) {
         Flow column = Flow.column()
             .sizeRel(1f)
             .childPadding(2);
-        column.child(
+        int half = (WIDTH - 12 - 2) / 2;
+        Flow firstRow = Flow.row()
+            .widthRel(1f)
+            .height(14)
+            .childPadding(2);
+        firstRow.child(
             toggle(
                 sync,
                 DND,
                 "becom.phone.dnd",
                 () -> view.get()
                     .doNotDisturb(),
-                view));
-        column.child(
+                view).width(half));
+        firstRow.child(
             toggle(
                 sync,
                 HIDE,
                 "becom.phone.hidden",
                 () -> view.get()
                     .hidden(),
-                view));
+                view).width(half));
+        column.child(firstRow);
+        // A carried phone's own switches: power for whoever carries it, silent mode for its owner (DESIGN.md 11.2).
+        Flow secondRow = Flow.row()
+            .widthRel(1f)
+            .height(14)
+            .childPadding(2);
+        secondRow.child(
+            new ToggleButton().size(half, 14)
+                .overlay(IKey.lang("becom.phone.power"))
+                .value(
+                    new BoolValue.Dynamic(
+                        () -> view.get()
+                            .on(),
+                        on -> sync.callSyncedAction(POWER, buf -> buf.writeBoolean(on))))
+                .setEnabledIf(
+                    w -> view.get()
+                        .carried()));
+        secondRow.child(
+            toggle(
+                sync,
+                SILENT,
+                "becom.phone.silent",
+                () -> view.get()
+                    .silent(),
+                view).width(half)
+                    .setEnabledIf(
+                        w -> view.get()
+                            .carried()
+                            && view.get()
+                                .mayManage()));
+        column.child(secondRow);
         column.child(
             IKey.lang("becom.phone.blocked")
                 .asWidget()

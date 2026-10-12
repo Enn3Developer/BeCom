@@ -253,10 +253,26 @@ def signal_analyzer():
     return c
 
 
+def mobile_phone():
+    """A mobile phone: a slim body, the earpiece, a large screen with signal bars and two lines, and a home button."""
+    c = Canvas()
+    c.panel(4, 1, 11, 15)
+    c.rect(7, 2, 8, 2, "k")
+    c.rect(5, 3, 10, 11, "g")
+    for i, h in enumerate((1, 2, 3)):
+        c.rect(6 + i, 6 - h, 6 + i, 5, "G")
+    c.rect(6, 8, 9, 8, "G")
+    c.rect(6, 10, 8, 10, "s")
+    c.rect(7, 13, 8, 13, "r")
+    c.set(8, 13, "s")
+    return c
+
+
 ITEMS = {
     "walkie_talkie": lambda: walkie(False),
     "walkie_talkie_tx": lambda: walkie(True),
     "signal_analyzer": signal_analyzer,
+    "mobile_phone": mobile_phone,
 }
 
 # Block textures for BeCom's own models: base colour, shade, and highlight per style.

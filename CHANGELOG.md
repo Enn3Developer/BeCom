@@ -43,3 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seven radio quests, completed by BeCom's new Radio contact task among others.
 - Line re-checks now share the survey budget per tick with antenna surveys.
 - The config refuses NaN and Infinity in its decimal values, naming the key.
+- Milestone 0.3, phones: the Mobile Phone, an HV handheld with service through antennas on UHF and a cap of High. It
+  rings from its player with a notice in the corner, buzzes only for its holder in silent mode, drains its battery on
+  standby and more in a call, and works from the inventory or a bauble slot, as walkies now do too.
+- The Phone key (N): answers a ringing phone, hangs up during a call, opens the phone screen otherwise; sneak + Phone
+  rejects a call.
+- Group calls of up to 8 people: anyone in a call adds a phone from the phone screen, which now lists everyone in the
+  call with their signal bars, and has power and silent mode for carried phones.
+- Rain and thunderstorms weaken calls between antennas and phones' service where they fall: 3 dB in rain, 6 in a storm.

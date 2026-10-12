@@ -8,6 +8,7 @@ import java.util.UUID;
 import net.minecraft.network.PacketBuffer;
 
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
 /**
@@ -16,13 +17,14 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
  */
 public record PhoneView(int number, String owner, boolean mayManage, State state, String otherName, int otherNumber,
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
-    List<Blocked> blocked) {
+    List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members) {
 
     // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
     // players, and the whole history.
     public static final int MAX_CONTACTS = 512;
     public static final int MAX_RECENT = PhoneRecord.HISTORY_SIZE;
     public static final int MAX_BLOCKED = PhoneRecord.MAX_BLOCKED;
+    public static final int MAX_MEMBERS = Tunables.MAX_GROUP_CALL;
 
     public static final PhoneView EMPTY = new PhoneView(
         -1,
@@ -36,6 +38,11 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         false,
         Collections.emptyList(),
         Collections.emptyList(),
+        Collections.emptyList(),
+        false,
+        false,
+        false,
+        SignalLevel.NONE,
         Collections.emptyList());
 
     /** Ordinals go on the wire, so constants are only ever appended. */
@@ -61,6 +68,9 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
     public record Recent(long time, int number, String name, PhoneRecord.Direction direction) {}
 
     public record Blocked(UUID player, String name) {}
+
+    /** Another phone in the call (DESIGN.md 11.2): who is on it, the level this phone hears it at, or still ringing. */
+    public record Member(int number, String name, SignalLevel level, boolean ringing) {}
 
     public void write(PacketBuffer buf) {
         buf.writeInt(number);
@@ -99,6 +109,20 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
                     .getLeastSignificantBits());
             writeString(buf, entry.name());
         }
+        buf.writeBoolean(carried);
+        buf.writeBoolean(on);
+        buf.writeBoolean(silent);
+        buf.writeByte(service.ordinal());
+        List<Member> m = cap(members, MAX_MEMBERS);
+        buf.writeVarIntToBuffer(m.size());
+        for (Member member : m) {
+            buf.writeInt(member.number());
+            writeString(buf, member.name());
+            buf.writeByte(
+                member.level()
+                    .ordinal());
+            buf.writeBoolean(member.ringing());
+        }
     }
 
     public static PhoneView read(PacketBuffer buf) {
@@ -129,6 +153,16 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         for (int i = 0; i < count; i++) {
             blocked.add(new Blocked(new UUID(buf.readLong(), buf.readLong()), readString(buf)));
         }
+        boolean carried = buf.readBoolean();
+        boolean on = buf.readBoolean();
+        boolean silent = buf.readBoolean();
+        SignalLevel service = SignalLevel.byOrdinal(buf.readByte());
+        count = Math.min(buf.readVarIntFromBuffer(), MAX_MEMBERS);
+        List<Member> members = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            members.add(
+                new Member(buf.readInt(), readString(buf), SignalLevel.byOrdinal(buf.readByte()), buf.readBoolean()));
+        }
         return new PhoneView(
             number,
             owner,
@@ -141,7 +175,12 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             hidden,
             contacts,
             recent,
-            blocked);
+            blocked,
+            carried,
+            on,
+            silent,
+            service,
+            members);
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

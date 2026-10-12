@@ -9,8 +9,8 @@ import com.enn3developer.becom.voice.CallGroup;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * Signal bars next to the hotbar during a call (DESIGN.md 11.2): one bar per level, Low to Max, lit up to the level
- * this player hears the call at.
+ * Signal bars next to the hotbar while the player is in a call or holds a phone (DESIGN.md 11.2): one bar per level,
+ * Low to Max, lit up to the level they hear the call at, or else to the service of the phone they carry.
  */
 public final class SignalBars {
 
@@ -27,6 +27,7 @@ public final class SignalBars {
     public void onOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.HOTBAR) return;
         SignalLevel level = ClientLevels.weakest(CallGroup.NAME);
+        if (level == SignalLevel.NONE) level = ClientPhone.heldService();
         if (level == SignalLevel.NONE) return;
         draw(
             event.resolution.getScaledWidth() / 2 + HOTBAR_HALF_WIDTH + MARGIN,

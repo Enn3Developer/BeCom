@@ -20,6 +20,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.FakePlayerFactory;
@@ -35,6 +36,7 @@ import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.gui.AntennaView;
 import com.enn3developer.becom.item.BeComItems;
+import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
@@ -45,6 +47,7 @@ import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
@@ -59,8 +62,11 @@ import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.CallService;
+import com.enn3developer.becom.server.CarriedPhones;
 import com.enn3developer.becom.server.LinkService;
+import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
+import com.enn3developer.becom.server.RadioService;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.becom.voice.RadioGroup;
 import com.enn3developer.becom.voice.RadioSnapshot;
@@ -217,6 +223,16 @@ public final class SelfTest {
         steps.add(this::holdEdge);
         steps.add(this::checkEdgeDrop);
         steps.add(this::checkNewerAntenna);
+        steps.add(this::checkPhoneRegistration);
+        steps.add(this::buildPhones);
+        steps.add(this::formPhones);
+        steps.add(this::checkMobileService);
+        steps.add(this::checkMobileCall);
+        steps.add(this::checkGroupCall);
+        steps.add(this::checkPhonePower);
+        steps.add(this::checkPhoneDrain);
+        steps.add(this::startRain);
+        steps.add(this::checkRain);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -720,7 +736,7 @@ public final class SelfTest {
             result.name());
         check("answering connects", calls.takeHandset(stranger, end) == CallService.Pickup.ANSWERED, "");
         // Both Telephones are the owner's; the screen names the player on the other end, as the history does.
-        String shown = PhoneScreenActions.view(owner, start)
+        String shown = PhoneScreenActions.view(owner, new PhoneHandle.Telephone(start))
             .otherName();
         check(
             "the phone screen names the player on the other end, not the phone's owner",
@@ -1067,27 +1083,29 @@ public final class SelfTest {
             hasCraftingRecipe(BeComMachines.transceiver.getStackForm(1)),
             "");
         for (net.minecraft.item.Item item : List.of(BeComItems.walkieTalkie, BeComItems.signalAnalyzer)) {
-            GTRecipe ours = null;
-            for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
-                for (ItemStack out : recipe.mOutputs) if (out != null && out.getItem() == item) ours = recipe;
-            }
-            String name = item.getUnlocalizedName();
-            if (ours == null) {
-                fail("assembler makes " + name, "no recipe");
-                continue;
-            }
-            List<GTRecipe> found = RecipeMaps.assemblerRecipes.findRecipeQuery()
-                .items(ours.mInputs)
-                .fluids(ours.mFluidInputs)
-                .voltage(GTValues.V[2])
-                .findAll()
-                .collect(java.util.stream.Collectors.toList());
-            check(
-                "assembler makes " + name + ", and its inputs make nothing else",
-                found.size() == 1,
-                found.toString());
+            checkAssemblerOnly(item, 2);
         }
         return 1;
+    }
+
+    /** The assembler makes {@code item} at voltage tier {@code tier}, and its inputs make nothing else there. */
+    private void checkAssemblerOnly(net.minecraft.item.Item item, int tier) {
+        GTRecipe ours = null;
+        for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
+            for (ItemStack out : recipe.mOutputs) if (out != null && out.getItem() == item) ours = recipe;
+        }
+        String name = item.getUnlocalizedName();
+        if (ours == null) {
+            fail("assembler makes " + name, "no recipe");
+            return;
+        }
+        List<GTRecipe> found = RecipeMaps.assemblerRecipes.findRecipeQuery()
+            .items(ours.mInputs)
+            .fluids(ours.mFluidInputs)
+            .voltage(GTValues.V[tier])
+            .findAll()
+            .collect(java.util.stream.Collectors.toList());
+        check("assembler makes " + name + ", and its inputs make nothing else", found.size() == 1, found.toString());
     }
 
     private int buildRadio() {
@@ -1603,6 +1621,290 @@ public final class SelfTest {
         antennaT2.loadNBTData(current);
         antennaT2.refreshStructure();
         return 1;
+    }
+
+    // endregion
+
+    // region Phones (0.3)
+
+    // 0.3's phone checks, in their own area: a T1 antenna bridged onto a pylon line with a Telephone at its end, and
+    // mobile phones west of it, where rain falls (D26). EndlessIDs forbids rewriting a chunk's biomes, so the area is
+    // the first stretch north of here whose biome rains.
+    private static final int PHONE_Z_FROM = RADIO_Z + 1000;
+    private static final int PHONE_Z_STEP = 64;
+    private static final int PHONE_Z_TRIES = 64;
+    private int phoneZ = PHONE_Z_FROM;
+    private boolean phoneRains;
+    private static final int PHONE_PYLON_DX = 10;
+    private static final int PHONE_TERMINAL_DX = 40;
+    private MTEAntenna phoneAntenna;
+    private MTEPylonHead phonePylon;
+    private MTELineTerminal phoneTerminal;
+    private TileTelephone phoneTelephone;
+    private FakePlayer mona;
+    private FakePlayer nell;
+    private int monaNumber = -1;
+    private int nellNumber = -1;
+    private double clearService = Double.NaN;
+
+    private int checkPhoneRegistration() {
+        checkAssemblerOnly(BeComItems.mobilePhone, 3);
+        return 1;
+    }
+
+    private int buildPhones() {
+        phoneZ = PHONE_Z_FROM;
+        phoneRains = false;
+        for (int i = 0; i < PHONE_Z_TRIES && !phoneRains; i++) {
+            int z = PHONE_Z_FROM + i * PHONE_Z_STEP;
+            phoneRains = rainsAround(z);
+            if (phoneRains) phoneZ = z;
+        }
+        for (int cx = (X0 - 48) >> 4; cx <= (X0 + 64) >> 4; cx++) {
+            for (int cz = (phoneZ - 16) >> 4; cz <= (phoneZ + 16) >> 4; cz++)
+                world.theChunkProviderServer.loadChunk(cx, cz);
+        }
+        NetworkModel model = becom.network.model(world);
+        for (NetNode node : new ArrayList<>(model.nodes())) {
+            if (node.x() < X0 - 48 || node.x() > X0 + 64 || Math.abs(node.z() - phoneZ) > 16) continue;
+            world.setBlockToAir(node.x(), node.y(), node.z());
+            model.remove(node.pos());
+        }
+        for (int x = X0 - 2; x <= X0 + PHONE_TERMINAL_DX + 2; x++) {
+            for (int z = phoneZ - 2; z <= phoneZ + 3; z++) {
+                for (int y = Y - TALLEST_STACK - 2; y <= Y + 1; y++) world.setBlockToAir(x, y, z);
+            }
+        }
+        phoneAntenna = antenna(BeComMachines.antennaT1, X0, phoneZ, gregtech.api.enums.ItemList.Hatch_Energy_LV);
+        phonePylon = head(BeComMachines.pylonHead, X0 + PHONE_PYLON_DX, Y, phoneZ, TALLEST_STACK);
+        phoneTerminal = place(BeComMachines.lineTerminal, X0 + PHONE_TERMINAL_DX, Y, phoneZ);
+        powered.add(phoneTerminal.getBaseMetaTileEntity());
+        world.setBlock(X0 + PHONE_TERMINAL_DX, Y, phoneZ + 1, BeComBlocks.phoneCable);
+        phoneTelephone = telephone(X0 + PHONE_TERMINAL_DX, Y, phoneZ + 2);
+        clearWeather();
+        return 2;
+    }
+
+    /**
+     * Whether rain falls over the whole phone area if it is at {@code z}: the antenna, the pylon line and the phones.
+     */
+    private boolean rainsAround(int z) {
+        for (int x = X0 - 24; x <= X0 + PHONE_TERMINAL_DX + 4; x += 4) {
+            for (int dz = -4; dz <= 8; dz += 4) if (!BeComServer.rains(world, x, z + dz)) return false;
+        }
+        return true;
+    }
+
+    private int formPhones() {
+        phoneAntenna.refreshStructure();
+        phonePylon.refreshStructure();
+        phoneTerminal.scanCable();
+        link(phoneAntenna, phonePylon);
+        link(phonePylon, phoneTerminal);
+        for (int cx = (X0 - 48) >> 4; cx <= (X0 + 64) >> 4; cx++) {
+            for (int cz = (phoneZ - 16) >> 4; cz <= (phoneZ + 16) >> 4; cz++) {
+                becom.heights.chunkChanged(world, world.getChunkFromChunkCoords(cx, cz));
+            }
+        }
+        return SETTLE_TICKS;
+    }
+
+    /** A fake player at {@code (x, Y, z)}, in the air, carrying a charged Mobile Phone, looked at once. */
+    private FakePlayer phonePlayer(String name, int n, double x, double z) {
+        FakePlayer player = FakePlayerFactory.get(
+            world,
+            new GameProfile(
+                UUID.fromString(String.format(Locale.ROOT, "b3c0b3c0-0000-4000-8000-0000000000%02x", 0xd0 + n)),
+                name));
+        player.setPosition(x, Y, z);
+        java.util.Arrays.fill(player.inventory.mainInventory, null);
+        player.inventory.currentItem = 0;
+        ItemStack phone = new ItemStack(BeComItems.mobilePhone);
+        ElectricItem.manager.charge(phone, BeComItems.mobilePhone.getMaxCharge(phone), Integer.MAX_VALUE, true, false);
+        player.inventory.mainInventory[0] = phone;
+        becom.carried.refreshForSelfTest(player);
+        return player;
+    }
+
+    /** DESIGN.md 8, 8.2, 12.1, D25: a carried phone's number, owner and service. */
+    private int checkMobileService() {
+        Tunables t = BeComConfig.get();
+        // The fake players have no voice session; the real check would refuse them before anything else.
+        becom.calls.voiceForSelfTest(id -> true);
+        mona = phonePlayer("BeComMona", 0, X0 - 19.5, phoneZ + 0.5);
+        nell = phonePlayer("BeComNell", 1, X0 - 19.5, phoneZ + 4.5);
+        monaNumber = ItemCarriedPhone.number(mona.inventory.mainInventory[0]);
+        nellNumber = ItemCarriedPhone.number(nell.inventory.mainInventory[0]);
+        PhoneRecord record = monaNumber < 0 ? null : becom.phones.record(monaNumber);
+        check(
+            "a Mobile Phone gets its number on first use, owned by whoever used it",
+            record != null && record.kind() == PhoneKind.MOBILE
+                && mona.getUniqueID()
+                    .equals(record.owner())
+                && nellNumber >= 0
+                && nellNumber != monaNumber,
+            "number " + monaNumber + ", record " + record);
+        AntennaNetwork.Antenna known = becom.antennas.antenna(phoneAntenna.ref());
+        CarriedPhones.Service service = becom.carried.serviceOf(monaNumber);
+        double expected = known == null ? Double.NaN
+            : t.antennaBudget(1) - RadioModel.distanceLoss(
+                known.end()
+                    .distanceTo(RadioService.endOf(mona)));
+        check(
+            "...and service from an antenna T1 20 blocks away, on UHF at 42 - 20 log10(d) dB",
+            service.entries()
+                .size() == 1 && Math.abs(service.best() - expected) < EPS,
+            service.entries()
+                .size() + " entries, best "
+                + service.best()
+                + ", expected "
+                + expected);
+        clearService = service.best();
+        return 1;
+    }
+
+    /**
+     * DESIGN.md 16, 0.3's "Done when": a mobile phone calls a Telephone through an antenna bridged onto a pylon line.
+     */
+    private int checkMobileCall() {
+        int telephone = phoneTelephone.number();
+        CallBook.DialResult result = becom.calls.dialCarried(mona, monaNumber, telephone);
+        check(
+            "a Mobile Phone calls a Telephone through an antenna bridged onto a pylon line",
+            result == CallBook.DialResult.RINGING && phoneTelephone.ringing(),
+            result + ", ringing " + phoneTelephone.ringing());
+        standBy(stranger, phoneTelephone);
+        boolean answered = becom.calls.takeHandset(stranger, phoneTelephone) == CallService.Pickup.ANSWERED;
+        Call call = becom.calls.book()
+            .callOfPhone(telephone);
+        UUID m = mona.getUniqueID(), s = stranger.getUniqueID();
+        check(
+            "...the Telephone answers, and each hears the other at the Telephone's Low",
+            answered && call != null
+                && call.state() == Call.State.CONNECTED
+                && call.level(m, s) == SignalLevel.LOW
+                && call.level(s, m) == SignalLevel.LOW,
+            call == null ? "no call" : call.level(m, s) + " / " + call.level(s, m));
+        near(
+            "...over the phone's link to the antenna, the path's weakest hop",
+            clearService,
+            call == null ? Double.NaN : call.snr(m, s));
+        return 1;
+    }
+
+    /** DESIGN.md 8.2, 11.1: group calls up to 8, the Phone key answering and hanging up. */
+    private int checkGroupCall() {
+        CallBook.DialResult added = becom.calls.dialCarried(mona, monaNumber, nellNumber);
+        check(
+            "anyone in a call can add a phone to it, which rings",
+            added == CallBook.DialResult.RINGING && becom.calls.isRinging(nellNumber),
+            String.valueOf(added));
+        becom.calls.phoneKey(nell, false);
+        Call call = becom.calls.book()
+            .callOfPhone(nellNumber);
+        check(
+            "...the Phone key answers it, and three are in the call",
+            call != null && call.participants()
+                .size() == 3 && call.legOf(nell.getUniqueID()) != null,
+            call == null ? "no call" : call.participants() + "");
+        int routes = 0;
+        if (call != null) {
+            for (UUID player : call.participants()) routes += becom.calls.group()
+                .snapshot()
+                .routesOf(player).length;
+        }
+        check("...and each of them is heard by the two others", routes == 6, routes + " routes");
+        becom.calls.phoneKey(nell, false);
+        check(
+            "...the Phone key hangs up, and the call goes on for the two others",
+            becom.calls.book()
+                .callOf(nell.getUniqueID()) == null && call != null
+                && call.state() == Call.State.CONNECTED
+                && call.participants()
+                    .size() == 2,
+            "");
+        return 1;
+    }
+
+    /** DESIGN.md 10, 11.3: a phone switched off leaves its call and can't be called. */
+    private int checkPhonePower() {
+        Call call = becom.calls.book()
+            .callOf(mona.getUniqueID());
+        PhoneHandle handle = new PhoneHandle.CarriedPhone(monaNumber);
+        PhoneScreenActions.setPower(mona, handle, false);
+        check(
+            "a phone switched off leaves its call",
+            call != null && call.state() == Call.State.ENDED
+                && becom.calls.book()
+                    .callOf(mona.getUniqueID()) == null,
+            "");
+        becom.calls.hangUpHandset(stranger.getUniqueID());
+        CallBook.DialResult result = becom.calls.dialCarried(nell, nellNumber, monaNumber);
+        check("...and can't be called", result == CallBook.DialResult.UNREACHABLE, String.valueOf(result));
+        PhoneScreenActions.setPower(mona, handle, true);
+        return 1;
+    }
+
+    /** D36, DESIGN.md 17: a phone drains its battery on standby, and more in a call. */
+    private int checkPhoneDrain() {
+        Tunables t = BeComConfig.get();
+        ItemStack phone = mona.inventory.mainInventory[0];
+        double before = BeComItems.mobilePhone.charge(phone);
+        becom.carried.drainForSelfTest(mona);
+        double standby = before - BeComItems.mobilePhone.charge(phone);
+        becom.calls.dialCarried(mona, monaNumber, phoneTelephone.number());
+        before = BeComItems.mobilePhone.charge(phone);
+        becom.carried.drainForSelfTest(mona);
+        double calling = before - BeComItems.mobilePhone.charge(phone);
+        becom.calls.hangUp(mona);
+        check(
+            "a phone switched on drains its standby charge each second, and its call charge in a call",
+            standby == (double) t.phoneStandbyDrain() * TICKS_PER_SECOND
+                && calling == (double) t.phoneCallDrain() * TICKS_PER_SECOND,
+            "standby " + standby + ", in a call " + calling);
+        return 1;
+    }
+
+    /** D26: rain costs calls and phones' service, where it falls. */
+    private int startRain() {
+        WorldInfo info = world.getWorldInfo();
+        info.setRaining(true);
+        info.setRainTime(1_000_000);
+        info.setThundering(false);
+        info.setThunderTime(1_000_000);
+        world.prevRainingStrength = 1;
+        world.rainingStrength = 1;
+        world.prevThunderingStrength = 0;
+        world.thunderingStrength = 0;
+        // The antenna network looks at the weather once a second.
+        return 2 * TICKS_PER_SECOND;
+    }
+
+    private int checkRain() {
+        becom.carried.refreshForSelfTest(mona);
+        if (!phoneRains) {
+            fail("rain costs a Mobile Phone 3 dB of its service where it falls", "no rainy biome found to test in");
+            clearWeather();
+            return 1;
+        }
+        near(
+            "rain costs a Mobile Phone 3 dB of its service where it falls",
+            clearService - BeComConfig.get()
+                .weatherLoss(1, 0),
+            becom.carried.serviceOf(monaNumber)
+                .best());
+        clearWeather();
+        return 1;
+    }
+
+    private void clearWeather() {
+        WorldInfo info = world.getWorldInfo();
+        info.setRaining(false);
+        info.setThundering(false);
+        world.prevRainingStrength = 0;
+        world.rainingStrength = 0;
+        world.prevThunderingStrength = 0;
+        world.thunderingStrength = 0;
     }
 
     // endregion

@@ -17,6 +17,7 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.Cord;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.PhoneHandle;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -28,8 +29,9 @@ import gregtech.api.modularui2.GTGuiThemes;
  */
 public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> {
 
-    // A ring cycle: the ring sound plays for its first part, then silence, like a real bell (DESIGN.md 15.2).
-    private static final int RING_PERIOD_TICKS = 120;
+    // A ring cycle: the ring sound plays for its first part, then silence, like a real bell (DESIGN.md 15.2). Carried
+    // phones ring the same.
+    public static final int RING_PERIOD_TICKS = 120;
     // "You can move 1 block away" (DESIGN.md 5.6): the gap from the block to the player's body, with a little slack.
     private static final double CORD_REACH = 1.2;
 
@@ -182,7 +184,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
 
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings settings) {
-        return PhoneScreen.build(this, data, syncManager);
+        return PhoneScreen.build(new PhoneHandle.Telephone(this), data.getPlayer(), syncManager);
     }
 
     @Override

@@ -172,6 +172,7 @@ public final class GlobalSavedData extends WorldSavedData {
         record.setLocation(tag.getInteger("dim"), tag.getLong("pos"));
         record.setDoNotDisturb(tag.getBoolean("dnd"));
         record.setHidden(tag.getBoolean("hidden"));
+        record.setSilent(tag.getBoolean("silent"));
         NBTTagList blocked = tag.getTagList("blocked", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < blocked.tagCount(); i++) {
             NBTTagCompound entry = blocked.getCompoundTagAt(i);
@@ -209,6 +210,7 @@ public final class GlobalSavedData extends WorldSavedData {
         tag.setLong("pos", record.pos());
         tag.setBoolean("dnd", record.doNotDisturb());
         tag.setBoolean("hidden", record.hidden());
+        tag.setBoolean("silent", record.silent());
         NBTTagList blocked = new NBTTagList();
         for (Map.Entry<UUID, String> entry : record.blocked()
             .entrySet()) {

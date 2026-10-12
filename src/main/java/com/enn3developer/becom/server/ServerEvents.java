@@ -90,6 +90,7 @@ public final class ServerEvents {
         if (becom == null) return;
         becom.calls.logout(event.player.getUniqueID());
         becom.radio.logout(event.player.getUniqueID());
+        becom.carried.logout(event.player.getUniqueID());
         becom.links.forget(event.player.getUniqueID());
     }
 }

@@ -28,6 +28,7 @@ public final class PhoneRecord {
     private long pos;
     private boolean doNotDisturb;
     private boolean hidden;
+    private boolean silent;
     private final Map<UUID, String> blocked = new LinkedHashMap<>();
     private final Deque<HistoryEntry> history = new ArrayDeque<>();
 
@@ -86,6 +87,15 @@ public final class PhoneRecord {
 
     public void setHidden(boolean hidden) {
         this.hidden = hidden;
+    }
+
+    /** Silent mode (DESIGN.md 11.2): a carried phone rings only for its holder, as a short buzz. */
+    public boolean silent() {
+        return silent;
+    }
+
+    public void setSilent(boolean silent) {
+        this.silent = silent;
     }
 
     /** Blocked players, by UUID, with the name they had when blocked. */

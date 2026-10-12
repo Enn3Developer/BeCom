@@ -321,3 +321,52 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   stands next to) and would read as an obstacle on every path.
 - **To match the design:** lower the command's permission for `signal` alone; for the cells, sample the end's column
   from the world, which is loaded, instead of skipping the cell.
+
+### X24: A carried phone's number, owner and copies
+
+- **Where:** 0.3, DESIGN.md 8.2, 12.1, D12, D25
+- **Design says:** every phone gets a 6-digit number, unique in the world, assigned when it's first placed or used;
+  a phone's owner is its first user.
+- **Built:** a Mobile Phone gets its number the first time the server sees it carried, in the inventory or a bauble
+  slot, or when its screen first opens; whoever carries it then owns it. A number found in two places at once (a
+  copy made in creative or with a world editor) is the original's where it was seen first: the other stack gets a
+  fresh number with the original's owner and settings, as a copied Telephone does (X17). A phone whose number this
+  world never gave out (one brought from another world) gets a fresh number for its current carrier. A phone that
+  nobody online carries, in a chest or dropped, has no service and can't be called.
+- **Why:** carrying a phone is the only way to use one, so it's the first use the server can see. Two stacks with one
+  number would ring together and split one call between two players.
+- **To match the design:** nothing to change for the number; the copy rule is as X17's.
+
+### X25: Group calls: who counts, adding, and who drops
+
+- **Where:** 0.3, DESIGN.md 8.2, 10, 11.2, 10.2
+- **Design says:** group calls take up to 8 people; the phone screen has an Add button during a call; a link below Low
+  for more than 3 s drops.
+- **Built:**
+  - The size counts people in the call, everyone in a Videophone's room included, plus phones still ringing to join.
+  - Anyone in a connected call can add a phone: the keypad's Call button and the contacts become Add during a call.
+    An added phone that isn't answered within the ringing time, is rejected or loses its path leaves while the call
+    goes on.
+  - A phone drops out when every other phone in the call is cut off from it (more than 3 s below Low either way). The
+    call ends once fewer than two phones are left. Two phones cut off from each other but not from a third stay, and
+    don't hear each other until their path comes back.
+  - A phone's recent calls record the phones it rang or was rung by, and in a group the others it was in the call
+    with at the same time, as incoming.
+- **Why:** DESIGN.md 4.2's drop rule is written for two phones; in a group, dropping the whole call over one weak
+  member would cut everyone off. Counting the room keeps "up to 8 people" true with a Videophone.
+- **To match the design:** count phones instead of people in `CallBook.add` and `setRoom`, if the owner meant phones.
+
+### X26: Carried phones: power, silent mode, drain and the Phone key
+
+- **Where:** 0.3, DESIGN.md 11.1, 11.2, 11.3, D34, D36
+- **Design says:** settings are power, silent mode, do-not-disturb, hide from contacts and the block list; phones
+  drain on standby and more in a call; the Phone key answers, hangs up, or opens the phone screen.
+- **Built:**
+  - Whoever carries a phone may switch it on or off, as with a walkie; silent mode, like the other settings, is for
+    its owner and their team. Silent mode is a carried phone's only: a Telephone rings out loud as before.
+  - A phone dialling out or ringing counts as in a call for the drain.
+  - The Phone key, with no call ringing or going on, opens the screen of the first phone the player carries: held,
+    then inventory, then bauble slots.
+- **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
+  A ringing or dialling phone is busy with the call already.
+- **To match the design:** none of these contradicts it; they fill in what it leaves open.

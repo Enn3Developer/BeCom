@@ -13,6 +13,7 @@ import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.ClientAudio;
 import com.enn3developer.becom.client.ClientLevels;
+import com.enn3developer.becom.client.ClientPhone;
 import com.enn3developer.becom.client.ClientRadio;
 import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.MachineTooltips;
@@ -26,6 +27,8 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
+import com.enn3developer.becom.packet.PhoneStatusPacket;
+import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
@@ -58,11 +61,17 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new SignalBars());
         MinecraftForge.EVENT_BUS.register(new AnalyzerOverlay());
         MinecraftForge.EVENT_BUS.register(new ClientRadio());
+        ClientPhone phone = new ClientPhone();
+        MinecraftForge.EVENT_BUS.register(phone);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(phone);
         FMLCommonHandler.instance()
             .bus()
             .register(this);
         ClientAudio.register();
         ClientRadio.register();
+        ClientPhone.register();
     }
 
     @SubscribeEvent
@@ -82,6 +91,7 @@ public class ClientProxy extends CommonProxy {
             BeComConfig.useDefaults();
             MachineTooltips.forget();
             ClientRadio.reset();
+            ClientPhone.reset();
             AnalyzerOverlay.clear();
         });
     }
@@ -109,6 +119,16 @@ public class ClientProxy extends CommonProxy {
     @Override
     public boolean isTransmittingOn(ItemStack stack) {
         return ClientRadio.transmittingOn(stack);
+    }
+
+    @Override
+    public void onRing(RingPacket packet) {
+        ClientPhone.ring(packet);
+    }
+
+    @Override
+    public void onPhoneStatus(PhoneStatusPacket packet) {
+        ClientPhone.service(packet.service());
     }
 
     @Override
