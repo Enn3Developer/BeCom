@@ -19,6 +19,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NodeHost;
 
@@ -44,6 +45,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     private boolean registered;
     private int phone = -1;
     private int phonesSeen;
+    private boolean tooMuchCable;
 
     public MTELineTerminal(int id, String name, String regionalName) {
         super(id, name, regionalName, TIER, 0, (String) null);
@@ -97,8 +99,10 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         BeComServer becom = BeComServer.get();
         if (becom == null || tile == null || !tile.isServerSide()) return;
         Tunables t = BeComConfig.get();
-        List<TileTelephone> phones = PhoneCables
-            .phonesOf(tile.getWorld(), tile.getXCoord(), tile.getYCoord(), tile.getZCoord(), t.phoneCableLength());
+        CableWalk.Result walk = PhoneCables
+            .walk(tile.getWorld(), tile.getXCoord(), tile.getYCoord(), tile.getZCoord(), t.phoneCableLength());
+        tooMuchCable = walk.overflow();
+        List<TileTelephone> phones = PhoneCables.phonesOf(tile.getWorld(), walk);
         phonesSeen = phones.size();
         phone = phones.size() == 1 && phones.get(0)
             .number() >= 0 ? phones.get(0)
@@ -230,6 +234,11 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         if (phone >= 0 && server != null && server.network.terminalsOf(phone) > 1)
             info.add(StatCollector.translateToLocalFormatted("becom.info.phone_shared", phone));
         else if (phone >= 0) info.add(StatCollector.translateToLocalFormatted("becom.info.phone", phone));
+        else if (tooMuchCable) info.add(
+            StatCollector.translateToLocalFormatted(
+                "becom.info.too_much_cable",
+                BeComConfig.get()
+                    .phoneCableLength()));
         else if (phonesSeen > 1)
             info.add(StatCollector.translateToLocalFormatted("becom.info.too_many_phones", phonesSeen));
         else info.add(StatCollector.translateToLocal("becom.info.no_phone"));

@@ -31,6 +31,7 @@ becom.info.link_blocked=Linked to %s, %s blocks: blocked
 becom.info.phone=Serving phone %s
 becom.info.no_phone=No phone on the cable
 becom.info.too_many_phones=%s phones on the cable: a terminal serves exactly one
+becom.info.too_much_cable=More than %s blocks of Phone Cable: a terminal takes no more
 becom.info.phone_shared=Phone %s is on another terminal's cable too: a phone hangs off exactly one terminal
 
 # Linking
