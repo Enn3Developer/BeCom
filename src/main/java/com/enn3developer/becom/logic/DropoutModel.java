@@ -1,5 +1,7 @@
 package com.enn3developer.becom.logic;
 
+import java.util.function.DoubleSupplier;
+
 /**
  * How many frames a weak link loses, and in what bursts (DESIGN.md 4.2). Between the full-loss and the clean SNR the
  * loss rate falls linearly from {@code maxLoss} to zero; the losses come from a two-state Gilbert-Elliott chain whose
@@ -81,6 +83,16 @@ public final class DropoutModel {
                 bad = true;
             }
             return bad;
+        }
+
+        /**
+         * Advances the chain {@code frames} frames at once and says whether the last is dropped. Video frames come
+         * further apart than voice frames (DESIGN.md 10.1), so each samples the same chain, run on in between.
+         */
+        public boolean dropAfter(int frames, double enterBad, double leaveBad, DoubleSupplier random) {
+            boolean dropped = bad;
+            for (int i = 0; i < frames; i++) dropped = drop(enterBad, leaveBad, random.getAsDouble());
+            return dropped;
         }
 
         public boolean inBurst() {

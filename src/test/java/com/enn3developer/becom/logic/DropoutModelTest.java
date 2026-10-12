@@ -58,4 +58,20 @@ class DropoutModelTest {
         assertEquals(3.0, meanBurstFrames, 0.1);
         assertTrue(bursts > 0);
     }
+
+    @Test
+    void videoFramesSampleTheSameChainAndLoseTheSameShare() {
+        // A pose every 100 ms is a sample every fifth 20 ms frame: the share lost stays the long-run loss rate.
+        double target = model.lossRate(7.5);
+        double enter = model.enterBadChance(target);
+        double leave = model.leaveBadChance();
+        DropoutModel.Chain chain = new DropoutModel.Chain();
+        Random random = new Random(7);
+        int samples = 400_000, lost = 0;
+        for (int i = 0; i < samples; i++) if (chain.dropAfter(5, enter, leave, random::nextDouble)) lost++;
+        assertEquals(target, (double) lost / samples, 0.005);
+        DropoutModel.Chain clean = new DropoutModel.Chain();
+        assertFalse(clean.dropAfter(5, 0, leave, random::nextDouble));
+        assertFalse(clean.dropAfter(0, 1, leave, random::nextDouble), "no frames run, nothing changes");
+    }
 }
