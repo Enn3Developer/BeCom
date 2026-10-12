@@ -95,10 +95,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Italian: every string and the quest text.
 - Each release comes with the Modernity add-on pack, `Modernity-GTNHAddon-BeCom.zip`, to put above Modernity.
 - WAILA shows what GT's scanner shows for each BeCom machine, links listed one by one aside, in the looking player's
-  language, and a Telephone's number, owner and whether it rings or its handset is lifted.
+  language, and a Telephone's number, owner and whether it rings or its handset is lifted. Only a player close by gets
+  BeCom's lines, so a modified client can't read a Telephone's number from afar.
 - An in-game guide through GuideNH, in English and Italian: the tiers, how signal works, reading the Signal Analyzer,
   and a page each for the wired network, antennas, radios, phones, and space and other dimensions. Each quest ends with
   a link to its page, and holding GuideNH's key over a BeCom item or quest opens it. Without GuideNH, the links show
   their label alone.
 - Three big quests offer their coins as a choice: First call against two Pylon Heads, Radio contact against a
   Walkie-Talkie, Five satellites against a Satellite Rocket. A choice keeps only the options whose items are installed.
+- Forge refuses to load BeCom beside a GTNH Voice older than 0.10.1, and names the version it needs.
