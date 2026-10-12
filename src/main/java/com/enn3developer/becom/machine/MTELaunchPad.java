@@ -36,7 +36,6 @@ import com.enn3developer.becom.logic.space.Satellites;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
-import com.enn3developer.becom.server.SpaceService;
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.alignment.enumerable.Flip;
@@ -240,7 +239,7 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         for (Map.Entry<Integer, Integer> entry : becom.space.counts()
             .entrySet()) {
             if (text.length() > 0) text.append(LINE);
-            text.append(SpaceService.dimensionName(entry.getKey()))
+            text.append(becom.space.dimensionName(entry.getKey()))
                 .append(FIELD)
                 .append(entry.getValue())
                 .append(FIELD)

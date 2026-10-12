@@ -1,5 +1,6 @@
 package com.enn3developer.becom.server;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -25,6 +26,8 @@ public final class SpaceService {
     private final Tunables tunables;
     private final SkyStrength sky;
     private final Random random = new Random();
+    // Dimensions' names for the Launch Pad's screen, which asks for them every tick it's open.
+    private final Map<Integer, String> names = new HashMap<>();
     private Satellites satellites = new Satellites();
     private long ticks;
 
@@ -38,8 +41,15 @@ public final class SpaceService {
         satellites = data.satellites();
     }
 
-    /** A dimension's name for screens, as its world provider gives it, loaded or not. */
-    public static String dimensionName(int dimension) {
+    /**
+     * A dimension's name for screens, as its world provider gives it, loaded or not. Asked once per dimension: a
+     * provider made for a dimension that isn't loaded can cost a mod's setup.
+     */
+    public String dimensionName(int dimension) {
+        return names.computeIfAbsent(dimension, SpaceService::nameOf);
+    }
+
+    private static String nameOf(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);
         if (world != null) return world.provider.getDimensionName();
         try {
