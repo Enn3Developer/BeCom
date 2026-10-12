@@ -27,7 +27,12 @@ public enum NodeKind {
      * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network. Its one wrench link is a bridge onto
      * any other node within the bridge distance, a short stretch of line it drives, like an antenna's.
      */
-    ME_BRIDGE(1, true, false, 0);
+    ME_BRIDGE(1, true, false, 0),
+    /**
+     * The Satellite Dish (DESIGN.md 9.2): its one wrench link is a bridge onto an antenna, a Pylon Head or a Line
+     * Terminal within the bridge distance, and it joins that network to the satellites over its dimension.
+     */
+    SATELLITE_DISH(1, true, false, 0);
 
     private final int linkSlots;
     private final boolean powered;
@@ -64,14 +69,14 @@ public enum NodeKind {
         return antennaTier > 0;
     }
 
-    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna or an ME Bridge. */
+    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna, an ME Bridge or a dish. */
     public boolean bridge() {
-        return antenna() || this == ME_BRIDGE;
+        return antenna() || this == ME_BRIDGE || this == SATELLITE_DISH;
     }
 
     /** Needs its multiblock formed before it works or links. */
     public boolean structure() {
-        return pylonHead || antenna();
+        return pylonHead || antenna() || this == SATELLITE_DISH;
     }
 
     /** The antenna kind of a tier, 1 to 3. */

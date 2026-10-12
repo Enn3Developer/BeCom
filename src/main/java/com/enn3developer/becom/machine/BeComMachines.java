@@ -29,6 +29,7 @@ public final class BeComMachines {
     public static final int ME_BRIDGE_ID = 25008;
     public static final int VIDEOPHONE_ID = 25009;
     public static final int LAUNCH_PAD_ID = 25010;
+    public static final int SATELLITE_DISH_ID = 25011;
 
     public static MTEPylonHead pylonHead;
     public static MTEPylonHead repeaterHead;
@@ -41,6 +42,7 @@ public final class BeComMachines {
     public static MTEMeBridge meBridge;
     public static MTEVideophone videophone;
     public static MTELaunchPad launchPad;
+    public static MTESatelliteDish satelliteDish;
 
     private BeComMachines() {}
 
@@ -58,6 +60,7 @@ public final class BeComMachines {
         ids.put(ME_BRIDGE_ID, "becom.me_bridge");
         ids.put(VIDEOPHONE_ID, "becom.videophone");
         ids.put(LAUNCH_PAD_ID, "becom.launch_pad");
+        ids.put(SATELLITE_DISH_ID, "becom.satellite_dish");
         return ids;
     }
 
@@ -108,5 +111,6 @@ public final class BeComMachines {
         meBridge = new MTEMeBridge(ME_BRIDGE_ID, "becom.me_bridge", "ME Bridge");
         videophone = new MTEVideophone(VIDEOPHONE_ID, "becom.videophone", "Videophone");
         launchPad = new MTELaunchPad(LAUNCH_PAD_ID, "becom.launch_pad", "Satellite Launch Pad");
+        satelliteDish = new MTESatelliteDish(SATELLITE_DISH_ID, "becom.satellite_dish", "Satellite Dish");
     }
 }

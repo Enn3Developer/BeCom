@@ -537,3 +537,16 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   can't both hold. 9.5 is the more specific rule, and AE2 itself checks an ME Phone's range in its holder's dimension.
 - **To match the design:** decide which rule wins. If ME should carry calls between dimensions, make the ME vertex one
   per network again, and accept that it reaches the Deep Dark and the rest.
+
+### X34: A Satellite Dish carries calls, not radio channels
+
+- **Where:** 0.4, DESIGN.md 9.2, 7, D5
+- **Design says:** a dish wrench-linked to an antenna, Pylon Head or Line Terminal joins it to that network, and links
+  its network to every other dish in the same dimension through the satellites. Antennas repeat radio channels and link
+  to each other on VHF (7).
+- **Built:** a dish joins calls. Radio channels still travel between antennas on VHF, and through the satellites from
+  one radio under open sky straight down to another (9.1), but not from an antenna up through a dish.
+- **Why:** a dish joins its network the way a wired link does, and wired links carry calls, not radio channels (7).
+  9.2 speaks of networks, and 9.5 of calls between dimensions; neither says radio crosses a dish.
+- **To match the design:** give each dimension's antenna mesh a vertex for the satellites, joined by every antenna
+  wrench-linked to a working dish at that dish's hop on VHF.

@@ -145,4 +145,28 @@ class LinkRulesTest {
         // One link only.
         assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, bridge, antenna));
     }
+
+    @Test
+    void aDishBridgesAnAntennaAPylonHeadOrALineTerminalWithinTheBridgeDistance() {
+        // DESIGN.md 9.2: wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks.
+        NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
+        assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(16, 0, NodeKind.ANTENNA_T3, 8)));
+        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 16, NodeKind.REPEATER, 6), dish));
+        assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(-10, 0, NodeKind.TERMINAL, 0)));
+        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, dish, node(17, 0, NodeKind.PYLON, 16)));
+        // Dishes reach each other through the satellites; Transceivers take no links.
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, dish, node(5, 5, NodeKind.SATELLITE_DISH, 0)));
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, dish, node(-5, 5, NodeKind.TRANSCEIVER, 0)));
+    }
+
+    @Test
+    void aDishHasOneLinkAndNeedsItsStructure() {
+        NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
+        NetNode antenna = node(8, 0, NodeKind.ANTENNA_T1, 8);
+        model.link(dish.pos(), antenna.pos());
+        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, dish, node(0, 8, NodeKind.PYLON, 6)));
+        NetNode unformed = node(40, 40, NodeKind.SATELLITE_DISH, 0);
+        unformed.setFormed(false);
+        assertEquals(LinkRules.Result.NOT_FORMED, rules.check(model, unformed, node(40, 44, NodeKind.PYLON, 6)));
+    }
 }

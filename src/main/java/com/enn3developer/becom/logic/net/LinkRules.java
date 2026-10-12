@@ -65,6 +65,15 @@ public final class LinkRules {
         // An ME Bridge bridges any other BeCom node (DESIGN.md 8.3); two of them would join ME networks, not lines.
         if (a.kind() == NodeKind.ME_BRIDGE || b.kind() == NodeKind.ME_BRIDGE) {
             if (a.kind() == b.kind()) return Result.INCOMPATIBLE;
+        } else if (a.kind() == NodeKind.SATELLITE_DISH || b.kind() == NodeKind.SATELLITE_DISH) {
+            // A dish bridges onto an antenna, a Pylon Head or a Line Terminal (DESIGN.md 9.2); dishes reach each other
+            // through the satellites.
+            NetNode other = a.kind() == NodeKind.SATELLITE_DISH ? b : a;
+            if (!other.kind()
+                .antenna()
+                && !other.kind()
+                    .pylonHead()
+                && other.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
         } else if (a.kind()
             .antenna()
             || b.kind()

@@ -235,6 +235,13 @@ public final class BeComRecipes {
                 OrePrefixes.circuit.get(Materials.HV), 'H', ItemList.Hull_HV, 'T',
                 OrePrefixes.cableGt01.get(Materials.Gold) });
 
+        // Satellite Dish (DESIGN.md 3.1): an HV hull with two emitters and two sensors, its circuits and gold cables.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.satelliteDish.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "ECE", "SHS", "TCT", 'E', ItemList.Emitter_HV, 'C', OrePrefixes.circuit.get(Materials.HV),
+                'S', ItemList.Sensor_HV, 'H', ItemList.Hull_HV, 'T', OrePrefixes.cableGt01.get(Materials.Gold) });
+
         // ME Bridge: an EV hull with an AE2 Wireless Access Point, an emitter and a sensor, its circuits, two cables
         // to the BeCom side and ME glass cable to the AE2 side.
         GTModHandler.addCraftingRecipe(
