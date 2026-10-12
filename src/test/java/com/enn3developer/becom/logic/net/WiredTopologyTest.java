@@ -16,11 +16,18 @@ class WiredTopologyTest {
 
     private final LineModel line = Tunables.defaults()
         .lineModel();
+    private final LinkRules rules = new LinkRules(
+        Tunables.defaults()
+            .pylonSpanFactor());
     private final NetworkModel model = new NetworkModel();
     private final Set<Long> offline = new HashSet<>();
 
     private long node(int x, NodeKind kind) {
-        long pos = BlockPos.pack(x, 100, 0);
+        return node(x, 0, kind);
+    }
+
+    private long node(int x, int z, NodeKind kind) {
+        long pos = BlockPos.pack(x, 100, z);
         NetNode node = new NetNode(pos, kind, null);
         node.setHeight(16);
         node.setFormed(true);
@@ -29,7 +36,7 @@ class WiredTopologyTest {
     }
 
     private List<WiredTopology.Segment> segments() {
-        return WiredTopology.segments(model, pos -> !offline.contains(pos), line);
+        return WiredTopology.segments(model, pos -> !offline.contains(pos), line, rules);
     }
 
     private static WiredTopology.Segment from(List<WiredTopology.Segment> segments, long start) {
@@ -98,6 +105,22 @@ class WiredTopologyTest {
     }
 
     @Test
+    void cuttingAPylonDownBreaksSpansItCanNoLongerHold() {
+        // Two 16-high pylons 60 blocks apart are in span (4 x 16 = 64); cut one to 6 frames and the span is 24.
+        long a = node(0, NodeKind.TERMINAL);
+        long p1 = node(10, NodeKind.PYLON);
+        long p2 = node(70, NodeKind.PYLON);
+        long b = node(80, NodeKind.TERMINAL);
+        model.link(a, p1);
+        model.link(p1, p2);
+        model.link(p2, b);
+        assertEquals(2, segments().size());
+        model.node(p2)
+            .setHeight(6);
+        assertTrue(segments().isEmpty());
+    }
+
+    @Test
     void aBlockedLinkBreaksTheLine() {
         long a = node(0, NodeKind.TERMINAL);
         long p = node(50, NodeKind.PYLON);
@@ -140,12 +163,19 @@ class WiredTopologyTest {
     @Test
     void routerRegeneratesEachBranch() {
         long router = node(0, NodeKind.ROUTER);
-        long a = node(-100, NodeKind.TERMINAL);
-        long b = node(100, NodeKind.TERMINAL);
-        long c = node(200, NodeKind.TERMINAL);
+        long a = node(-50, NodeKind.TERMINAL);
+        long b = node(50, NodeKind.TERMINAL);
+        // The third branch runs 200 blocks over pylons, within span.
+        long p1 = node(0, 60, NodeKind.PYLON);
+        long p2 = node(0, 120, NodeKind.PYLON);
+        long p3 = node(0, 180, NodeKind.PYLON);
+        long c = node(0, 200, NodeKind.TERMINAL);
         model.link(router, a);
         model.link(router, b);
-        model.link(router, c);
+        model.link(router, p1);
+        model.link(p1, p2);
+        model.link(p2, p3);
+        model.link(p3, c);
         List<WiredTopology.Segment> segments = segments();
         assertEquals(6, segments.size());
         assertEquals(

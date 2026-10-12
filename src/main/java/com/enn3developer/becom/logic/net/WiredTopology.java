@@ -23,21 +23,23 @@ public final class WiredTopology {
      * end.
      *
      * @param working whether the powered node at a position is formed, loaded and powered (D11)
+     * @param rules   the span limit, checked against each pylon's height now rather than when it was linked
      */
-    public static List<Segment> segments(NetworkModel model, LongPredicate working, LineModel line) {
+    public static List<Segment> segments(NetworkModel model, LongPredicate working, LineModel line, LinkRules rules) {
         List<Segment> segments = new ArrayList<>();
         for (NetNode start : model.nodes()) {
             if (!start.kind()
                 .powered() || !working.test(start.pos())) continue;
             for (long first : start.links()) {
-                Segment segment = walk(model, start, first, working, line);
+                Segment segment = walk(model, start, first, working, line, rules);
                 if (segment != null) segments.add(segment);
             }
         }
         return segments;
     }
 
-    private static Segment walk(NetworkModel model, NetNode start, long first, LongPredicate working, LineModel line) {
+    private static Segment walk(NetworkModel model, NetNode start, long first, LongPredicate working, LineModel line,
+        LinkRules rules) {
         long prev = start.pos();
         long cur = first;
         double length = 0;
@@ -46,8 +48,12 @@ public final class WiredTopology {
         for (int steps = 0; steps <= model.size(); steps++) {
             if (model.isBlocked(prev, cur)) return null;
             NetNode node = model.node(cur);
-            if (node == null) return null;
-            length += BlockPos.distance(prev, cur);
+            NetNode from = model.node(prev);
+            if (node == null || from == null) return null;
+            double span = BlockPos.distance(prev, cur);
+            // A pylon cut down after linking can't hold the spans it held when it was taller.
+            if (span > rules.maxSpan(from, node)) return null;
+            length += span;
             if (node.kind()
                 .powered()) {
                 return working.test(cur) ? new Segment(start.pos(), cur, length, line.snr(length)) : null;

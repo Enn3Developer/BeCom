@@ -241,7 +241,7 @@ public final class NetworkService {
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
             int dimension = entry.getKey();
             for (WiredTopology.Segment segment : WiredTopology
-                .segments(entry.getValue(), pos -> working(dimension, pos), line)) {
+                .segments(entry.getValue(), pos -> working(dimension, pos), line, rules)) {
                 builder.hop(
                     new CallGraph.NodeVertex(dimension, segment.from()),
                     new CallGraph.NodeVertex(dimension, segment.to()),
@@ -374,7 +374,12 @@ public final class NetworkService {
         NetworkModel model = models.get(dimension);
         if (model != null) {
             for (NetworkModel.LinkKey key : model.links()) {
-                wires.add(new WireSyncPacket.Wire(key.a(), key.b(), model.isBlocked(key.a(), key.b())));
+                NetNode a = model.node(key.a());
+                NetNode b = model.node(key.b());
+                // A wire hangs broken while blocked, or while its pylons are too short for its span.
+                boolean down = model.isBlocked(key.a(), key.b())
+                    || a != null && b != null && a.distanceTo(b) > rules.maxSpan(a, b);
+                wires.add(new WireSyncPacket.Wire(key.a(), key.b(), down));
             }
         }
         return new WireSyncPacket(dimension, wires);
