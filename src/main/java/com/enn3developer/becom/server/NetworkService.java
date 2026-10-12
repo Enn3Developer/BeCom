@@ -63,7 +63,7 @@ public final class NetworkService {
 
     public NetworkService(Tunables tunables) {
         this.tunables = tunables;
-        this.rules = new LinkRules(tunables.pylonSpanFactor());
+        this.rules = new LinkRules(tunables.pylonSpanFactor(), tunables.wrenchLinkDistance());
         this.line = tunables.lineModel();
         this.nextClearanceTick = (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
     }
@@ -133,7 +133,7 @@ public final class NetworkService {
             return node;
         }
         node = new NetNode(pos, kind, owner);
-        node.setFormed(!kind.pylonHead());
+        node.setFormed(!kind.structure());
         model.add(node);
         return node;
     }

@@ -18,7 +18,9 @@ class WiredTopologyTest {
         .lineModel();
     private final LinkRules rules = new LinkRules(
         Tunables.defaults()
-            .pylonSpanFactor());
+            .pylonSpanFactor(),
+        Tunables.defaults()
+            .wrenchLinkDistance());
     private final NetworkModel model = new NetworkModel();
     private final Set<Long> offline = new HashSet<>();
 
@@ -186,5 +188,33 @@ class WiredTopologyTest {
                 .orElseThrow()
                 .snr(),
             1e-9);
+    }
+
+    @Test
+    void anAntennaBridgeDrivesTheLineAfreshLikeARepeater() {
+        long a = node(0, NodeKind.TERMINAL);
+        long p1 = node(30, NodeKind.PYLON);
+        long antenna = node(40, NodeKind.ANTENNA_T1);
+        model.link(a, p1);
+        model.link(p1, antenna);
+        List<WiredTopology.Segment> segments = segments();
+        WiredTopology.Segment fromTerminal = from(segments, a);
+        assertEquals(antenna, fromTerminal.to());
+        assertEquals(40, fromTerminal.length(), 1e-9);
+        assertEquals(line.snr(40), fromTerminal.snr(), 1e-9);
+        assertEquals(a, from(segments, antenna).to());
+    }
+
+    @Test
+    void aBridgeLongerThanTheBridgeDistanceCarriesNothing() {
+        long a = node(0, NodeKind.TERMINAL);
+        long antenna = node(10, NodeKind.ANTENNA_T2);
+        model.link(a, antenna);
+        assertEquals(2, segments().size());
+        // The antenna moved off, or the distance shrank in the config since the link was made.
+        model.remove(antenna);
+        long far = node(17, NodeKind.ANTENNA_T2);
+        model.link(a, far);
+        assertTrue(segments().isEmpty());
     }
 }

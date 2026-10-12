@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 /** DESIGN.md 5.1, 5.2: spans, slots and who links to whom. */
 class LinkRulesTest {
 
-    private final LinkRules rules = new LinkRules(4);
+    private final LinkRules rules = new LinkRules(4, 16);
     private final NetworkModel model = new NetworkModel();
 
     private NetNode node(int x, int z, NodeKind kind, int height) {
@@ -99,5 +99,33 @@ class LinkRulesTest {
         model.link(first.pos(), node(-20, 0, NodeKind.PYLON, 16).pos());
         model.link(first.pos(), node(-40, 0, NodeKind.PYLON, 16).pos());
         assertNull(rules.autoLinkTarget(model, formed, (x, y) -> true));
+    }
+
+    @Test
+    void antennasBridgePylonHeadsAndTerminalsWithinTheBridgeDistance() {
+        NetNode antenna = node(0, 0, NodeKind.ANTENNA_T1, 8);
+        NetNode pylon = node(16, 0, NodeKind.PYLON, 6);
+        NetNode terminal = node(0, 16, NodeKind.TERMINAL, 0);
+        assertEquals(16, rules.maxSpan(antenna, pylon), 1e-9);
+        assertEquals(LinkRules.Result.OK, rules.check(model, antenna, pylon));
+        assertEquals(LinkRules.Result.OK, rules.check(model, terminal, antenna));
+        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, antenna, node(17, 0, NodeKind.ROUTER, 16)));
+    }
+
+    @Test
+    void antennasDontWrenchLinkEachOtherOrTransceivers() {
+        NetNode a = node(0, 0, NodeKind.ANTENNA_T1, 8);
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, a, node(5, 0, NodeKind.ANTENNA_T2, 8)));
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, a, node(0, 5, NodeKind.TRANSCEIVER, 0)));
+        assertEquals(
+            LinkRules.Result.INCOMPATIBLE,
+            rules.check(model, node(9, 9, NodeKind.PYLON, 6), node(9, 12, NodeKind.TRANSCEIVER, 0)));
+    }
+
+    @Test
+    void anAntennaNeedsItsStructure() {
+        NetNode antenna = node(0, 0, NodeKind.ANTENNA_T3, 8);
+        antenna.setFormed(false);
+        assertEquals(LinkRules.Result.NOT_FORMED, rules.check(model, antenna, node(4, 0, NodeKind.PYLON, 6)));
     }
 }

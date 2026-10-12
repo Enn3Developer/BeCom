@@ -272,7 +272,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Surveys (6.3) within the survey budget (6.5)                         | doing  |
 | Direct links between radios (6.4)                                    | todo   |
 | Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | todo   |
-| Antenna links on VHF and UHF, and bridges onto wired lines (7)       | todo   |
+| Antenna links on VHF and UHF, and bridges onto wired lines (7)       | doing  |
 | Antenna screen: links and team lock (11.4, 12.2)                     | todo   |
 | Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | todo   |
 | Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | todo   |
@@ -283,7 +283,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Radio audio filters per level (4.3, 13.5)                            | todo   |
 | Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | todo   |
 | `/becom signal` (6.6)                                                | todo   |
-| The 0.2 tunables in the config (17)                                  | todo   |
+| The 0.2 tunables in the config (17)                                  | done   |
 | Self-test rows for 0.2 (16.3)                                        | todo   |
 
 ### Untested assumptions (DESIGN.md 16.2)

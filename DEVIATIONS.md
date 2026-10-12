@@ -234,3 +234,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
   code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.
 - **To match the design:** raise `Tunables.MAX_COLUMN` and `MAX_CABLE`.
+
+### X19: Antennas take up to 15 bridges and route like a Router
+
+- **Where:** 0.2, DESIGN.md 7, 5.4
+- **Design says:** an antenna can be wrench-linked to a Pylon Head or Line Terminal within 16 blocks, carrying the
+  wired signal over radio. It doesn't say how many bridges one antenna takes, or whether lines bridged onto antennas
+  join into one network.
+- **Built:** an antenna has 15 bridge slots, a Router's count. Each bridge is a short stretch of line driven afresh by
+  the antenna, which regenerates like a Repeater (DESIGN.md 5.7), and whatever an antenna bridges, together with
+  whatever its UHF links reach, is one network: a phone on it can dial any other, as through a Router. Bridges hang a
+  wire like any link but skip the clearance check, which DESIGN.md 5.1 gives to links between Pylon Heads.
+- **Why:** DESIGN.md 5.6 already treats an antenna bridge like a router ("a line that reaches more phones, through
+  routers or an antenna bridge, dials"), and an antenna is a powered node, so it drives the line like the others.
+- **To match the design:** change `NodeKind.ANTENNA_T*`'s slot count if the owner wants fewer bridges.
