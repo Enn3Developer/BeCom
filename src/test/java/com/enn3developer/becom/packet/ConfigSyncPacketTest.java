@@ -42,4 +42,17 @@ class ConfigSyncPacketTest {
         read.fromBytes(buf);
         assertNull(read.tunables());
     }
+
+    @Test
+    void refusesAnEndlessPylon() {
+        Map<String, Object> values = Tunables.defaults()
+            .toMap();
+        values.put("pylonMinHeight", Integer.MAX_VALUE);
+        values.put("pylonMaxHeight", Integer.MAX_VALUE);
+        ByteBuf buf = Unpooled.buffer();
+        new ConfigSyncPacket(Tunables.fromMap(values)).toBytes(buf);
+        ConfigSyncPacket read = new ConfigSyncPacket();
+        read.fromBytes(buf);
+        assertNull(read.tunables());
+    }
 }

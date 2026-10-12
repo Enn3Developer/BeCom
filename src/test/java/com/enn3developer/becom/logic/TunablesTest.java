@@ -65,6 +65,15 @@ class TunablesTest {
     void pylonHeightsMustMakeSense() throws Exception {
         refused("pylonMinHeight", 0);
         refused("pylonMaxHeight", 5);
+        // No column of frames is taller than the world.
+        refused("pylonMaxHeight", 2_000_000_000);
+    }
+
+    @Test
+    void cableLengthHasACeiling() throws Exception {
+        // Past it, a scan would walk hundreds of thousands of blocks, and the cable cap would overflow.
+        refused("phoneCableLength", 1 << 30);
+        refused("phoneCableLength", 0);
     }
 
     @Test

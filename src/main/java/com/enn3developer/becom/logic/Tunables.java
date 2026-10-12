@@ -17,6 +17,11 @@ public record Tunables(
     // Quests (DESIGN.md 15.5)
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
+    // Ceilings no sensible config reaches, which keep a hostile server's values from hanging a client: no frame column
+    // is taller than the world, and a terminal's cable scan stays bounded.
+    private static final int MAX_COLUMN = 255;
+    private static final int MAX_CABLE = 256;
+
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;
 
@@ -75,6 +80,10 @@ public record Tunables(
         }
         if (pylonMinHeight < 1) throw invalid("pylonMinHeight", pylonMinHeight, "at least 1");
         if (pylonMaxHeight < pylonMinHeight) throw invalid("pylonMaxHeight", pylonMaxHeight, "at least pylonMinHeight");
+        if (pylonMaxHeight > MAX_COLUMN) throw invalid("pylonMaxHeight", pylonMaxHeight, "at most " + MAX_COLUMN);
+        if (phoneCableLength < 1 || phoneCableLength > MAX_CABLE) {
+            throw invalid("phoneCableLength", phoneCableLength, "1 to " + MAX_CABLE);
+        }
         if (pylonSpanFactor <= 0) throw invalid("pylonSpanFactor", pylonSpanFactor, "more than 0");
         if (pylonClearanceSeconds < 1) throw invalid("pylonClearanceSeconds", pylonClearanceSeconds, "at least 1");
         if (lineLossPerBlock < 0) throw invalid("lineLossPerBlock", lineLossPerBlock, "0 or more");
