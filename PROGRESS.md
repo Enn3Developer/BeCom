@@ -514,7 +514,7 @@ Branch `milestone/0.3-phones`, from the last commit of `milestone/0.2-radio`.
 
 | Item                                                                         | Status |
 |------------------------------------------------------------------------------|--------|
-| AE2 and Baubles Expanded as hard dependencies (16.4, D27)                    | doing  |
+| AE2 and Baubles Expanded as hard dependencies (16.4, D27)                    | done   |
 | Mobile Phone: item, number, owner, power, recipe (8, 8.2, 3.1)               | todo   |
 | Mobile service through antennas, on UHF (8.2)                                | todo   |
 | Baubles slots for phones and walkies (D14, 8)                                | todo   |

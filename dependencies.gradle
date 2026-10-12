@@ -39,6 +39,10 @@ dependencies {
     implementation("com.github.Enn3Developer:gtnh-voice:v0.10.1:dev")
     // GregTech is a hard dependency: tiers, EU power and multiblocks. Pulls StructureLib/ModularUI transitively.
     implementation("com.github.GTNewHorizons:GT5-Unofficial:5.09.54.205:dev")
+    // From 0.3 (DESIGN.md 16.4, D27): AE2 for the ME Phone and ME Bridge, Baubles Expanded for phones and walkies
+    // in a bauble slot. Both are hard dependencies.
+    implementation("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1080-GTNH:dev")
+    implementation("com.github.GTNewHorizons:Baubles-Expanded:2.2.25-GTNH:dev")
     compileOnly("org.jetbrains:annotations:24.1.0")
     // BetterQuesting is optional (DESIGN.md 15.5): compiled against, and present in the dev server so the self-test
     // can check the questline, but never required at runtime.

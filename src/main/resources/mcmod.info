@@ -13,8 +13,8 @@
 		"logoFile": "",
 		"screenshots": [],
 		"parent": "",
-		"requiredMods": ["gtnhvoice", "gregtech"],
-		"dependencies": ["gtnhvoice", "gregtech"],
+		"requiredMods": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles"],
+		"dependencies": ["gtnhvoice", "gregtech", "appliedenergistics2", "Baubles"],
 		"dependants": [],
 		"useDependencyInformation": true
 	}]
