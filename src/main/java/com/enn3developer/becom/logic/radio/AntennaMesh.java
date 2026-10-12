@@ -38,8 +38,12 @@ public final class AntennaMesh {
      * stands, with nothing built per call: a radio publish asks this for every keyed radio.
      */
     public double[] reach(double[] access) {
-        // Each antenna starts at its own access link; the closest unsettled antenna then passes its width on.
-        double[] best = access.clone();
+        // Each antenna starts at its own access link; the closest unsettled antenna then passes its width on. A NaN,
+        // from
+        // a device whose position isn't a number, counts as no link, and only a wider path replaces a width, so none
+        // spreads: the graph this replaced left NaN edges out the same way.
+        double[] best = new double[antennas];
+        for (int a = 0; a < antennas; a++) best[a] = Double.isNaN(access[a]) ? Double.NEGATIVE_INFINITY : access[a];
         boolean[] settled = new boolean[antennas];
         for (int round = 0; round < antennas; round++) {
             int next = -1;
@@ -50,7 +54,8 @@ public final class AntennaMesh {
             settled[next] = true;
             double[] row = links[next];
             for (int b = 0; b < antennas; b++) {
-                if (!settled[b]) best[b] = Math.max(best[b], Math.min(best[next], row[b]));
+                double via = Math.min(best[next], row[b]);
+                if (!settled[b] && via > best[b]) best[b] = via;
             }
         }
         return best;

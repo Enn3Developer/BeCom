@@ -89,8 +89,22 @@ class AntennaMeshTest {
                 for (int b = a + 1; b < n; b++) if (random.nextDouble() < density) mesh.link(a, b, random.nextInt(40));
             }
             double[] access = new double[n];
-            for (int a = 0; a < n; a++) access[a] = random.nextDouble() < 0.7 ? NONE : random.nextInt(40);
+            for (int a = 0; a < n; a++) {
+                double roll = random.nextDouble();
+                access[a] = roll < 0.65 ? NONE : roll < 0.7 ? Double.NaN : random.nextInt(40);
+            }
             assertArrayEquals(reachThroughAGraph(mesh, access), mesh.reach(access), 0, "round " + round);
         }
+    }
+
+    @Test
+    void aLinkThatIsntANumberCountsAsNone() {
+        AntennaMesh mesh = new AntennaMesh(2);
+        mesh.link(0, 1, 20);
+        assertArrayEquals(new double[] { 20, 30 }, mesh.reach(new double[] { Double.NaN, 30 }), 0);
+        assertArrayEquals(new double[] { 30, 20 }, mesh.reach(new double[] { 30, Double.NaN }), 0);
+        AntennaMesh broken = new AntennaMesh(2);
+        broken.link(0, 1, Double.NaN);
+        assertArrayEquals(new double[] { 30, NONE }, broken.reach(new double[] { 30, NONE }), 0);
     }
 }
