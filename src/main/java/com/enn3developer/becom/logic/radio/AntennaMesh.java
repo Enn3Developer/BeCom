@@ -39,9 +39,8 @@ public final class AntennaMesh {
      */
     public double[] reach(double[] access) {
         // Each antenna starts at its own access link; the closest unsettled antenna then passes its width on. A NaN,
-        // from
-        // a device whose position isn't a number, counts as no link, and only a wider path replaces a width, so none
-        // spreads: the graph this replaced left NaN edges out the same way.
+        // from a device whose position isn't a number, counts as no link, and only a wider path replaces a width, so
+        // none spreads: the graph this replaced left NaN edges out the same way.
         double[] best = new double[antennas];
         for (int a = 0; a < antennas; a++) best[a] = Double.isNaN(access[a]) ? Double.NEGATIVE_INFINITY : access[a];
         boolean[] settled = new boolean[antennas];

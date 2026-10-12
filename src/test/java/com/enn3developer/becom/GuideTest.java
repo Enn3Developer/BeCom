@@ -169,8 +169,7 @@ class GuideTest {
 
     /**
      * GitHub drops GuideNH's tags and keeps the words inside them, so a tag without words leaves a hole in the page
-     * there.
-     * GuideNH draws an item link's words in place of the item's name, so they must be its name.
+     * there. GuideNH draws an item link's words in place of the item's name, so they must be its name.
      */
     @ParameterizedTest
     @ValueSource(strings = { "en_us", "it_it" })

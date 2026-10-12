@@ -58,7 +58,9 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 
 public class ClientProxy extends CommonProxy {
 
-    // Packet handlers run on the network thread; anything touching the game waits here for the client tick.
+    // Game work from packet handlers, run at the end of the client tick. 1.7.10 already calls mod packet handlers on
+    // the game thread, so this only orders the work after the tick; it stays safe if a handler ever runs off that
+    // thread.
     private final Queue<Runnable> mainThread = new ConcurrentLinkedQueue<>();
 
     @Override
