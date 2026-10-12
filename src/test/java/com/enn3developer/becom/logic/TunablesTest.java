@@ -132,4 +132,26 @@ class TunablesTest {
         assertEquals(80, t.rangeToLow(t.walkieBudget()), 2);
         assertEquals(125, t.rangeToLow(t.transceiverBudget()), 2);
     }
+
+    @Test
+    void aLinkAtLowHoldsTwoDecibelsFurther() {
+        Tunables t = Tunables.defaults();
+        // DESIGN.md 4.1: Low is left at 4 dB. A walkie at Low holds to 100 blocks, a T3 to about 316.
+        assertEquals(100, t.rangeToHold(t.walkieBudget()), 1e-9);
+        assertEquals(316, t.rangeToHold(t.antennaBudget(3)), 1);
+        assertTrue(t.rangeToHold(t.walkieBudget()) > t.rangeToLow(t.walkieBudget()));
+    }
+
+    @Test
+    void aHugeHysteresisCantStretchRadioWorkPastTheCeiling() throws Exception {
+        // Links are worked out as far as a link at Low holds (4.1), so the bound covers the hysteresis too: 100 dB of
+        // it would make one T3 survey allocate hundreds of megabytes.
+        IllegalArgumentException e = assertThrows(
+            IllegalArgumentException.class,
+            with("levelHysteresis", 100.0)::validate);
+        assertTrue(
+            e.getMessage()
+                .contains("Budget"),
+            e.getMessage());
+    }
 }

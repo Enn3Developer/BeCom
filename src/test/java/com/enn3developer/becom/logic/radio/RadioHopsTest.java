@@ -114,11 +114,18 @@ class RadioHopsTest {
     }
 
     @Test
-    void aSurveyOfAnAntennaT3IsAboutFourKilobytes() {
-        Survey survey = surveyOf(FLAT, t.antennaBudget(3));
-        // DESIGN.md 6.3: at most 64 heights per bearing, about 4 KB per antenna.
+    void aSurveyOfAnAntennaT3IsAboutFiveKilobytes() {
+        // DESIGN.md 6.3 says at most 64 heights per bearing, about 4 KB. The survey reaches as far as a link at Low
+        // holds, 2 dB further (X22): 79 steps, about 5 KB.
+        Survey survey = Survey.of(
+            FLAT,
+            0.5,
+            0.5,
+            t.surveyBearings(),
+            t.surveyStep(),
+            Survey.stepsFor(t.rangeToHold(t.antennaBudget(3)), t.surveyStep()));
         assertEquals(64, survey.bearings());
-        assertTrue(survey.steps() <= 64, "steps " + survey.steps());
-        assertTrue(survey.bearings() * survey.steps() <= 4096);
+        assertEquals(80, survey.steps());
+        assertTrue(survey.bearings() * survey.steps() <= 5 * 1024);
     }
 }

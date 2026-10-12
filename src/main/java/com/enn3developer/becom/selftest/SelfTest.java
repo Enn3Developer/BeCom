@@ -154,6 +154,8 @@ public final class SelfTest {
     private FakePlayer eve;
     private FakePlayer frank;
     private FakePlayer gina;
+    private FakePlayer hank;
+    private FakePlayer iris;
 
     /** One test line: terminals at both ends, heads between, and a Telephone on each terminal's cable. */
     private static final class Line {
@@ -205,6 +207,8 @@ public final class SelfTest {
         steps.add(this::checkLocked);
         steps.add(this::checkFlatWalkie);
         steps.add(this::checkOffWalkie);
+        steps.add(this::keyEdge);
+        steps.add(this::checkEdge);
     }
 
     public static void run(BeComServer becom, ICommandSender sender) {
@@ -1444,6 +1448,52 @@ public final class SelfTest {
                 becom.radio.published()
                     .transmission(alice.getUniqueID()),
                 bob.getUniqueID()) == null,
+            "");
+        return 1;
+    }
+
+    /** DESIGN.md 4.1: a link at Low leaves it only 2 dB below the threshold, at the edge of range too. */
+    private int keyEdge() {
+        hank = radioPlayer("BeComRadioHank", 8, X0 + 0.5, DIRECT_Z + 10.5, 11);
+        iris = radioPlayer("BeComRadioIris", 9, X0 + 78.5, DIRECT_Z + 10.5, 11);
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        return 2;
+    }
+
+    private int checkEdge() {
+        Tunables t = BeComConfig.get();
+        becom.radio.publishForSelfTest();
+        UUID speaker = hank.getUniqueID();
+        check(
+            "a walkie 78 blocks away hears at Low",
+            linkTo(
+                becom.radio.published()
+                    .transmission(speaker),
+                iris.getUniqueID()) != null,
+            "");
+        // 44 - 20 log10(81) is 5.8 dB: under Low's 6, above the 4 a link at Low needs to stay.
+        iris.setPosition(X0 + 81.5, Y, DIRECT_Z + 10.5);
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(speaker);
+        becom.radio.publishForSelfTest();
+        RadioSnapshot.Link held = linkTo(
+            becom.radio.published()
+                .transmission(speaker),
+            iris.getUniqueID());
+        check(
+            "...and stays at Low 81 blocks away, 2 dB of hysteresis below the threshold",
+            held != null && Math.abs(held.snr() - (t.walkieBudget() - RadioModel.distanceLoss(81))) < EPS,
+            held == null ? "dropped" : String.valueOf(held.snr()));
+        iris.setPosition(X0 + 101.5, Y, DIRECT_Z + 10.5);
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(speaker);
+        becom.radio.publishForSelfTest();
+        check(
+            "...and drops 101 blocks away, below the hysteresis",
+            linkTo(
+                becom.radio.published()
+                    .transmission(speaker),
+                iris.getUniqueID()) == null,
             "");
         return 1;
     }

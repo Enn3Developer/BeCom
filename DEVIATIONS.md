@@ -283,3 +283,16 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   ship in 0.2 without it.
 - **To match the design:** let `RadioService` hold several channels per speaker, and check ownership in
   `TransceiverScreen`.
+
+### X22: Surveys and direct links reach where a link at Low still holds
+
+- **Where:** 0.2, DESIGN.md 4.1, 6.3, 6.5
+- **Design says:** a level is left only 2 dB below its threshold (4.1); a survey steps out "up to the antenna's maximum
+  range", "at most 64 heights per bearing, about 4 KB per antenna" (6.3).
+- **Built:** surveys, device-to-antenna links and direct links all reach as far as a link already at Low holds on
+  open ground, 4 dB instead of 6. A T3's survey is 80 steps a bearing, about 5 KB, and walkies at Low stay at Low to
+  100 blocks. The ceiling on radio ranges in the config counts the hysteresis too.
+- **Why:** stopping at the 6 dB range cut every link to None the moment it crossed it, so links at the edge of range
+  flickered once a second, which 4.1's hysteresis exists to prevent (found by both 0.2 reviews; the self-test checks
+  a walkie link holding at 81 blocks).
+- **To match the design:** keep 64 steps and give up hysteresis at the edge of range, or shorten the step.

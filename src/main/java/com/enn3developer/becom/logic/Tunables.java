@@ -189,17 +189,21 @@ public record Tunables(
         if (analyzerRefreshSeconds < 1) throw invalid("analyzerRefreshSeconds", analyzerRefreshSeconds, "at least 1");
     }
 
-    /** A budget whose open-ground range to Low stays within {@link #MAX_RADIO_RANGE}. */
+    /**
+     * A budget whose open-ground range, out to where a link at Low still holds, stays within
+     * {@link #MAX_RADIO_RANGE}: surveys and direct links reach that far.
+     */
     private void checkRange(String key, double budget) {
-        double range = Math.pow(10, (budget - levelLow) / 20);
+        double floor = levelLow - levelHysteresis;
+        double range = Math.pow(10, (budget - floor) / 20);
         if (!(range <= MAX_RADIO_RANGE)) {
             throw invalid(
                 key,
                 budget,
-                "at most " + (levelLow + 20 * Math.log10(MAX_RADIO_RANGE))
-                    + " (a range of "
+                "at most " + (floor + 20 * Math.log10(MAX_RADIO_RANGE))
+                    + " with this levelLow and levelHysteresis (a range of "
                     + MAX_RADIO_RANGE
-                    + " blocks to Low)");
+                    + " blocks)");
         }
     }
 
@@ -298,5 +302,14 @@ public record Tunables(
     /** How far a radio with {@code budget} reaches Low on open ground, in blocks (DESIGN.md 7, 8.1). */
     public double rangeToLow(double budget) {
         return RadioModel.rangeFor(budget, levelLow);
+    }
+
+    /**
+     * How far a link already at Low holds on open ground: a level is left only {@code levelHysteresis} below its
+     * threshold (DESIGN.md 4.1). Anything that decides whether a link is worth working out reaches this far, or the
+     * hysteresis would stop at the edge of range and links there would flicker.
+     */
+    public double rangeToHold(double budget) {
+        return RadioModel.rangeFor(budget, levelLow - levelHysteresis);
     }
 }

@@ -488,7 +488,7 @@ public final class RadioService {
      */
     private double snr(Tx tx, RadioHops.End to, double[] access, double[] reach) {
         double direct = Double.NEGATIVE_INFINITY;
-        if (tx.end.distanceTo(to) <= tunables.rangeToLow(tx.budget)) {
+        if (tx.end.distanceTo(to) <= tunables.rangeToHold(tx.budget)) {
             direct = hops.direct(heights.terrain(tx.dimension), tx.end, to, tx.budget, vhf, 0, noSky(tx.dimension))
                 .snr();
         }

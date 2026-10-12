@@ -271,7 +271,7 @@ public final class AntennaNetwork {
                 from.z(),
                 tunables.surveyBearings(),
                 tunables.surveyStep(),
-                Survey.stepsFor(tunables.rangeToLow(target.budget), tunables.surveyStep()));
+                Survey.stepsFor(tunables.rangeToHold(target.budget), tunables.surveyStep()));
         }
 
         /** Does one step; true once the survey is finished or no longer wanted. */
@@ -444,7 +444,7 @@ public final class AntennaNetwork {
     private RadioModel.Losses losses(Antenna antenna, RadioHops.End device, UUID user, Band band, boolean noSky) {
         if (antenna.survey == null) return null;
         if (antenna.locked && !sameTeam.test(user, antenna.owner)) return null;
-        if (antenna.end.distanceTo(device) > tunables.rangeToLow(antenna.budget)) return null;
+        if (antenna.end.distanceTo(device) > tunables.rangeToHold(antenna.budget)) return null;
         return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, 0, noSky);
     }
 
