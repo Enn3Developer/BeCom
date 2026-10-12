@@ -112,6 +112,7 @@ public final class SelfTest {
     private final List<IGregTechTileEntity> powered = new ArrayList<>();
     private int index;
     private long edgeHoldStart;
+    private boolean edgeDroppedEarly;
     private long tick;
     private long waitUntil;
     private int passed;
@@ -1512,28 +1513,44 @@ public final class SelfTest {
         becom.radio.keyForSelfTest(hank.getUniqueID());
         becom.radio.publishForSelfTest();
         iris.setPosition(X0 + 81.5, Y, DIRECT_Z + 10.5);
+        publishEdge();
+        // After the first evaluation below Low, which starts the drop timer: the hold is timed from no earlier.
         edgeHoldStart = System.nanoTime();
-        return 1;
+        edgeDroppedEarly = false;
+        return 5;
     }
 
     /**
      * Repeats itself until the hold has lasted half a second past the drop delay, by the clock the drop timer reads:
-     * a server catching up on lag runs ticks back to back.
+     * a server catching up on lag runs ticks back to back. Until half a second short of it, the link must stay up.
      */
     private int holdEdge() {
-        becom.radio.refreshForSelfTest(iris);
-        becom.radio.keyForSelfTest(hank.getUniqueID());
-        becom.radio.publishForSelfTest();
-        long hold = (long) ((becom.tunables.dropAfterSeconds() + 0.5) * 1_000_000_000L);
-        if (System.nanoTime() - edgeHoldStart < hold) steps.add(index, this::holdEdge);
+        boolean up = publishEdge();
+        long elapsed = System.nanoTime() - edgeHoldStart;
+        long delay = (long) (becom.tunables.dropAfterSeconds() * 1_000_000_000L);
+        long margin = 500_000_000L;
+        if (!up && elapsed < delay - margin) edgeDroppedEarly = true;
+        if (elapsed < delay + margin) steps.add(index, this::holdEdge);
         return 5;
     }
 
+    /** Evaluates Iris's link from Hank where she stands; whether it's up. */
+    private boolean publishEdge() {
+        becom.radio.refreshForSelfTest(iris);
+        becom.radio.keyForSelfTest(hank.getUniqueID());
+        becom.radio.publishForSelfTest();
+        return linkTo(
+            becom.radio.published()
+                .transmission(hank.getUniqueID()),
+            iris.getUniqueID()) != null;
+    }
+
     private int checkEdgeDrop() {
+        check("a walkie link below Low but inside the hysteresis stays up for the drop delay", !edgeDroppedEarly, "");
         becom.radio.keyForSelfTest(hank.getUniqueID());
         becom.radio.publishForSelfTest();
         check(
-            "a walkie link held below Low drops after the drop delay, though it's inside the hysteresis",
+            "...and drops after it",
             linkTo(
                 becom.radio.published()
                     .transmission(hank.getUniqueID()),
