@@ -17,7 +17,7 @@ Branch `milestone/0.1-wired`, from `master`.
 | Item                                                   | Status |
 |--------------------------------------------------------|--------|
 | Machine ID check (14.1)                                | todo   |
-| Config and saved-data versions (14.2)                  | todo   |
+| Config and saved-data versions (14.2)                  | doing  |
 | The self-test (16.3)                                   | todo   |
 | Pylon (5.1)                                            | todo   |
 | Line Terminal (5.2)                                    | todo   |
