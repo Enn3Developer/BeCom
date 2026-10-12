@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for radio channels or for calls.
 - The ME Phone and the ME Bridge: an ME Phone linked to an ME network at a Security Terminal has service at Max inside
   that network's wireless range, calls other ME Phones on it directly, and any other phone through an ME Bridge,
-  which joins the ME network on ME cable and is wrench-linked to a BeCom node.
+  which joins the ME network on ME cable and is wrench-linked to a Pylon Head, a Line Terminal or an antenna.
 - The Videophone, an MV speakerphone for wired networks on a Line Terminal's Phone Cable: everyone within 4 blocks is
   in its call, which plays from its loudspeaker to everyone within 16 blocks, and it hangs up by itself 30 s after
   the last person walks off.

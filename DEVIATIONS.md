@@ -226,27 +226,28 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X18: Pylon height and Phone Cable length have ceilings
 
-- **Where:** 0.1, DESIGN.md 14.2, 17
+- **Where:** 0.1, 0.3, 0.4, DESIGN.md 14.2, 17
 - **Design says:** pylons are 6 to 16 frames and Phone Cable reaches 32 blocks by default; DESIGN.md 17 gives no
   limits on the config values.
 - **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. From 0.3: `groupCallSize` from 2 to
-  16, the video heights up to 512, rear pictures up to 640x360 and 32 KB (`rearMaxBytes`), `videoPoseRate` up to 20
-  a second (one a server tick), and `meBridgeChannels` 0 or 1. From 0.4: `relayPortalDistance` up to 8 blocks, so a
+  16, the video heights up to 512, rear pictures up to 640x360 and 32 KB (`rearMaxBytes`), `videoPoseRate` up to 20 a
+  second (one a server tick), and `meBridgeChannels` 0 or 1. From 0.4: `relayPortalDistance` up to 8 blocks, so a
   relay's search for portals stays a few thousand blocks a second (a larger value refuses the world, as for the other
-  decimal options), the receiver's uplink and the relay pair's levels written 1 (Low) to 4 (Max), at least 1
-  satellite for Low and 1 second a launch, and `/becom satellites` at most 1,000 over a dimension. Every whole-number
-  option shows its
-  range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value outside
-  it is used at the nearest end with a warning naming what was written. The checks no single range can hold (ordered
-  level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this BeCom
-  understands and so on) run when a server is about to start with the file. A bad file refuses the world through FML's
-  own startup notice, naming the key: on the console for a dedicated server, and on screen in single-player, where the
-  client's file is the server's, leading back to the menu. A client joining a server never acts on its own file, so a
-  bad one doesn't stop it.
+  decimal options), the receiver's uplink and the relay pair's levels written 1 (Low) to 4 (Max), at least 1 satellite
+  for Low and 1 second a launch, and `/becom satellites` at most 1,000 over a dimension. Every whole-number option shows
+  its range in the config file (those, and at least 1 where 0 would mean every tick or nothing at all), and a value
+  outside it is used at the nearest end with a warning naming what was written. The checks no single range can hold
+  (ordered level thresholds, the tallest pylon above the shortest, a burst of at least one voice frame, a format this
+  BeCom understands and so on) run when a server is about to start with the file. A bad file refuses the world through
+  FML's own startup notice, naming the key: on the console for a dedicated server, and on screen in single-player, where
+  the client's file is the server's, leading back to the menu. A client joining a server never acts on its own file, so
+  a bad one doesn't stop it.
 - **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
   make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
   code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.
-- **To match the design:** raise `Tunables.MAX_COLUMN`, `MAX_CABLE` and 0.3's `MAX_` ceilings beside them.
+- **To match the design:** raise `Tunables.MAX_COLUMN`, `MAX_CABLE` and the later `MAX_` ceilings beside them, 0.4's
+  `MAX_PORTAL_DISTANCE` among them; the 1 to 4 ranges of `receiverUplinkLevel` and `relayHopLevel` and the minimums
+  in `BeComConfig`; and `CommandBeCom.MAX_TEST_SATELLITES`.
 
 ### X19: Antennas take up to 15 bridges and route like a Router
 
@@ -630,3 +631,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   flies. A wrench link to it would point at nothing once it launched.
 - **To match the design:** let a wrench link a Pylon Head or Line Terminal to a landed rocket's receiver, dropped when
   the rocket leaves its pad, and take the rocket's owner from Galacticraft for a lock.
+
+### X40: An ME Bridge doesn't link onto a dish or a relay
+
+- **Where:** 0.4, DESIGN.md 8.3, 9.2, X36
+- **Design says:** an ME Bridge is wrench-linked to a BeCom node within 16 blocks (8.3). A Satellite Dish is
+  wrench-linked to an antenna, a Pylon Head or a Line Terminal (9.2).
+- **Built:** an ME Bridge links to a Pylon Head (a Repeater's or a Router's too), a Line Terminal or an antenna, not
+  to a Satellite Dish, a Portal Relay or another ME Bridge.
+- **Why:** 9.2 limits what a dish links to, and X36 gives a relay the same link, so 8.3's "a BeCom node" can't hold
+  for them both ways. Two ME Bridges would join two ME networks, not a line, which is what ME's own cables are for.
+- **To match the design:** let a dish's or a relay's one link be an ME Bridge in `LinkRules`, and a bridge's another
+  bridge.

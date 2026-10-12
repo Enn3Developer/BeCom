@@ -305,8 +305,8 @@ QUESTS = [
         "tier": "EV",
         "name": "Bridging the Networks",
         "desc": "An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME "
-        "cable, where it takes one channel, and wrench-link it to a BeCom node within 16 blocks. It uses 512 "
-        "EU/t.",
+        "cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna "
+        "within 16 blocks. It uses 512 EU/t.",
         "icon": (GT_MACHINE, 25008),
         "pre": ["me_phone"],
         "tasks": [("item", GT_MACHINE, 25008, 1)],
