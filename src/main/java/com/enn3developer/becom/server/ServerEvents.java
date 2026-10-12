@@ -4,6 +4,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.world.WorldEvent;
 
 import com.enn3developer.becom.quest.BeComQuests;
+import com.enn3developer.becom.selftest.SelfTest;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
@@ -20,6 +21,7 @@ public final class ServerEvents {
         becom.tick();
         BeComQuests.backend()
             .tick();
+        SelfTest.tick();
     }
 
     @SubscribeEvent

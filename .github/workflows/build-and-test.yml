@@ -65,8 +65,9 @@ jobs:
           # Constant seed with a village at spawn
           printf 'level-seed=-6202107849386030209\nonline-mode=true\n' > run/server.properties
           printf 'level-seed=-6202107849386030209\nonline-mode=true\n' > run/server/server.properties
-          echo "stop" > run/stop.txt
-          timeout 600 ./gradlew --build-cache --info --stacktrace runServer25 2>&1 < run/stop.txt | tee -a server.log || true
+          # The self-test builds what it checks, prints one line per check and stops the server (DESIGN.md 16.3).
+          echo "becom selftest" > run/selftest.txt
+          timeout 900 ./gradlew --build-cache --info --stacktrace runServer25 2>&1 < run/selftest.txt | tee -a server.log || true
 
       - name: Test no errors reported during server run
         run: |
@@ -104,6 +105,14 @@ jobs:
 
           if ! grep --quiet --extended-regexp 'Better Communications .* started' server.log; then
             echo 'Server started but becom never initialised' >&2
+            exit 1
+          fi
+
+      - name: Test the self-test passed
+        run: |
+          grep --fixed-strings 'BeCom self-test: ' server.log || true
+          if ! grep --quiet --extended-regexp 'BeCom self-test: [0-9]+ passed, 0 failed' server.log; then
+            echo 'The BeCom self-test failed, or never finished' >&2
             exit 1
           fi
 

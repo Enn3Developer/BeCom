@@ -18,7 +18,7 @@ Branch `milestone/0.1-wired`, from `master`.
 |--------------------------------------------------------|--------|
 | Machine ID check (14.1)                                | doing  |
 | Config and saved-data versions (14.2)                  | doing  |
-| The self-test (16.3)                                   | doing  |
+| The self-test (16.3)                                   | done   |
 | Pylon (5.1)                                            | doing  |
 | Line Terminal (5.2)                                    | doing  |
 | Repeater (5.3)                                         | doing  |
@@ -42,14 +42,14 @@ Branch `milestone/0.1-wired`, from `master`.
 | Quest support: BeCom's task type (D50)                 | done   |
 | Quest support: the off switch (15.5)                   | done   |
 | CI runs on milestone branches, newer pushes cancel     | done   |
-| CI's run-server job runs the self-test                 | todo   |
+| CI's run-server job runs the self-test                 | done   |
 
 ### Untested assumptions (DESIGN.md 16.2)
 
 | Assumption                                                         | Status |
 |--------------------------------------------------------------------|--------|
-| Repeater and Router heads take power straight from a cable         | todo   |
-| BeCom can add its questline through BQ's API, also after a reload  | todo   |
+| Repeater and Router heads take power straight from a cable         | done   |
+| BeCom can add its questline through BQ's API, also after a reload  | done   |
 
 ### Quests (DESIGN.md 15.5)
 
