@@ -1124,7 +1124,8 @@ public final class CallService implements CallBook.Listener {
 
     private void checkCords() {
         for (Map.Entry<Integer, UUID> entry : new ArrayList<>(handsets.entrySet())) {
-            EntityPlayerMP player = player(entry.getValue());
+            // A self-test stand-in is checked where it stands, as an online player is.
+            EntityPlayer player = playerOrPresent(entry.getValue());
             TileTelephone telephone = phones.telephone(entry.getKey());
             if (player == null || telephone == null || !telephone.withinCord(player)) {
                 hangUpHandset(entry.getValue());

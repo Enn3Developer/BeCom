@@ -1092,7 +1092,12 @@ public final class SelfTest {
     }
 
     /** Puts a fake player on the floor right next to a Telephone, within its cord. */
-    private static void standBy(FakePlayer player, TileTelephone phone) {
+    /**
+     * Puts a fake player by a Telephone, present as if it were online: handset cords are checked every few ticks, and
+     * a holder who isn't online would hang up at the next check, whenever that falls between two steps.
+     */
+    private void standBy(FakePlayer player, TileTelephone phone) {
+        becom.calls.presentForSelfTest(player);
         player.setPosition(phone.xCoord + 1.5, phone.yCoord, phone.zCoord + 0.5);
     }
 
