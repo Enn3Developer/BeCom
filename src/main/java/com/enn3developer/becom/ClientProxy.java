@@ -4,13 +4,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
+import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.ClientAudio;
 import com.enn3developer.becom.client.ClientLevels;
+import com.enn3developer.becom.client.ClientRadio;
 import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
@@ -20,6 +23,7 @@ import com.enn3developer.becom.client.ToneSounds;
 import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.TonePacket;
@@ -52,10 +56,13 @@ public class ClientProxy extends CommonProxy {
         super.init(event);
         MinecraftForge.EVENT_BUS.register(new WireRenderer());
         MinecraftForge.EVENT_BUS.register(new SignalBars());
+        MinecraftForge.EVENT_BUS.register(new AnalyzerOverlay());
+        MinecraftForge.EVENT_BUS.register(new ClientRadio());
         FMLCommonHandler.instance()
             .bus()
             .register(this);
         ClientAudio.register();
+        ClientRadio.register();
     }
 
     @SubscribeEvent
@@ -63,6 +70,7 @@ public class ClientProxy extends CommonProxy {
         if (event.phase != TickEvent.Phase.END) return;
         Runnable task;
         while ((task = mainThread.poll()) != null) task.run();
+        ClientRadio.tick();
     }
 
     @SubscribeEvent
@@ -73,6 +81,8 @@ public class ClientProxy extends CommonProxy {
             ToneSounds.stop();
             BeComConfig.useDefaults();
             MachineTooltips.forget();
+            ClientRadio.reset();
+            AnalyzerOverlay.clear();
         });
     }
 
@@ -89,6 +99,16 @@ public class ClientProxy extends CommonProxy {
     public void onLevel(LevelPacket packet) {
         // The level table is concurrent and read on decode threads, so it's set right away.
         ClientLevels.set(packet.source(), packet.group(), packet.level());
+    }
+
+    @Override
+    public void onAnalyzer(AnalyzerPacket packet) {
+        AnalyzerOverlay.set(packet);
+    }
+
+    @Override
+    public boolean isTransmittingOn(ItemStack stack) {
+        return ClientRadio.transmittingOn(stack);
     }
 
     @Override

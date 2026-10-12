@@ -136,6 +136,21 @@ becom.walkie.charge=%s / %s EU
 becom.walkie.help=Hold push-to-talk to transmit. Sneak and scroll to change channel.
 becom.transceiver.loudspeaker=Loudspeaker
 becom.analyzer.help=Hold it to see your radio signal: its strength, what serves you, and what costs the most.
+becom.analyzer.reading=Reading...
+becom.analyzer.none=No antenna in reach
+becom.analyzer.snr=SNR %s dB: %s
+becom.analyzer.antenna=Antenna T%s at %s, %s, %s
+becom.analyzer.biggest=Biggest loss: %s
+becom.analyzer.terms=Budget %s dB, distance -%s, terrain -%s, cover -%s, weather -%s, noise -%s
+becom.loss.distance=distance
+becom.loss.terrain=terrain
+becom.loss.cover=cover
+becom.loss.weather=weather
+becom.loss.noise=noise
+
+# Keys
+key.categories.becom=Better Communications
+key.becom.radio=Radio push-to-talk
 
 # Commands
 becom.command.usage=/becom calls | /becom hangup <id>

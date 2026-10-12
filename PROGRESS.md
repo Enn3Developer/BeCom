@@ -276,11 +276,11 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Antenna screen: links and team lock (11.4, 12.2)                     | doing  |
 | Transceiver: machine, screen, loudspeaker, recipe (8, 11.3, 3.1)     | doing  |
 | Walkie-Talkie: item, screen, sneak + scroll, battery, recipe       | doing  |
-| Push-to-talk key and the `radio` activation (11.1, 13.4)             | todo   |
+| Push-to-talk key and the `radio` activation (11.1, 13.4)             | doing  |
 | Channels `becom:radio.1` to `16` (8.1, 13.1, 13.2)                   | doing  |
 | Capture effect (D24)                                                 | doing  |
 | Walkie speaker (D21)                                                 | doing  |
-| Radio audio filters per level (4.3, 13.5)                            | todo   |
+| Radio audio filters per level (4.3, 13.5)                            | done   |
 | Signal Analyzer: item, overlay, recipe (6.6, 11.4, 3.1)              | doing  |
 | `/becom signal` (6.6)                                                | todo   |
 | The 0.2 tunables in the config (17)                                  | done   |
