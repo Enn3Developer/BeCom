@@ -96,7 +96,7 @@ public final class BeComServer {
             tunables.directHearingRange(),
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());
-        this.radio = new RadioService(server, tunables, antennas, heights);
+        this.radio = new RadioService(server, tunables, antennas, heights, space);
         this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
         // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
         // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2

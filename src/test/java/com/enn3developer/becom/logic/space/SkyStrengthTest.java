@@ -61,6 +61,16 @@ class SkyStrengthTest {
     }
 
     @Test
+    void theAnalyzersTermsAddUpToTheHop() {
+        // DESIGN.md 6.6: the satellites' strength is the budget, less the cover and the weather.
+        var losses = sky.losses(37, 3, t.uhf(), t.weatherRainLoss());
+        assertEquals(sky.hop(37, 3, t.uhf(), t.weatherRainLoss()), losses.snr(), 1e-9);
+        assertEquals(sky.snr(37), losses.budget(), 1e-9);
+        assertEquals(7.5, losses.coverA(), 1e-9);
+        assertEquals(null, sky.losses(4, 0, t.uhf(), 0));
+    }
+
+    @Test
     void weatherCostsASkyHop() {
         assertEquals(sky.snr(37) - t.weatherStormLoss(), sky.hop(37, 0, t.vhf(), t.weatherStormLoss()), 1e-9);
     }

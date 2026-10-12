@@ -126,6 +126,17 @@ public final class RadioModel {
             return budget - distance - terrain - coverA - coverB - weather - noise;
         }
 
+        /** The dB lost to {@code loss}. Cover counts both ends together. */
+        public double of(Loss loss) {
+            return switch (loss) {
+                case DISTANCE -> distance;
+                case TERRAIN -> terrain;
+                case COVER -> coverA + coverB;
+                case WEATHER -> weather;
+                case NOISE -> noise;
+            };
+        }
+
         /** Which loss is biggest. Cover counts both ends together. */
         public Loss biggest() {
             Loss loss = Loss.DISTANCE;

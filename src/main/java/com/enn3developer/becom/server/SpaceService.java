@@ -9,6 +9,7 @@ import net.minecraftforge.common.DimensionManager;
 import com.enn3developer.becom.data.SatelliteSavedData;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.Band;
+import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.logic.space.Satellites;
 import com.enn3developer.becom.logic.space.SkyStrength;
 
@@ -111,6 +112,12 @@ public final class SpaceService {
     public double hop(int dimension, double depth, Band band, double weather) {
         if (!skyHops(dimension)) return Double.NEGATIVE_INFINITY;
         return sky.hop(satellites.count(dimension), depth, band, weather);
+    }
+
+    /** The same hop term by term, for the Signal Analyzer (DESIGN.md 6.6); null where there are none. */
+    public RadioModel.Losses losses(int dimension, double depth, Band band, double weather) {
+        if (!hasSky(dimension)) return null;
+        return sky.losses(satellites.count(dimension), depth, band, weather);
     }
 
     public SkyStrength sky() {

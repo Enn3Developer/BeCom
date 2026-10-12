@@ -11,19 +11,24 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * A Signal Analyzer reading (DESIGN.md 6.6, 11.4) on each band: radios on VHF, phones on UHF, where weather counts
- * (D26). Sent once a refresh period while the player holds an analyzer.
+ * (D26). Sent once a refresh period while the player holds an analyzer. What serves the player best is an antenna or
+ * the satellites over their dimension (9.1).
  */
 public final class AnalyzerPacket implements IMessage {
 
-    /** One band: the antenna serving the player best, every loss on that link and the level, or nothing in reach. */
-    public record Reading(boolean served, int x, int y, int z, int tier, double budget, double distance, double terrain,
-        double cover, double weather, double noise, SignalLevel level) {
+    /**
+     * One band: the antenna serving the player best, or the satellites ({@code satellites} above 0, how many orbit),
+     * every loss on that link and the level; or nothing in reach.
+     */
+    public record Reading(boolean served, int satellites, int x, int y, int z, int tier, double budget, double distance,
+        double terrain, double cover, double weather, double noise, SignalLevel level) {
 
-        public static final Reading NONE = new Reading(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, SignalLevel.NONE);
+        public static final Reading NONE = new Reading(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, SignalLevel.NONE);
 
         public static Reading of(int x, int y, int z, int tier, RadioModel.Losses losses, SignalLevel level) {
             return new Reading(
                 true,
+                0,
                 x,
                 y,
                 z,
@@ -37,6 +42,29 @@ public final class AnalyzerPacket implements IMessage {
                 level);
         }
 
+        /** The satellites serving the player: {@code satellites} of them, and the hop's terms (DESIGN.md 9.1). */
+        public static Reading sky(int satellites, RadioModel.Losses losses, SignalLevel level) {
+            return new Reading(
+                true,
+                satellites,
+                0,
+                0,
+                0,
+                0,
+                losses.budget(),
+                losses.distance(),
+                losses.terrain(),
+                losses.coverA() + losses.coverB(),
+                losses.weather(),
+                losses.noise(),
+                level);
+        }
+
+        /** Whether the satellites serve the player, rather than an antenna. */
+        public boolean sky() {
+            return satellites > 0;
+        }
+
         /** Every term again, as the model keeps them; cover counts both ends as one. */
         public RadioModel.Losses losses() {
             return new RadioModel.Losses(budget, distance, terrain, cover, 0, weather, noise);
@@ -46,6 +74,7 @@ public final class AnalyzerPacket implements IMessage {
             if (!buf.readBoolean()) return NONE;
             return new Reading(
                 true,
+                buf.readInt(),
                 buf.readInt(),
                 buf.readShort(),
                 buf.readInt(),
@@ -62,6 +91,7 @@ public final class AnalyzerPacket implements IMessage {
         void write(ByteBuf buf) {
             buf.writeBoolean(served);
             if (!served) return;
+            buf.writeInt(satellites);
             buf.writeInt(x);
             buf.writeShort(y);
             buf.writeInt(z);

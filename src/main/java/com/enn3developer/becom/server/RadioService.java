@@ -79,6 +79,7 @@ public final class RadioService {
     private final Tunables tunables;
     private final AntennaNetwork antennas;
     private final HeightCaches heights;
+    private final SpaceService space;
     private final RadioHops hops;
     private final Band vhf;
     private final LevelScale levels;
@@ -94,6 +95,8 @@ public final class RadioService {
         int channel;
         boolean loudspeaker;
         RadioHops.End end;
+        boolean rains;
+        double sky = Double.NEGATIVE_INFINITY;
         UUID owner;
         long seenAt;
         double[] access;
@@ -106,14 +109,20 @@ public final class RadioService {
         UUID id;
         int dimension;
         RadioHops.End end;
+        boolean rains;
+        double sky = Double.NEGATIVE_INFINITY;
         int walkieChannel;
         NodeRef transceiver;
         double[] access;
         AntennaNetwork.Mesh accessMesh;
     }
 
-    /** What a speaker transmits from: their walkie, or the Transceiver they stand at (DESIGN.md 8.1). */
-    private record Tx(int channel, int dimension, RadioHops.End end, double budget, double[] access, NodeRef from) {}
+    /**
+     * What a speaker transmits from: their walkie, or the Transceiver they stand at (DESIGN.md 8.1); {@code sky} is its
+     * hop up to the satellites (9.1).
+     */
+    private record Tx(int channel, int dimension, RadioHops.End end, double budget, double[] access, NodeRef from,
+        double sky) {}
 
     private record Pair(UUID speaker, Object device) {}
 
@@ -141,11 +150,13 @@ public final class RadioService {
     private RadioSnapshot published = RadioSnapshot.EMPTY;
     private long tick;
 
-    public RadioService(MinecraftServer server, Tunables tunables, AntennaNetwork antennas, HeightCaches heights) {
+    public RadioService(MinecraftServer server, Tunables tunables, AntennaNetwork antennas, HeightCaches heights,
+        SpaceService space) {
         this.server = server;
         this.tunables = tunables;
         this.antennas = antennas;
         this.heights = heights;
+        this.space = space;
         this.hops = new RadioHops(tunables.radioModel(), tunables.surveyStep());
         this.vhf = tunables.vhf();
         this.levels = tunables.levelScale();
@@ -225,8 +236,14 @@ public final class RadioService {
             t.ref = ref;
             t.channel = channel;
             t.loudspeaker = loudspeaker;
-            if (!end.equals(t.end)) t.accessMesh = null;
-            t.end = end;
+            if (!end.equals(t.end)) {
+                t.accessMesh = null;
+                WorldServer world = DimensionManager.getWorld(ref.dimension());
+                t.rains = world != null
+                    && BeComServer.rains(world, (int) Math.floor(end.x()), (int) Math.floor(end.z()));
+                t.end = end;
+                t.sky = skyHop(ref.dimension(), end, t.rains);
+            }
         }
         t.owner = owner;
         t.seenAt = tick;
@@ -272,6 +289,7 @@ public final class RadioService {
                 changed = true;
             } else if (Math.floorMod(t.ref.hashCode(), TICKS_PER_SECOND) == slot) {
                 refreshAccess(t);
+                t.sky = skyHop(t.ref.dimension(), t.end, t.rains);
             }
         }
         if (tick % TICKS_PER_SECOND == 0) {
@@ -345,6 +363,8 @@ public final class RadioService {
         radio.id = id;
         radio.dimension = player.dimension;
         radio.end = endOf(player);
+        radio.rains = BeComServer.rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
+        radio.sky = skyHop(radio.dimension, radio.end, radio.rains);
         radio.walkieChannel = walkieChannel;
         radio.transceiver = at;
         radio.access = null;
@@ -398,7 +418,8 @@ public final class RadioService {
                 at.end,
                 tunables.transceiverBudget(),
                 refreshAccess(at),
-                at.ref);
+                at.ref,
+                at.sky);
         }
         if (radio.walkieChannel > 0) {
             return new Tx(
@@ -407,7 +428,8 @@ public final class RadioService {
                 radio.end,
                 tunables.walkieBudget(),
                 accessOf(radio),
-                null);
+                null,
+                radio.sky);
         }
         return null;
     }
@@ -461,7 +483,7 @@ public final class RadioService {
                     .reach(tx.access) : null;
             for (Radio other : receivers) {
                 if (other == radio || other.walkieChannel != tx.channel || other.dimension != tx.dimension) continue;
-                double snr = snr(tx, other.end, accessOf(other), reach);
+                double snr = snr(tx, other.end, accessOf(other), reach, other.sky);
                 SignalLevel level = level(new Pair(speaker, other.id), snr);
                 if (level.atLeast(SignalLevel.LOW)) builder.link(speaker, link(other.id, null, snr));
             }
@@ -469,7 +491,7 @@ public final class RadioService {
                 if (!working(t) || t.channel != tx.channel
                     || t.ref.dimension() != tx.dimension
                     || t.ref.equals(tx.from)) continue;
-                double snr = snr(tx, t.end, refreshAccess(t), reach);
+                double snr = snr(tx, t.end, refreshAccess(t), reach, t.sky);
                 SignalLevel level = level(new Pair(speaker, t.ref), snr);
                 if (level.atLeast(SignalLevel.LOW)) {
                     builder.link(
@@ -503,10 +525,11 @@ public final class RadioService {
     }
 
     /**
-     * The better of the direct link and the path through the antennas (DESIGN.md 8.1). A direct link uses the
-     * transmitter's budget (6.1); through antennas, every hop uses the antennas' budgets.
+     * The best of the direct link, the path through the antennas (DESIGN.md 8.1) and the path through the satellites,
+     * up from one radio and down to the other (9.1). A direct link uses the transmitter's budget (6.1); through
+     * antennas, every hop uses the antennas' budgets.
      */
-    private double snr(Tx tx, RadioHops.End to, double[] access, double[] reach) {
+    private double snr(Tx tx, RadioHops.End to, double[] access, double[] reach, double sky) {
         double direct = Double.NEGATIVE_INFINITY;
         if (tx.end.distanceTo(to) <= tunables.rangeToHold(tx.budget)) {
             direct = hops.direct(heights.terrain(tx.dimension), tx.end, to, tx.budget, vhf, 0, noSky(tx.dimension))
@@ -515,7 +538,15 @@ public final class RadioService {
         double via = reach != null && access != null && access.length == reach.length
             ? AntennaMesh.through(reach, access)
             : Double.NEGATIVE_INFINITY;
-        return Math.max(direct, via);
+        return Math.max(Math.max(direct, via), Math.min(tx.sky, sky));
+    }
+
+    /**
+     * A radio's hop up to the satellites over its dimension on VHF (DESIGN.md 9.1): their strength less its cover,
+     * and the rain where it stands (D26). Negative infinity without enough satellites.
+     */
+    private double skyHop(int dimension, RadioHops.End end, boolean rains) {
+        return space.hop(dimension, end.depth(), vhf, rains ? space.weather(dimension) : 0);
     }
 
     /**
@@ -686,22 +717,40 @@ public final class RadioService {
     }
 
     /**
-     * The best antenna for a player on each band and every loss on that link; also what {@code /becom signal} says.
-     * Radios use VHF; phones use UHF, where rain where the player stands counts (D26).
+     * What serves a player best on each band, an antenna or the satellites, and every loss on that link; also what
+     * {@code /becom signal} says. Radios use VHF; phones use UHF, where rain where the player stands counts (D26), as
+     * it does on any sky hop.
      */
     public AnalyzerPacket reading(EntityPlayer player) {
         RadioHops.End end = endOf(player);
         UUID id = player.getUniqueID();
+        int dimension = player.dimension;
         boolean rains = BeComServer
             .rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
+        double weather = rains ? space.weather(dimension) : 0;
+        int satellites = space.count(dimension);
         return new AnalyzerPacket(
             // What a radio hears there: radios stop at Medium (D10).
-            reading(antennas.best(player.dimension, end, id, vhf), SignalLevel.MEDIUM),
-            // What a Mobile Phone gets there, the phone that uses antennas.
-            reading(antennas.best(player.dimension, end, id, antennas.uhf(), rains), PhoneKind.MOBILE.cap()));
+            reading(
+                antennas.best(dimension, end, id, vhf),
+                space.losses(dimension, end.depth(), vhf, weather),
+                satellites,
+                SignalLevel.MEDIUM),
+            // What a Mobile Phone gets there, the phone that uses antennas and satellites.
+            reading(
+                antennas.best(dimension, end, id, antennas.uhf(), rains),
+                space.losses(dimension, end.depth(), antennas.uhf(), weather),
+                satellites,
+                PhoneKind.MOBILE.cap()));
     }
 
-    private AnalyzerPacket.Reading reading(AntennaNetwork.Best best, SignalLevel cap) {
+    /** The better of the best antenna and the satellites' sky hop ({@code sky}, null without one). */
+    private AnalyzerPacket.Reading reading(AntennaNetwork.Best best, RadioModel.Losses sky, int satellites,
+        SignalLevel cap) {
+        if (sky != null && (best == null || sky.snr() > best.losses()
+            .snr())) {
+            return AnalyzerPacket.Reading.sky(satellites, sky, SignalLevel.min(levels.levelOf(sky.snr()), cap));
+        }
         if (best == null) return AnalyzerPacket.Reading.NONE;
         RadioModel.Losses losses = best.losses();
         NodeRef ref = best.antenna()

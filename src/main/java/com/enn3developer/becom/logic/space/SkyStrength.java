@@ -53,4 +53,20 @@ public final class SkyStrength {
     public double hop(int satellites, double depth, Band band, double weather) {
         return snr(satellites) - model.coverLoss(depth, band.coverPerBlock()) - weather;
     }
+
+    /**
+     * The same hop term by term, for the Signal Analyzer (DESIGN.md 6.6): the satellites' SNR as its budget, its
+     * cover and the weather; null with too few satellites.
+     */
+    public RadioModel.Losses losses(int satellites, double depth, Band band, double weather) {
+        if (!enough(satellites)) return null;
+        return new RadioModel.Losses(
+            snr(satellites),
+            0,
+            0,
+            model.coverLoss(depth, band.coverPerBlock()),
+            0,
+            weather,
+            0);
+    }
 }

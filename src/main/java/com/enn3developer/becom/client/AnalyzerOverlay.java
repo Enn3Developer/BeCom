@@ -19,8 +19,8 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
  * The Signal Analyzer's overlay (DESIGN.md 6.6, 11.4, D35): while the player holds one, the server's latest reading in
- * the top-left corner, for radios and for phones: SNR and level, the antenna serving them, the biggest loss, and every
- * loss term.
+ * the top-left corner, for radios and for phones: SNR and level, the antenna or the satellites serving them, the
+ * biggest loss, and every loss term.
  */
 public final class AnalyzerOverlay {
 
@@ -88,14 +88,32 @@ public final class AnalyzerOverlay {
                     "becom.level." + r.level()
                         .name()
                         .toLowerCase(Locale.ROOT))));
-        lines.add(StatCollector.translateToLocalFormatted("becom.analyzer.antenna", r.tier(), r.x(), r.y(), r.z()));
-        lines.add(
-            StatCollector.translateToLocalFormatted(
-                "becom.analyzer.biggest",
-                StatCollector.translateToLocal(
-                    "becom.loss." + losses.biggest()
-                        .name()
-                        .toLowerCase(Locale.ROOT))));
+        if (r.sky()) {
+            lines.add(StatCollector.translateToLocalFormatted("becom.analyzer.satellites", r.satellites()));
+        } else {
+            lines.add(StatCollector.translateToLocalFormatted("becom.analyzer.antenna", r.tier(), r.x(), r.y(), r.z()));
+        }
+        RadioModel.Loss biggest = losses.biggest();
+        if (losses.of(biggest) > 0) {
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "becom.analyzer.biggest",
+                    StatCollector.translateToLocal(
+                        "becom.loss." + biggest.name()
+                            .toLowerCase(Locale.ROOT))));
+        } else {
+            lines.add(StatCollector.translateToLocal("becom.analyzer.biggest_none"));
+        }
+        if (r.sky()) {
+            // A sky hop has no distance, terrain or noise to lose (DESIGN.md 9.1).
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "becom.analyzer.sky_terms",
+                    Math.round(losses.budget()),
+                    Math.round(losses.coverA() + losses.coverB()),
+                    Math.round(losses.weather())));
+            return;
+        }
         lines.add(
             StatCollector.translateToLocalFormatted(
                 "becom.analyzer.terms",

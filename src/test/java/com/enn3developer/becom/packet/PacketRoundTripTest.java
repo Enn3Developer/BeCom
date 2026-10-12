@@ -134,6 +134,15 @@ class PacketRoundTripTest {
         AnalyzerPacket read = roundTrip(new AnalyzerPacket(radio, AnalyzerPacket.Reading.NONE), AnalyzerPacket::new);
         assertEquals(radio, read.radio());
         assertEquals(AnalyzerPacket.Reading.NONE, read.phone());
+        // DESIGN.md 9.1: the satellites serving the phone band, 37 of them.
+        AnalyzerPacket.Reading sky = AnalyzerPacket.Reading
+            .sky(37, new RadioModel.Losses(18, 0, 0, 5, 0, 3, 0), SignalLevel.MEDIUM);
+        AnalyzerPacket both = roundTrip(new AnalyzerPacket(radio, sky), AnalyzerPacket::new);
+        assertEquals(sky, both.phone());
+        assertEquals(
+            37,
+            both.phone()
+                .satellites());
     }
 
     @Test

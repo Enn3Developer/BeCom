@@ -16,6 +16,7 @@ import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
+import com.enn3developer.becom.logic.radio.RadioHops;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.selftest.SelfTest;
@@ -114,8 +115,8 @@ public final class CommandBeCom extends CommandBase {
     }
 
     /**
-     * DESIGN.md 6.6: the Signal Analyzer's breakdown in chat for radios and for phones, and every antenna that reaches
-     * the sender's radio.
+     * DESIGN.md 6.6: the Signal Analyzer's breakdown in chat for radios and for phones, every antenna that reaches the
+     * sender's radio, and the satellites' sky hop on both bands where there is one.
      */
     private static void signal(ICommandSender sender, BeComServer becom) {
         if (!(sender instanceof EntityPlayerMP player)) throw new WrongUsageException("becom.command.usage");
@@ -139,6 +140,22 @@ public final class CommandBeCom extends CommandBase {
                     BlockPos.toString(ref.pos()),
                     format(access[i])));
         }
+        AnalyzerPacket.Reading radio = reading.radio();
+        AnalyzerPacket.Reading phone = reading.phone();
+        RadioHops.End end = RadioService.endOf(player);
+        boolean rains = BeComServer
+            .rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
+        double weather = rains ? becom.space.weather(player.dimension) : 0;
+        RadioModel.Losses vhf = becom.space.losses(player.dimension, end.depth(), becom.antennas.vhf(), weather);
+        RadioModel.Losses uhf = becom.space.losses(player.dimension, end.depth(), becom.antennas.uhf(), weather);
+        if (vhf != null && uhf != null && !radio.sky() && !phone.sky()) {
+            sender.addChatMessage(
+                new ChatComponentTranslation(
+                    "becom.command.signal.sky",
+                    becom.space.count(player.dimension),
+                    format(vhf.snr()),
+                    format(uhf.snr())));
+        }
     }
 
     /** One band's breakdown: SNR, level and the serving antenna, the biggest loss, and every term. */
@@ -149,26 +166,49 @@ public final class CommandBeCom extends CommandBase {
             return;
         }
         RadioModel.Losses losses = reading.losses();
-        sender.addChatMessage(
-            new ChatComponentTranslation(
-                "becom.command.signal.best",
-                band,
-                Math.round(losses.snr()),
+        ChatComponentTranslation level = new ChatComponentTranslation(
+            "becom.level." + reading.level()
+                .name()
+                .toLowerCase(Locale.ROOT));
+        if (reading.sky()) {
+            sender.addChatMessage(
                 new ChatComponentTranslation(
-                    "becom.level." + reading.level()
-                        .name()
-                        .toLowerCase(Locale.ROOT)),
-                reading.tier(),
-                reading.x(),
-                reading.y(),
-                reading.z()));
-        sender.addChatMessage(
-            new ChatComponentTranslation(
-                "becom.analyzer.biggest",
+                    "becom.command.signal.best_sky",
+                    band,
+                    Math.round(losses.snr()),
+                    level,
+                    reading.satellites()));
+        } else {
+            sender.addChatMessage(
                 new ChatComponentTranslation(
-                    "becom.loss." + losses.biggest()
-                        .name()
-                        .toLowerCase(Locale.ROOT))));
+                    "becom.command.signal.best",
+                    band,
+                    Math.round(losses.snr()),
+                    level,
+                    reading.tier(),
+                    reading.x(),
+                    reading.y(),
+                    reading.z()));
+        }
+        RadioModel.Loss biggest = losses.biggest();
+        sender
+            .addChatMessage(
+                losses.of(biggest) > 0
+                    ? new ChatComponentTranslation(
+                        "becom.analyzer.biggest",
+                        new ChatComponentTranslation(
+                            "becom.loss." + biggest.name()
+                                .toLowerCase(Locale.ROOT)))
+                    : new ChatComponentTranslation("becom.analyzer.biggest_none"));
+        if (reading.sky()) {
+            sender.addChatMessage(
+                new ChatComponentTranslation(
+                    "becom.analyzer.sky_terms",
+                    format(losses.budget()),
+                    format(losses.coverA() + losses.coverB()),
+                    format(losses.weather())));
+            return;
+        }
         sender.addChatMessage(
             new ChatComponentTranslation(
                 "becom.analyzer.terms",

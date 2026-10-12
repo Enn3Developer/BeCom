@@ -37,6 +37,8 @@ class SatellitesTest {
         assertEquals(150, satellites.nextDown(OVERWORLD));
         satellites.decay(150);
         assertEquals(Long.MAX_VALUE, satellites.nextDown(OVERWORLD));
+        assertEquals(0, satellites.count(OVERWORLD));
+        assertEquals(Map.of(), satellites.counts());
     }
 
     @Test

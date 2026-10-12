@@ -2,6 +2,7 @@ package com.enn3developer.becom.logic.space;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,8 @@ public final class Satellites {
     public record Satellite(int dimension, long launched, long comesDown) {}
 
     private final List<Satellite> satellites = new ArrayList<>();
+    // How many orbit over each dimension, kept as they go up and come down: radios ask for every listener.
+    private final Map<Integer, Integer> counts = new HashMap<>();
     private long version;
 
     /**
@@ -39,6 +42,7 @@ public final class Satellites {
     /** Adds a satellite as it was saved. */
     public void add(Satellite satellite) {
         satellites.add(satellite);
+        counts.merge(satellite.dimension(), 1, Integer::sum);
         version++;
     }
 
@@ -50,6 +54,7 @@ public final class Satellites {
             Satellite satellite = it.next();
             if (satellite.comesDown() > now) continue;
             it.remove();
+            counts.computeIfPresent(satellite.dimension(), (d, n) -> n > 1 ? n - 1 : null);
             if (!lost.contains(satellite.dimension())) lost.add(satellite.dimension());
         }
         if (!lost.isEmpty()) version++;
@@ -58,9 +63,7 @@ public final class Satellites {
 
     /** How many satellites orbit over {@code dimension}. */
     public int count(int dimension) {
-        int count = 0;
-        for (Satellite satellite : satellites) if (satellite.dimension() == dimension) count++;
-        return count;
+        return counts.getOrDefault(dimension, 0);
     }
 
     /** When the next satellite over {@code dimension} comes down; {@link Long#MAX_VALUE} with none up. */
@@ -74,9 +77,7 @@ public final class Satellites {
 
     /** Every dimension with satellites over it, and how many, by dimension. */
     public Map<Integer, Integer> counts() {
-        Map<Integer, Integer> counts = new TreeMap<>();
-        for (Satellite satellite : satellites) counts.merge(satellite.dimension(), 1, Integer::sum);
-        return counts;
+        return new TreeMap<>(counts);
     }
 
     public List<Satellite> all() {
