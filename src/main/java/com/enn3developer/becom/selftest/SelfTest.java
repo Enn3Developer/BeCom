@@ -3048,6 +3048,14 @@ public final class SelfTest {
                 && result == CallBook.DialResult.UNREACHABLE,
             "working " + videophone.isWorking() + ", " + result);
         becom.calls.hangUp(pia);
+        vic.setPosition(X0 + 1.5, Y, phoneZ + VIDEOPHONE_DZ + 0.5);
+        String before = becom.calls.lastMessageForSelfTest(vic.getUniqueID());
+        PhoneScreenActions.hangUp(vic, new PhoneHandle.Videophone(videophone));
+        String after = becom.calls.lastMessageForSelfTest(vic.getUniqueID());
+        check(
+            "...and its screen, offline, tells nobody next to it to step closer",
+            java.util.Objects.equals(before, after),
+            "told " + after);
         powered.add(videophone.getBaseMetaTileEntity());
         // Powered again, it reports in on its next ticks.
         return 5;

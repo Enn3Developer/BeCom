@@ -641,7 +641,8 @@ public final class CallService implements CallBook.Listener {
      */
     private boolean atVideophone(EntityPlayerMP player, int number) {
         Videophone videophone = videophone(number);
-        if (videophone != null && inRoom(player, videophone)) return true;
+        if (videophone == null) return false;
+        if (inRoom(player, videophone)) return true;
         tell(player, "becom.videophone.step_closer", (int) tunables.videophoneRoom());
         return false;
     }
