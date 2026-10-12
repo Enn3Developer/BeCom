@@ -9,9 +9,10 @@ on:
     branches: [ master, 'milestone/**' ]
   workflow_call:
 
-# A newer push to a branch cancels that branch's older run.
+# A newer push to a branch cancels that branch's older run. The group has its own prefix: GTNH's shared workflow,
+# called below, uses ${{ github.workflow }}-${{ github.ref }} for its own, and the same name would deadlock.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: becom-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
