@@ -13,6 +13,7 @@ import java.util.UUID;
 import net.minecraft.block.Block;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.init.Blocks;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
@@ -90,6 +91,7 @@ import appeng.api.parts.IPartHost;
 import appeng.api.util.AEColor;
 import appeng.api.util.IOrientable;
 import appeng.tile.misc.TileSecurity;
+import baubles.api.BaublesApi;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.Materials;
@@ -254,6 +256,7 @@ public final class SelfTest {
         steps.add(this::checkTones);
         steps.add(this::checkBusyToneStops);
         steps.add(this::checkPhoneMoves);
+        steps.add(this::checkBaublePhone);
         steps.add(this::startRain);
         steps.add(this::checkRain);
         steps.add(this::checkCoverage);
@@ -2002,10 +2005,13 @@ public final class SelfTest {
      * D14, DESIGN.md 11.2: a phone being moved with the mouse stays in its call, and a ringing phone that leaves its
      * player stops ringing for them, its notice included.
      */
+    private FakePlayer olga;
+    private int olgaNumber = -1;
+
     private int checkPhoneMoves() {
-        FakePlayer olga = phonePlayer("BeComOlga", 2, X0 - 19.5, phoneZ + 1.5);
+        olga = phonePlayer("BeComOlga", 2, X0 - 19.5, phoneZ + 1.5);
         FakePlayer pete = phonePlayer("BeComPete", 3, X0 - 19.5, phoneZ + 3.5);
-        int olgaNumber = ItemCarriedPhone.number(olga.inventory.mainInventory[0]);
+        olgaNumber = ItemCarriedPhone.number(olga.inventory.mainInventory[0]);
         int peteNumber = ItemCarriedPhone.number(pete.inventory.mainInventory[0]);
         becom.calls.dialCarried(olga, olgaNumber, peteNumber);
         becom.calls.answerCarried(pete, peteNumber);
@@ -2036,6 +2042,41 @@ public final class SelfTest {
             shown && !becom.calls.noticeForSelfTest(pete.getUniqueID()) && !becom.calls.isRinging(peteNumber),
             "shown " + shown + ", still " + becom.calls.noticeForSelfTest(pete.getUniqueID()));
         becom.calls.hangUp(olga);
+        return 1;
+    }
+
+    /** D14: a phone in a bauble slot is carried like one in the inventory. */
+    private int checkBaublePhone() {
+        FakePlayer quin = phonePlayer("BeComQuin", 4, X0 - 19.5, phoneZ + 2.5);
+        ItemStack phone = quin.inventory.mainInventory[0];
+        int number = ItemCarriedPhone.number(phone);
+        IInventory baubles = BaublesApi.getBaubles(quin);
+        if (baubles == null || baubles.getSizeInventory() == 0) {
+            fail("a Mobile Phone in a bauble slot is carried like one in the inventory", "no bauble slots");
+            return 1;
+        }
+        quin.inventory.mainInventory[0] = null;
+        baubles.setInventorySlotContents(0, phone);
+        becom.carried.refreshForSelfTest(quin);
+        boolean service = !becom.carried.serviceOf(number)
+            .entries()
+            .isEmpty();
+        becom.calls.dialCarried(olga, olgaNumber, number);
+        boolean rang = becom.calls.isRinging(number);
+        becom.calls.phoneKey(quin, false);
+        Call call = becom.calls.book()
+            .callOf(quin.getUniqueID());
+        boolean answered = call != null && call.state() == Call.State.CONNECTED;
+        becom.calls.hangUp(olga);
+        PhoneScreenActions.setPower(quin, new PhoneHandle.CarriedPhone(number), false);
+        boolean off = !ItemCarriedPhone.on(phone) && !becom.carried.working()
+            .contains(number);
+        check(
+            "a Mobile Phone in a bauble slot has service, rings, answers to the Phone key and switches off (D14)",
+            service && rang && answered && off,
+            "service " + service + ", rang " + rang + ", answered " + answered + ", off " + off);
+        baubles.setInventorySlotContents(0, null);
+        becom.carried.refreshForSelfTest(quin);
         return 1;
     }
 
