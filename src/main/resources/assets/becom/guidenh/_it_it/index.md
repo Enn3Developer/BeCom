@@ -15,6 +15,9 @@ La scheda **Better Communications** del libro delle missioni ti porta tra le mac
 dettagli. Punta un oggetto o una missione di BeCom e tieni premuto <KeyBind id="key.guidenh.open_guide">G</KeyBind> per
 aprirne la pagina.
 
+I numeri di questa guida sono i valori predefiniti di BeCom, e un server può cambiarli. I tooltip delle macchine
+mostrano i valori del server.
+
 ## I livelli tecnologici
 
 | Livello | Cosa porta | Leggi |

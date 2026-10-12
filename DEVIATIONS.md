@@ -161,16 +161,19 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **To match the design:** if the owner prefers pass-through, `WiredTopology` can treat an offline Repeater as a
   passive pylon.
 
-### X14: Quest text names DESIGN.md 17's default values
+### X14: Quest text and the guide name DESIGN.md 17's default values
 
-- **Where:** 0.1, DESIGN.md 15.3, 15.5, 17
+- **Where:** 0.1 for the quests, 1.0 for the guide; DESIGN.md 15.3, 15.4, 15.5, 17
 - **Design says:** every tunable is a server config option; quest text lives in BeCom's language files.
 - **Built:** quest descriptions give the default numbers (32 blocks of cable, 4 EU/t, pylons 6 to 16 frames, a
-  repeater every 225 blocks). Machine tooltips show the server's own values.
-- **Why:** BetterQuesting shows a quest's language string as it is, with nothing to fill in a server's values, so a
-  server that changes those config options shows stale numbers in the quest book (found in the 0.1 design review).
-- **To match the design:** a server that changes them can override the strings in a resource pack; BeCom could also
-  word the quests without numbers.
+  repeater every 225 blocks). So do the guide's pages, for every machine; its start page says they're defaults a
+  server can change. Machine tooltips show the server's own values.
+- **Why:** BetterQuesting shows a quest's language string as it is, and GuideNH a page as it is, with nothing to fill
+  in a server's values. A server that changes those config options shows stale numbers in the quest book and the
+  guide (found in the 0.1 and 1.0 design reviews).
+- **To match the design:** a server that changes them can override the strings in a resource pack. GuideNH reads
+  pages from resource packs too, but which copy wins hasn't been checked. BeCom could also word the quests and the
+  guide without numbers.
 
 ### X15: A Line Terminal walks at most 128 blocks of Phone Cable in all
 
