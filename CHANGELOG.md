@@ -69,3 +69,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seven quests for phones, video and ME, with three new task types: Mobile call, Video call and ME Bridge call.
 - The Signal Analyzer and `/becom signal` read both bands: what a radio gets on VHF and what a Mobile Phone gets on
   UHF, where weather shows.
+- Milestone 0.4, space, with Galacticraft as a dependency: the Satellite, the Satellite Rocket (a Satellite on
+  Galacticraft's Tier 1 rocket parts) and the Rocket Radio Receiver, from the assembler.
+- The Satellite Launch Pad, a 5 by 5 multiblock under open sky: each launch takes a Satellite Rocket and 1,000 L of
+  rocket fuel, runs 30 s at 480 EU/t, and puts a satellite into orbit over its dimension. Its screen shows the
+  rockets waiting, each dimension's satellites and when the next comes down. Satellites come down after about 100
+  days of world time, give or take a fifth.
+- Sky hops: with at least 5 satellites over a dimension, Mobile Phones, walkies and Transceivers under open sky reach
+  them, at Low with 5 and up to Max with 100, less a roof's cover and the rain. Radios under open sky hear each other
+  through them. The Signal Analyzer and `/becom signal` show the satellites when they serve better than any antenna.
+- The Satellite Dish, a multiblock wrench-linked to an antenna, a Pylon Head or a Line Terminal: it joins its network
+  to every other dish in its dimension through the satellites, and in the Overworld to every planet's uplink. Rain at
+  the dish and each maintenance problem weaken its hop.
+- The Rocket Radio Receiver: in the cargo of a rocket standing on a launch pad on a planet, it makes the rocket a T1
+  antenna there and the planet's uplink to the Overworld's satellites, at High.
+- The Portal Relay, an MV machine that works by a Nether, End, Twilight Forest or Personal Space portal. Wrench one,
+  go through the portal and wrench another: the pair joins the Overworld's network to the one beyond at High.
+- Calls between dimensions, through relays, dishes and receivers, longer chains included.
+- `/becom satellites` for operators: lists each dimension's satellites, or sets how many orbit one, for testing.
+- Seven space quests, with four new task types: Portal Relay pair, First satellite, Five satellites and Call between
+  dimensions.
+- Textures for the space machines and parts in both styles, and a rocket launch sound.
+
+### Changed
+
+- An ME network now joins calls only within each dimension it spans, so a Quantum Network Bridge no longer carries
+  calls between dimensions.

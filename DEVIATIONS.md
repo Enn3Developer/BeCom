@@ -576,3 +576,16 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
   ends.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.
+
+### X37: The Satellite Dish stands on three frame boxes
+
+- **Where:** 0.4, DESIGN.md 3.2, 9.2
+- **Design says:** a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of Stainless Steel Frame Boxes,
+  with an Energy Hatch and a Maintenance Hatch.
+- **Built:** the stand is a column of exactly three frame boxes under the middle of the dish. The dish lies flat, its
+  controller in the middle of one edge, and the hatches take the place of any of its casings.
+- **Why:** the design gives the blocks, not the stand's height or the controller's place. Three frames lift the dish
+  clear of whatever it stands on without making a tower of it, and the controller sits on an edge like the Launch
+  Pad's.
+- **To match the design:** nothing to undo; give the stand a range of heights, like an antenna's mast, if taller
+  dishes are wanted.
