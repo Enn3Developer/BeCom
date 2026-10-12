@@ -83,7 +83,7 @@ class RadioModelTest {
     void worstNuAlongFindsTheHighestObstacleAboveTheLine() {
         // Flat at 60, with a 75-block wall across x 48..51 and a 72-block one across x 20..23.
         Terrain terrain = (x, z) -> x >= 48 && x < 52 ? 75 : x >= 20 && x < 24 ? 72 : 60;
-        double worst = RadioModel.worstNuAlong(terrain, 0.5, 70, 0.5, 100.5, 70, 0.5, 4, 3);
+        double worst = RadioModel.worstNuAlong(terrain, 0.5, 70, 0.5, 100.5, 70, 0.5, 4, 3, 0);
         // Samples fall every 4 blocks from x 0.5: the wall is sampled at 48.5, 48 blocks out.
         assertEquals(RadioModel.nu(5, 48, 52, 3), worst, 1e-9);
     }
@@ -92,13 +92,13 @@ class RadioModelTest {
     void worstNuAlongSkipsTheEndsOwnCells() {
         // Towers right next to both ends, in their own cells, don't count; open ground between.
         Terrain terrain = (x, z) -> x < 4 || x >= 100 ? 200 : 60;
-        double worst = RadioModel.worstNuAlong(terrain, 1.5, 70, 1.5, 101.5, 70, 1.5, 4, 3);
+        double worst = RadioModel.worstNuAlong(terrain, 1.5, 70, 1.5, 101.5, 70, 1.5, 4, 3, 0);
         assertEquals(0, model.knifeEdge(worst), 1e-9);
     }
 
     @Test
     void worstNuAlongIsNothingOverAShortPath() {
-        assertEquals(Double.NEGATIVE_INFINITY, RadioModel.worstNuAlong((x, z) -> 255, 0, 70, 0, 3, 70, 0, 4, 3));
+        assertEquals(Double.NEGATIVE_INFINITY, RadioModel.worstNuAlong((x, z) -> 255, 0, 70, 0, 3, 70, 0, 4, 3, 0));
     }
 
     @Test

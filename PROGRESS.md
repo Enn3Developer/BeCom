@@ -270,7 +270,7 @@ Branch `milestone/0.2-radio`, from the last commit of `milestone/0.1-wired`.
 | Height cache (6.2)                                                   | doing  |
 | Radio model: link budget, knife-edge terrain, cover, noise (6.1)     | doing  |
 | Surveys (6.3) within the survey budget (6.5)                         | doing  |
-| Direct links between radios (6.4)                                    | todo   |
+| Direct links between radios (6.4)                                    | doing  |
 | Antennas T1, T2, T3: structure, power, recipes (7, 3.1, 3.2)         | todo   |
 | Antenna links on VHF and UHF, and bridges onto wired lines (7)       | doing  |
 | Antenna screen: links and team lock (11.4, 12.2)                     | todo   |

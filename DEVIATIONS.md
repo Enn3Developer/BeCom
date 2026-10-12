@@ -248,3 +248,19 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Why:** DESIGN.md 5.6 already treats an antenna bridge like a router ("a line that reaches more phones, through
   routers or an antenna bridge, dials"), and an antenna is a powered node, so it drives the line like the others.
 - **To match the design:** change `NodeKind.ANTENNA_T*`'s slot count if the owner wants fewer bridges.
+
+### X20: Open ground isn't an obstacle
+
+- **Where:** 0.2, DESIGN.md 6.1, 6.4, 8.1, 16.3
+- **Design says:** `L_terrain` is single knife-edge diffraction over the worst obstacle on the path, with `h` how far
+  the obstacle rises above the straight line between the ends, and a loss whenever `ν > −0.78`. The same section and
+  8.1 give the worked ranges on open ground: a walkie about 80 blocks, a Transceiver about 125.
+- **Built:** a terrain sample counts as an obstacle only when it stands higher than the ground under the lower end (a
+  player's feet, a Transceiver's block, an antenna's casings). Anything higher is scored exactly as the design says.
+- **Why:** taken literally, flat ground under two players is an obstacle 1.62 blocks under their line of sight, which
+  at VHF costs about 3.5 dB halfway along an 80-block path: a walkie would reach about 66 blocks and a Transceiver
+  about 75, and the Signal Analyzer would blame "terrain" in an empty field. The unit test that pins the design's
+  ranges caught it. With the ground left out, open ground gives the worked ranges, and a hill or a house between still
+  costs what the formula says.
+- **To match the design:** drop the `floor` argument from `RadioModel.worstNuAlong` and `Survey.worstNu`, and lower the
+  worked ranges.

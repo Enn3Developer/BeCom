@@ -42,8 +42,8 @@ class SurveyTest {
         Terrain terrain = (x, z) -> x >= 40 && x < 44 ? 70 : 64;
         Survey survey = Survey.of(terrain, 0.5, 0.5, 64, 4, 16);
         // A device 36 blocks out is short of the ridge; one 60 blocks out is behind it.
-        double near = survey.worstNu(80, 36.5, 65.6, 0.5, 3);
-        double far = survey.worstNu(80, 60.5, 65.6, 0.5, 3);
+        double near = survey.worstNu(80, 36.5, 65.6, 0.5, 3, 0);
+        double far = survey.worstNu(80, 60.5, 65.6, 0.5, 3, 0);
         double lineAt40 = 80 + (65.6 - 80) * (40.0 / 60);
         assertEquals(RadioModel.nu(70 - lineAt40, 40, 20, 3), far, 1e-9);
         assertTrue(far > near);
@@ -54,7 +54,7 @@ class SurveyTest {
         // A tree in the device's own cell, 2 blocks short of it, isn't terrain between: it's next to the device.
         Terrain terrain = (x, z) -> x >= 56 && x < 60 ? 90 : 64;
         Survey survey = Survey.of(terrain, 0.5, 0.5, 64, 4, 16);
-        double worst = survey.worstNu(80, 58.5, 65.6, 0.5, 3);
+        double worst = survey.worstNu(80, 58.5, 65.6, 0.5, 3, 0);
         assertTrue(worst < -0.78);
     }
 
@@ -72,5 +72,15 @@ class SurveyTest {
             builder.build()
                 .height(2, 3),
             1e-9);
+    }
+
+    @Test
+    void openGroundIsNoObstacle() {
+        // Flat at 64 with both ends standing on it: the ground is no higher than either end's, so nothing counts.
+        Survey survey = Survey.of((x, z) -> 64, 0.5, 0.5, 64, 4, 32);
+        assertEquals(Double.NEGATIVE_INFINITY, survey.worstNu(85, 100.5, 65.62, 0.5, 3, 64));
+        // A 1-block rise across the path does.
+        Survey ridge = Survey.of((x, z) -> x >= 48 && x < 52 ? 65 : 64, 0.5, 0.5, 64, 4, 32);
+        assertTrue(ridge.worstNu(85, 100.5, 65.62, 0.5, 3, 64) > Double.NEGATIVE_INFINITY);
     }
 }

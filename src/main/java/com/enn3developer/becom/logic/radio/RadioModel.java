@@ -66,11 +66,12 @@ public final class RadioModel {
     /**
      * The worst obstacle on the straight path from {@code a} to {@code b}, as the largest diffraction parameter over
      * height-cache samples every {@code step} blocks (DESIGN.md 6.4). Samples in either end's own cell are skipped:
-     * that cell holds the end itself, and what stands over an end is its cover. Negative infinity when nothing lies
-     * between.
+     * that cell holds the end itself, and what stands over an end is its cover. So are samples no higher than
+     * {@code floor}, the ground the lower end stands on: open ground isn't an obstacle (X20). Negative infinity when
+     * nothing lies between.
      */
     public static double worstNuAlong(Terrain terrain, double ax, double ay, double az, double bx, double by, double bz,
-        int step, double lambda) {
+        int step, double lambda, double floor) {
         double dx = bx - ax;
         double dz = bz - az;
         double length = Math.sqrt(dx * dx + dz * dz);
@@ -86,8 +87,9 @@ public final class RadioModel {
             int cellX = Terrain.cellOf(x);
             int cellZ = Terrain.cellOf(z);
             if ((cellX == aCellX && cellZ == aCellZ) || (cellX == bCellX && cellZ == bCellZ)) continue;
-            double lineY = ay + (by - ay) * (d1 / length);
             double h = terrain.heightAt((int) Math.floor(x), (int) Math.floor(z));
+            if (h <= floor) continue;
+            double lineY = ay + (by - ay) * (d1 / length);
             worst = Math.max(worst, nu(h - lineY, d1, length - d1, lambda));
         }
         return worst;
