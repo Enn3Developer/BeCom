@@ -867,3 +867,48 @@ BeCom from this branch, and the Modernity add-on pack for the second look at the
     Modernity add-on pack; and listen to the ringtone from a few blocks away, and the buzz.
 15. The quest book's BeCom tab shows the seven new quests with their task texts. A video call completes "Seeing Is
     Believing" for both sides once "Face to Face" is done, even if the first video call came before it.
+
+## 0.4 Space
+
+Branch `milestone/0.4-space`, from the last commit of `milestone/0.3-phones`.
+
+### Contents (DESIGN.md 16)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| Galacticraft as a hard dependency, Twilight Forest and Personal Space in the dev server (16.4)  | todo   |
+| Satellite and Satellite Rocket, with their recipes (3.1, D30)                                   | todo   |
+| Satellite Launch Pad: structure, launches, fuel, open sky, maintenance (9.1, 3.2, D40)          | todo   |
+| Satellites per dimension and their decay (9.1, D23, 14)                                         | todo   |
+| The Launch Pad screen: each dimension's satellites and the next to come down (9.1)              | todo   |
+| Sky hops for devices under open sky, on calls and radio (9.1, D5, 6.1)                          | todo   |
+| Satellite Dish: structure, links to other dishes and planets, maintenance (9.2, 3.2, D40)       | todo   |
+| Rocket Radio Receiver: a T1 antenna and an uplink in a landed rocket (9.3, D28, 14)             | todo   |
+| Portal Relay: portals, pairing through a portal, a High hop (9.4, D22, D46)                     | todo   |
+| Calls between dimensions, and ME Bridges across dimensions (9.5, 0.3's known issue)             | todo   |
+| The 0.4 tunables in the config (17)                                                             | todo   |
+| Self-test rows for 0.4 (16.3)                                                                   | todo   |
+
+### Untested assumptions (DESIGN.md 16.2)
+
+| Assumption                                                                                      | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| BeCom finds rockets as they join their world, and counts one unignited on a pad with a receiver | todo   |
+
+### Quests (DESIGN.md 15.5)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| The Portal Relay quest, with the Portal Relay pair task                                         | todo   |
+| The satellite quests, with the First satellite and Five satellites tasks                        | todo   |
+| The space call quests, with the Call between dimensions task                                    | todo   |
+
+### Assets (DESIGN.md 15)
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| Satellite, Satellite Rocket and Rocket Radio Receiver icons                                     | todo   |
+| Satellite Launch Pad, Satellite Dish and Portal Relay overlays and glow                         | todo   |
+| Modernity style of all of the above                                                             | todo   |
+| Sound: the rocket launch                                                                        | todo   |
+| English language entries                                                                        | todo   |
