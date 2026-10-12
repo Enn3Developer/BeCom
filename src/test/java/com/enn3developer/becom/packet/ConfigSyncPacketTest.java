@@ -1,6 +1,7 @@
 package com.enn3developer.becom.packet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Map;
 
@@ -27,5 +28,18 @@ class ConfigSyncPacketTest {
         ConfigSyncPacket read = new ConfigSyncPacket();
         read.fromBytes(buf);
         assertEquals(server, read.tunables());
+    }
+
+    @Test
+    void refusesValuesNoConfigFileCouldHold() {
+        // A modified server sending an endless pylon would make the client's hologram loop.
+        Map<String, Object> values = Tunables.defaults()
+            .toMap();
+        values.put("pylonMinHeight", 0);
+        ByteBuf buf = Unpooled.buffer();
+        new ConfigSyncPacket(Tunables.fromMap(values)).toBytes(buf);
+        ConfigSyncPacket read = new ConfigSyncPacket();
+        read.fromBytes(buf);
+        assertNull(read.tunables());
     }
 }

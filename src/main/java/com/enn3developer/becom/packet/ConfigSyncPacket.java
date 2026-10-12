@@ -31,6 +31,7 @@ public final class ConfigSyncPacket implements IMessage {
         this.tunables = tunables;
     }
 
+    /** The server's values, or null when they failed the config file's checks. */
     public Tunables tunables() {
         return tunables;
     }
@@ -68,7 +69,15 @@ public final class ConfigSyncPacket implements IMessage {
                 default -> buf.readBoolean();
             });
         }
-        tunables = Tunables.fromMap(values);
+        Tunables sent = Tunables.fromMap(values);
+        try {
+            // Checked like a config file's: a client acts on these too, in tooltips and holograms.
+            sent.validate();
+            tunables = sent;
+        } catch (IllegalArgumentException e) {
+            BeCom.LOG.warn("The server sent BeCom values no config could hold, so they're ignored: {}", e.getMessage());
+            tunables = null;
+        }
     }
 
     public static final class Handler implements IMessageHandler<ConfigSyncPacket, IMessage> {

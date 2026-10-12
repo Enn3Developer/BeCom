@@ -78,6 +78,7 @@ public class ClientProxy extends CommonProxy {
 
     @Override
     public void onConfig(ConfigSyncPacket packet) {
+        if (packet.tunables() == null) return;
         mainThread.add(() -> {
             BeComConfig.set(packet.tunables());
             MachineTooltips.forget();

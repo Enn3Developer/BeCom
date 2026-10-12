@@ -107,8 +107,8 @@ public record Tunables(
     }
 
     /**
-     * The values in {@code values}, by name; any missing or of the wrong type keep their default. Values sent by a
-     * server are checked like a config file's.
+     * The values in {@code values}, by name; any missing or of the wrong type keep their default. Not checked: call
+     * {@link #validate} on the result.
      */
     public static Tunables fromMap(java.util.Map<String, Object> values) {
         Tunables d = defaults();
