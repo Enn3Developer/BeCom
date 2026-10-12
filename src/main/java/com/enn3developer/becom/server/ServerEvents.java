@@ -48,6 +48,13 @@ public final class ServerEvents {
         if (becom != null && event.player instanceof EntityPlayerMP player) becom.network.sendWires(player);
     }
 
+    /** Dying in the Nether or leaving the End respawns into another world without a dimension-change event. */
+    @SubscribeEvent
+    public void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null && event.player instanceof EntityPlayerMP player) becom.network.sendWires(player);
+    }
+
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         BeComServer becom = BeComServer.get();

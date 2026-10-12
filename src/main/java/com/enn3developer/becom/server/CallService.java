@@ -79,8 +79,12 @@ public final class CallService implements CallBook.Listener {
         return group;
     }
 
+    /**
+     * The clock rings, grace periods, drop timers and the rate limit run on: monotonic, so a system clock stepped
+     * back can't keep a phone ringing forever, nor one stepped forward expire everything at once.
+     */
     private static long now() {
-        return System.currentTimeMillis();
+        return System.nanoTime() / 1_000_000L;
     }
 
     // region Handsets
@@ -252,7 +256,8 @@ public final class CallService implements CallBook.Listener {
 
     @Override
     public void ended(Call call, CallBook.EndReason reason) {
-        long time = now();
+        // History keeps wall-clock time: it's a date, saved across restarts, not a timer.
+        long time = System.currentTimeMillis();
         Call.Leg caller = call.caller();
         for (Call.Leg leg : call.legs()) {
             TileTelephone telephone = phones.telephone(leg.phone());
