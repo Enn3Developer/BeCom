@@ -27,9 +27,9 @@ valle.
 
 | Antenna | Testa | Base | Albero | Corrente | Portata in campo aperto |
 | --- | --- | --- | --- | --- | --- |
-| T1 (fine LV) | <ItemImage id="gregtech:gt.blockmachines:25004" /> | LV Machine Casing | Steel Frame Box | 32 EU/t | circa 64 blocchi |
-| T2 (metà MV) | <ItemImage id="gregtech:gt.blockmachines:25005" /> | MV Machine Casing | Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
-| T3 (metà HV) | <ItemImage id="gregtech:gt.blockmachines:25006" /> | HV Machine Casing | Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
+| T1 (fine LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Testa d'antenna T1</ItemImage> | LV Machine Casing | Steel Frame Box | 32 EU/t | circa 64 blocchi |
+| T2 (metà MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Testa d'antenna T2</ItemImage> | MV Machine Casing | Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
+| T3 (metà HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Testa d'antenna T3</ItemImage> | HV Machine Casing | Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
 
 Un'antenna funziona solo se caricata e alimentata.
 

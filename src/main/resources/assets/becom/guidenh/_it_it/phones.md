@@ -27,16 +27,16 @@ aggiungere un telefono dalla tastiera o dai contatti.
 
 ## Telefono cellulare
 
-Il <ItemLink id="becom:mobile_phone" showIcon="left" /> prende il servizio dalle antenne sulla banda telefonica, circa
-64 blocchi da una T1 in campo aperto, e dai satelliti a cielo aperto ([Lo spazio e le altre dimensioni](space.md)). Le
-sue chiamate arrivano fino al livello Alto. Prende il suo numero, e il suo proprietario, appena qualcuno lo porta con
-sé, e funziona dall'inventario o da uno slot bauble. La sua batteria tiene 1.200.000 EU e consuma 4 EU/t in attesa, 16
-in chiamata: si carica in un charger o in un battery buffer GT di livello HV o superiore. Un telefono scarico si spegne,
-e resta spento anche dopo la ricarica finché non lo riaccendi.
+Il <ItemLink id="becom:mobile_phone" showIcon="left">Telefono cellulare</ItemLink> prende il servizio dalle antenne
+sulla banda telefonica, circa 64 blocchi da una T1 in campo aperto, e dai satelliti a cielo aperto ([Lo spazio e le
+altre dimensioni](space.md)). Le sue chiamate arrivano fino al livello Alto. Prende il suo numero, e il suo
+proprietario, appena qualcuno lo porta con sé, e funziona dall'inventario o da uno slot bauble. La sua batteria tiene
+1.200.000 EU e consuma 4 EU/t in attesa, 16 in chiamata: si carica in un charger o in un battery buffer GT di livello HV
+o superiore. Un telefono scarico si spegne, e resta spento anche dopo la ricarica finché non lo riaccendi.
 
-- **Tasto Telefono,** <KeyBind id="key.becom.phone" />: risponde a un telefono che squilla, riaggancia durante una
-  chiamata, e altrimenti apre lo schermo del telefono. Accovacciati e premilo per rifiutare una chiamata. Risponde anche
-  a un Telefono che squilla entro la sua cornetta, o a un Videotelefono vicino a cui ti trovi.
+- **Tasto Telefono,** <KeyBind id="key.becom.phone">N</KeyBind>: risponde a un telefono che squilla, riaggancia durante
+  una chiamata, e altrimenti apre lo schermo del telefono. Accovacciati e premilo per rifiutare una chiamata. Risponde
+  anche a un Telefono che squilla entro la sua cornetta, o a un Videotelefono vicino a cui ti trovi.
 - **Squillo:** un telefono portatile squilla da chi lo porta, e lo sentono anche i giocatori vicini. Un avviso in un
   angolo dice chi chiama. In modalità silenziosa lo senti solo tu, come una vibrazione.
 - **Tacche** accanto alla barra degli strumenti mostrano il tuo servizio mentre tieni in mano un telefono, o il livello
@@ -45,10 +45,10 @@ e resta spento anche dopo la ricarica finché non lo riaccendi.
 
 ## Videotelefono
 
-Il <ItemLink id="gregtech:gt.blockmachines:25009" showIcon="left" /> è un vivavoce con uno schermo per le reti cablate,
-a MV e 32 EU/t. Collegalo con Cavo telefonico a un Terminale di linea, come un Telefono. Chiunque sia entro 4 blocchi è
-nella sua chiamata e sul suo schermo, e il suo altoparlante porta la chiamata a 16 blocchi. Riaggancia da solo 30
-secondi dopo che l'ultima persona se ne va.
+Il <ItemLink id="gregtech:gt.blockmachines:25009" showIcon="left">Videotelefono</ItemLink> è un vivavoce con uno schermo
+per le reti cablate, a MV e 32 EU/t. Collegalo con Cavo telefonico a un Terminale di linea, come un Telefono. Chiunque
+sia entro 4 blocchi è nella sua chiamata e sul suo schermo, e il suo altoparlante porta la chiamata a 16 blocchi.
+Riaggancia da solo 30 secondi dopo che l'ultima persona se ne va.
 
 ## Videochiamate
 
@@ -71,12 +71,13 @@ telefono la mostra a tutto schermo, accende o spegne ogni fotocamera, e nasconde
 
 ## Telefono ME
 
-Il <ItemLink id="becom:me_phone" showIcon="left" /> è un Telefono cellulare collegato a una rete ME. Collegalo a un
-Terminale di sicurezza ME, come un Terminale wireless: ha servizio al livello Massimo ovunque arrivino i Punti
-d'accesso wireless ME di quella rete, e da nessun'altra parte, perché antenne e satelliti non lo servono. I Telefoni ME
-della stessa rete ME si chiamano senza antenne. Si carica in un Caricatore.
+Il <ItemLink id="becom:me_phone" showIcon="left">Telefono ME</ItemLink> è un Telefono cellulare collegato a una rete ME.
+Collegalo a un Terminale di sicurezza ME, come un Terminale wireless: ha servizio al livello Massimo ovunque arrivino i
+Punti d'accesso wireless ME di quella rete, e da nessun'altra parte, perché antenne e satelliti non lo servono. I
+Telefoni ME della stessa rete ME si chiamano senza antenne. Si carica in un Caricatore.
 
 Per chiamare qualsiasi altro telefono, la rete ME vuole un
-<ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left" />: mettilo su un cavo ME, dove prende un canale, e
-collegalo con la chiave a una Testa di traliccio, un Terminale di linea o un'antenna entro 16 blocchi. Usa 512 EU/t, e
-unisce le due reti al livello Massimo. Una rete ME porta le chiamate solo all'interno di ciascuna dimensione.
+<ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left">Ponte ME</ItemLink>: mettilo su un cavo ME, dove prende
+un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea o un'antenna entro 16 blocchi. Usa
+512 EU/t, e unisce le due reti al livello Massimo. Una rete ME porta le chiamate solo all'interno di ciascuna
+dimensione.

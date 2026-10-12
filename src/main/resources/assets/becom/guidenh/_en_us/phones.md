@@ -26,15 +26,16 @@ phones. Calls take up to 8 people: anyone in one can add a phone from the keypad
 
 ## Mobile Phone
 
-<ItemLink id="becom:mobile_phone" showIcon="left" /> gets its service from antennas on the phone band, about 64
-blocks from a T1 on open ground, and from satellites under open sky ([Space and other dimensions](space.md)). Its
-calls go up to High. It takes its number, and its owner, as soon as someone carries it, and works from the inventory or
-a bauble slot. Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call: charge it in a GT charger or
-battery buffer of HV or better. A flat phone switches off, and stays off once charged until you switch it back on.
+<ItemLink id="becom:mobile_phone" showIcon="left">Mobile Phone</ItemLink> gets its service from antennas on the phone
+band, about 64 blocks from a T1 on open ground, and from satellites under open sky ([Space and other
+dimensions](space.md)). Its calls go up to High. It takes its number, and its owner, as soon as someone carries it, and
+works from the inventory or a bauble slot. Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call:
+charge it in a GT charger or battery buffer of HV or better. A flat phone switches off, and stays off once charged until
+you switch it back on.
 
-- **Phone key,** <KeyBind id="key.becom.phone" />: answers a ringing phone, hangs up during a call, and opens the phone
-  screen otherwise. Sneak and press it to turn a call down. It also answers a ringing Telephone within its cord, or a
-  Videophone you're standing at.
+- **Phone key,** <KeyBind id="key.becom.phone">N</KeyBind>: answers a ringing phone, hangs up during a call, and opens
+  the phone screen otherwise. Sneak and press it to turn a call down. It also answers a ringing Telephone within its
+  cord, or a Videophone you're standing at.
 - **Ringing:** a carried phone rings from its holder, and players nearby hear it. A notice in the corner names the
   caller. In silent mode only you feel it, as a buzz.
 - **Bars** by the hotbar show your service while you hold a phone, or the call's level during one.
@@ -42,10 +43,10 @@ battery buffer of HV or better. A flat phone switches off, and stays off once ch
 
 ## Videophone
 
-<ItemLink id="gregtech:gt.blockmachines:25009" showIcon="left" /> is a speakerphone with a screen for wired networks,
-at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Everyone within 4 blocks is in its call
-and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last
-person walks away.
+<ItemLink id="gregtech:gt.blockmachines:25009" showIcon="left">Videophone</ItemLink> is a speakerphone with a screen for
+wired networks, at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Everyone within 4 blocks is
+in its call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after
+the last person walks away.
 
 ## Video calls
 
@@ -67,12 +68,12 @@ switches each camera, and hides or shows the window.
 
 ## ME Phone
 
-<ItemLink id="becom:me_phone" showIcon="left" /> is a Mobile Phone with an ME network's link. Link it at an ME
-Security Terminal, like a Wireless Terminal: it has service at Max wherever that network's wireless access points
-reach, and none anywhere else, since antennas and satellites don't serve it. ME Phones on one ME network call each
-other with no antenna. It charges in an ME charger.
+<ItemLink id="becom:me_phone" showIcon="left">ME Phone</ItemLink> is a Mobile Phone with an ME network's link. Link it
+at an ME Security Terminal, like a Wireless Terminal: it has service at Max wherever that network's wireless access
+points reach, and none anywhere else, since antennas and satellites don't serve it. ME Phones on one ME network call
+each other with no antenna. It charges in an ME charger.
 
 To call any other phone, the ME network needs an
-<ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left" />: put it on ME cable, where it takes one channel,
-and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t, and joins the
-two networks at Max. An ME network carries calls only within each dimension.
+<ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left">ME Bridge</ItemLink>: put it on ME cable, where it takes
+one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t, and
+joins the two networks at Max. An ME network carries calls only within each dimension.

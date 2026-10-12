@@ -1,6 +1,7 @@
 package com.enn3developer.becom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +25,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.enn3developer.becom.machine.BeComMachines;
+
 /**
  * DESIGN.md 15.4 and 15.5: the guide's pages, in English and Italian, and each quest pointing to its page. A quest's
  * [guide] link must name a page of its own language under that page's title, and the page must list the quest back,
@@ -35,6 +38,9 @@ class GuideTest {
         .compile("^betterquesting\\.quest\\.([A-Za-z0-9_-]+)\\.desc=(.*)$");
     private static final Pattern GUIDE_LINK = Pattern.compile("\\[guide page=becom:([^\\] ]+)](.*?)\\[/guide]");
     private static final Pattern PAGE_LINK = Pattern.compile("]\\(([^):#]+\\.md)\\)");
+    private static final Pattern TAG = Pattern.compile("<(ItemLink|ItemImage|KeyBind)\\b");
+    private static final Pattern TAG_WITH_WORDS = Pattern
+        .compile("<(ItemLink|ItemImage|KeyBind) id=\"([^\"]+)\"(?: [^>]*[^/>])?>([^<]+)</\\1>");
 
     private record Page(String title, Set<String> quests, String text) {}
 
@@ -76,17 +82,42 @@ class GuideTest {
         return new Page(title, quests, text);
     }
 
-    /** Quest id to its description, from one language file. */
-    private static Map<String, String> questDescriptions(String file) throws IOException {
-        Map<String, String> descriptions = new HashMap<>();
+    /** Every key and its text, from one language file. */
+    private static Map<String, String> lang(String file) throws IOException {
+        Map<String, String> lang = new HashMap<>();
         try (var in = GuideTest.class.getResourceAsStream("/assets/becom/lang/" + file)) {
             assertNotNull(in, file);
             for (String line : new String(in.readAllBytes(), StandardCharsets.UTF_8).split("\n")) {
-                Matcher matcher = QUEST_DESC.matcher(line);
-                if (matcher.matches()) descriptions.put(matcher.group(1), matcher.group(2));
+                int equals = line.indexOf('=');
+                if (equals > 0 && !line.startsWith("#"))
+                    lang.put(line.substring(0, equals), line.substring(equals + 1));
             }
         }
+        return lang;
+    }
+
+    /** Quest id to its description, from one language file. */
+    private static Map<String, String> questDescriptions(String file) throws IOException {
+        Map<String, String> descriptions = new HashMap<>();
+        for (Map.Entry<String, String> entry : lang(file).entrySet()) {
+            Matcher matcher = QUEST_DESC.matcher(entry.getKey() + "=" + entry.getValue());
+            if (matcher.matches()) descriptions.put(matcher.group(1), matcher.group(2));
+        }
         return descriptions;
+    }
+
+    private static String langFile(String language) {
+        return language.equals("en_us") ? "en_US.lang" : "it_IT.lang";
+    }
+
+    /** The language key of an item's name, for a BeCom item, block or machine id as the guide writes it. */
+    private static String nameKey(String id, Map<String, String> lang) {
+        String machines = "gregtech:gt.blockmachines:";
+        if (id.startsWith(machines)) return "gt.blockmachines." + BeComMachines.ids()
+            .get(Integer.parseInt(id.substring(machines.length()))) + ".name";
+        String name = id.substring("becom:".length());
+        return lang.containsKey("tile.becom." + name + ".name") ? "tile.becom." + name + ".name"
+            : "item.becom." + name + ".name";
     }
 
     @ParameterizedTest
@@ -111,7 +142,7 @@ class GuideTest {
     @ValueSource(strings = { "en_us", "it_it" })
     void everyQuestLinksToAPageThatListsItBack(String language) throws Exception {
         Map<String, Page> pages = pages(language);
-        Map<String, String> descriptions = questDescriptions(language.equals("en_us") ? "en_US.lang" : "it_IT.lang");
+        Map<String, String> descriptions = questDescriptions(langFile(language));
         assertEquals(28, descriptions.size(), "every quest");
         Map<String, Set<String>> linked = new HashMap<>();
         for (Map.Entry<String, String> quest : descriptions.entrySet()) {
@@ -133,6 +164,34 @@ class GuideTest {
                 page.getValue()
                     .quests(),
                 page.getKey() + " lists exactly the quests that point to it");
+        }
+    }
+
+    /**
+     * GitHub drops GuideNH's tags and keeps the words inside them, so a tag without words leaves a hole in the page
+     * there.
+     * GuideNH draws an item link's words in place of the item's name, so they must be its name.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = { "en_us", "it_it" })
+    void everyTagHoldsWordsAndAnItemsWordsAreItsName(String language) throws Exception {
+        Map<String, String> lang = lang(langFile(language));
+        for (Map.Entry<String, Page> entry : pages(language).entrySet()) {
+            String text = entry.getValue()
+                .text();
+            int tags = 0, withWords = 0;
+            for (Matcher tag = TAG.matcher(text); tag.find();) tags++;
+            for (Matcher tag = TAG_WITH_WORDS.matcher(text); tag.find();) {
+                withWords++;
+                if (tag.group(1)
+                    .equals("KeyBind")) continue;
+                assertEquals(
+                    lang.get(nameKey(tag.group(2), lang)),
+                    tag.group(3),
+                    entry.getKey() + ": the words of " + tag.group(2));
+            }
+            assertEquals(tags, withWords, entry.getKey() + ": tags with words inside");
+            assertFalse(text.contains("/>"), entry.getKey() + " has a tag closed on itself");
         }
     }
 

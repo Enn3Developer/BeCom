@@ -12,9 +12,9 @@ quest_ids:
 
 # L'Analizzatore di segnale
 
-Tieni in mano un <ItemLink id="becom:signal_analyzer" showIcon="left" /> e una sovrimpressione mostra il tuo segnale,
-riletto ogni secondo. Non vuole corrente. Gli operatori del server possono stampare la stessa lettura in chat con
-`/becom signal`.
+Tieni in mano un <ItemLink id="becom:signal_analyzer" showIcon="left">Analizzatore di segnale</ItemLink> e una
+sovrimpressione mostra il tuo segnale, riletto ogni secondo. Non vuole corrente. Gli operatori del server possono
+stampare la stessa lettura in chat con `/becom signal`.
 
 Legge due bande:
 

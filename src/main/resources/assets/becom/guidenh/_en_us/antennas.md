@@ -26,9 +26,9 @@ it. The higher the head, the further it sees: a tall mast on a hill covers far m
 
 | Antenna | Head | Base | Mast | Power | Reach on open ground |
 | --- | --- | --- | --- | --- | --- |
-| T1 (late LV) | <ItemImage id="gregtech:gt.blockmachines:25004" /> | LV Machine Casings | Steel Frame Boxes | 32 EU/t | about 64 blocks |
-| T2 (mid MV) | <ItemImage id="gregtech:gt.blockmachines:25005" /> | MV Machine Casings | Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
-| T3 (mid HV) | <ItemImage id="gregtech:gt.blockmachines:25006" /> | HV Machine Casings | Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
+| T1 (late LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Antenna T1 Head</ItemImage> | LV Machine Casings | Steel Frame Boxes | 32 EU/t | about 64 blocks |
+| T2 (mid MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Antenna T2 Head</ItemImage> | MV Machine Casings | Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
+| T3 (mid HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Antenna T3 Head</ItemImage> | HV Machine Casings | Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
 
 An antenna works only while it's loaded and powered.
 

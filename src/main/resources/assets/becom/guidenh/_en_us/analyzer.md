@@ -12,8 +12,8 @@ quest_ids:
 
 # The Signal Analyzer
 
-Hold a <ItemLink id="becom:signal_analyzer" showIcon="left" /> and an overlay shows your signal, read again every
-second. It needs no power. Server operators can print the same reading in chat with `/becom signal`.
+Hold a <ItemLink id="becom:signal_analyzer" showIcon="left">Signal Analyzer</ItemLink> and an overlay shows your signal,
+read again every second. It needs no power. Server operators can print the same reading in chat with `/becom signal`.
 
 It reads two bands:
 

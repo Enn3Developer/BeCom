@@ -12,8 +12,8 @@ radio è voce vera, portata da GTNH Voice. Quanto bene senti qualcuno dipende da
 colline in mezzo, quanto è sotto terra ciascuno dei due capi, e il tempo.
 
 La scheda **Better Communications** del libro delle missioni ti porta tra le macchine in ordine. Questa guida ha i
-dettagli. Punta un oggetto o una missione di BeCom e tieni premuto <KeyBind id="key.guidenh.open_guide" /> per aprirne
-la pagina.
+dettagli. Punta un oggetto o una missione di BeCom e tieni premuto <KeyBind id="key.guidenh.open_guide">G</KeyBind> per
+aprirne la pagina.
 
 ## I livelli tecnologici
 

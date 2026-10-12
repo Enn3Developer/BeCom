@@ -12,7 +12,7 @@ channel is real voice, carried by GTNH Voice. How well you hear someone depends 
 runs, the hills in the way, how deep underground each end stands, and the weather.
 
 The quest book's **Better Communications** tab takes you through the machines in order. This guide holds the details.
-Point at a BeCom item or quest and hold <KeyBind id="key.guidenh.open_guide" /> to open its page.
+Point at a BeCom item or quest and hold <KeyBind id="key.guidenh.open_guide">G</KeyBind> to open its page.
 
 ## The tiers
 

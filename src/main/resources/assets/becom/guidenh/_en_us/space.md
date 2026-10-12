@@ -25,13 +25,13 @@ quest_ids:
 
 ## Satellites
 
-A <ItemLink id="becom:satellite" showIcon="left" /> goes up on a
-<ItemLink id="becom:satellite_rocket" showIcon="left" />, from a
-<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left" />: a 5 by 5 floor of Clean Stainless Steel Machine
-Casings under open sky, with an input bus for rockets, an input hatch for rocket fuel, an energy hatch and a
-maintenance hatch. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts one satellite over the pad's
-dimension. Maintenance problems make it take longer, and any light-blocking block over the pad holds the launch until
-it's clear; glass doesn't.
+A <ItemLink id="becom:satellite" showIcon="left">Satellite</ItemLink> goes up on a
+<ItemLink id="becom:satellite_rocket" showIcon="left">Satellite Rocket</ItemLink>, from a
+<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Satellite Launch Pad</ItemLink>: a 5 by 5 floor of Clean
+Stainless Steel Machine Casings under open sky, with an input bus for rockets, an input hatch for rocket fuel, an energy
+hatch and a maintenance hatch. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts one satellite over the
+pad's dimension. Maintenance problems make it take longer, and any light-blocking block over the pad holds the launch
+until it's clear; glass doesn't.
 
 Satellites come down after about 100 Minecraft days, give or take a fifth: about 33 hours of the server running.
 Sleeping through the night doesn't bring them down sooner. Keep launching. The pad's screen shows each dimension's
@@ -56,19 +56,19 @@ Nether, have none.
 
 ## Satellite Dish
 
-A <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left" /> joins its network to every other dish in its
-dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver. It's a 5 by 5
-dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an energy hatch
-and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line Terminal.
-Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
+A <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
+other dish in its dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver.
+It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an
+energy hatch and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line
+Terminal. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
 ## Rocket Radio Receiver
 
-Put a <ItemLink id="becom:rocket_radio_receiver" showIcon="left" /> in the cargo of a Galacticraft rocket standing on
-a Galacticraft launch pad, on a moon, a planet or a space station. The rocket becomes a T1 antenna there, reaching
-about 64 blocks, and that world's link to the Overworld's satellites, at High. The rocket needs chests to have cargo,
-and counts only while its chunk is loaded. A rocket you fly yourself arrives as an item in its Parachest: place it on a
-pad and put the receiver in.
+Put a <ItemLink id="becom:rocket_radio_receiver" showIcon="left">Rocket Radio Receiver</ItemLink> in the cargo of a
+Galacticraft rocket standing on a Galacticraft launch pad, on a moon, a planet or a space station. The rocket becomes a
+T1 antenna there, reaching about 64 blocks, and that world's link to the Overworld's satellites, at High. The rocket
+needs chests to have cargo, and counts only while its chunk is loaded. A rocket you fly yourself arrives as an item in
+its Parachest: place it on a pad and put the receiver in.
 
 The link needs at least 5 satellites over the Overworld, and a call through it is no better than the Overworld end's
 own hop: phones under the Overworld's open sky, and networks with a dish, reach the planet. Planets reach each other
@@ -77,10 +77,10 @@ wired lines in, bridge them onto an antenna within reach of the rocket.
 
 ## Portal Relay
 
-A <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left" /> works within 4 blocks of a Nether portal, an End
-portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power. Wrench-link it to an antenna, a
-Pylon Head or a Line Terminal of your network. Then wrench it, go through the portal, and wrench a relay on the other
-side within 5 minutes: the pair joins the two networks at High.
+A <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Portal Relay</ItemLink> works within 4 blocks of a
+Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power. Wrench-link
+it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench it, go through the portal, and wrench a
+relay on the other side within 5 minutes: the pair joins the two networks at High.
 
 The two relays must stand on the two sides of one portal. Through the Nether, the far relay stands where the portal
 leads, an eighth of the distance from the world's center; through the Twilight Forest, near the same spot. A Personal
