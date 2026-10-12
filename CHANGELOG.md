@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that take a blocked line down.
 - BetterQuesting support: BeCom's own task type, its questline added to the book (with a config switch to leave the book
   alone), and seven LV quests.
-- A config file and saved data with format versions, and a startup check of BeCom's GregTech machine IDs.
+- A config file and saved data with format versions, and a startup check of BeCom's GregTech machine IDs. Saved data
+  that is newer, holds kinds BeCom doesn't know, or can't be read stops the server instead of being saved over.
+- Clients show the server's tunables in tooltips and holograms, sent at login.
 - `/becom calls` and `/becom hangup` for operators, and `/becom selftest` in the development environment.
-- Generated textures in GT's style and a Modernity add-on pack, and synthesized call tones, ringtone and hang-up click.
+- Generated textures in GT's style and a Modernity add-on pack, and synthesized call tones, ringtone and hang-up click,
+  the handset's in stereo so they sit at the ear.
