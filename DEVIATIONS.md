@@ -647,3 +647,18 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   for them both ways. Two ME Bridges would join two ME networks, not a line, which is what ME's own cables are for.
 - **To match the design:** let a dish's or a relay's one link be an ME Bridge in `LinkRules`, and a bridge's another
   bridge.
+
+### X41: Three big steps offer their coins against a BeCom item
+
+- **Where:** 1.0, DESIGN.md 15.5, D51
+- **Design says:** quests give rewards like GTNH's own: most a lootbag of the quest's tier, and the big steps add
+  Technician coins, "sometimes as a choice".
+- **Built:** three big steps, one each at LV, MV and HV, give their coins as a choice: First call against two Pylon
+  Heads, Radio contact against a Walkie-Talkie, Five satellites against a Satellite Rocket. The other big steps give
+  their coins outright. A choice keeps only the options whose items are installed, as other rewards already did.
+- **Why:** GTNH's own quests never put coins in a choice: none of 479 quests from LV to EV do; their choices are a
+  lootbag against GT materials. So the design's "sometimes as a choice" has no GTNH pattern to copy, and the item set
+  against the coins is BeCom's pick: what the player needs for the next step. How many coins a Walkie-Talkie or a
+  Satellite Rocket is worth is a guess no player has tried.
+- **To match the design:** whatever the owner meant by the choice, `COIN_CHOICE` in `tools/quests/make_quests.py`
+  holds it: drop an entry to give that quest's coins outright again, or change what they're set against.

@@ -23,6 +23,7 @@ import net.minecraftforge.common.util.Constants;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.quest.BeComQuests;
+import com.enn3developer.becom.quest.QuestRewards;
 import com.enn3developer.becom.quest.QuestTask;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
@@ -181,27 +182,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
 
     /** DESIGN.md 15.5: a reward whose item isn't installed is left out. */
     private static NBTTagCompound withInstalledRewards(NBTTagCompound quest) {
-        NBTTagList rewards = quest.getTagList("rewards", Constants.NBT.TAG_COMPOUND);
-        NBTTagList kept = new NBTTagList();
-        for (int i = 0; i < rewards.tagCount(); i++) {
-            NBTTagCompound reward = rewards.getCompoundTagAt(i);
-            NBTTagList items = reward.getTagList("rewards", Constants.NBT.TAG_COMPOUND);
-            if (items.tagCount() == 0) {
-                kept.appendTag(reward);
-                continue;
-            }
-            NBTTagList installed = new NBTTagList();
-            for (int j = 0; j < items.tagCount(); j++) {
-                NBTTagCompound item = items.getCompoundTagAt(j);
-                if (Item.itemRegistry.getObject(item.getString("id")) != null) installed.appendTag(item);
-            }
-            if (installed.tagCount() == 0) continue;
-            reward.setTag("rewards", installed);
-            reward.setInteger("index", kept.tagCount());
-            kept.appendTag(reward);
-        }
-        quest.setTag("rewards", kept);
-        return quest;
+        return QuestRewards.withInstalled(quest, id -> Item.itemRegistry.getObject(id) != null);
     }
 
     // endregion
@@ -345,6 +326,39 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             QuestLineDatabase.INSTANCE.removeQuest(id);
             QuestDatabase.INSTANCE.remove(id);
         }
+    }
+
+    /**
+     * The self-test's look at the rewards of the quest with a BeCom task of {@code kind}, as BQ holds them: each
+     * reward's type, then its items' ids.
+     */
+    public List<String> rewardsOf(QuestTask kind) {
+        Questline q = questline;
+        if (q == null) return List.of();
+        for (UUID id : q.quests()
+            .keySet()) {
+            IQuest quest = QuestDatabase.INSTANCE.get(id);
+            if (quest == null || quest.getTasks()
+                .getEntries()
+                .stream()
+                .noneMatch(task -> task.getValue() instanceof TaskBeCom becom && becom.kind() == kind)) continue;
+            List<String> found = new ArrayList<>();
+            NBTTagList rewards = quest.writeToNBT(new NBTTagCompound())
+                .getTagList("rewards", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < rewards.tagCount(); i++) {
+                NBTTagCompound reward = rewards.getCompoundTagAt(i);
+                StringBuilder line = new StringBuilder(reward.getString("rewardID"));
+                NBTTagList items = reward
+                    .getTagList(reward.hasKey("choices") ? "choices" : "rewards", Constants.NBT.TAG_COMPOUND);
+                for (int j = 0; j < items.tagCount(); j++) line.append(' ')
+                    .append(
+                        items.getCompoundTagAt(j)
+                            .getString("id"));
+                found.add(line.toString());
+            }
+            return found;
+        }
+        return List.of();
     }
 
     /** The self-test's handle on a BeCom quest's task, to check progress survives removal. */

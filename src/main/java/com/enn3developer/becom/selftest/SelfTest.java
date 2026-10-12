@@ -1244,6 +1244,15 @@ public final class SelfTest {
             "...with players' progress",
             back != null && Boolean.TRUE.equals(invoke(back, "isComplete", questProbe)),
             "");
+        // Put back from BeCom's files just now, whatever an earlier run left in this world's quest book. The dev
+        // server has neither Enhanced Loot Bags nor the coins' mod, so only BeCom's own option stays (D51, X41).
+        Object rewards = invoke(quests, "rewardsOf", QuestTask.FIRST_CALL);
+        check(
+            "...and the first-call quest offers its coins as a choice against two Pylon Heads, without what isn't"
+                + " installed",
+            List.of("bq_standard:choice gregtech:gt.blockmachines")
+                .equals(rewards),
+            String.valueOf(rewards));
         deleteTree(
             new File(
                 cpw.mods.fml.common.Loader.instance()

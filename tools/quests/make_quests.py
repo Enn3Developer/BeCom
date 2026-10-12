@@ -40,6 +40,15 @@ TIER = {
 
 GT_MACHINE = "gregtech:gt.blockmachines"
 
+# DESIGN.md 15.5 (D51): some big steps offer their coins as a choice, against something for the next step: Pylon Heads
+# to carry the first line further, a walkie for whoever answered on the radio, a rocket to keep the satellites up.
+# GTNH's own quests never put coins in a choice, so these are BeCom's own picks (X41).
+COIN_CHOICE = {
+    "first_call": (GT_MACHINE, 25000, 2),
+    "radio_contact": ("becom:walkie_talkie", 0, 1),
+    "five_satellites": ("becom:satellite_rocket", 0, 1),
+}
+
 # DESIGN.md 15.5: each quest points to its page of the guide (DESIGN.md 15.4), by a [guide] link at the end of its text,
 # which GuideNH makes into a link in the quest book. The titles are the pages' own, in English and Italian.
 GUIDE = {
@@ -538,7 +547,18 @@ def quest_json(q, index):
             "rewards:9": {"0:10": item(LOOTBAG, tier["bag"], 1)},
         }
     }
-    if q["big"]:
+    if q["big"] and q["key"] in COIN_CHOICE:
+        other_id, other_damage, other_count = COIN_CHOICE[q["key"]]
+        rewards["1:10"] = {
+            "choices:9": {
+                "0:10": item(tier["coin"], 0, tier["coins"]),
+                "1:10": item(other_id, other_damage, other_count),
+            },
+            "ignoreDisabled:1": 0,
+            "index:3": 1,
+            "rewardID:8": "bq_standard:choice",
+        }
+    elif q["big"]:
         rewards["1:10"] = {
             "ignoreDisabled:1": 0,
             "index:3": 1,
