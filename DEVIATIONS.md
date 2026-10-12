@@ -51,9 +51,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 - **Where:** 0.1, DESIGN.md 12.2, D37
 - **Design says:** only the owner of either end, or their team, can unlink.
-- **Built:** also server operators (permission level 2), so a griefed or orphaned network can be repaired. A machine
-  with no owner (placed by automation, which GT records no owner for) can be unlinked only by an operator, or through
-  the owner of the other end.
+- **Built:** also server operators (permission level 2), so a griefed or orphaned network can be repaired. GT records
+  whoever places a machine as its owner, fake players included, so a machine a robot placed belongs to that robot's
+  fake player, and anything acting as that same fake player can manage it. A machine with no owner recorded at all
+  (from a world editor, or a mod that sets none) can be unlinked only by an operator, or through the owner of the
+  other end.
 - **Why:** admins have no other way to undo a link in 0.1. The first version let anyone manage what had no owner,
   which the 0.1 design review pointed out opened those links, and ownerless phones' settings, to everyone.
 - **To match the design:** remove the operator check in `Ownership.mayManage`.
@@ -94,12 +96,13 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Built:** the settings page lists blocked players, a page at a time, with an Unblock button. A Block button on each
   contacts row blocks that phone's owner; on each recent calls row it blocks the player on the other end of that call
   (whoever called, from whichever phone), or the phone's owner when nobody answered an outgoing call. There's no
-  block-by-name field. The server only accepts a contact that row's player can see, and a recent row by position and
-  number. A phone blocks at most 128 players.
+  block-by-name field. The server only accepts a contact that row's player can see, and a recent row by its time and
+  number; a recent row of a call nobody answered blocks the other phone's owner at the time. A phone blocks at most
+  128 players, and the screen lists at most 512 contacts (the first 512 by name).
 - **Why:** blocking by typed name would need a name lookup that can block the server thread on Mojang's API. Blocking
   any typed number would let a modified client learn who owns a hidden number, and the 0.1 code review found that
   blocking a recent row by the phone's owner missed someone who called from another player's phone. The cap keeps the
-  screen's data inside one packet.
+  screen's data inside one packet; a network with more than 512 reachable phones needs the number typed in.
 - **To match the design:** nothing, unless the owner wants a name field limited to online players.
 
 ### X10: The handset cord reaches 1.2 blocks from the phone to the player's body
@@ -119,10 +122,13 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 11.2, 12.2
 - **Design says:** the phone screen has recent and missed calls; calls are private to the people in them.
 - **Built:** anyone can open a Telephone's screen to dial, but its recent and missed calls list is empty unless they
-  own the phone or are on its owner's team (or an op).
+  own the phone or are on its owner's team (or an op). They see every call made from or to that phone, including
+  calls other people made on it, each with the name of the player on the other end.
 - **Why:** a desk phone stands in the open. Showing its history to whoever walks up would tell anyone who called the
-  owner and when (found in the 0.1 design review). DESIGN.md doesn't say who sees a shared phone's history.
-- **To match the design:** drop the `manage` check around the history in `PhoneScreenActions.view`.
+  owner and when (found in the 0.1 design review). Its owner seeing everything made on their own phone, like a
+  phone's log, is the plainest reading; DESIGN.md doesn't say who sees a shared phone's history.
+- **To match the design:** drop the `manage` check around the history in `PhoneScreenActions.view`; or, to keep calls
+  the viewer wasn't in private, show only the phone's number and direction for those.
 
 ### X12: Phone Cable's assembler recipe takes programmed circuit 2
 
@@ -160,3 +166,38 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   server that changes those config options shows stale numbers in the quest book (found in the 0.1 design review).
 - **To match the design:** a server that changes them can override the strings in a resource pack; BeCom could also
   word the quests without numbers.
+
+### X15: A Line Terminal walks at most 128 blocks of Phone Cable in all
+
+- **Where:** 0.1, DESIGN.md 5.5, 17
+- **Design says:** a Telephone connects to its terminal through up to 32 blocks of Phone Cable.
+- **Built:** the phone must be within 32 blocks of cable from the terminal, as designed, and a terminal whose cable
+  run holds more than 128 blocks in all (4 for every block of length) serves no phone; its scanner info says why.
+- **Why:** the terminal scans its cable every second, and with only the length limit a solid blob of cable reached
+  about 44,000 blocks within 32 steps (found in the 0.1 code review). Branches and spare runs fit easily in 128.
+- **To match the design:** raise `PhoneCables.CABLES_PER_LENGTH`, at the cost of slower scans.
+
+### X16: Saved data that can't be read stops the server
+
+- **Where:** 0.1, DESIGN.md 14.2
+- **Design says:** data newer than BeCom understands stops the server instead of being overwritten.
+- **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
+  load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
+  holding something this BeCom doesn't know: a node, phone or history kind, or more links than a kind has slots.
+- **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
+  losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
+  a backup, or delete the file to start with none.
+- **To match the design:** start empty and log instead, accepting the overwrite.
+
+### X17: A number whose Telephone is gone is freed; a moved Telephone keeps its own
+
+- **Where:** 0.1, DESIGN.md 8.2, D12
+- **Design says:** every phone gets a number unique in the world, assigned when first placed.
+- **Built:** once a minute the server checks, in small slices, that each Telephone's record still has its Telephone
+  in a loaded chunk, and frees the number of any that's gone without being broken (a rolled-back or trimmed chunk, an
+  outside edit). A Telephone moved by a frame or a dolly takes its record along on its first tick at the new spot. A
+  copy of one that still stands, or whose old spot isn't loaded, gets a new number on first use.
+- **Why:** DESIGN.md doesn't say what happens to the number of a phone that disappears without being broken; without
+  this it was held forever (found in the 0.1 code review). The move rule came from the fresh design review.
+- **To match the design:** nothing to change unless the owner prefers numbers held for good.
+
