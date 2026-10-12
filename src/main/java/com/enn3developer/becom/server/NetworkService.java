@@ -26,6 +26,7 @@ import com.enn3developer.becom.logic.net.LinkRules;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WireSyncPacket;

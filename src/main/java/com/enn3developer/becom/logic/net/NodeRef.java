@@ -1,6 +1,4 @@
-package com.enn3developer.becom.server;
-
-import com.enn3developer.becom.logic.net.BlockPos;
+package com.enn3developer.becom.logic.net;
 
 /** A node anywhere in the world: its dimension and packed position. */
 public record NodeRef(int dimension, long pos) {
