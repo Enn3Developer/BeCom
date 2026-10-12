@@ -100,7 +100,7 @@ becom.level.high=High
 becom.level.max=Max
 
 # Phone screen
-becom.phone.title=Telephone %s, %s
+becom.phone.title=Phone %s, %s
 becom.phone.state.idle=On the hook
 becom.phone.state.off_hook=Dial tone
 becom.phone.state.ringing_out=Calling %s...
