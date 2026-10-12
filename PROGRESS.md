@@ -345,13 +345,13 @@ built if it fails there.
 
 **Tests.**
 
-- 276 unit and routing tests, all passing: 156 from 0.1 and 120 new. Logic: the radio model with DESIGN.md's worked
+- 278 unit and routing tests, all passing: 156 from 0.1 and 122 new. Logic: the radio model with DESIGN.md's worked
   ranges (16), surveys (7), height regions (7) and the height cache (3), device-to-antenna and direct hops (6), the
   antenna network with surveys, links, locks and bridges (9), the antenna mesh (5), capture (10), radio link levels
   with hysteresis and the drop timer (4), tunables and their checks (6 more), the config file (1 more), link rules for
   bridges (3 more), the wired topology with antennas (2 more). Data: the `becomFormat` key on machine and item NBT
   (2), the walkie's charge and format (3). Client: levels for unknown radio and call frames (2). Server: the stop and
-  start handover between worlds (3). Routing: `becom:radio.N` through GTNH Voice's `RoutingContext` (31), covering
+  start handover between worlds (4). Routing: `becom:radio.N` through GTNH Voice's `RoutingContext` (32), covering
   activation, channels, capture per device and per listener, dropouts, held speakers through dropped frames, direct
   hearers, players without voice, walkie speakers, loudspeakers, contacts and which device sets a listener's level.
 - The self-test: 123 checks on a real dev server, 123 passing, 50 of them new. The sixteen radio groups, the six
@@ -432,7 +432,11 @@ was fixed, unless it says otherwise.
     Infinity in the config passed validation (TunablesTest, failing first).
 - Fifth round, design review (2 minor), "ready": the changelog still said radio links "drop after 3 s below Low":
   fixed. And this summary wasn't written yet.
-- Fifth round, code review: running when this summary was first committed; its findings follow when it reports.
+- Fifth round, code review (2 minor), "ready": two test gaps, each a wrong change that every test let through.
+  heardThrough's tests had one device each, so its fallback hid a broken margin or SNR; a test with two devices now
+  fails if the SNR is ignored. Nothing tested that a world refused after its services were made is forgotten without
+  a stopping event; a test now fails if stopped() looks only at the stopping server. No sixth round: these add tests
+  and change no code.
 
 **Deviations and GTNH Voice.** DEVIATIONS.md X19 to X23 are 0.2's: antennas take 15 bridges and route like a Router
 (X19), open ground isn't an obstacle (X20), one walkie per player with open Transceivers and the walkie's drain in 0.2

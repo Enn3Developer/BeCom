@@ -34,6 +34,15 @@ class BeComServerTest {
     }
 
     @Test
+    void aWorldRefusedAtStartIsForgottenWithNoStoppingEvent() {
+        // Refused in serverStarting, after its services were made: it gets a stopped event but no stopping one.
+        BeComServer.create(null);
+        BeComServer.stopped(() -> forgotten.set(true));
+        assertNull(BeComServer.get());
+        assertTrue(forgotten.get());
+    }
+
+    @Test
     void theLastWorldsStoppedEventDoesntForgetTheNextWorldsServer() {
         // Single-player: the next world starts while the last one's stopped handlers still run.
         BeComServer.create(null);

@@ -692,6 +692,30 @@ class RadioGroupTest {
         assertEquals(SignalLevel.NONE, shared.heardThrough(alice, 1, List.of()));
     }
 
+    @Test
+    void theLevelComesFromTheFirstDeviceThatWouldTakeTheSpeaker() {
+        // Cat holds both walkies. Alice is too weak to take Bob's (8 against 20) but takes Dan's by the margin (20
+        // against 7), so she's heard through Dan's: its level, not the first device's.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID dan = fixture.player("dan", 104, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 20))
+                .link(cat, walkie(dan, 7))
+                .build());
+        fixture.route(one, cat, RADIO);
+        now += 10 * MS;
+        assertEquals(
+            SignalLevel.MEDIUM,
+            shared.heardThrough(
+                alice,
+                1,
+                List.of(carrier(bob, 8, SignalLevel.LOW), carrier(dan, 20, SignalLevel.MEDIUM))));
+    }
+
     private static RadioRouting.Carrier carrier(UUID device, double snr, SignalLevel level) {
         return new RadioRouting.Carrier(device, snr, level);
     }
