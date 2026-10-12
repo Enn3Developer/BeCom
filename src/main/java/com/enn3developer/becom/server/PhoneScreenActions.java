@@ -19,6 +19,7 @@ import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
+import com.enn3developer.becom.logic.video.VideoPlan;
 
 /**
  * What the phone screen may do, checked on the server (DESIGN.md 14: client input). Every action re-checks that the
@@ -83,6 +84,7 @@ public final class PhoneScreenActions {
         }
         boolean carried = handle instanceof PhoneHandle.CarriedPhone;
         ItemStack stack = handle instanceof PhoneHandle.CarriedPhone phone ? phone.stack(player) : null;
+        boolean offline = handle instanceof PhoneHandle.Videophone && !becom.calls.videophoneWorking(number);
         return new PhoneView(
             number,
             record.ownerName(),
@@ -101,7 +103,33 @@ public final class PhoneScreenActions {
             record.silent(),
             carried ? becom.carried.serviceOf(number)
                 .level() : SignalLevel.NONE,
-            members);
+            members,
+            offline,
+            videoOf(becom, player, record, call, own));
+    }
+
+    /** The video part of the screen: the player's own switches, on a phone with a camera (DESIGN.md 10.1, 11.2). */
+    private static PhoneView.Video videoOf(BeComServer becom, EntityPlayer player, PhoneRecord record, Call call,
+        Call.Leg own) {
+        if (!record.kind()
+            .video()) return PhoneView.Video.NONE;
+        UUID id = player.getUniqueID();
+        VideoPlan.Cameras cameras = becom.video.camerasOf(id);
+        // The player's own leg, when they're in the call on this phone; at a Videophone, when they're in its room.
+        boolean onIt = own != null && own.state() == Call.Leg.State.ACTIVE
+            && own.players()
+                .contains(id);
+        boolean rearPossible = onIt && record.kind()
+            .carried()
+            && call.state() == Call.State.CONNECTED
+            && call.activeLegs()
+                .size() == 2
+            && call.participants()
+                .size() == 2;
+        boolean active = onIt && !becom.video.plan()
+            .tilesOf(id)
+            .isEmpty();
+        return new PhoneView.Video(true, cameras.front(), cameras.rear(), rearPossible, active);
     }
 
     /**

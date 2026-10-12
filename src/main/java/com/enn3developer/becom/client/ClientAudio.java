@@ -32,12 +32,14 @@ public final class ClientAudio {
             .register();
         addon.audio()
             .playbackChain(
-                chain -> chain.when(
-                    frame -> callLevel(frame) == SignalLevel.LOW,
-                    low -> low.bandPass(300, 3000)
-                        .mulaw()
-                        .downsampleHold(4)
-                        .noise(0.03))
+                // The talking animation first, so it measures the voice as it arrived (DESIGN.md 13.5).
+                chain -> chain.stage(TalkMeter::new)
+                    .when(
+                        frame -> callLevel(frame) == SignalLevel.LOW,
+                        low -> low.bandPass(300, 3000)
+                            .mulaw()
+                            .downsampleHold(4)
+                            .noise(0.03))
                     .when(
                         frame -> callLevel(frame) == SignalLevel.MEDIUM,
                         medium -> medium.bandPass(250, 4000)

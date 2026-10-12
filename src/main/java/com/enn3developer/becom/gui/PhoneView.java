@@ -17,7 +17,8 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
  */
 public record PhoneView(int number, String owner, boolean mayManage, State state, String otherName, int otherNumber,
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
-    List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members) {
+    List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members,
+    boolean offline, Video video) {
 
     // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
     // players, and the whole history.
@@ -43,7 +44,9 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         false,
         false,
         SignalLevel.NONE,
-        Collections.emptyList());
+        Collections.emptyList(),
+        false,
+        Video.NONE);
 
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum State {
@@ -71,6 +74,15 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
 
     /** Another phone in the call (DESIGN.md 11.2): who is on it, the level this phone hears it at, or still ringing. */
     public record Member(int number, String name, SignalLevel level, boolean ringing) {}
+
+    /**
+     * Video on this phone (DESIGN.md 10.1, 11.2): whether it has a camera, this player's switches, whether a rear
+     * camera means anything in this call, and whether they see anyone right now.
+     */
+    public record Video(boolean capable, boolean front, boolean rear, boolean rearPossible, boolean active) {
+
+        public static final Video NONE = new Video(false, true, false, false, false);
+    }
 
     public void write(PacketBuffer buf) {
         buf.writeInt(number);
@@ -123,6 +135,12 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
                     .ordinal());
             buf.writeBoolean(member.ringing());
         }
+        buf.writeBoolean(offline);
+        buf.writeBoolean(video.capable());
+        buf.writeBoolean(video.front());
+        buf.writeBoolean(video.rear());
+        buf.writeBoolean(video.rearPossible());
+        buf.writeBoolean(video.active());
     }
 
     public static PhoneView read(PacketBuffer buf) {
@@ -163,6 +181,13 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             members.add(
                 new Member(buf.readInt(), readString(buf), SignalLevel.byOrdinal(buf.readByte()), buf.readBoolean()));
         }
+        boolean offline = buf.readBoolean();
+        Video video = new Video(
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean());
         return new PhoneView(
             number,
             owner,
@@ -180,7 +205,9 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             on,
             silent,
             service,
-            members);
+            members,
+            offline,
+            video);
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

@@ -1,5 +1,6 @@
 package com.enn3developer.becom;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.item.ItemStack;
@@ -161,6 +162,28 @@ public class CommonProxy {
     }
 
     /** The coverage map's colour key, Low up to {@code cap}. */
+    /** The other side of this player's video call, full size, for the phone screen (D44); nothing on a server. */
+    public IDrawable videoView(BooleanSupplier capable) {
+        return IDrawable.EMPTY;
+    }
+
+    /** Whether this client sees anyone in a video call right now; never on a server. */
+    public boolean inVideoCall() {
+        return false;
+    }
+
+    /** Whether the corner video window shows (D44): the client's own choice. */
+    public boolean videoWindowShown() {
+        return true;
+    }
+
+    public void setVideoWindowShown(boolean shown) {}
+
+    /** Whether this client can capture its rear camera; it needs framebuffers (DESIGN.md 16.2's fallback). */
+    public boolean rearCameraWorks() {
+        return true;
+    }
+
     public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
         return IDrawable.EMPTY;
     }

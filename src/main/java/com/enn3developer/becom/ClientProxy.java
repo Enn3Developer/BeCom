@@ -1,7 +1,9 @@
 package com.enn3developer.becom;
 
+import java.io.File;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.item.ItemStack;
@@ -12,9 +14,11 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.ClientAudio;
+import com.enn3developer.becom.client.ClientConfig;
 import com.enn3developer.becom.client.ClientLevels;
 import com.enn3developer.becom.client.ClientPhone;
 import com.enn3developer.becom.client.ClientRadio;
+import com.enn3developer.becom.client.ClientVideo;
 import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.CoverageMapDrawer;
 import com.enn3developer.becom.client.MachineTooltips;
@@ -22,6 +26,7 @@ import com.enn3developer.becom.client.PhoneCableRenderer;
 import com.enn3developer.becom.client.SignalBars;
 import com.enn3developer.becom.client.TelephoneRenderer;
 import com.enn3developer.becom.client.ToneSounds;
+import com.enn3developer.becom.client.VideoRenderer;
 import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -29,8 +34,13 @@ import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.packet.LevelPacket;
 import com.enn3developer.becom.packet.PhoneStatusPacket;
+import com.enn3developer.becom.packet.RearFramePacket;
 import com.enn3developer.becom.packet.RingPacket;
 import com.enn3developer.becom.packet.TonePacket;
+import com.enn3developer.becom.packet.VideoEquipmentPacket;
+import com.enn3developer.becom.packet.VideoPosePacket;
+import com.enn3developer.becom.packet.VideoProfilePacket;
+import com.enn3developer.becom.packet.VideoStatePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
 import cpw.mods.fml.client.registry.RenderingRegistry;
@@ -49,6 +59,7 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
+        ClientConfig.load(new File(event.getModConfigurationDirectory(), BeCom.MODID + "-client.cfg"));
         BlockTelephone.renderId = RenderingRegistry.getNextAvailableRenderId();
         BlockPhoneCable.renderId = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new TelephoneRenderer(BlockTelephone.renderId));
@@ -62,6 +73,11 @@ public class ClientProxy extends CommonProxy {
         MinecraftForge.EVENT_BUS.register(new SignalBars());
         MinecraftForge.EVENT_BUS.register(new AnalyzerOverlay());
         MinecraftForge.EVENT_BUS.register(new ClientRadio());
+        VideoRenderer video = new VideoRenderer();
+        MinecraftForge.EVENT_BUS.register(video);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(video);
         ClientPhone phone = new ClientPhone();
         MinecraftForge.EVENT_BUS.register(phone);
         FMLCommonHandler.instance()
@@ -94,6 +110,7 @@ public class ClientProxy extends CommonProxy {
             ClientRadio.reset();
             ClientPhone.reset();
             AnalyzerOverlay.clear();
+            ClientVideo.reset();
         });
     }
 
@@ -151,6 +168,58 @@ public class ClientProxy extends CommonProxy {
     @Override
     public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
         return (context, x, y, width, height, theme) -> CoverageMapDrawer.legend(x, y, width, height, cap.get());
+    }
+
+    @Override
+    public void onVideoState(VideoStatePacket packet) {
+        mainThread.add(() -> ClientVideo.apply(packet));
+    }
+
+    @Override
+    public void onVideoPoses(VideoPosePacket packet) {
+        mainThread.add(() -> ClientVideo.apply(packet));
+    }
+
+    @Override
+    public void onVideoEquipment(VideoEquipmentPacket packet) {
+        mainThread.add(() -> ClientVideo.apply(packet));
+    }
+
+    @Override
+    public void onVideoProfile(VideoProfilePacket packet) {
+        mainThread.add(() -> ClientVideo.apply(packet));
+    }
+
+    @Override
+    public void onRearFrame(RearFramePacket packet) {
+        ClientVideo.apply(packet, mainThread::add);
+    }
+
+    @Override
+    public IDrawable videoView(BooleanSupplier capable) {
+        return (context, x, y, width, height, theme) -> VideoRenderer
+            .drawScreenView(x, y, width, height, capable.getAsBoolean());
+    }
+
+    @Override
+    public boolean inVideoCall() {
+        return ClientVideo.state()
+            .active();
+    }
+
+    @Override
+    public boolean videoWindowShown() {
+        return ClientVideo.windowShown();
+    }
+
+    @Override
+    public void setVideoWindowShown(boolean shown) {
+        ClientVideo.setWindowShown(shown);
+    }
+
+    @Override
+    public boolean rearCameraWorks() {
+        return VideoRenderer.framebuffers();
     }
 
     @Override

@@ -27,20 +27,25 @@ import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 
 /**
- * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, everyone in the call, and settings,
- * with the call's state on top. The same screen for a Telephone and for a carried phone, which adds power and silent
- * mode. Built on both sides; the server registers the actions and checks each one, the client only draws and asks.
+ * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, everyone in the call, video, and
+ * settings, with the call's state on top. The same screen for a Telephone, a Videophone and a carried phone, which adds
+ * power and silent mode. Built on both sides; the server registers the actions and checks each one, the client only
+ * draws and asks.
  */
 public final class PhoneScreen {
 
-    private static final int WIDTH = 184;
+    // Wide enough for six tabs, and for video as large as the screen allows (D44).
+    private static final int WIDTH = 232;
     private static final int HEIGHT = 206;
     private static final int ROWS = 7;
     private static final int ROW_HEIGHT = 13;
     // The settings page has two toggles and a heading above its block list.
     private static final int BLOCKED_ROWS = ROWS - 4;
     private static final int KEY_SIZE = 22;
-    private static final int TAB_COUNT = 5;
+    private static final int TAB_COUNT = 6;
+    private static final int VIDEO_PAGE = 4;
+    // Six tabs share the width: their names shrink to fit, as "Contacts" and "Settings" wrapped at full size.
+    private static final float TAB_TEXT = 0.75f;
     private static final int BARS_WIDTH = 14;
 
     private static final String DIAL = "dial";
@@ -53,6 +58,9 @@ public final class PhoneScreen {
     private static final String UNBLOCK = "unblock";
     private static final String POWER = "power";
     private static final String SILENT = "silent";
+    private static final String FRONT = "front";
+    private static final String REAR = "rear";
+    private static final int TOGGLE_HEIGHT = 14;
 
     private PhoneScreen() {}
 
@@ -73,6 +81,16 @@ public final class PhoneScreen {
             false,
             true,
             buf -> PhoneScreenActions.setSilent(player, tile, buf.readBoolean()));
+        sync.registerSyncedAction(
+            FRONT,
+            false,
+            true,
+            buf -> PhoneScreenActions.setCamera(player, tile, false, buf.readBoolean()));
+        sync.registerSyncedAction(
+            REAR,
+            false,
+            true,
+            buf -> PhoneScreenActions.setCamera(player, tile, true, buf.readBoolean()));
         sync.registerSyncedAction(
             DND,
             false,
@@ -144,15 +162,19 @@ public final class PhoneScreen {
             .widthRel(1f)
             .height(14)
             .childPadding(2);
-        String[] tabNames = { "keypad", "contacts", "recent", "call", "settings" };
+        String[] tabNames = { "keypad", "contacts", "recent", "call", "video", "settings" };
         for (int i = 0; i < TAB_COUNT; i++) {
             tabRow.child(
                 new PageButton(i, tabs).size((WIDTH - 12 - 2 * (TAB_COUNT - 1)) / TAB_COUNT, 14)
-                    .overlay(IKey.lang("becom.phone.tab." + tabNames[i])));
+                    .overlay(
+                        IKey.lang("becom.phone.tab." + tabNames[i])
+                            .scale(TAB_TEXT)));
         }
         column.child(tabRow);
         column.child(
             new PagedWidget<>().controller(tabs)
+                // During a video call the screen opens on the video, full size (D44).
+                .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : 0)
                 .widthRel(1f)
                 .height(HEIGHT - 12 - 10 - 10 - 14 - 9)
                 .addPage(keypad(sync, view, typed))
@@ -209,6 +231,7 @@ public final class PhoneScreen {
                         },
                         view))
                 .addPage(members(view))
+                .addPage(video(sync, view))
                 .addPage(settings(sync, view)));
         panel.child(column);
         return panel;
@@ -218,14 +241,17 @@ public final class PhoneScreen {
         String other = view.otherName()
             .isEmpty() ? String.valueOf(view.otherNumber()) : view.otherName();
         if (view.carried() && !view.on()) return StatCollector.translateToLocal("becom.phone.state.off");
+        if (view.offline()) return StatCollector.translateToLocal("becom.phone.state.offline");
         int more = view.members()
             .size() - 1;
         if (view.state() == PhoneView.State.CONNECTED && more > 0) {
             return StatCollector.translateToLocalFormatted("becom.phone.state.connected_group", other, more);
         }
         return switch (view.state()) {
-            case IDLE -> StatCollector
-                .translateToLocal(view.carried() ? "becom.phone.state.ready" : "becom.phone.state.idle");
+            // A Telephone is on its hook; a carried phone or a Videophone, which has none, is ready.
+            case IDLE -> StatCollector.translateToLocal(
+                view.carried() || view.video()
+                    .capable() ? "becom.phone.state.ready" : "becom.phone.state.idle");
             case OFF_HOOK -> StatCollector.translateToLocal("becom.phone.state.off_hook");
             case RINGING_OUT -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_out", other);
             case RINGING_IN -> StatCollector.translateToLocalFormatted("becom.phone.state.ringing_in", other);
@@ -419,6 +445,68 @@ public final class PhoneScreen {
                 .size(BARS_WIDTH, ROW_HEIGHT - 3));
             column.child(line);
         }
+        return column;
+    }
+
+    /**
+     * The other side full size, and this player's camera switches (DESIGN.md 11.2, D44): each camera on or off, and
+     * the corner window shown or hidden. The window is the client's own choice; the cameras are the server's.
+     */
+    private static ParentWidget<?> video(PanelSyncManager sync, Supplier<PhoneView> view) {
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .childPadding(2);
+        int pageHeight = HEIGHT - 12 - 10 - 10 - 14 - 9;
+        column.child(
+            BeCom.proxy.videoView(
+                () -> view.get()
+                    .video()
+                    .capable())
+                .asWidget()
+                .widthRel(1f)
+                .height(pageHeight - TOGGLE_HEIGHT - 4));
+        int third = (WIDTH - 12 - 2 * 2) / 3;
+        Flow toggles = Flow.row()
+            .widthRel(1f)
+            .height(TOGGLE_HEIGHT)
+            .childPadding(2);
+        toggles.child(
+            new ToggleButton().size(third, TOGGLE_HEIGHT)
+                .overlay(IKey.lang("becom.phone.video.front"))
+                .value(
+                    new BoolValue.Dynamic(
+                        () -> view.get()
+                            .video()
+                            .front(),
+                        on -> sync.callSyncedAction(FRONT, buf -> buf.writeBoolean(on))))
+                .setEnabledIf(
+                    w -> view.get()
+                        .video()
+                        .capable()
+                        && view.get()
+                            .state() == PhoneView.State.CONNECTED));
+        toggles.child(
+            new ToggleButton().size(third, TOGGLE_HEIGHT)
+                .overlay(IKey.lang("becom.phone.video.rear"))
+                .value(
+                    new BoolValue.Dynamic(
+                        () -> view.get()
+                            .video()
+                            .rear(),
+                        on -> sync.callSyncedAction(REAR, buf -> buf.writeBoolean(on))))
+                .setEnabledIf(
+                    w -> view.get()
+                        .video()
+                        .rearPossible() && BeCom.proxy.rearCameraWorks()));
+        toggles.child(
+            new ToggleButton().size(third, TOGGLE_HEIGHT)
+                .overlay(IKey.lang("becom.phone.video.window"))
+                .value(new BoolValue.Dynamic(BeCom.proxy::videoWindowShown, BeCom.proxy::setVideoWindowShown))
+                .setEnabledIf(
+                    w -> view.get()
+                        .video()
+                        .capable()));
+        column.child(toggles);
         return column;
     }
 
