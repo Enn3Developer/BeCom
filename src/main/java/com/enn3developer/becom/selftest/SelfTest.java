@@ -1881,6 +1881,16 @@ public final class SelfTest {
                 && call.participants()
                     .size() == 2,
             "");
+        // The Telephone's own Add (DESIGN.md 11.2): its handset's holder adds Nell, who turns it down.
+        becom.calls.logForSelfTest();
+        PhoneScreenActions.dial(stranger, new PhoneHandle.Telephone(phoneTelephone), nellNumber);
+        boolean rang = becom.calls.isRinging(nellNumber);
+        becom.calls.phoneKey(nell, true);
+        String told = becom.calls.lastMessageForSelfTest(stranger.getUniqueID());
+        check(
+            "...someone on a Telephone's handset adds a phone the same way, and hears when it's turned down",
+            rang && !becom.calls.isRinging(nellNumber) && "becom.call.add_rejected".equals(told),
+            "rang " + rang + ", told " + told);
         return 1;
     }
 

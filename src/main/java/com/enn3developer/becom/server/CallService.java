@@ -26,6 +26,7 @@ import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
+import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
@@ -281,13 +282,17 @@ public final class CallService implements CallBook.Listener {
         return reachable;
     }
 
-    /** {@code player}, holding phone {@code from}'s handset, dials {@code to}. */
+    /**
+     * {@code player}, holding phone {@code from}'s handset, dials {@code to}; or, while they're in a call on it, adds
+     * {@code to} to the call (group calls).
+     */
     public CallBook.DialResult dial(EntityPlayerMP player, int from, int to) {
         UUID id = player.getUniqueID();
         Integer held = handsetOf.get(id);
         if (held == null || held != from) return CallBook.DialResult.INVALID;
-        CallBook.Check check = worldCheck(player, from, to);
-        CallBook.DialResult result = book.dial(id, from, to, now(), check);
+        Call call = book.callOf(id);
+        if (call != null) return add(player, call, from, to);
+        CallBook.DialResult result = book.dial(id, from, to, now(), () -> worldCheck(player, from, to));
         switch (result) {
             case RINGING -> tone(player, TonePacket.Tone.RINGBACK);
             case BUSY -> tone(player, TonePacket.Tone.BUSY);
@@ -344,17 +349,21 @@ public final class CallService implements CallBook.Listener {
             .contains(from)) return CallBook.DialResult.INVALID;
         UUID id = player.getUniqueID();
         Call call = book.callOf(id);
-        CallBook.DialResult result;
-        if (call != null) {
-            Call.Leg own = call.legOf(id);
-            if (own == null || own.phone() != from) return CallBook.DialResult.INVALID;
-            result = book.add(id, to, now(), worldCheck(player, from, to));
-            if (result == CallBook.DialResult.FULL) tell(player, "becom.call.full", book.groupSize());
-            else if (result != CallBook.DialResult.RINGING) report(player, result);
-            return result;
-        }
-        result = book.dial(id, from, to, now(), worldCheck(player, from, to));
+        if (call != null) return add(player, call, from, to);
+        CallBook.DialResult result = book.dial(id, from, to, now(), () -> worldCheck(player, from, to));
         report(player, result);
+        return result;
+    }
+
+    /**
+     * {@code player}, in {@code call} on phone {@code from}, adds {@code to} to it. Its ringing makes no tone: the call
+     * goes on meanwhile.
+     */
+    private CallBook.DialResult add(EntityPlayerMP player, Call call, int from, int to) {
+        Call.Leg own = call.legOf(player.getUniqueID());
+        if (own == null || own.phone() != from) return CallBook.DialResult.INVALID;
+        CallBook.DialResult result = book.add(player.getUniqueID(), to, now(), () -> worldCheck(player, from, to));
+        if (result != CallBook.DialResult.RINGING) report(player, result);
         return result;
     }
 
@@ -511,15 +520,8 @@ public final class CallService implements CallBook.Listener {
         UUID id = player.getUniqueID();
         if (!videophoneWorking(number) || handsetOf.containsKey(id)) return CallBook.DialResult.INVALID;
         Call call = book.callOfPhone(number);
-        CallBook.DialResult result;
-        if (call != null) {
-            Call.Leg own = call.legOf(id);
-            if (own == null || own.phone() != number) return CallBook.DialResult.INVALID;
-            result = book.add(id, to, now(), worldCheck(player, number, to));
-            if (result != CallBook.DialResult.RINGING) report(player, result);
-            return result;
-        }
-        result = book.dial(id, number, to, now(), worldCheck(player, number, to));
+        if (call != null) return add(player, call, number, to);
+        CallBook.DialResult result = book.dial(id, number, to, now(), () -> worldCheck(player, number, to));
         report(player, result);
         // Whoever stands around it is in the call from the start, ringing out included.
         if (result == CallBook.DialResult.RINGING) updateRoom(number, now());
@@ -716,6 +718,7 @@ public final class CallService implements CallBook.Listener {
             .changed();
         List<UUID> stay = call.participants();
         for (UUID player : players) leaveCall(player, stay, reason);
+        if (!leg.answered()) addFailed(call, leg, reason);
         for (UUID player : stay) {
             EntityPlayerMP mp = player(player);
             if (mp == null) continue;
@@ -767,6 +770,19 @@ public final class CallService implements CallBook.Listener {
         }
         if (!mobile.isEmpty()) BeComQuests.complete(QuestTask.MOBILE_CALL, mobile);
         if (!bridged.isEmpty()) BeComQuests.complete(QuestTask.ME_BRIDGE_CALL, bridged);
+    }
+
+    /** A phone added to a call stopped ringing unanswered: whoever added it hears why (DESIGN.md 11.2). */
+    private void addFailed(Call call, Call.Leg leg, CallBook.EndReason reason) {
+        Call.Leg inviter = call.legOf(leg.invitedBy());
+        if (inviter == null) return;
+        String key = switch (reason) {
+            case NO_ANSWER -> "becom.call.add_no_answer";
+            case REJECTED -> "becom.call.add_rejected";
+            default -> "becom.call.add_lost";
+        };
+        String number = PhoneNumbers.format(leg.phone());
+        for (UUID player : inviter.players()) tell(player, key, number);
     }
 
     /**
