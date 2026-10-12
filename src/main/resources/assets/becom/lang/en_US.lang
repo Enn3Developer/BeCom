@@ -259,4 +259,7 @@ betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Call a phone outside your ME ne
 becom.task.name=BeCom
 becom.task.first_call=Make a phone call that connects.
 becom.task.radio_contact=Talk to someone over the radio, or hear someone on it.
+becom.task.video_call=See someone live in a video call.
+becom.task.mobile_call=Make or take a call on a Mobile Phone.
+becom.task.me_bridge_call=Call through an ME Bridge from an ME Phone.
 becom.world.refused=BeCom can't start this world: %s
