@@ -19,8 +19,8 @@ public record Tunables(
 
     // Ceilings no sensible config reaches, which keep a hostile server's values from hanging a client: no frame column
     // is taller than the world, and a terminal's cable scan stays bounded.
-    private static final int MAX_COLUMN = 255;
-    private static final int MAX_CABLE = 256;
+    public static final int MAX_COLUMN = 255;
+    public static final int MAX_CABLE = 256;
 
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;

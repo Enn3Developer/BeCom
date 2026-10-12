@@ -26,6 +26,7 @@ public final class BeComConfig {
     // and the defaults on a client that isn't (DESIGN.md 14.2: clients never use their own file).
     private static volatile Tunables tunables = Tunables.defaults();
     private static volatile Tunables fileValues = Tunables.defaults();
+    private static volatile String fileProblem;
 
     private BeComConfig() {}
 
@@ -38,8 +39,13 @@ public final class BeComConfig {
         tunables = values;
     }
 
-    /** A server starting here, dedicated or integrated, uses the config file's values. */
+    /**
+     * A server starting here, dedicated or integrated, uses the config file's values.
+     *
+     * @throws IllegalStateException when a value in the file would crash or overload the server
+     */
     public static void useFileValues() {
+        if (fileProblem != null) throw new IllegalStateException("BeCom config: " + fileProblem);
         tunables = fileValues;
     }
 
@@ -88,7 +94,14 @@ public final class BeComConfig {
             dbl(config, SIGNAL, "dropoutMeanBurstMillis", d.dropoutMeanBurstMillis(), "Mean burst of losses, in ms."),
             dbl(config, SIGNAL, "dropAfterSeconds", d.dropAfterSeconds(), "Seconds below Low before a link drops."),
             integer(config, WIRED, "pylonMinHeight", d.pylonMinHeight(), "Shortest pylon, in frame boxes."),
-            integer(config, WIRED, "pylonMaxHeight", d.pylonMaxHeight(), "Tallest pylon, in frame boxes."),
+            integer(
+                config,
+                WIRED,
+                "pylonMaxHeight",
+                d.pylonMaxHeight(),
+                1,
+                Tunables.MAX_COLUMN,
+                "Tallest pylon, in frame boxes."),
             dbl(config, WIRED, "pylonSpanFactor", d.pylonSpanFactor(), "Span limit, times the shorter pylon's height."),
             integer(config, WIRED, "pylonClearanceSeconds", d.pylonClearanceSeconds(), "Seconds between line checks."),
             dbl(config, WIRED, "lineBudget", d.lineBudget(), "dB every powered node drives the line at."),
@@ -98,6 +111,8 @@ public final class BeComConfig {
                 WIRED,
                 "phoneCableLength",
                 d.phoneCableLength(),
+                1,
+                Tunables.MAX_CABLE,
                 "Most Phone Cable from phone to terminal."),
             integer(config, WIRED, "terminalPower", d.terminalPower(), "EU/t a Line Terminal draws."),
             integer(config, WIRED, "repeaterPower", d.repeaterPower(), "EU/t a Repeater Head draws."),
@@ -133,18 +148,17 @@ public final class BeComConfig {
                 "questlineRecheckSeconds",
                 d.questlineRecheckSeconds(),
                 "Seconds between checks that the tab is there."));
-        validate(loaded);
+        // Checked when a server is about to use them, not here: a client never acts on its own file (DESIGN.md
+        // 14.2), so a bad value in it mustn't stop the client from starting.
         fileValues = loaded;
+        try {
+            loaded.validate();
+            fileProblem = null;
+        } catch (IllegalArgumentException e) {
+            fileProblem = e.getMessage() + " (in " + file.getName() + ")";
+        }
         if (config.hasChanged()) config.save();
         BeCom.LOG.info("Loaded config {}", file.getName());
-    }
-
-    private static void validate(Tunables t) {
-        try {
-            t.validate();
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("BeCom config: " + e.getMessage(), e);
-        }
     }
 
     private static double dbl(Configuration config, String category, String key, double def, String comment) {
@@ -153,6 +167,11 @@ public final class BeComConfig {
     }
 
     private static int integer(Configuration config, String category, String key, int def, String comment) {
-        return config.getInt(key, category, def, 0, Integer.MAX_VALUE, comment);
+        return integer(config, category, key, def, 0, Integer.MAX_VALUE, comment);
+    }
+
+    private static int integer(Configuration config, String category, String key, int def, int min, int max,
+        String comment) {
+        return config.getInt(key, category, def, min, max, comment);
     }
 }

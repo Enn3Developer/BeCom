@@ -70,6 +70,12 @@ class TunablesTest {
     }
 
     @Test
+    void theCeilingsThemselvesAreAllowed() throws Exception {
+        assertDoesNotThrow(with("pylonMaxHeight", 255)::validate);
+        assertDoesNotThrow(with("phoneCableLength", 256)::validate);
+    }
+
+    @Test
     void cableLengthHasACeiling() throws Exception {
         // Past it, a scan would walk hundreds of thousands of blocks, and the cable cap would overflow.
         refused("phoneCableLength", 1 << 30);

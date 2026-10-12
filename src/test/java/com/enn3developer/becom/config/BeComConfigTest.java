@@ -1,0 +1,72 @@
+package com.enn3developer.becom.config;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.io.File;
+import java.nio.file.Files;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import com.enn3developer.becom.logic.Tunables;
+
+/** DESIGN.md 14.2: a server acts on its config file; a client never does, so a bad file can't stop it starting. */
+class BeComConfigTest {
+
+    @BeforeAll
+    static void minecraftHome(@TempDir File home) throws Exception {
+        // Forge's Configuration asks FML where Minecraft lives; outside a game nobody has told it.
+        java.lang.reflect.Field field = Class.forName("cpw.mods.fml.relauncher.FMLInjectionData")
+            .getDeclaredField("minecraftHome");
+        field.setAccessible(true);
+        if (field.get(null) == null) field.set(null, home);
+    }
+
+    @AfterEach
+    void reset() {
+        BeComConfig.useDefaults();
+    }
+
+    @Test
+    void aBadValueStopsOnlyAServerStartingWithIt(@TempDir File dir) throws Exception {
+        File file = new File(dir, "becom.cfg");
+        Files.write(file.toPath(), "wired {\n    I:pylonMinHeight=0\n}\n".getBytes());
+        // Loading happens on every side, a client's included: it mustn't throw.
+        assertDoesNotThrow(() -> BeComConfig.load(file));
+        // A server about to use the file stops, naming the key.
+        IllegalStateException e = assertThrows(IllegalStateException.class, BeComConfig::useFileValues);
+        assertEquals(
+            true,
+            e.getMessage()
+                .contains("pylonMinHeight"),
+            e.getMessage());
+    }
+
+    @Test
+    void cappedValuesAreClampedIntoTheirRange(@TempDir File dir) throws Exception {
+        File file = new File(dir, "becom.cfg");
+        Files.write(file.toPath(), "wired {\n    I:phoneCableLength=100000\n    I:pylonMaxHeight=4000\n}\n".getBytes());
+        BeComConfig.load(file);
+        BeComConfig.useFileValues();
+        assertEquals(
+            Tunables.MAX_CABLE,
+            BeComConfig.get()
+                .phoneCableLength());
+        assertEquals(
+            Tunables.MAX_COLUMN,
+            BeComConfig.get()
+                .pylonMaxHeight());
+    }
+
+    @Test
+    void aGoodFileIsUsed(@TempDir File dir) {
+        File file = new File(dir, "becom.cfg");
+        BeComConfig.load(file);
+        BeComConfig.useFileValues();
+        assertEquals(Tunables.defaults(), BeComConfig.get());
+    }
+}
