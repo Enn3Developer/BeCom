@@ -15,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 
 import com.enn3developer.becom.logic.DropoutModel;
+import com.enn3developer.becom.logic.RepeatReports;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
@@ -41,6 +42,9 @@ public final class VideoService {
 
     private static final int TICKS_PER_SECOND = 20;
     private static final long MILLIS_PER_SECOND = 1000L;
+    // A viewer of live video is reported for the Video call task again after this long, as radio contacts are, so
+    // seeing video while the quest is still locked isn't used up for good.
+    private static final long REPORT_AGAIN_MILLIS = 60 * MILLIS_PER_SECOND;
     // Armor slots and the held item, in EntityLivingBase's order: held item, boots, leggings, chestplate, helmet.
     private static final int EQUIPMENT_SLOTS = VideoEquipmentPacket.SLOTS;
 
@@ -55,7 +59,7 @@ public final class VideoService {
     private final Map<UUID, Viewer> viewers = new HashMap<>();
     private final Map<UUID, Source> sources = new HashMap<>();
     private final Map<Pair, Link> links = new HashMap<>();
-    private final Set<UUID> sawVideo = new HashSet<>();
+    private final RepeatReports<UUID> videoReports = new RepeatReports<>(REPORT_AGAIN_MILLIS);
     private VideoPlan plan = VideoPlan.EMPTY;
     private long ticks;
 
@@ -136,6 +140,7 @@ public final class VideoService {
         if (ticks % poseTicks != 0) return;
         update();
         sendPoses();
+        reportVideo();
     }
 
     /** Works out who sees whom from every call, and tells each player whose view changed. */
@@ -267,9 +272,18 @@ public final class VideoService {
             }
             if (out.isEmpty()) continue;
             send(viewer, new VideoPosePacket(out));
-            // Live video from someone in their call reached them (DESIGN.md 15.5: Video call).
-            if (sawVideo.add(viewer)) BeComQuests.complete(QuestTask.VIDEO_CALL, List.of(viewer));
         }
+    }
+
+    /** Those who get live video from someone in their call complete the Video call task (DESIGN.md 15.5). */
+    private void reportVideo() {
+        long now = now();
+        List<UUID> seeing = new ArrayList<>();
+        for (UUID viewer : plan.viewers()) {
+            if (plan.seesLive(viewer) && videoReports.due(viewer, now)) seeing.add(viewer);
+        }
+        if (!seeing.isEmpty()) BeComQuests.complete(QuestTask.VIDEO_CALL, seeing);
+        videoReports.sweep(now);
     }
 
     /** The SNR the viewer gets the source at, for the dropout model; their call's weakest hop. */
@@ -334,7 +348,7 @@ public final class VideoService {
         sources.clear();
         links.clear();
         rear.clear();
-        sawVideo.clear();
+        videoReports.clear();
         plan = VideoPlan.EMPTY;
     }
 

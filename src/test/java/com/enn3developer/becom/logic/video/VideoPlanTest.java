@@ -225,6 +225,21 @@ class VideoPlanTest {
         assertNull(plan(call).rearSendOf(alice), "with two in the room it's three people");
     }
 
+    /** DESIGN.md 15.5: Video call completes for a viewer of live video only. */
+    @Test
+    void theVideoCallTaskGoesToViewersOfLiveVideo() {
+        snr = 8;
+        cameras.put(alice, new VideoPlan.Cameras(false, false));
+        Call call = call(alice, MOBILE_A, bob, MOBILE_B);
+        assertFalse(plan(call).seesLive(bob), "frozen at Low");
+        snr = 14;
+        VideoPlan plan = plan(call);
+        assertFalse(plan.seesLive(bob), "Alice's front camera is off");
+        assertTrue(plan.seesLive(alice), "Bob's is on, at Medium");
+        Call voice = call(carol, TELEPHONE, dan, ME_PHONE);
+        assertFalse(plan(voice).seesLive(dan), "a Telephone has no camera");
+    }
+
     @Test
     void aCallStillRingingShowsNothing() {
         assertEquals(CallBook.DialResult.RINGING, book.dial(alice, MOBILE_A, MOBILE_B, 0, CallBook.Check.OK));

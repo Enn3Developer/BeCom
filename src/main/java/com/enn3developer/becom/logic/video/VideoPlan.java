@@ -115,6 +115,15 @@ public final class VideoPlan {
         return Collections.unmodifiableSet(tiles.keySet());
     }
 
+    /**
+     * Whether {@code viewer} gets live video from someone in their call: both on video phones, that person's front
+     * camera on, at Medium or better. What completes the Video call quest task for them (DESIGN.md 15.5).
+     */
+    public boolean seesLive(UUID viewer) {
+        for (Tile tile : tilesOf(viewer)) if (tile.live()) return true;
+        return false;
+    }
+
     /** The level {@code sender}'s rear camera goes out at, or null when it goes to nobody. */
     public SignalLevel rearSendOf(UUID sender) {
         return rearSends.get(sender);
