@@ -1148,7 +1148,7 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 | A balancing pass: the tunables, recipes and quest rewards (17, 3.1, 15.5, D51)                  | done   |
 | A load test against the budgets in 6.5                                                          | done   |
 | README                                                                                          | done   |
-| Ready for the first public release, which the owner tags (16, D33)                              | todo   |
+| Ready for the first public release, which the owner tags (16, D33)                              | done   |
 
 ### Untested assumptions (DESIGN.md 16.2)
 
@@ -1175,3 +1175,178 @@ guide. It's on 1.0's owner checklist, with its fallback built if it fails there.
 | Guide pages in English and Italian                                                              | done   |
 | Textures in both styles, after the final pass                                                   | done   |
 | Sounds, after the final pass                                                                    | done   |
+
+### Summary
+
+**Built.** Polish on top of 0.4, and the mod ready for its first public release:
+
+- Italian, every string and all 28 quests' text, kept line for line with English by `tools/quests/make_quests.py` and
+  `quests_it.py`. Names from other mods follow those mods' own Italian files (15.3).
+- The GuideNH guide in English and Italian, eight pages each: the tiers, how signal works, the Signal Analyzer, the
+  wired network, antennas, radios, phones, and space and other dimensions (15.4, D48). Each page lists its items and
+  quests, so holding GuideNH's key over one opens it, and each quest's text ends with a link to its page (15.5). With
+  BetterQuesting and no GuideNH, the link shows its words alone. Every in-game tag holds its words, so the pages read on
+  GitHub too, where the README links them; the start page says the numbers are defaults a server can change (X14).
+- WAILA for all nine machines and the Telephone (16.4): what GT's scanner shows, less the line for each link, in the
+  looking player's language, and a Telephone's number, owner, and whether it rings or its handset is lifted. WAILA's
+  request is handled on the server thread, so the lines are worked out as it asks, and only for a player in the
+  machine's dimension whose eyes are within their reach of it, plus 3 blocks.
+- The Modernity add-on pack, zipped by CI as `Modernity-GTNHAddon-BeCom.zip` on every build and attached to releases
+  (15.1). The final pass over textures and sounds changed nothing.
+- The balancing pass (17, 3.1, D51): recipes match 3.1, quest rewards sit at GTNH's commonest for each tier, and the
+  tunables stay at DESIGN.md 17's values. Three big quests offer their coins as a choice against a BeCom item (X41), and
+  a choice keeps only the options whose items are installed. On the defaults, a walkie's 300,000 EU last 4 h 10 min on
+  standby, 2 h 05 min receiving and 62.5 min talking; a Mobile Phone's 1.2M EU, 4 h 10 min on standby and 62.5 min in a
+  call. Satellites last about 33 h 20 min of world time, so holding 5 over a dimension takes a launch every 20 Minecraft
+  days, 14 every 7, and 100 one a day, at 288,000 EU, 1,000 L of fuel and a rocket each.
+- `./gradlew loadTest` times BeCom's per-tick work at a busy server's scale against 6.5's budgets (below).
+- Radio publishes cost far less at scale, from the review: an antenna mesh's reach is worked out over its link matrix
+  without building a graph, the players who hear each speaker are found by cell, and a press of push-to-talk works out
+  only that radio's links, everyone's being worked out once a second (6.4).
+- Forge refuses to load BeCom beside a GTNH Voice older than v0.10.1, naming the version it needs.
+- A README for players and server operators, a changelog that reads as release notes, and a release workflow that takes
+  its notes from the tag's changelog section, or from Unreleased when there's none.
+
+**Tests.**
+
+- 428 unit and routing tests, all passing: 398 from 0.1 to 0.4, 30 new. Guide pages: titles, links between pages, each
+  quest's link and the page listing it back, the same pages and quests in both languages, and every tag holding its
+  item's name (7). The GTNH Voice version FML accepts and refuses (6). WAILA: lines written and read back as keys,
+  worked out each time WAILA asks, a machine that throws giving none, and the reach from the eyes, two Rings of Far
+  Reach included (7). Quest rewards: a choice losing options that aren't installed, and renumbering (2).
+  BetterQuesting's guide tags without GuideNH (2). Italian keeping every English key and format (1). The radio cell
+  index (2), each listener's devices found by cell matching the old scan (1), and an antenna mesh's reach matching the
+  graph it replaced, NaN included (2).
+- The self-test: 292 checks on a real dev server, all passing, 7 new: WAILA's first look at a Line Terminal getting its
+  lines, the Telephone's number, nothing for a player 14 blocks off or in another dimension, WAILA taking the
+  Telephone's provider through IMC, the first-call quest offering its coins as a choice once its definition is reloaded,
+  and a press of push-to-talk working out a keyed radio that moved while leaving one that didn't. It also logs BeCom's
+  own server tick: over about 3,130 ticks, mean 0.13 ms, p99 1.1 to 1.2 ms, max 10 to 12 ms. In the runs looked at
+  closely before the review, every tick over 3 ms came at the first use of a code path.
+- The load test, on this 4-core cloud VM with Java 25 (not part of the build; it prints a report):
+  - Surveys: 64 T3 antennas 240 blocks apart all surveyed in 14 ticks at 2 ms each, p95 2.02 to 2.03 ms. A few ticks a
+    run, none in some runs, go to 2.4 to 6.2 ms when the VM stalls the thread. One T3 survey with its links costs about
+    0.45 ms, so the budget sustains about 27,000 T3 antennas surveyed again every 5 minutes.
+  - Access for 200 players, each with a walkie and a phone: 0.19 to 0.22 ms a tick. Direct links: 0.05 to 0.07 ms a
+    tick.
+  - Routing on GTNH Voice's thread: a radio frame to 199 listeners, 100 to 140 µs, of which the bare sends are 15 to 25
+    µs; a call frame among 8, 2 to 4 µs.
+  - A radio publish with 30 radios keyed on one channel and 200 radios on it, all hearing each other: every radio's
+    links, once a second, 5.1 to 5.6 ms in one tick; one press of push-to-talk, 0.5 ms. Measured along the review's
+    fixes: finding each listener's devices took 19.3 ms the old way and 3.0 ms by cell; a whole publish took 9.7 ms
+    before the reach rewrite; and a press used to cost a whole publish.
+
+**Review.** Three rounds (D58). In the first, a design reviewer and a code reviewer side by side on the milestone
+(`milestone/0.4-space..78f359f`; the release-notes fix a794deb landed while the code reviewer worked). Its fixes,
+`78f359f..25d8b1b`, touched threads and changed when radio links are worked out, so a fresh code reviewer took them in
+the second round, and another took the second round's fixes, `25d8b1b..83c3546`, in the third. The third round's fixes
+are `83c3546..623963e`: small, and touching neither threads nor saved data. Each finding was confirmed by a failing
+test, a self-test check or the code before it was fixed, as each item says.
+
+- First round, design review (1 critical, 7 minor):
+  - Design 1: tagging v1.0.0 couldn't make a release. The changelog action wants a section named for the version, and
+    the changelog has only Unreleased, so the job would stop before `gh release create` (read in the action's code).
+    Fixed (a794deb): the job takes the tag's section, or Unreleased when there's none; the code reviewer dry-ran it.
+  - Design 2: the changelog, which becomes the release notes, carried milestone prefixes and lines only developers care
+    about. Fixed (8292f57).
+  - Design 3: GitHub drops GuideNH's tags, so the guide pages the README links read with holes. Fixed (a553c58): each
+    tag holds its words. GuideTest checks that every tag holds its item's name, and failed before.
+  - Design 4: the guide states DESIGN.md 17's defaults, which a server can change. Kept, as X14 does for the quest text:
+    the start page says the numbers are defaults, and X14 covers the guide (032d962).
+  - Design 5: the Italian page called the Parachest by its English name, where Galacticraft's Italian file has Cassa del
+    razzo. Fixed (56f6343).
+  - Design 6: GTNH Voice draws a group's name as the server sends it, so an Italian player on a dedicated server sees
+    "Call". Confirmed in GTNH Voice 0.10.1's bytecode; logged as VOICE.md V6, with the server-side translation in one
+    marked class (a3bdf68).
+  - Design 7: the GTNH Voice version the README asks for wasn't enforced. Fixed (7306826): GtnhVoiceVersionTest, which
+    failed before because the dependency accepted v0.9.2 and v0.10.0, and a dev boot with v0.10.1.
+  - Design 8: the load test let a survey tick run 1 ms over its 2 ms budget. Tightened to 0.5 ms (5e0b422), on p95
+    rather than p99 (e5a7685) once the tighter bound failed one run in four on this VM's stalls.
+- First round, code review (4 minor):
+  - Code 1: WAILA requests left in the static queue outlived a server stop, and two machines' lines could load an
+    unloaded dimension's network. Fixed (bbc8735); the second round showed the queue itself wasn't needed, below.
+  - Code 2: the queue's drain had no bound per tick. Fixed (9d320e1): a test ran the same machine 1,000 times in one
+    tick before, once after. Moot since the queue's removal.
+  - Code 3: the load test didn't time a radio publish as the server runs it, and the publish found each listener's
+    devices by looking at every walkie for every listener. Fixed in four commits: the publish timed in the load test
+    (25d8b1b); each listener's devices found by cell (a53b89f, CarriersTest against the old scan, 19.3 ms down to 3.0
+    ms); an antenna mesh's reach without building a graph (e7a1627, AntennaMeshTest against the graph, about 100 µs down
+    to a few); and a press working out only that radio's links (2224ea4, 0.5 ms a press). A whole publish once a second
+    still takes 5 to 6 ms at that scale: a known issue.
+  - Code 4: WAILA served BeCom's lines for any position a client named, a Telephone's number and owner included. Fixed
+    (a353073): only a player close by in the machine's dimension gets them; a unit test and a self-test row.
+- Second round, a fresh code reviewer on the first round's fixes (a correction, 3 minor, a test gap):
+  - WAILA's request is handled on the server thread, not a network thread: FML's packet keeps the default no priority,
+    so Minecraft queues it for `networkTick` (checked in the decompiled sources). The snapshot queue, built on the
+    belief it was a network thread, only delayed the first look. Fixed (32ca135): the lines are worked out as WAILA
+    asks, and the queue and its lifecycle hooks are gone.
+  - Code 1: the reach rewrite let a NaN access link, from a device at a position that isn't a number, spread to every
+    antenna, where the graph had left it out. Fixed (4213547), with the reviewer's failing test.
+  - Code 2: WAILA's 8 blocks counted from the feet, too tight for Botania's Ring of Far Reach. Fixed (10feffa): 12
+    blocks from the eyes, with the reviewer's failing test.
+  - Code 3: the version range accepts a GTNH Voice version written without the "v". Rejected: every release tag, v0.1.0
+    to v0.10.1, has it, and the version string comes from the tag.
+  - Test gap: nothing ran the publish a press makes. Fixed (83c3546): two self-test rows, the first of which failed with
+    the moved-radio check taken out (run 103).
+- Third round, a fresh code reviewer on the second round's fixes (3 minor, nits):
+  - Code 1: Baubles has two ring slots and Botania's Rings of Far Reach stack, so a fixed 12 blocks still cut off a
+    player wearing two. Fixed (48e92c4): the reach is the one the server keeps for each player, which the rings raise,
+    plus 3 blocks; with the reviewer's failing test.
+  - Code 2: GT's Drone Centre camera asks for a machine's WAILA data for a player far away, so a dish or pad with a
+    Drone Downlink as its maintenance hatch shows GT's lines there without BeCom's. Left as a known issue: letting the
+    camera through would mean trusting the machine and position the client names.
+  - Code 3: a radio at a position that isn't a number still turns its through-antenna and sky SNR to NaN outside
+    `reach`. From 0.2 and 0.4, and it takes a modified client getting a NaN position past 1.7.10's move checks: a known
+    issue.
+  - Nits, all taken (2bd2a9f, 623963e): the WAILA rows in one step, the Telephone's row through the provider WAILA took
+    by IMC, the exception comment, ClientProxy's comment about the packet thread, and comments spotless had wrapped
+    mid-sentence.
+
+**Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
+BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
+fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
+a dedicated server sees "Call".
+
+**Known issues.**
+
+- BeCom adds only the quests a book is missing, so a world that already holds them keeps their old rewards and tasks
+  after an update; the text does update, from the language files. The 0.x test worlds keep 0.x's rewards, X41's coin
+  choices included, until `/bq_admin default load` or BetterQuesting's pack-version reload adds them again. Fix: refresh
+  BeCom's own quests' definitions at server start, keeping progress.
+- Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
+  "Radio 3" reads the same in both.
+- A whole radio publish, once a second, still works out every keyed radio's links in one tick: 5 to 6 ms with 30 radios
+  keyed on one channel and 200 hearing them all. Spreading it over the second's ticks by radio would flatten that.
+- The squelch tail at a release still looks at every online player for each walkie that held the speaker.
+- A player watching a Satellite Dish or a Launch Pad through GT's Drone Centre camera, with a Drone Downlink as its
+  maintenance hatch, sees GT's WAILA lines without BeCom's.
+- A radio at a position that isn't a number gets NaN for its paths through antennas and satellites: it keeps its links
+  for the drop grace, then loses them. It takes a modified client getting such a position past 1.7.10's move checks.
+- The coin choices' values were never tried in a played game.
+- The load figures come from one 4-core cloud VM, which stalls the odd tick.
+- From 0.4: GregTech's rain hazards on BeCom's machines, relays through Personal Space and End portals at MV, a relay
+  pair made under /save-off, the pad slowing where GT draws more power, and radio through satellites making a walkie's
+  range moot outdoors. From 0.3: video under Angelica and shader packs, a far player's skin, video's own channel, the ME
+  Phone's Infinity Booster Card and security checks (X27), the Phone key and Telephones (X1), the corner window's size
+  (X29). From 0.1 and 0.2: the IC2 rubber GT-ERR-01 line in the boot log, X22's survey cost, and V1, V3 and V5.
+
+**Owner checks.** A GTNH 2.8 client with GuideNH and WAILA, GTNH Voice 0.10.1 or newer, BeCom from this branch, and for
+the second part a dedicated server and a second player:
+
+1. GuideNH (16.2's untested assumption): `/guide list` names `becom:guidenh`, and `/guide open becom:guidenh` opens the
+   start page, with the eight pages in the navigation and items drawn with their icons. Switch Minecraft to Italian: the
+   pages are the Italian ones. If GuideNH doesn't find them, 16.2's fallback is the Markdown in the repo, linked from
+   the README, which reads there now.
+2. In the quest book's Better Communications tab, the link at the end of each quest opens its page. Holding G over a
+   quest, or over a BeCom item's tooltip in an inventory or NEI, opens its page.
+3. Look at a Line Terminal with a phone on its cable, a linked Pylon Head, an antenna and a Telephone: WAILA shows their
+   state, link counts and the phone's number in English, and in Italian after switching.
+4. Put `Modernity-GTNHAddon-BeCom.zip` from a CI run above Modernity: BeCom's textures switch to the Modernity style.
+5. On a new world, the First call, Radio contact and Five satellites quests offer their coins or the BeCom item as a
+   choice. On a 0.x world, run `/bq_admin default load` first.
+6. With GTNH Voice 0.9.2 in the mods folder, the game stops at Forge's missing-mods screen, naming gtnhvoice and the
+   version BeCom needs.
+7. On a dedicated server, two players on one walkie channel: the speaker list shows "Radio 1"; in a call, "Call", for an
+   Italian client too (V6).
+8. To release: merge into master; if wanted, rename `## [Unreleased]` to `## [1.0.0] - <date>` with an empty Unreleased
+   above it; tag `v1.0.0`. The release gets the jars, the Modernity zip and the changelog's section as its notes.
