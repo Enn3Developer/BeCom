@@ -14,13 +14,16 @@ import com.enn3developer.becom.BeCom;
  */
 public final class WailaInfo {
 
+    /** How far a player's eyes stand above their feet, which the server keeps as their position. */
+    private static final double EYES = 1.62;
+
     /**
-     * How near a player must stand to get a machine's lines, in blocks. WAILA shows what's under the crosshair, at
-     * most 5 blocks off in 1.7.10's creative mode, and the rest covers a few steps taken while the request travels.
-     * WAILA answers for any position a client names, so without this a modified client could read every Telephone's
-     * number and owner from anywhere.
+     * How near a player's eyes must be to a machine's middle to get its lines, in blocks. WAILA shows what's under the
+     * crosshair: up to 5 blocks off in creative, and 3.5 more with Botania's Ring of Far Reach; the rest covers a step
+     * taken while the request travels. WAILA answers for any position a client names, so without this a modified client
+     * could read every Telephone's number and owner from anywhere.
      */
-    static final double REACH = 8;
+    static final double REACH = 12;
 
     private static boolean warned;
 
@@ -37,10 +40,10 @@ public final class WailaInfo {
         write(tag);
     }
 
-    /** Whether a player standing at {@code px, py, pz} is close enough to a machine to be looking at it. */
+    /** Whether a player whose feet stand at {@code px, py, pz} is close enough to a machine to be looking at it. */
     static boolean near(int playerDimension, double px, double py, double pz, int dimension, int x, int y, int z) {
         if (playerDimension != dimension) return false;
-        double dx = px - (x + 0.5), dy = py - (y + 0.5), dz = pz - (z + 0.5);
+        double dx = px - (x + 0.5), dy = py + EYES - (y + 0.5), dz = pz - (z + 0.5);
         return dx * dx + dy * dy + dz * dz <= REACH * REACH;
     }
 

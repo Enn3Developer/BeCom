@@ -42,9 +42,10 @@ class WailaInfoTest {
     @Test
     void onlyAPlayerCloseByInTheSameDimensionIsLooking() {
         assertTrue(WailaInfo.near(0, 12.5, 64, 10.5, 0, 10, 64, 10), "two blocks off");
-        assertTrue(WailaInfo.near(0, 10.5 + 7.9, 64.5, 10.5, 0, 10, 64, 10), "just within reach");
-        assertFalse(WailaInfo.near(0, 10.5 + 8.1, 64.5, 10.5, 0, 10, 64, 10), "just out of reach");
-        assertFalse(WailaInfo.near(0, 10.5, 64.5 + 9, 10.5, 0, 10, 64, 10), "straight above, out of reach");
+        assertTrue(WailaInfo.near(0, 18.9, 64, 10.5, 0, 10, 65, 10), "8.4 blocks off at eye level, with far reach");
+        assertTrue(WailaInfo.near(0, 10.5 + 11.9, 64, 10.5, 0, 10, 65, 10), "just within reach");
+        assertFalse(WailaInfo.near(0, 10.5 + 12.1, 64, 10.5, 0, 10, 65, 10), "just out of reach");
+        assertFalse(WailaInfo.near(0, 10.5, 64 + 14, 10.5, 0, 10, 64, 10), "straight above, out of reach");
         assertFalse(WailaInfo.near(-1, 12.5, 64, 10.5, 0, 10, 64, 10), "the same spot in another dimension");
     }
 }
