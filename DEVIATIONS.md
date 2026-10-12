@@ -65,8 +65,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Where:** 0.1, DESIGN.md 12.1
 - **Design says:** a phone's owner is its first user.
 - **Built:** for the Telephone block, placing it counts as first use: the placer owns it and names it in contacts. A
-  Telephone placed by a machine, or whose number was lost (copied by a world editor, say) and renewed, has no owner
-  until the first player uses it, who then owns it. Machines' fake players never own one.
+  Telephone placed by a machine has no owner until the first player uses it, who then owns it. A copy of a Telephone
+  (made with a world editor, say) belongs to the original's owner (X17). Machines' fake players never own one.
 - **Why:** a block has a placer; waiting for the first pickup would leave a fresh phone ownerless and nameless.
 - **To match the design:** register the owner on the first pickup in `CallService.takeHandset` instead.
 
@@ -184,25 +184,44 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
   load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
   holding something this BeCom doesn't know: a node, phone or history kind, more links than a kind has slots, or an
-  invalid or repeated phone number. The one exception is a Telephone block saved by a newer BeCom: its tile entity is
+  invalid or repeated phone number (reported as a damaged file, since no BeCom writes those). The one exception is a Telephone block saved by a newer BeCom: its tile entity is
   kept as it was, never given a number, written back unchanged, and tells whoever uses it to update BeCom.
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
   a backup, or delete the file to start with none. A Telephone's data comes with its chunk, while the server is
-  already running, where stopping would only crash it; keeping the block untouched protects it just as well.
+  already running, where stopping would only crash it. Leaving it alone protects it unless a player breaks it: then
+  the newer data is lost with the block, and its number stays reserved, since this BeCom can't see which it was.
 - **To match the design:** start empty and log instead of stopping, accepting the overwrite; for the Telephone,
   crash the server on such a chunk.
 
 ### X17: Numbers are held for good; a moved Telephone keeps its own, and a copy gets a new one
 
-- **Where:** 0.1, DESIGN.md 8.2, D12
-- **Design says:** every phone gets a number unique in the world, assigned when first placed.
+- **Where:** 0.1, DESIGN.md 8.2, 12.1, D12
+- **Design says:** every phone gets a number unique in the world, assigned when first placed; a phone's owner is its
+  first user.
 - **Built:** a number is freed only when its Telephone is broken. A Telephone moved by a frame or a dolly takes its
   record along on its first tick at the new spot. A copy of one that still stands (a world editor's, say), or one
-  whose old spot isn't loaded, takes a fresh number at once, owned by the original's owner.
+  whose old spot isn't loaded, takes a fresh number at once, owned by the original's owner and with its
+  do-not-disturb, hiding and block list. The history stays with the old number.
 - **Why:** DESIGN.md doesn't say what happens to a number whose phone disappears without being broken, or to copies.
   A version that freed the numbers of vanished Telephones once a minute also freed the numbers of phones in transit
   and of phones saved by a newer BeCom (found in the third round of the 0.1 reviews), and a vanished phone's number
-  costs nothing: nobody can reach it. A copy holding the original's number would put one number on two cables.
+  costs nothing: nobody can reach it. A copy holding the original's number would put one number on two cables. A
+  phone carried away from a spot that then unloads is taken for a copy, which costs it its number and history but
+  not its owner or settings.
 - **To match the design:** nothing to change unless the owner wants vanished numbers freed, which needs a check that
   can tell a vanished phone from one being carried.
+
+### X18: Pylon height and Phone Cable length have ceilings
+
+- **Where:** 0.1, DESIGN.md 14.2, 17
+- **Design says:** pylons are 6 to 16 frames and Phone Cable reaches 32 blocks by default; DESIGN.md 17 gives no
+  limits on the config values.
+- **Built:** `pylonMaxHeight` goes up to 255 and `phoneCableLength` from 1 to 256. The config file shows those ranges
+  and clamps values outside them. The other checks on the file (ordered level thresholds, a burst of at least one
+  voice frame, at least one call attempt a minute and so on) run when a server starts with it and stop it with the
+  key's name; a client never checks its own file, since it doesn't use it.
+- **Why:** a server sends its values to clients for tooltips and holograms, and without ceilings a hostile one could
+  make a client's hologram loop two billion times, or overflow the cable cap (found in the third round of the 0.1
+  code review). No frame column is taller than the world, and 256 blocks of cable is far past any use.
+- **To match the design:** raise `Tunables.MAX_COLUMN` and `MAX_CABLE`.
