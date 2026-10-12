@@ -24,6 +24,7 @@ import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.PhoneHandle;
+import com.enn3developer.becom.server.PhoneScreenActions;
 
 import baubles.api.BaubleType;
 import baubles.api.expanded.BaubleExpandedSlots;
@@ -146,7 +147,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     /** Right-click opens its phone screen (DESIGN.md 11.2); so does the Phone key, for the first phone carried. */
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
-        if (!world.isRemote) GuiFactories.playerInventory()
+        if (!world.isRemote && PhoneScreenActions.mayOpenScreen(player)) GuiFactories.playerInventory()
             .openFromMainHand(player);
         return stack;
     }
@@ -156,8 +157,10 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         EntityPlayer player = data.getPlayer();
         // A phone used for the first time gets its number now, so the screen has one to show.
         BeComServer becom = player.worldObj.isRemote ? null : BeComServer.get();
-        if (becom != null && player instanceof EntityPlayerMP mp) becom.carried.refresh(mp);
         ItemStack stack = data.getUsedItemStack();
+        if (becom != null && player instanceof EntityPlayerMP mp
+            && is(stack)
+            && (number(stack) < 0 || becom.phones.record(number(stack)) == null)) becom.carried.refresh(mp);
         int number = stack == null || !is(stack) ? -1 : number(stack);
         return PhoneScreen.build(new PhoneHandle.CarriedPhone(number), player, sync);
     }

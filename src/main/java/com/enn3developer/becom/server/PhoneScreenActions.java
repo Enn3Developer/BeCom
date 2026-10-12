@@ -207,13 +207,16 @@ public final class PhoneScreenActions {
         if (own != null && own.phone() == handle.number()) becom.calls.hangUp(mp);
     }
 
-    /** Switches a carried phone on or off (DESIGN.md 11.3): whoever carries it may, as with a walkie. */
+    /**
+     * Switches a carried phone on or off (DESIGN.md 11.3): whoever carries it may, as with a walkie. It looks at the
+     * player's phones again at once, so it shares the settings' rate limit.
+     */
     public static void setPower(EntityPlayer player, PhoneHandle handle, boolean on) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp)
             || !(handle instanceof PhoneHandle.CarriedPhone phone)) return;
         ItemStack stack = phone.stack(player);
-        if (stack == null) return;
+        if (stack == null || !mayChange(player)) return;
         ItemCarriedPhone.setOn(stack, on);
         player.inventory.markDirty();
         // Now, not at the next second: a phone switched off can't ring or stay in its call (DESIGN.md 11.3).
@@ -224,6 +227,22 @@ public final class PhoneScreenActions {
     // floods them only wastes the server's time (DESIGN.md 14: client input). A person never needs more than this.
     private static final int SETTINGS_CHANGES_PER_MINUTE = 60;
     private static final RateLimiter<UUID> SETTINGS_CHANGES = new RateLimiter<>(SETTINGS_CHANGES_PER_MINUTE, 60_000);
+    // Each phone screen opened finds every phone in reach for its contacts; nobody opens one faster than this.
+    private static final int SCREEN_OPENS_PER_SECOND = 4;
+    private static final RateLimiter<UUID> SCREEN_OPENS = new RateLimiter<>(SCREEN_OPENS_PER_SECOND, 1000);
+
+    private static boolean mayChange(EntityPlayer player) {
+        long now = System.nanoTime() / 1_000_000L;
+        SETTINGS_CHANGES.sweep(now);
+        return SETTINGS_CHANGES.tryAcquire(player.getUniqueID(), now);
+    }
+
+    /** Whether {@code player} may open a carried phone's screen now, from the item or the Phone key. */
+    public static boolean mayOpenScreen(EntityPlayer player) {
+        long now = System.nanoTime() / 1_000_000L;
+        SCREEN_OPENS.sweep(now);
+        return SCREEN_OPENS.tryAcquire(player.getUniqueID(), now);
+    }
 
     /**
      * Switches one of {@code player}'s own cameras during their call on this phone (DESIGN.md 10.1), on a phone with
@@ -238,20 +257,14 @@ public final class PhoneScreenActions {
         Call call = becom.calls.book()
             .callOf(id);
         Call.Leg own = call == null ? null : call.legOf(id);
-        if (own == null || own.phone() != handle.number()) return;
-        long now = System.nanoTime() / 1_000_000L;
-        SETTINGS_CHANGES.sweep(now);
-        if (!SETTINGS_CHANGES.tryAcquire(id, now)) return;
+        if (own == null || own.phone() != handle.number() || !mayChange(player)) return;
         if (rear) becom.video.setRear(id, on);
         else becom.video.setFront(id, on);
     }
 
     private static PhoneRecord managed(EntityPlayer player, PhoneHandle handle) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || !handle.usableBy(player)) return null;
-        long now = System.nanoTime() / 1_000_000L;
-        SETTINGS_CHANGES.sweep(now);
-        if (!SETTINGS_CHANGES.tryAcquire(player.getUniqueID(), now)) return null;
+        if (becom == null || !handle.usableBy(player) || !mayChange(player)) return null;
         PhoneRecord record = becom.phones.record(handle.number());
         if (record == null || !Ownership.mayManage(player, record.owner())) return null;
         return record;

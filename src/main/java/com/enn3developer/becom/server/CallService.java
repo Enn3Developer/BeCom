@@ -442,7 +442,7 @@ public final class CallService implements CallBook.Listener {
             return;
         }
         Carried.Slot slot = Carried.first(player, ItemCarriedPhone::is);
-        if (slot == null) return;
+        if (slot == null || !PhoneScreenActions.mayOpenScreen(player)) return;
         if (slot.inventory() == player.inventory) {
             GuiFactories.playerInventory()
                 .openFromPlayerInventory(player, slot.index());
