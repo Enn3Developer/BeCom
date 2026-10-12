@@ -601,4 +601,31 @@ class RadioGroupTest {
             SignalLevel.LOW,
             shared.heardThrough(alice, 1, List.of(bob, dan), List.of(SignalLevel.LOW, SignalLevel.MEDIUM)));
     }
+
+    @Test
+    void anExpiredHoldDoesntCountWhenChoosingTheLevelForTheNextSpeaker() {
+        // Cat spoke to Bob's walkie half a second ago; Alice now starts an over. Her first publish comes before her
+        // first frame reaches route(), so Bob's walkie still records Cat, but that hold ended 400 ms ago.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID cat = fixture.player("cat", 300, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(cat, 1)
+                .link(cat, walkie(bob, 20))
+                .build());
+        fixture.route(one, cat, RADIO);
+        now += 500 * MS;
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 7))
+                .build());
+        assertEquals(SignalLevel.LOW, shared.heardThrough(alice, 1, List.of(bob), List.of(SignalLevel.LOW)));
+        fixture.sent.clear();
+        fixture.route(one, alice, RADIO);
+        assertTrue(
+            fixture.recipients()
+                .contains(bob));
+    }
 }

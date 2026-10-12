@@ -112,8 +112,10 @@ public final class RadioRouting {
      * doesn't is the one they hear (DESIGN.md 13.5: that device's level).
      */
     public SignalLevel heardThrough(UUID speaker, int channel, List<?> devices, List<SignalLevel> levels) {
+        long now = clock.getAsLong();
         for (int i = 0; i < devices.size(); i++) {
-            Object holder = capture.holder(devices.get(i), channel);
+            // A hold that has run out is free: the next speaker's first frame takes the device.
+            Object holder = capture.activeHolder(devices.get(i), channel, now);
             if (holder == null || holder.equals(speaker)) return levels.get(i);
         }
         return SignalLevel.NONE;

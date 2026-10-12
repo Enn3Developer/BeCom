@@ -61,6 +61,16 @@ public final class Capture<L> {
         return state == null ? null : state.speaker;
     }
 
+    /**
+     * Who {@code listener} is holding on {@code channel} at {@code nowNanos}, by the same rule {@link #admit} uses:
+     * null once the hold has run out. {@link #holder} still answers after that, for the squelch tail.
+     */
+    public Object activeHolder(L listener, int channel, long nowNanos) {
+        State state = holders.get(new Key<>(listener, channel));
+        if (state == null || nowNanos - state.lastNanos > holdNanos) return null;
+        return state.speaker;
+    }
+
     /** Server thread: forgets a listener, on every channel. */
     public void forgetListener(L listener) {
         holders.keySet()
