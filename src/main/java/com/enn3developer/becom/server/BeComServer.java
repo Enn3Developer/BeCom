@@ -23,6 +23,8 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 public final class BeComServer {
 
     private static BeComServer instance;
+    // The server between its stopping and stopped events.
+    private static BeComServer stopping;
     // Work handed over from other threads, run at the start of the next server tick.
     private static final Queue<Runnable> LATER = new ConcurrentLinkedQueue<>();
 
@@ -96,16 +98,23 @@ public final class BeComServer {
      */
     public static void stop() {
         LATER.clear();
+        stopping = instance;
         if (instance != null) {
             instance.calls.stop();
             instance.radio.stop();
         }
     }
 
-    /** The worlds are saved and unloaded: the height cache's last regions go to disk, and BeCom forgets the server. */
+    /**
+     * The worlds are saved and unloaded: the height cache's last regions go to disk, and BeCom forgets the server. In
+     * single-player the next world can start while the last one's stopped handlers still run, so only the server
+     * that was stopping is forgotten, never a newer one.
+     */
     public static void stopped() {
-        if (instance != null) instance.heights.saveAll();
-        instance = null;
+        BeComServer old = stopping != null ? stopping : instance;
+        stopping = null;
+        if (old != null) old.heights.saveAll();
+        if (instance == old) instance = null;
     }
 
     /** Runs {@code task} on the server thread at the start of the next tick; dropped if no server is running. */
