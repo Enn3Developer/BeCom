@@ -43,6 +43,7 @@ becom.machine.me_bridge.info=Joins its ME network to BeCom's, so ME Phones on it
 becom.machine.me_bridge.link=Wrench-link it to a BeCom node within %s blocks.
 becom.machine.videophone.info=A video speakerphone for wired networks. Give it Phone Cable to a Line Terminal, like a Telephone.
 becom.machine.videophone.room=Everyone within %s blocks is in its call, and its loudspeaker carries %s. It hangs up after %s s with nobody near.
+becom.videophone.step_closer=Stand within %s blocks of the Videophone to use it: its calls are for the people around it.
 
 # Scanner info
 becom.info.formed=Pylon height: %s

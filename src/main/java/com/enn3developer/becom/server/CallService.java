@@ -519,15 +519,13 @@ public final class CallService implements CallBook.Listener {
 
     /** Answers, or with sneak turns down, a ringing Telephone or Videophone the player is close enough to answer. */
     private boolean answerNear(EntityPlayerMP player, boolean sneaking) {
-        double roomSq = tunables.videophoneRoom() * tunables.videophoneRoom();
         for (Call call : new ArrayList<>(book.calls())) {
             for (Call.Leg leg : call.ringingLegs()) {
                 int phone = leg.phone();
                 TileTelephone telephone = phones.telephone(phone);
                 Videophone videophone = kindOf(phone) == PhoneKind.VIDEOPHONE ? videophone(phone) : null;
-                boolean near = telephone != null && telephone.withinCord(player) || videophone != null
-                    && player.dimension == videophone.dimension()
-                    && player.getDistanceSq(videophone.centerX(), videophone.centerY(), videophone.centerZ()) <= roomSq;
+                boolean near = telephone != null && telephone.withinCord(player)
+                    || videophone != null && inRoom(player, videophone);
                 if (!near) continue;
                 if (sneaking) book.reject(phone);
                 else if (telephone != null) takeHandset(player, telephone);
@@ -623,6 +621,24 @@ public final class CallService implements CallBook.Listener {
         return videophoneWorking(number) ? videophones.get(number) : null;
     }
 
+    /** Whether {@code player} stands in {@code videophone}'s room, where everyone is in its call (DESIGN.md 10.2). */
+    private boolean inRoom(EntityPlayer player, Videophone videophone) {
+        double room = tunables.videophoneRoom();
+        return player.dimension == videophone.dimension()
+            && player.getDistanceSq(videophone.centerX(), videophone.centerY(), videophone.centerZ()) <= room * room;
+    }
+
+    /**
+     * Whether {@code player} may dial, answer or hang up at Videophone {@code number}'s screen, and is told to step
+     * closer if not: its calls are its room's, though its screen stays open from further off.
+     */
+    private boolean atVideophone(EntityPlayerMP player, int number) {
+        Videophone videophone = videophone(number);
+        if (videophone != null && inRoom(player, videophone)) return true;
+        tell(player, "becom.videophone.step_closer", (int) tunables.videophoneRoom());
+        return false;
+    }
+
     /**
      * {@code player}, at Videophone {@code number}'s screen, dials {@code to}; or, while it's in a call and they're in
      * its room, adds {@code to} to the call (group calls).
@@ -630,6 +646,7 @@ public final class CallService implements CallBook.Listener {
     public CallBook.DialResult dialVideophone(EntityPlayerMP player, int number, int to) {
         UUID id = player.getUniqueID();
         if (!videophoneWorking(number) || handsetOf.containsKey(id)) return CallBook.DialResult.INVALID;
+        if (!atVideophone(player, number)) return CallBook.DialResult.INVALID;
         Call call = book.callOfPhone(number);
         if (call != null) return add(player, call, number, to);
         CallBook.DialResult result = book.dial(id, number, to, now(), () -> worldCheck(player, number, to));
@@ -643,6 +660,7 @@ public final class CallService implements CallBook.Listener {
     public boolean answerVideophone(EntityPlayerMP player, int number) {
         UUID id = player.getUniqueID();
         if (!videophoneWorking(number) || !isRinging(number) || handsetOf.containsKey(id)) return false;
+        if (!atVideophone(player, number)) return false;
         if (!hasVoice.test(id)) {
             tell(player, "becom.call.no_voice");
             return false;
@@ -653,10 +671,11 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * Anyone at Videophone {@code number}'s screen hangs it up for its whole room, who hear the click as they leave the
-     * call, or turns down a ringing call.
+     * Anyone in Videophone {@code number}'s room hangs it up at its screen for the whole room, who hear the click as
+     * they leave the call, or turns down a ringing call.
      */
     public void hangUpVideophone(EntityPlayerMP player, int number) {
+        if (!atVideophone(player, number)) return;
         if (isRinging(number)) {
             book.reject(number);
             return;

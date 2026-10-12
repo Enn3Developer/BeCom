@@ -2767,8 +2767,9 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 11.2, 12.2: a Videophone added to a group call shows only who calls while it rings; answered, its
-     * screen shows the call to everyone in it and to nobody else.
+     * DESIGN.md 11.2, 12.2, X28: a Videophone added to a group call shows only who calls while it rings; answered, its
+     * screen shows the call to everyone in it and to nobody else, only its room works the screen, and the Phone key
+     * there hangs it up for the room.
      */
     private int checkVideophoneScreen() {
         int number = videophone.number();
@@ -2791,7 +2792,18 @@ public final class SelfTest {
             added == CallBook.DialResult.RINGING && ringing.state() == PhoneView.State.RINGING_IN
                 && named.equals(List.of("BeComTia")),
             added + ", " + ringing.state() + ", " + named);
+        PhoneScreenActions.pickUp(yul, screen);
+        String told = becom.calls.lastMessageForSelfTest(yul.getUniqueID());
+        boolean stillRinging = becom.calls.isRinging(number);
         PhoneScreenActions.pickUp(zed, screen);
+        Call call = becom.calls.book()
+            .callOfPhone(number);
+        check(
+            "...only someone in its room answers at its screen, which opens from further off (X28)",
+            stillRinging && "becom.videophone.step_closer".equals(told)
+                && call != null
+                && call.legOf(zed.getUniqueID()) != null,
+            "still ringing " + stillRinging + ", told " + told);
         PhoneView inCall = PhoneScreenActions.view(uma, screen);
         PhoneView outside = PhoneScreenActions.view(yul, screen);
         check(
@@ -2802,7 +2814,20 @@ public final class SelfTest {
                 && outside.members()
                     .isEmpty(),
             inCall.state() + " / " + outside.state());
+        PhoneScreenActions.hangUp(yul, screen);
+        check(
+            "...Hang up there from outside its room does nothing (X28)",
+            becom.calls.book()
+                .callOfPhone(number) != null,
+            "");
         becom.calls.phoneKey(zed, false);
+        Call goesOn = becom.calls.book()
+            .callOf(tia.getUniqueID());
+        check(
+            "...and the Phone key in its room hangs it up for the room, the call going on without it (X28)",
+            becom.calls.book()
+                .callOfPhone(number) == null && goesOn != null && goesOn.state() == Call.State.CONNECTED,
+            goesOn == null ? "no call left" : goesOn.state() + "");
         becom.calls.hangUp(tia);
         becom.calls.hangUp(uma);
         yul.setPosition(X0 + 30.5, Y, z + 0.5);
