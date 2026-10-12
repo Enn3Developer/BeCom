@@ -24,6 +24,17 @@ public final class CallGraph {
     /** A phone, by number. */
     public record PhoneVertex(int number) {}
 
+    /**
+     * Where a phone that isn't a vertex of its own joins the graph, and how good that hop is: a carried phone at each
+     * antenna it reaches (DESIGN.md 8.2). A phone on a line joins at its own vertex, through a lossless hop.
+     */
+    public record Entry(Object vertex, double snr) {
+
+        public static List<Entry> of(int phone) {
+            return List.of(new Entry(new PhoneVertex(phone), Double.POSITIVE_INFINITY));
+        }
+    }
+
     // The two halves of a phone: where its calls leave, and where calls to it arrive.
     private record PhoneOut(int number) {}
 
@@ -58,31 +69,100 @@ public final class CallGraph {
 
     /** The weakest hop's SNR on the best path between two phones, or negative infinity when there's none. */
     public double width(int fromPhone, int toPhone) {
-        Integer from = index.get(new PhoneOut(fromPhone));
-        Integer to = index.get(new PhoneIn(toPhone));
-        if (from == null || to == null || fromPhone == toPhone) return Double.NEGATIVE_INFINITY;
-        return result(from).width(to);
+        return width(new PhoneVertex(fromPhone), new PhoneVertex(toPhone));
+    }
+
+    /**
+     * The weakest hop on the best path between two vertices: phones as where calls leave and arrive, nodes as they
+     * are. Positive infinity from a node to itself, so two phones at the same antenna lose nothing between.
+     */
+    public double width(Object from, Object to) {
+        if (from instanceof PhoneVertex a && to instanceof PhoneVertex b && a.number() == b.number()) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        // Entries come only from working nodes, and a node with no links at all still serves its phones.
+        if (!(from instanceof PhoneVertex) && from.equals(to)) return Double.POSITIVE_INFINITY;
+        Integer tail = index.get(tail(from));
+        Integer head = index.get(head(to));
+        if (tail == null || head == null) return Double.NEGATIVE_INFINITY;
+        return result(tail).width(head);
+    }
+
+    /** The best path between two phones joining the graph through {@code from} and {@code to}: any pair of them. */
+    public double width(List<Entry> from, List<Entry> to) {
+        Entry[] best = bestPair(from, to);
+        return best == null ? Double.NEGATIVE_INFINITY : widthOf(best[0], best[1]);
+    }
+
+    private double widthOf(Entry a, Entry b) {
+        return Math.min(Math.min(a.snr(), b.snr()), width(a.vertex(), b.vertex()));
+    }
+
+    private Entry[] bestPair(List<Entry> from, List<Entry> to) {
+        Entry[] best = null;
+        double width = Double.NEGATIVE_INFINITY;
+        for (Entry a : from) {
+            for (Entry b : to) {
+                double w = widthOf(a, b);
+                if (w > width) {
+                    width = w;
+                    best = new Entry[] { a, b };
+                }
+            }
+        }
+        return best;
+    }
+
+    /** The kinds of hop on the best path between two phones joining through entries, the entry hops left out. */
+    public List<HopKind> hops(List<Entry> from, List<Entry> to) {
+        Entry[] best = bestPair(from, to);
+        return best == null ? new ArrayList<>() : hops(best[0].vertex(), best[1].vertex());
+    }
+
+    private static Object tail(Object vertex) {
+        return vertex instanceof PhoneVertex phone ? new PhoneOut(phone.number()) : vertex;
+    }
+
+    private static Object head(Object vertex) {
+        return vertex instanceof PhoneVertex phone ? new PhoneIn(phone.number()) : vertex;
     }
 
     /** The hops on the best path between two phones, in order; empty when there's none. */
     public List<HopKind> hops(int fromPhone, int toPhone) {
-        Integer from = index.get(new PhoneOut(fromPhone));
-        Integer to = index.get(new PhoneIn(toPhone));
+        if (fromPhone == toPhone) return new ArrayList<>();
+        return hops(new PhoneVertex(fromPhone), new PhoneVertex(toPhone));
+    }
+
+    private List<HopKind> hops(Object fromVertex, Object toVertex) {
+        Integer from = index.get(tail(fromVertex));
+        Integer to = index.get(head(toVertex));
         List<HopKind> hops = new ArrayList<>();
-        if (from == null || to == null || fromPhone == toPhone) return hops;
+        if (from == null || to == null || from.equals(to)) return hops;
         for (WidestPath.Edge edge : result(from).edges(to)) hops.add((HopKind) edge.tag());
         return hops;
     }
 
     /** Every other phone with any path from {@code fromPhone}, with the path's weakest SNR. */
     public Map<Integer, Double> phonesFrom(int fromPhone) {
+        return phonesFrom(Entry.of(fromPhone));
+    }
+
+    /**
+     * Every phone on a line with any path from a phone joining the graph through {@code from}, with the best path's
+     * weakest SNR, entry hops included. Never the phone itself.
+     */
+    public Map<Integer, Double> phonesFrom(List<Entry> from) {
         Map<Integer, Double> phones = new LinkedHashMap<>();
-        Integer from = index.get(new PhoneOut(fromPhone));
-        if (from == null) return phones;
-        WidestPath.Result result = result(from);
-        for (int i = 0; i < vertices.size(); i++) {
-            if (!(vertices.get(i) instanceof PhoneIn phone) || phone.number() == fromPhone) continue;
-            if (result.reachable(i)) phones.put(phone.number(), result.width(i));
+        for (Entry entry : from) {
+            Integer tail = index.get(tail(entry.vertex()));
+            if (tail == null) continue;
+            int own = entry.vertex() instanceof PhoneVertex phone ? phone.number() : -1;
+            WidestPath.Result result = result(tail);
+            for (int i = 0; i < vertices.size(); i++) {
+                if (!(vertices.get(i) instanceof PhoneIn phone) || phone.number() == own) continue;
+                if (!result.reachable(i)) continue;
+                phones.merge(phone.number(), Math.min(entry.snr(), result.width(i)), Math::max);
+            }
         }
         return phones;
     }

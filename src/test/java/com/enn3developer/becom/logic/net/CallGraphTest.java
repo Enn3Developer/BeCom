@@ -68,4 +68,58 @@ class CallGraphTest {
             graph.hops(1, 2)
                 .isEmpty());
     }
+
+    @Test
+    void aCarriedPhoneJoinsAtTheAntennasItReaches() {
+        // A Telephone on a terminal an antenna bridges (X19), and two carried phones near antennas linked over UHF.
+        CallGraph.NodeVertex terminal = new CallGraph.NodeVertex(0, 1);
+        CallGraph.NodeVertex near = new CallGraph.NodeVertex(0, 2);
+        CallGraph.NodeVertex far = new CallGraph.NodeVertex(0, 3);
+        CallGraph graph = CallGraph.builder()
+            .twoWay(new CallGraph.PhoneVertex(111111), terminal, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(near, terminal, 28, CallGraph.HopKind.LINE)
+            .twoWay(near, far, 14, CallGraph.HopKind.RADIO)
+            .build();
+        java.util.List<CallGraph.Entry> mobile = java.util.List.of(new CallGraph.Entry(near, 10));
+        java.util.List<CallGraph.Entry> other = java.util.List
+            .of(new CallGraph.Entry(near, 6), new CallGraph.Entry(far, 20));
+        // Its access hop is the weakest.
+        assertEquals(10, graph.width(mobile, CallGraph.Entry.of(111111)), 1e-12);
+        assertEquals(10, graph.width(CallGraph.Entry.of(111111), mobile), 1e-12);
+        // The other phone reaches both antennas: through the far one is better (min 14) than the near one (6).
+        assertEquals(10, graph.width(mobile, other), 1e-12);
+        assertEquals(
+            12,
+            graph.width(
+                java.util.List.of(new CallGraph.Entry(near, 12)),
+                java.util.List.of(new CallGraph.Entry(far, 20))),
+            1e-12);
+        assertEquals(
+            java.util.List.of(CallGraph.HopKind.RADIO),
+            graph.hops(
+                java.util.List.of(new CallGraph.Entry(near, 30)),
+                java.util.List.of(new CallGraph.Entry(far, 30))));
+        // Two phones at one antenna lose nothing between them.
+        assertEquals(6, graph.width(java.util.List.of(new CallGraph.Entry(near, 6)), mobile), 1e-12);
+        assertEquals(Map.of(111111, 10.0), graph.phonesFrom(mobile));
+    }
+
+    @Test
+    void anAntennaWithNoLinksStillServesTwoPhones() {
+        CallGraph graph = CallGraph.builder()
+            .build();
+        CallGraph.NodeVertex lone = new CallGraph.NodeVertex(0, 9);
+        CallGraph.NodeVertex other = new CallGraph.NodeVertex(0, 10);
+        assertEquals(
+            15,
+            graph.width(
+                java.util.List.of(new CallGraph.Entry(lone, 20)),
+                java.util.List.of(new CallGraph.Entry(lone, 15))),
+            1e-12);
+        assertEquals(
+            Double.NEGATIVE_INFINITY,
+            graph.width(
+                java.util.List.of(new CallGraph.Entry(lone, 20)),
+                java.util.List.of(new CallGraph.Entry(other, 20))));
+    }
 }
