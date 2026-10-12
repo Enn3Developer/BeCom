@@ -1,6 +1,7 @@
 package com.enn3developer.becom.server;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -60,6 +61,13 @@ public final class ServerEvents {
     public void onChunkSave(ChunkDataEvent.Save event) {
         BeComServer becom = BeComServer.get();
         if (becom != null) becom.heights.chunkChanged(event.world, event.getChunk());
+    }
+
+    /** DESIGN.md 14: rockets are Galacticraft's entities, so BeCom follows them as they join their world (9.3). */
+    @SubscribeEvent
+    public void onEntityJoin(EntityJoinWorldEvent event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null && !event.world.isRemote) becom.rockets.joined(event.entity);
     }
 
     @SubscribeEvent

@@ -550,3 +550,15 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   9.2 speaks of networks, and 9.5 of calls between dimensions; neither says radio crosses a dish.
 - **To match the design:** give each dimension's antenna mesh a vertex for the satellites, joined by every antenna
   wrench-linked to a working dish at that dish's hop on VHF.
+
+### X35: The Rocket Radio Receiver counts only on Galacticraft's worlds
+
+- **Where:** 0.4, DESIGN.md 9.3, 9.5, D28
+- **Design says:** a receiver counts while its rocket stands unignited on a launch pad "in a dimension other than the
+  Overworld" (9.3). Every dimension but the ones 9.5 lists has no link in v1.
+- **Built:** a receiver counts only in a dimension whose world provider is one of Galacticraft's, other than the
+  Overworld: its planets, moons and space stations, and GalaxySpace's and AmunRa's, which build on it.
+- **Why:** taken word for word, 9.3 lets a rocket set on a pad in the Deep Dark, or any other dimension, link it
+  through the Overworld's satellites, which 9.5 rules out. The planets 9.5 speaks of are Galacticraft's worlds.
+- **To match the design:** drop the world provider check in `RocketReceivers.counts`, and accept a link from any
+  dimension a rocket can stand in.

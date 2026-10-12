@@ -55,6 +55,7 @@ public final class BeComServer {
     public final CarriedPhones carried;
     public final MeGrids meGrids = new MeGrids();
     public final SpaceService space;
+    public final RocketReceivers rockets;
 
     private BeComServer(MinecraftServer server, Tunables tunables) {
         this.server = server;
@@ -90,6 +91,7 @@ public final class BeComServer {
         }, Ownership::sameTeam);
         this.network = new NetworkService(tunables, antennas, space);
         this.links = new LinkService(network, tunables);
+        this.rockets = new RocketReceivers(network, antennas);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
             StatCollector.translateToLocal("becom.group.call"),
@@ -165,6 +167,7 @@ public final class BeComServer {
         becom.video.stop();
         becom.radio.stop();
         becom.carried.stop();
+        becom.rockets.stop();
     }
 
     /**
@@ -194,6 +197,7 @@ public final class BeComServer {
         while ((task = LATER.poll()) != null) task.run();
         heights.tick();
         space.tick();
+        rockets.tick();
         // DESIGN.md 6.5: surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
         // share it: up to half for them, the rest for surveys.
         long budget = (long) (tunables.surveyBudgetMillis() * 1_000_000);
