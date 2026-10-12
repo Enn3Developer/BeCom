@@ -41,8 +41,10 @@ DEFAULT = {
     "G": (120, 200, 120),  # display, digits
     "t": (90, 16, 16),  # TX lamp, off
     "T": (255, 60, 50),  # TX lamp, lit
-    "f": (140, 84, 196),  # fluix, AE2's crystal
+    "f": (140, 84, 196),  # fluix, AE2's crystal; a portal's glow
     "e": (92, 52, 132),  # fluix, shade
+    "b": (34, 46, 98),  # solar cell
+    "B": (86, 110, 176),  # solar cell, highlight
 }
 MODERNITY = {
     "o": (34, 33, 30),
@@ -64,6 +66,8 @@ MODERNITY = {
     "T": (250, 110, 70),
     "f": (150, 120, 196),
     "e": (100, 80, 140),
+    "b": (30, 44, 70),
+    "B": (90, 120, 150),
 }
 LIT = {"L"}
 
@@ -247,6 +251,62 @@ def videophone():
     return c
 
 
+def launch_pad():
+    """A Satellite Rocket standing on its pad, gantry lights either side; the flame under it lights during a launch."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    c.rect(7, 2, 8, 2, "h")
+    c.rect(6, 3, 9, 9, "h")
+    c.rect(7, 5, 8, 5, "s")
+    c.rect(9, 4, 9, 9, "s")
+    for y in range(7, 11):
+        c.set(5, y, "s")
+        c.set(10, y, "s")
+    c.set(4, 10, "s")
+    c.set(11, 10, "s")
+    c.rect(7, 10, 8, 10, "d")
+    c.lamp(7, 11, 2, 1)
+    c.rect(3, 12, 12, 12, "s")
+    c.rect(3, 13, 12, 13, "d")
+    c.lamp(3, 3, 1, 2)
+    c.lamp(12, 3, 1, 2)
+    return c
+
+
+def satellite_dish():
+    """A dish facing the sky, its feed arm reaching to the horn at the focus, on a short stand, and a lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    # The dish, seen from the side: a curve opening up and to the right.
+    for x, y in ((3, 4), (3, 5), (3, 6), (4, 7), (4, 8), (5, 9), (6, 10), (7, 10), (8, 10), (9, 9)):
+        c.set(x, y, "h")
+    for x, y in ((4, 5), (4, 6), (5, 8), (6, 9), (7, 9)):
+        c.set(x, y, "s")
+    for x, y in ((6, 8), (7, 7), (8, 6), (9, 5)):
+        c.set(x, y, "s")
+    c.rect(10, 3, 11, 4, "h")
+    c.rect(6, 11, 6, 12, "s")
+    c.rect(4, 12, 8, 12, "d")
+    c.lamp(11, 11, 2, 1)
+    return c
+
+
+def portal_relay():
+    """A portal in its frame, the signal going out of it as waves, and a lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    c.rect(3, 3, 7, 12, "o")
+    c.rect(4, 4, 6, 11, "f")
+    for x, y in ((4, 5), (5, 7), (6, 6), (4, 9), (6, 10), (5, 4)):
+        c.set(x, y, "e")
+    for x, y in ((9, 6), (10, 7), (10, 8), (9, 9)):
+        c.set(x, y, "h")
+    for x, y in ((11, 4), (12, 5), (12, 6), (12, 7), (12, 8), (12, 9), (11, 10)):
+        c.set(x, y, "h")
+    c.lamp(9, 12, 2, 1)
+    return c
+
+
 OVERLAYS = {
     "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
@@ -258,6 +318,9 @@ OVERLAYS = {
     "OVERLAY_TRANSCEIVER": transceiver,
     "OVERLAY_ME_BRIDGE": me_bridge,
     "OVERLAY_VIDEOPHONE": videophone,
+    "OVERLAY_LAUNCH_PAD": launch_pad,
+    "OVERLAY_SATELLITE_DISH": satellite_dish,
+    "OVERLAY_PORTAL_RELAY": portal_relay,
 }
 
 
@@ -325,12 +388,65 @@ def me_phone():
     return c
 
 
+def satellite():
+    """A satellite: its body between two solar panel wings, and an antenna dish on top."""
+    c = Canvas()
+    for x0 in (0, 10):
+        c.rect(x0, 5, x0 + 5, 10, "o")
+        c.rect(x0 + 1, 6, x0 + 4, 9, "b")
+        c.rect(x0 + 1, 6, x0 + 4, 6, "B")
+        c.set(x0 + 2, 8, "B")
+    c.panel(6, 5, 9, 11)
+    c.rect(7, 2, 8, 2, "h")
+    c.rect(6, 1, 6, 1, "s")
+    c.rect(9, 1, 9, 1, "s")
+    c.rect(7, 3, 8, 4, "s")
+    c.rect(7, 12, 8, 13, "s")
+    return c
+
+
+def satellite_rocket():
+    """A Satellite Rocket: nose cone, a hull with a porthole, fins and the engine nozzle."""
+    c = Canvas()
+    c.rect(7, 0, 8, 0, "h")
+    c.rect(6, 1, 9, 2, "h")
+    c.panel(5, 3, 10, 12)
+    c.rect(7, 5, 8, 6, "i")
+    c.set(8, 6, "j")
+    for y in range(9, 14):
+        c.set(4, y, "s")
+        c.set(11, y, "s")
+    c.set(3, 13, "s")
+    c.set(12, 13, "s")
+    c.rect(6, 13, 9, 13, "d")
+    c.rect(7, 14, 8, 15, "k")
+    return c
+
+
+def rocket_radio_receiver():
+    """The Rocket Radio Receiver: a rugged box with a little dish on top and a status display."""
+    c = Canvas()
+    c.rect(7, 3, 7, 6, "s")
+    for x, y in ((4, 1), (5, 2), (6, 3), (8, 3), (9, 2), (10, 1)):
+        c.set(x, y, "h")
+    c.panel(2, 7, 13, 15)
+    c.rect(4, 9, 11, 12, "g")
+    for i, h in enumerate((1, 2, 3)):
+        c.rect(5 + i, 12 - h, 5 + i, 11, "G")
+    c.rect(9, 10, 10, 10, "G")
+    c.rect(4, 14, 11, 14, "d")
+    return c
+
+
 ITEMS = {
     "walkie_talkie": lambda: walkie(False),
     "walkie_talkie_tx": lambda: walkie(True),
     "signal_analyzer": signal_analyzer,
     "mobile_phone": mobile_phone,
     "me_phone": me_phone,
+    "satellite": satellite,
+    "satellite_rocket": satellite_rocket,
+    "rocket_radio_receiver": rocket_radio_receiver,
 }
 
 # Block textures for BeCom's own models: base colour, shade, and highlight per style.
