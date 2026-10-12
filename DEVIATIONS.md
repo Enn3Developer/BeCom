@@ -372,13 +372,20 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   - Whoever carries a phone may switch it on or off, as with a walkie; silent mode, like the other settings, is for
     its owner and their team. Silent mode is a carried phone's only: a Telephone rings out loud as before.
   - A phone dialling out or ringing counts as in a call for the drain.
-  - The Phone key, in this order: answers, or with sneak turns down, a ringing phone the player carries, the one the
-    notice names when two ring; hangs up a call they're in; answers a ringing Telephone whose cord reaches them or a
-    ringing Videophone whose room they stand in, the first in the call book's order; and otherwise opens the screen of
-    the first phone the player carries: held, then inventory, then bauble slots. A phone being moved with the mouse
-    still counts as carried.
+  - The Phone key, in this order:
+    - with sneak, turns down a ringing phone the player carries;
+    - hangs up a call they're in, or puts down a Telephone's handset they hold with no call;
+    - answers a ringing phone they carry;
+    - answers, or with sneak turns down, a ringing Telephone whose cord reaches them or a ringing Videophone whose room
+      they stand in, the first in the call book's order. So anyone that close can turn its call down, as anyone can
+      answer it;
+    - otherwise opens the screen of the first phone they carry: held, then inventory, then bauble slots. A phone being
+      moved with the mouse still counts as carried.
+  - When two carried phones ring for a player, the notice and the key name the latest to ring. A notice hidden while
+    they're in a call shows again when the call ends.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
-  A ringing or dialling phone is busy with the call already.
+  A ringing or dialling phone is busy with the call already. Hanging up comes before answering because a call has to
+  end before another can be answered.
 - **To match the design:** none of these contradicts it; they fill in what it leaves open.
 
 ### X27: The ME Phone's power, linking and range check

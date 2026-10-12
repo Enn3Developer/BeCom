@@ -468,20 +468,24 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * The Phone key (DESIGN.md 11.1, D34): answers the player's ringing phone, or with sneak rejects it; hangs up
-     * during a call; otherwise opens the screen of the first phone they carry. A ringing phone is one they carry, or a
-     * Telephone or Videophone close enough to answer: within its cord, or in its room.
+     * The Phone key (DESIGN.md 11.1, D34): with sneak, turns down the player's ringing phone; hangs up during a call,
+     * or puts a handset down; answers the ringing phone; otherwise opens the screen of the first phone they carry. A
+     * ringing phone is one they carry, or a Telephone or Videophone close enough to answer: within its cord, or in its
+     * room. Hanging up comes before answering: a call they're in has to end before another can be answered.
      */
     public void phoneKey(EntityPlayerMP player, boolean sneaking) {
         int ringing = ringingFor(player);
-        if (ringing >= 0) {
-            if (sneaking) rejectCarried(player, ringing);
-            else answerCarried(player, ringing);
+        if (ringing >= 0 && sneaking) {
+            rejectCarried(player, ringing);
             return;
         }
         UUID id = player.getUniqueID();
         if (book.callOf(id) != null || handsetOf.containsKey(id)) {
             hangUp(player);
+            return;
+        }
+        if (ringing >= 0) {
+            answerCarried(player, ringing);
             return;
         }
         if (answerNear(player, sneaking)) return;
@@ -888,8 +892,12 @@ public final class CallService implements CallBook.Listener {
         tone(player, tone);
         if (reason == CallBook.EndReason.NO_ANSWER) tell(player, "becom.call.no_answer");
         if (reason == CallBook.EndReason.DROPPED) tell(player, "becom.call.dropped");
+        // A phone of theirs that kept ringing through the call, its notice hidden, shows it again.
+        Notice waiting = book.callOf(player) == null ? latestNotice(player) : null;
+        if (waiting != null && noticeLog != null) noticeLog.put(player, true);
         EntityPlayerMP mp = player(player);
         if (mp == null) return;
+        if (waiting != null) BeComPackets.send(waiting.packet(), mp);
         for (UUID other : others) {
             if (!other.equals(player)) BeComPackets.send(new LevelPacket(other, CallGroup.NAME, SignalLevel.NONE), mp);
         }

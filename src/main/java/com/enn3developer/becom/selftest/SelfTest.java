@@ -2097,9 +2097,12 @@ public final class SelfTest {
         return 1;
     }
 
+    private FakePlayer sid;
+    private int sidNumber = -1;
+
     /**
-     * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest; when one stops, the other's
-     * shows again, and the Phone key answers the phone the notice names.
+     * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest, and the Phone key answers
+     * that one; pressed again it hangs up, and the other's notice shows again, as it does when the latest stops.
      */
     private int checkTwoRinging() {
         FakePlayer rex = phonePlayer("BeComRex", 5, X0 - 19.5, phoneZ + 0.5);
@@ -2110,28 +2113,43 @@ public final class SelfTest {
         becom.carried.refreshForSelfTest(rex);
         int first = ItemCarriedPhone.number(rex.inventory.mainInventory[0]);
         int other = ItemCarriedPhone.number(second);
-        FakePlayer sid = phonePlayer("BeComSid", 6, X0 - 19.5, phoneZ + 2.5);
-        int sidNumber = ItemCarriedPhone.number(sid.inventory.mainInventory[0]);
+        sid = phonePlayer("BeComSid", 6, X0 - 19.5, phoneZ + 2.5);
+        sidNumber = ItemCarriedPhone.number(sid.inventory.mainInventory[0]);
         UUID r = rex.getUniqueID();
+        // The phone in Rex's hand rings first, so the latest to ring isn't the first he carries.
         becom.calls.dialCarried(olga, olgaNumber, first);
         becom.calls.dialCarried(sid, sidNumber, other);
-        becom.calls.hangUp(olga);
-        boolean stillShown = becom.calls.noticeForSelfTest(r) && becom.calls.isRinging(other);
-        check(
-            "when one of two phones ringing for a player stops, the other's notice shows again",
-            stillShown && !becom.calls.isRinging(first),
-            "shown " + becom.calls.noticeForSelfTest(r) + ", the other ringing " + becom.calls.isRinging(other));
-        becom.calls.dialCarried(olga, olgaNumber, first);
         becom.calls.phoneKey(rex, false);
         Call call = becom.calls.book()
             .callOf(r);
         Call.Leg answered = call == null ? null : call.legOf(r);
         check(
-            "...and the Phone key answers the phone the notice names, the latest to ring",
-            answered != null && answered.phone() == first && becom.calls.isRinging(other),
-            answered == null ? "nothing answered" : "answered " + answered.phone() + ", first " + first);
-        becom.calls.hangUp(rex);
+            "with two phones ringing, the Phone key answers the one the notice names, the latest to ring",
+            answered != null && answered.phone() == other && becom.calls.isRinging(first),
+            answered == null ? "nothing answered" : "answered " + answered.phone() + ", the latest " + other);
+        becom.calls.phoneKey(rex, false);
+        boolean hungUp = becom.calls.book()
+            .callOf(r) == null;
+        check(
+            "...pressed again in that call, it hangs up, though the other phone still rings (DESIGN.md 11.1)",
+            hungUp && becom.calls.isRinging(first),
+            "still in the call " + !hungUp);
+        check(
+            "...and once the call is over, the notice of the phone still ringing shows again",
+            becom.calls.noticeForSelfTest(r),
+            "");
+        becom.calls.hangUp(olga);
+        FakePlayer tia = phonePlayer("BeComTia", 7, X0 - 19.5, phoneZ + 3.5);
+        int tiaNumber = ItemCarriedPhone.number(tia.inventory.mainInventory[0]);
+        becom.calls.dialCarried(tia, tiaNumber, first);
+        becom.calls.dialCarried(sid, sidNumber, other);
         becom.calls.hangUp(sid);
+        boolean shown = becom.calls.noticeForSelfTest(r);
+        check(
+            "when the latest of two phones ringing for a player stops, the other's notice shows again",
+            shown && becom.calls.isRinging(first) && !becom.calls.isRinging(other),
+            "shown " + shown + ", the first ringing " + becom.calls.isRinging(first));
+        becom.calls.hangUp(tia);
         // A phone screen asks for its view every tick; its contacts are a path search per phone in reach.
         int searches = becom.calls.reachableSearchesForSelfTest();
         for (int i = 0; i < TICKS_PER_SECOND; i++)
