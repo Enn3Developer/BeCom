@@ -42,6 +42,7 @@ import com.enn3developer.becom.packet.VideoPosePacket;
 import com.enn3developer.becom.packet.VideoProfilePacket;
 import com.enn3developer.becom.packet.VideoStatePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
+import com.enn3developer.becom.selftest.ClientSelfTest;
 
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -89,6 +90,7 @@ public class ClientProxy extends CommonProxy {
         ClientAudio.register();
         ClientRadio.register();
         ClientPhone.register();
+        ClientSelfTest.startIfAsked();
     }
 
     @SubscribeEvent
