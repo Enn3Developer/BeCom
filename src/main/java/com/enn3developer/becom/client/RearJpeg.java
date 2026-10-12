@@ -8,9 +8,13 @@ import java.util.Iterator;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
+
+import com.enn3developer.becom.logic.Tunables;
 
 /**
  * The rear camera's pictures as JPEG (DESIGN.md 10.1): compressed small enough for the server's size cap, trying lower
@@ -39,12 +43,27 @@ public final class RearJpeg {
         return null;
     }
 
-    /** The picture in {@code jpeg}, or null when it isn't one. */
+    /**
+     * The picture in {@code jpeg}, or null when it isn't one or is larger than any rear picture can be. The bytes come
+     * from another player's client: the size in the header is checked before anything is decoded, since the reader
+     * makes the whole picture first, however little data follows.
+     */
     public static BufferedImage decode(byte[] jpeg) {
-        try {
-            return ImageIO.read(new ByteArrayInputStream(jpeg));
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("jpeg");
+        if (!readers.hasNext()) return null;
+        ImageReader reader = readers.next();
+        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(jpeg))) {
+            reader.setInput(in, true, true);
+            int width = reader.getWidth(0);
+            int height = reader.getHeight(0);
+            if (width <= 0 || height <= 0 || width > Tunables.MAX_REAR_WIDTH || height > Tunables.MAX_REAR_HEIGHT) {
+                return null;
+            }
+            return reader.read(0);
         } catch (IOException | RuntimeException e) {
             return null;
+        } finally {
+            reader.dispose();
         }
     }
 
