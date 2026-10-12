@@ -238,7 +238,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted(
                 "becom.info.too_much_cable",
                 BeComConfig.get()
-                    .phoneCableLength()));
+                    .phoneCableLength() * PhoneCables.CABLES_PER_LENGTH));
         else if (phonesSeen > 1)
             info.add(StatCollector.translateToLocalFormatted("becom.info.too_many_phones", phonesSeen));
         else info.add(StatCollector.translateToLocal("becom.info.no_phone"));

@@ -10,9 +10,9 @@ import com.enn3developer.becom.logic.net.BlockPos;
 
 /**
  * Follows Phone Cable out from a Line Terminal (DESIGN.md 5.2, 5.5): a breadth-first walk over the cable touching it,
- * collecting the phones on it. A terminal takes up to {@code maxCables} blocks of cable in all; a bigger run serves
- * nothing, so a solid blob of cable can't make every scan read thousands of blocks, and which phone a terminal finds
- * never depends on walk order.
+ * collecting the phones within {@code maxLength} blocks of cable. A run of more than {@code maxCables} blocks in all
+ * serves nothing, so a solid blob of cable can't make every scan read thousands of blocks, and which phone a terminal
+ * finds never depends on walk order.
  */
 public final class CableWalk {
 
@@ -34,16 +34,19 @@ public final class CableWalk {
     /** The phones found, by packed position, or {@code overflow} when the cable ran past the limit. */
     public record Result(List<Long> phones, int cables, boolean overflow) {}
 
-    public static Result walk(int x, int y, int z, int maxCables, Probe probe) {
+    public static Result walk(int x, int y, int z, int maxLength, int maxCables, Probe probe) {
         List<Long> phones = new ArrayList<>();
         Set<Long> seen = new HashSet<>();
-        ArrayDeque<Long> queue = new ArrayDeque<>();
+        // Each entry: a packed position, and how many cables lead to it.
+        ArrayDeque<long[]> queue = new ArrayDeque<>();
         long start = BlockPos.pack(x, y, z);
         seen.add(start);
-        queue.add(start);
+        queue.add(new long[] { start, 0 });
         int cables = 0;
         while (!queue.isEmpty()) {
-            long pos = queue.poll();
+            long[] entry = queue.poll();
+            long pos = entry[0];
+            long length = entry[1];
             for (int side = 0; side < 6; side++) {
                 int nx = BlockPos.x(pos) + DX[side];
                 int ny = BlockPos.y(pos) + DY[side];
@@ -53,8 +56,9 @@ public final class CableWalk {
                 switch (probe.at(nx, ny, nz)) {
                     case PHONE -> phones.add(next);
                     case CABLE -> {
+                        if (length >= maxLength) continue;
                         if (++cables > maxCables) return new Result(List.of(), cables, true);
-                        queue.add(next);
+                        queue.add(new long[] { next, length + 1 });
                     }
                     case OTHER -> {}
                 }

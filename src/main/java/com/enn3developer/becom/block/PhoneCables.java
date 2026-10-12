@@ -18,9 +18,15 @@ public final class PhoneCables {
 
     private PhoneCables() {}
 
+    /**
+     * How much cable a terminal walks in all, past its length: room for branches, but a cap, so a blob of cable can't
+     * make a scan read thousands of blocks (X15).
+     */
+    public static final int CABLES_PER_LENGTH = 4;
+
     /** The walk from the terminal at x, y, z: the Telephones its cable reaches, or that touch it directly. */
-    public static CableWalk.Result walk(World world, int x, int y, int z, int maxCables) {
-        return CableWalk.walk(x, y, z, maxCables, (nx, ny, nz) -> {
+    public static CableWalk.Result walk(World world, int x, int y, int z, int maxLength) {
+        return CableWalk.walk(x, y, z, maxLength, maxLength * CABLES_PER_LENGTH, (nx, ny, nz) -> {
             if (ny < 0 || ny >= world.getHeight()
                 || !world.getChunkProvider()
                     .chunkExists(nx >> 4, nz >> 4))
