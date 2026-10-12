@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Videophone is a speakerphone with a screen, at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Right-click it to dial, answer or hang up. Everyone within 4 blocks is in its call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away.",
+      "desc:8": "A Videophone is a speakerphone with a screen, at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Right-click it to dial, answer or hang up. Everyone within 4 blocks is in its call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t.",
+      "desc:8": "An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

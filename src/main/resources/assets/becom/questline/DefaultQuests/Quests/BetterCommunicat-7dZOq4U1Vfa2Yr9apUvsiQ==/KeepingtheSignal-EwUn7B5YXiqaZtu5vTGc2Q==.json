@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Repeater Head is a Pylon Head that regenerates the signal, so line loss starts over after it. It takes 4 EU/t of LV power from a cable on any side, and works only while loaded and powered.",
+      "desc:8": "A Repeater Head is a Pylon Head that regenerates the signal, so line loss starts over after it. It takes 4 EU/t of LV power from a cable on any side, and works only while loaded and powered. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

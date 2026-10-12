@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Rocket Radio Receiver in the cargo of a rocket standing on a launch pad on a planet makes the rocket an antenna there, and the planet's link to the Overworld's satellites, at High. The rocket needs chests to have cargo. In the Overworld, phones under open sky and networks with a dish reach it.",
+      "desc:8": "A Rocket Radio Receiver in the cargo of a rocket standing on a launch pad on a planet makes the rocket an antenna there, and the planet's link to the Overworld's satellites, at High. The rocket needs chests to have cargo. In the Overworld, phones under open sky and networks with a dish reach it. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

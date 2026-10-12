@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Call a phone outside your ME network from an ME Phone, through an ME Bridge: a Telephone on a line, a Mobile Phone, or a Videophone.",
+      "desc:8": "Call a phone outside your ME network from an ME Phone, through an ME Bridge: a Telephone on a line, a Mobile Phone, or a Videophone. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

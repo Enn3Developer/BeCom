@@ -43,10 +43,13 @@ import com.enn3developer.becom.packet.VideoPosePacket;
 import com.enn3developer.becom.packet.VideoProfilePacket;
 import com.enn3developer.becom.packet.VideoStatePacket;
 import com.enn3developer.becom.packet.WireSyncPacket;
+import com.enn3developer.becom.quest.BeComQuests;
+import com.enn3developer.becom.quest.bq.BqGuideTags;
 import com.enn3developer.becom.selftest.ClientSelfTest;
 
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -91,6 +94,8 @@ public class ClientProxy extends CommonProxy {
         ClientAudio.register();
         ClientRadio.register();
         ClientPhone.register();
+        // GuideNH makes the quests' [guide] links into links; without it they show their label alone.
+        if (Loader.isModLoaded(BeComQuests.BQ_MODID) && !Loader.isModLoaded("guidenh")) BqGuideTags.register();
         ClientSelfTest.startIfAsked();
     }
 

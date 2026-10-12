@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or Line Terminal within 16 blocks to carry that line over radio.",
+      "desc:8": "An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or Line Terminal within 16 blocks to carry that line over radio. More in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

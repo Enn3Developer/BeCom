@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Telephone: a circuit, a note block for the bell and a steel body, assembled with a cord of Phone Cable. Right-click it to pick up the handset. It's yours, and its six-digit number is too.",
+      "desc:8": "A Telephone: a circuit, a note block for the bell and a steel body, assembled with a cord of Phone Cable. Right-click it to pick up the handset. It's yours, and its six-digit number is too. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

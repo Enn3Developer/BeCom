@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A plain line joins exactly two phones. A Router Head has 15 link slots and turns lines into a network, where any phone can dial any other. It regenerates the signal like a repeater, and takes 16 EU/t of LV power from a cable.",
+      "desc:8": "A plain line joins exactly two phones. A Router Head has 15 link slots and turns lines into a network, where any phone can dial any other. It regenerates the signal like a repeater, and takes 16 EU/t of LV power from a cable. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

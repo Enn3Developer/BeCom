@@ -1142,8 +1142,8 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 | A final pass over the sounds (15.2, D53)                                                        | todo   |
 | The Modernity add-on pack, zipped by CI as `Modernity-GTNHAddon-BeCom.zip` for releases (15.1)  | done   |
 | Italian: every string, the quest text included (15.3, 15.5)                                     | done   |
-| The GuideNH guide: the tiers, how signal works, reading the Signal Analyzer (15.4, D48)         | todo   |
-| Quests point to their guide pages (15.5)                                                        | todo   |
+| The GuideNH guide: the tiers, how signal works, reading the Signal Analyzer (15.4, D48)         | done   |
+| Quests point to their guide pages (15.5)                                                        | done   |
 | WAILA info for BeCom's machines and blocks (16.4: Waila 1.19.34, optional)                      | done   |
 | A balancing pass: the tunables, recipes and quest rewards (17, 3.1, 15.5, D51)                  | todo   |
 | A load test against the budgets in 6.5                                                          | todo   |
@@ -1152,15 +1152,19 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 
 ### Untested assumptions (DESIGN.md 16.2)
 
-| Assumption                                                                                      | Status |
-|-------------------------------------------------------------------------------------------------|--------|
-| GuideNH's data-driven loader finds BeCom's pages (tried by the owner)                           | todo   |
+| Assumption                                                                                      | Status  |
+|-------------------------------------------------------------------------------------------------|---------|
+| GuideNH's data-driven loader finds BeCom's pages (tried by the owner)                           | blocked |
+
+`blocked`: DESIGN.md 16.2 has the owner try it in a game client. GuideNH 1.3.41's own code was read instead: it scans
+every mod jar's resources for `assets/<modid>/guidenh/_<lang>/`, so BeCom's pages should form the `becom:guidenh`
+guide. It's on 1.0's owner checklist, with its fallback built if it fails there.
 
 ### Quests (DESIGN.md 15.5)
 
 | Item                                                                                            | Status |
 |-------------------------------------------------------------------------------------------------|--------|
-| Each quest points to its guide page                                                             | todo   |
+| Each quest points to its guide page                                                             | done   |
 | The quest text in Italian                                                                       | done   |
 
 ### Assets (DESIGN.md 15)
@@ -1168,6 +1172,6 @@ Branch `milestone/1.0-polish`, from the last commit of `milestone/0.4-space`.
 | Item                                                                                            | Status |
 |-------------------------------------------------------------------------------------------------|--------|
 | Italian language entries                                                                        | done   |
-| Guide pages in English and Italian                                                              | todo   |
+| Guide pages in English and Italian                                                              | done   |
 | Textures in both styles, after the final pass                                                   | todo   |
 | Sounds, after the final pass                                                                    | todo   |

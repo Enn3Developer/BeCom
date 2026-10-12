@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Make or take a call on a Mobile Phone. Its bars show your service while you hold it. Rain costs a phone 3 dB of its service, a thunderstorm 6, and an antenna's screen maps where its signal reaches. In a call, add more phones from the keypad: up to 8 people talk together.",
+      "desc:8": "Make or take a call on a Mobile Phone. Its bars show your service while you hold it. Rain costs a phone 3 dB of its service, a thunderstorm 6, and an antenna's screen maps where its signal reaches. In a call, add more phones from the keypad: up to 8 people talk together. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

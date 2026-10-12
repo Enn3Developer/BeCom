@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Satellite Dish joins its network to every other dish in the same dimension, through the satellites. It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an energy hatch and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line Terminal. Each maintenance problem costs it 2 dB.",
+      "desc:8": "A Satellite Dish joins its network to every other dish in the same dimension, through the satellites. It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an energy hatch and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line Terminal. Each maintenance problem costs it 2 dB. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

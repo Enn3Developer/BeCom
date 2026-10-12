@@ -2,7 +2,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Everything starts with a wire. Phone Cable is red alloy wire in rubber, made in the assembler. It joins a Telephone to a Line Terminal, up to 32 blocks of it, and loses nothing on the way.",
+      "desc:8": "Everything starts with a wire. Phone Cable is red alloy wire in rubber, made in the assembler. It joins a Telephone to a Line Terminal, up to 32 blocks of it, and loses nothing on the way. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "See someone in a video call: on a Videophone, a Mobile Phone or an ME Phone, with their front camera on. The front camera shows your character, and the rear camera what you see, in calls of two people at High or better. Video needs Medium: at Low the picture freezes and the voice carries on. The phone screen's Video tab shows the call full size and switches each camera.",
+      "desc:8": "See someone in a video call: on a Videophone, a Mobile Phone or an ME Phone, with their front camera on. The front camera shows your character, and the rear camera what you see, in calls of two people at High or better. Video needs Medium: at Low the picture freezes and the voice carries on. The phone screen's Video tab shows the call full size and switches each camera. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

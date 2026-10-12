@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears what it receives.",
+      "desc:8": "A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears what it receives. More in the guide: [guide page=becom:radios.md]Radios[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

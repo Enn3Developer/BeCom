@@ -97,6 +97,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the jar.
 - WAILA shows what GT's scanner shows for each BeCom machine, links listed one by one aside, in the looking player's
   language, and a Telephone's number, owner and whether it rings or its handset is lifted.
+- An in-game guide through GuideNH, in English and Italian: the tiers, how signal works, reading the Signal Analyzer,
+  and a page each for the wired network, antennas, radios, phones, and space and other dimensions. Each quest ends with
+  a link to its page, and holding GuideNH's key over a BeCom item or quest opens it. Without GuideNH, the links show
+  their label alone.
 
 ### Changed
 

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Pylon Head on top of a column of 6 to 16 Steel Frame Boxes carries the line. Two pylons link up to four times the shorter one's height apart, as long as nothing solid is in the way. Pylons need no power and keep working unloaded. The line loses signal with every block: plan a repeater at least every 225 blocks.",
+      "desc:8": "A Pylon Head on top of a column of 6 to 16 Steel Frame Boxes carries the line. Two pylons link up to four times the shorter one's height apart, as long as nothing solid is in the way. Pylons need no power and keep working unloaded. The line loses signal with every block: plan a repeater at least every 225 blocks. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

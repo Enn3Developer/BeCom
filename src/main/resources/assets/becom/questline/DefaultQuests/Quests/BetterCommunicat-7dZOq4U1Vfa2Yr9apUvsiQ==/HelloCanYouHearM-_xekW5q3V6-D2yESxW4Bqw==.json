@@ -12,7 +12,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Two Telephones, each on its own Line Terminal, and pylons between them. Pick up the handset: with only one other phone on the line it rings straight away, otherwise dial a number or pick a contact. Make a call that connects. A Telephone call is narrow and gritty, but it carries your voice as far as the line goes.",
+      "desc:8": "Two Telephones, each on its own Line Terminal, and pylons between them. Pick up the handset: with only one other phone on the line it rings straight away, otherwise dial a number or pick a contact. Make a call that connects. A Telephone call is narrow and gritty, but it carries your voice as far as the line goes. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

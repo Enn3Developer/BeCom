@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener hears the stronger one.",
+      "desc:8": "Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener hears the stronger one. More in the guide: [guide page=becom:radios.md]Radios[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

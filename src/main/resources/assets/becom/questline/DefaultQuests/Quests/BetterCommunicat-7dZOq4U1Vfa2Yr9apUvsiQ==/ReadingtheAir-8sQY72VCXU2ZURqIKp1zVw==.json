@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs 6 dB for Low and 12 for Medium. Below 4 it cuts out at once; between 4 and 6 it holds for 3 seconds, then drops.",
+      "desc:8": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs 6 dB for Low and 12 for Medium. Below 4 it cuts out at once; between 4 and 6 it holds for 3 seconds, then drops. More in the guide: [guide page=becom:analyzer.md]The Signal Analyzer[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

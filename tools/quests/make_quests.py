@@ -40,6 +40,54 @@ TIER = {
 
 GT_MACHINE = "gregtech:gt.blockmachines"
 
+# DESIGN.md 15.5: each quest points to its page of the guide (DESIGN.md 15.4), by a [guide] link at the end of its text,
+# which GuideNH makes into a link in the quest book. The titles are the pages' own, in English and Italian.
+GUIDE = {
+    "wired.md": ("The wired network", "La rete cablata"),
+    "antennas.md": ("Antennas", "Antenne"),
+    "radios.md": ("Radios", "Radio"),
+    "analyzer.md": ("The Signal Analyzer", "L'Analizzatore di segnale"),
+    "phones.md": ("Phones", "Telefoni"),
+    "space.md": ("Space and other dimensions", "Lo spazio e le altre dimensioni"),
+}
+GUIDE_LINK = ("More in the guide: [guide page=becom:{page}]{title}[/guide].",
+              "Altro nella guida: [guide page=becom:{page}]{title}[/guide].")
+GUIDE_PAGE = {
+    "phone_cable": "wired.md",
+    "telephone": "wired.md",
+    "line_terminal": "wired.md",
+    "pylon": "wired.md",
+    "first_call": "wired.md",
+    "repeater": "wired.md",
+    "router": "wired.md",
+    "antenna_t1": "antennas.md",
+    "antenna_t2": "antennas.md",
+    "antenna_t3": "antennas.md",
+    "transceiver": "radios.md",
+    "walkie_talkie": "radios.md",
+    "radio_contact": "radios.md",
+    "signal_analyzer": "analyzer.md",
+    "videophone": "phones.md",
+    "video_call": "phones.md",
+    "mobile_phone": "phones.md",
+    "mobile_call": "phones.md",
+    "me_phone": "phones.md",
+    "me_bridge": "phones.md",
+    "me_bridge_call": "phones.md",
+    "portal_relay": "space.md",
+    "satellite_rocket": "space.md",
+    "first_satellite": "space.md",
+    "five_satellites": "space.md",
+    "satellite_dish": "space.md",
+    "rocket_receiver": "space.md",
+    "call_between_dimensions": "space.md",
+}
+
+
+def with_guide(key, desc, language):
+    page = GUIDE_PAGE[key]
+    return desc + " " + GUIDE_LINK[language].format(page=page, title=GUIDE[page][language])
+
 LINE = {
     "key": "line",
     "name": "Better Communications",
@@ -500,7 +548,7 @@ def quest_json(q, index):
     icon_id, icon_damage = q["icon"]
     properties = {
         "autoClaim:1": 0,
-        "desc:8": q["desc"],
+        "desc:8": with_guide(q["key"], q["desc"], 0),
         "globalShare:1": 1,
         "icon:10": item(icon_id, icon_damage, 1),
         "isGlobal:1": 0,
@@ -566,6 +614,9 @@ def main():
     missing = [q["key"] for q in QUESTS if q["key"] not in QUESTS_IT]
     if missing:
         raise SystemExit("No Italian text in quests_it.py for: " + ", ".join(missing))
+    missing = [q["key"] for q in QUESTS if q["key"] not in GUIDE_PAGE]
+    if missing:
+        raise SystemExit("No guide page in GUIDE_PAGE for: " + ", ".join(missing))
     lang = [LANG_BEGIN]
     lang_it = [LANG_BEGIN]
     lang.append(f"betterquesting.questline.{key_part(lu)}.name={LINE['name']}")
@@ -585,10 +636,10 @@ def main():
         write_json(os.path.join(quest_dir, stem + ".json"), data)
         paths.append(f"DefaultQuests/Quests/{line_dir_name}/{stem}.json")
         lang.append(f"betterquesting.quest.{key_part(u)}.name={q['name']}")
-        lang.append(f"betterquesting.quest.{key_part(u)}.desc={q['desc']}")
+        lang.append(f"betterquesting.quest.{key_part(u)}.desc={with_guide(q['key'], q['desc'], 0)}")
         name_it, desc_it = QUESTS_IT[q["key"]]
         lang_it.append(f"betterquesting.quest.{key_part(u)}.name={name_it}")
-        lang_it.append(f"betterquesting.quest.{key_part(u)}.desc={desc_it}")
+        lang_it.append(f"betterquesting.quest.{key_part(u)}.desc={with_guide(q['key'], desc_it, 1)}")
     lang.append(LANG_END)
     lang_it.append(LANG_END)
 

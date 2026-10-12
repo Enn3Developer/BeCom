@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. Satellites come down after about 100 days, so keep launching.",
+      "desc:8": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. Satellites come down after about 100 days, so keep launching. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

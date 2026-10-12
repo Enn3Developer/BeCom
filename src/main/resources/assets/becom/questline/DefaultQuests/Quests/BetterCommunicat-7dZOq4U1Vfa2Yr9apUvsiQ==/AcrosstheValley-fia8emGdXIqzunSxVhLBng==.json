@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a hill in the way can cost more than the distance.",
+      "desc:8": "An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a hill in the way can cost more than the distance. More in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
