@@ -33,4 +33,13 @@ class DropTimerTest {
         assertFalse(timer.update(Double.NEGATIVE_INFINITY, 0));
         assertTrue(timer.update(Double.NEGATIVE_INFINITY, 3001));
     }
+
+    @Test
+    void worksOnAClockThatReadsNegative() {
+        // System.nanoTime may be negative by its contract.
+        DropTimer timer = new DropTimer(6, 3000);
+        assertFalse(timer.update(0, -10_000));
+        assertFalse(timer.update(0, -7_000));
+        assertTrue(timer.update(0, -6_999));
+    }
 }

@@ -8,7 +8,9 @@ public final class DropTimer {
 
     private final double thresholdSnr;
     private final long graceMillis;
-    private long belowSince = -1;
+    // A flag, not a sentinel time: the monotonic clock behind it may read negative.
+    private boolean below;
+    private long belowSince;
 
     public DropTimer(double thresholdSnr, long graceMillis) {
         this.thresholdSnr = thresholdSnr;
@@ -18,14 +20,17 @@ public final class DropTimer {
     /** Feeds one evaluation at {@code nowMillis}; true once the link should drop. */
     public boolean update(double snr, long nowMillis) {
         if (snr >= thresholdSnr) {
-            belowSince = -1;
+            below = false;
             return false;
         }
-        if (belowSince < 0) belowSince = nowMillis;
+        if (!below) {
+            below = true;
+            belowSince = nowMillis;
+        }
         return nowMillis - belowSince > graceMillis;
     }
 
     public boolean isBelow() {
-        return belowSince >= 0;
+        return below;
     }
 }

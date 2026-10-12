@@ -108,6 +108,14 @@ public final class Call {
         return link == null ? Double.NEGATIVE_INFINITY : link.snr;
     }
 
+    private DropTimer ringTimer;
+
+    /** How long the ring has been without a path at Low; made on first use. */
+    DropTimer ringTimer(double thresholdSnr, long graceMillis) {
+        if (ringTimer == null) ringTimer = new DropTimer(thresholdSnr, graceMillis);
+        return ringTimer;
+    }
+
     LinkState link(Direction direction, double thresholdSnr, long graceMillis) {
         return links.computeIfAbsent(direction, d -> new LinkState(new DropTimer(thresholdSnr, graceMillis)));
     }

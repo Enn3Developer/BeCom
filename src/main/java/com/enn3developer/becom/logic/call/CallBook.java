@@ -146,6 +146,17 @@ public final class CallBook {
         leg.setPlayer(player);
         byPlayer.put(player, call);
         call.setState(Call.State.CONNECTED, nowMillis);
+        // The ring held a path at Low (it was dialled at Low and kept within the drop grace), so each direction starts
+        // there and the hysteresis carries it just below, as it would a call that had been connected all along.
+        for (Call.Leg speaker : call.legs()) {
+            for (Call.Leg hearer : call.legs()) {
+                if (speaker == hearer || speaker.player() == null || hearer.player() == null) continue;
+                call.link(
+                    new Call.Direction(speaker.player(), hearer.player()),
+                    levels.threshold(SignalLevel.LOW),
+                    dropGraceMillis).rawLevel = SignalLevel.LOW;
+            }
+        }
         version++;
         listener.connected(call, leg);
         return true;
@@ -230,17 +241,17 @@ public final class CallBook {
 
     /**
      * Re-evaluates one call. Connected: each direction's SNR, its level with hysteresis and the phones' caps, and
-     * whether it has been too weak for too long. Ringing: it ends once the path falls out of Low, past the hysteresis,
-     * rather than ringing on for the full timeout over a line that's gone. The call service also runs this the moment
-     * a call connects, so its first words aren't lost waiting for the next second.
+     * whether it has been too weak for too long. Ringing: it ends once its path has been below Low for the same grace
+     * a connected call gets, rather than ringing on for the full timeout over a line that's gone. The call service
+     * also runs this the moment a call connects, so its first words aren't lost waiting for the next second.
      */
     public void evaluate(Call call, long nowMillis, Quality quality) {
         if (call.state() == Call.State.RINGING) {
             Call.Leg callee = call.legs()
                 .get(1);
-            if (levels.next(SignalLevel.LOW, quality.snr(call, call.caller(), callee)) == SignalLevel.NONE) {
-                end(call, EndReason.DROPPED);
-            }
+            double snr = quality.snr(call, call.caller(), callee);
+            if (call.ringTimer(levels.threshold(SignalLevel.LOW), dropGraceMillis)
+                .update(snr, nowMillis)) end(call, EndReason.DROPPED);
             return;
         }
         if (call.state() != Call.State.CONNECTED) return;

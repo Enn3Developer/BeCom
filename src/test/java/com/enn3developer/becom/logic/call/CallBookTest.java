@@ -252,17 +252,42 @@ class CallBookTest {
     }
 
     @Test
-    void aRingingCallEndsWhenItsPathGoes() {
+    void aRingingCallEndsOnceItsPathHasBeenGoneForTheGrace() {
         assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
-        // Just under Low still rings, thanks to the hysteresis; past it the line is gone.
-        snr = 5;
+        // Below Low, a ringing call gets the same 3 s of grace a connected one does (DESIGN.md 4.2).
+        snr = 3;
         book.evaluate(1000, quality);
+        book.evaluate(4000, quality);
         assertTrue(
             book.callOfPhone(PHONE_B) != null && book.callOfPhone(PHONE_B)
                 .state() == Call.State.RINGING);
-        snr = 3;
-        book.evaluate(2000, quality);
+        book.evaluate(4001, quality);
         assertNull(book.callOfPhone(PHONE_B));
         assertTrue(events.contains("ended DROPPED unanswered"));
+    }
+
+    @Test
+    void aPathBackInTimeKeepsTheRing() {
+        assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
+        snr = 3;
+        book.evaluate(1000, quality);
+        snr = 18;
+        book.evaluate(2000, quality);
+        snr = 3;
+        book.evaluate(4500, quality);
+        assertTrue(book.callOfPhone(PHONE_B) != null);
+    }
+
+    @Test
+    void aCallAnsweredFromARingStartsAtLow() {
+        // The ring held a path at Low or better, so the hysteresis carries the answered call in the band just below.
+        assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
+        snr = 5;
+        book.evaluate(1000, quality);
+        assertTrue(book.answer(bob, PHONE_B, 1500));
+        Call call = book.callOf(alice);
+        book.evaluate(call, 1500, quality);
+        assertEquals(SignalLevel.LOW, call.level(alice, bob));
+        assertEquals(SignalLevel.LOW, call.level(bob, alice));
     }
 }
