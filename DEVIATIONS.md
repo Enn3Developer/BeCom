@@ -184,8 +184,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **Built:** the same for data BeCom can't read at all: a network or phone registry file that exists but fails to
   load (cut short by a crash mid-save, say) stops the server with the file's path. So does data in a known format
   holding something this BeCom doesn't know: a node, phone or history kind, more links than a kind has slots, or an
-  invalid or repeated phone number (reported as a damaged file, since no BeCom writes those). The one exception is a Telephone block saved by a newer BeCom: its tile entity is
-  kept as it was, never given a number, written back unchanged, and tells whoever uses it to update BeCom.
+  invalid or repeated phone number (reported as a damaged file, since no BeCom writes those). The one exception is a
+  Telephone block saved by a newer BeCom: its tile entity is kept as it was (only its position is written fresh),
+  never given a number, and tells whoever uses it to update BeCom.
 - **Why:** vanilla swallows the read error and hands back empty data, which BeCom would then save over the file,
   losing every link or number (found in the 0.1 code review). Stopping leaves the file for the admin, who can restore
   a backup, or delete the file to start with none. A Telephone's data comes with its chunk, while the server is
