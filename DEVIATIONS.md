@@ -383,8 +383,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
       moved with the mouse still counts as carried.
   - A ringing phone's notice shows while its player is free to answer it, for the latest of their phones to ring,
     which is the one the key answers. While they're in a call or hold a handset, where the key hangs up instead, the
-    notice goes and the phone rings on out loud; the notice comes back when they're free. A ringing phone that changes
-    hands takes its notice to whoever has it.
+    notice goes and the phone rings on, out loud or, in silent mode, as a buzz only its holder feels; the notice comes
+    back when they're free. So during another call a silent phone's caller goes unseen until it ends.
+  - A ringing phone that leaves its player stops ringing. Handed straight to someone else, if the server looks at the
+    new holder's phones before the old one's, it rings on there, its notice goes with it, and only the new holder can
+    answer it; a phone dropped on the ground always stops first, since nobody can pick it up for 2 s.
   - Someone holding a Telephone's handset can't dial or answer on a phone they carry, and is told to put the handset
     down first.
 - **Why:** power is the device's own switch, while silent mode is the owner's choice like the rest of the settings.
@@ -512,8 +515,9 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Telephone's pick-up read, is kept a second per phone. That list can be up to a second old:
   - a phone that just came into reach shows a second late, and one that just went out of reach still shows, though
     dialling it checks the path again and is refused;
-  - a Telephone picked up in that second can ring the one phone it knew of when another has just come into reach,
-    instead of opening the dialer, or ring one that has just gone out of reach, which plays the unreachable tone.
+  - a Telephone picked up in that second goes by that list: it can ring the one phone it knew of where two are now in
+    reach, or open the dialer where now exactly one is, instead of ringing it; and a phone it rings that has just
+    gone out of reach plays the unreachable tone.
 - **Why:** an open phone screen asks for its contacts every tick, and the list is a lookup for every phone in reach
   and every carried phone switched on. Kept a second, a screen costs one list a second. Carried phones' service
   changes about once a second anyway, as they move.
