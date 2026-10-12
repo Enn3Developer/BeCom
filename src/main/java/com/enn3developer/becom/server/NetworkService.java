@@ -17,6 +17,7 @@ import net.minecraftforge.common.DimensionManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.logic.LineModel;
+import com.enn3developer.becom.logic.Sweep;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CallGraph;
@@ -54,6 +55,9 @@ public final class NetworkService {
     private long tick;
     private long version;
     private long nextClearanceTick;
+    // Re-checks walk lines through the world, so each tick gets a slice: half of what DESIGN.md 6.5 gives surveys.
+    private static final long RECHECK_BUDGET_NANOS = 1_000_000;
+    private final Sweep<Recheck> recheck = new Sweep<>();
     private CallGraph graph;
     private long graphVersion = -1;
 
@@ -286,44 +290,62 @@ public final class NetworkService {
 
     /** Re-checks every pylon link in loaded chunks, and drops nodes whose machine is gone. */
     public void recheckAll() {
-        for (Map.Entry<Integer, NetworkModel> entry : new ArrayList<>(models.entrySet())) {
-            WorldServer world = DimensionManager.getWorld(entry.getKey());
-            if (world == null) continue;
-            NetworkModel model = entry.getValue();
-            dropStaleNodes(world, model);
-            for (NetworkModel.LinkKey key : model.links()) {
-                NetNode a = model.node(key.a());
-                NetNode b = model.node(key.b());
-                if (a == null || b == null
-                    || !a.kind()
-                        .pylonHead()
-                    || !b.kind()
-                        .pylonHead())
-                    continue;
-                Clearance.Result result = clearance(world, key.a(), key.b());
-                if (result == Clearance.Result.UNKNOWN) continue;
-                model.setBlocked(key.a(), key.b(), result == Clearance.Result.BLOCKED);
-            }
-        }
+        queueRecheck();
+        recheck.run(this::recheck, System::nanoTime, Long.MAX_VALUE);
     }
 
-    private void dropStaleNodes(World world, NetworkModel model) {
-        List<Long> stale = new ArrayList<>();
-        for (NetNode node : model.nodes()) {
-            if (!world.getChunkProvider()
-                .chunkExists(node.x() >> 4, node.z() >> 4)) continue;
-            TileEntity tile = world.getTileEntity(node.x(), node.y(), node.z());
-            if (tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof NodeHost host
-                && host.nodeKind() == node.kind()) continue;
-            stale.add(node.pos());
+    /** Queues every node and pylon link of every loaded dimension for the next round of re-checks. */
+    private void queueRecheck() {
+        List<Recheck> round = new ArrayList<>();
+        for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
+            int dimension = entry.getKey();
+            for (NetNode node : entry.getValue()
+                .nodes()) round.add(new Recheck(dimension, node.pos(), Long.MIN_VALUE));
+            for (NetworkModel.LinkKey key : entry.getValue()
+                .links()) round.add(new Recheck(dimension, key.a(), key.b()));
         }
-        for (long pos : stale) {
-            BeCom.LOG.info(
-                "Dropping network node at {} in dimension {}: its machine is gone",
-                BlockPos.toString(pos),
-                world.provider.dimensionId);
-            removeNode(world, pos);
+        recheck.add(round);
+    }
+
+    /** One item of a re-check round: a node to look for, or a link to walk ({@code b} set). */
+    private record Recheck(int dimension, long a, long b) {}
+
+    private void recheck(Recheck item) {
+        WorldServer world = DimensionManager.getWorld(item.dimension());
+        NetworkModel model = models.get(item.dimension());
+        if (world == null || model == null) return;
+        if (item.b() == Long.MIN_VALUE) {
+            NetNode node = model.node(item.a());
+            if (node != null && isStale(world, node)) {
+                BeCom.LOG.info(
+                    "Dropping network node at {} in dimension {}: its machine is gone",
+                    BlockPos.toString(node.pos()),
+                    world.provider.dimensionId);
+                removeNode(world, node.pos());
+            }
+            return;
         }
+        NetNode a = model.node(item.a());
+        NetNode b = model.node(item.b());
+        if (a == null || b == null
+            || !model.linked(item.a(), item.b())
+            || !a.kind()
+                .pylonHead()
+            || !b.kind()
+                .pylonHead())
+            return;
+        Clearance.Result result = clearance(world, item.a(), item.b());
+        if (result == Clearance.Result.UNKNOWN) return;
+        model.setBlocked(item.a(), item.b(), result == Clearance.Result.BLOCKED);
+    }
+
+    /** A node whose machine is gone from a loaded chunk; unloaded ones are left alone. */
+    private static boolean isStale(World world, NetNode node) {
+        if (!world.getChunkProvider()
+            .chunkExists(node.x() >> 4, node.z() >> 4)) return false;
+        TileEntity tile = world.getTileEntity(node.x(), node.y(), node.z());
+        return !(tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof NodeHost host
+            && host.nodeKind() == node.kind());
     }
 
     // endregion
@@ -338,8 +360,10 @@ public final class NetworkService {
         }
         if (tick >= nextClearanceTick) {
             nextClearanceTick = tick + (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
-            recheckAll();
+            // A round still running from last time finishes first rather than piling up.
+            if (recheck.isEmpty()) queueRecheck();
         }
+        recheck.run(this::recheck, System::nanoTime, RECHECK_BUDGET_NANOS);
     }
 
     private void expireOffline() {
