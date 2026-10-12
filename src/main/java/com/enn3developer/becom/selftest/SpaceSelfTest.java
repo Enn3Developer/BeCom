@@ -341,7 +341,9 @@ final class SpaceSelfTest {
             pad.mMachine,
             "");
         becom.space.set(0, 4);
-        padBus.setInventorySlotContents(0, new ItemStack(BeComItems.satelliteRocket, 1));
+        // Renamed in an anvil, as players do: its tag mustn't keep it on the pad.
+        padBus
+            .setInventorySlotContents(0, new ItemStack(BeComItems.satelliteRocket, 1).setStackDisplayName("Ad Astra"));
         int filled = padHatch.fill(new FluidStack(FluidRegistry.getFluid("fuel"), 2 * fuel()), true);
         t.check(
             "the pad's input hatch takes Galacticraft's rocket fuel",
@@ -361,7 +363,8 @@ final class SpaceSelfTest {
     private int checkLaunch() {
         FluidStack left = padHatch.getFluid();
         t.check(
-            "a launch takes the Satellite Rocket and 1,000 L of fuel, and puts a satellite over the pad's dimension",
+            "a launch takes the Satellite Rocket, a renamed one too, and 1,000 L of fuel, and puts a satellite over the "
+                + "pad's dimension",
             becom.space.count(0) == 5 && pad.rocketsWaiting() == 0 && left != null && left.amount == fuel(),
             "satellites " + becom.space
                 .count(0) + ", rockets " + pad.rocketsWaiting() + ", fuel " + (left == null ? 0 : left.amount));
