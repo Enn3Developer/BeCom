@@ -4,6 +4,7 @@ import static gregtech.api.recipe.RecipeMaps.assemblerRecipes;
 import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 
 import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 
 import com.enn3developer.becom.block.BeComBlocks;
@@ -234,6 +235,15 @@ public final class BeComRecipes {
             new Object[] { "PRP", "CHC", "TCT", 'P', ItemList.Electric_Pump_HV, 'R', ItemList.Robot_Arm_HV, 'C',
                 OrePrefixes.circuit.get(Materials.HV), 'H', ItemList.Hull_HV, 'T',
                 OrePrefixes.cableGt01.get(Materials.Gold) });
+
+        // Portal Relay (DESIGN.md 3.1): an MV hull with an emitter and a sensor, its circuits, copper cables, and two
+        // Eyes of Ender to find the portal.
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.portalRelay.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "YEY", "CHC", "TST", 'Y', new ItemStack(Items.ender_eye), 'E', ItemList.Emitter_MV, 'C',
+                OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'T',
+                OrePrefixes.cableGt01.get(Materials.Copper), 'S', ItemList.Sensor_MV });
 
         // Satellite Dish (DESIGN.md 3.1): an HV hull with two emitters and two sensors, its circuits and gold cables.
         GTModHandler.addCraftingRecipe(

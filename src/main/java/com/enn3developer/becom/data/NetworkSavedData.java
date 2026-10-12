@@ -14,6 +14,7 @@ import net.minecraftforge.common.util.Constants;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.NodeRef;
 
 /**
  * One dimension's network (DESIGN.md 14): every node with its position, owner and links, and which links a clearance
@@ -116,6 +117,9 @@ public final class NetworkSavedData extends WorldSavedData {
             NetNode node = new NetNode(tag.getLong("pos"), kind, owner);
             node.setHeight(tag.getInteger("height"));
             node.setFormed(tag.getBoolean("formed"));
+            if (tag.hasKey("partnerPos")) {
+                node.setPartner(new NodeRef(tag.getInteger("partnerDim"), tag.getLong("partnerPos")));
+            }
             model.add(node);
         }
         // Links go in once every node exists, so a link to a node saved later in the list isn't lost.
@@ -192,6 +196,18 @@ public final class NetworkSavedData extends WorldSavedData {
             }
             tag.setInteger("height", node.height());
             tag.setBoolean("formed", node.formed());
+            // A Portal Relay's partner: only relays have one, and a BeCom from before relays refuses their kind, so
+            // the keys need no new format.
+            if (node.partner() != null) {
+                tag.setInteger(
+                    "partnerDim",
+                    node.partner()
+                        .dimension());
+                tag.setLong(
+                    "partnerPos",
+                    node.partner()
+                        .pos());
+            }
             NBTTagList links = new NBTTagList();
             for (long other : node.links()) {
                 NBTTagCompound link = new NBTTagCompound();

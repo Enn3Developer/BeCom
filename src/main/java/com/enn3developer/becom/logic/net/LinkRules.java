@@ -65,33 +65,39 @@ public final class LinkRules {
         // An ME Bridge bridges any other BeCom node (DESIGN.md 8.3); two of them would join ME networks, not lines.
         if (a.kind() == NodeKind.ME_BRIDGE || b.kind() == NodeKind.ME_BRIDGE) {
             if (a.kind() == b.kind()) return Result.INCOMPATIBLE;
-        } else if (a.kind() == NodeKind.SATELLITE_DISH || b.kind() == NodeKind.SATELLITE_DISH) {
-            // A dish bridges onto an antenna, a Pylon Head or a Line Terminal (DESIGN.md 9.2); dishes reach each other
-            // through the satellites.
-            NetNode other = a.kind() == NodeKind.SATELLITE_DISH ? b : a;
-            if (!other.kind()
-                .antenna()
-                && !other.kind()
-                    .pylonHead()
-                && other.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
         } else if (a.kind()
-            .antenna()
+            .gateway()
             || b.kind()
-                .antenna()) {
-                    // An antenna bridges a Pylon Head or a Line Terminal (DESIGN.md 7); antennas reach each other by
-                    // radio.
-                    NetNode wired = a.kind()
-                        .antenna() ? b : a;
-                    if (!wired.kind()
-                        .pylonHead() && wired.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
+                .gateway()) {
+                    // A dish or a relay bridges onto an antenna, a Pylon Head or a Line Terminal (DESIGN.md 9.2, X36):
+                    // dishes reach each other through the satellites, relays their partners through a portal.
+                    NetNode other = a.kind()
+                        .gateway() ? b : a;
+                    if (!other.kind()
+                        .antenna()
+                        && !other.kind()
+                            .pylonHead()
+                        && other.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
                 } else
-            if (!a.kind()
-                .pylonHead()
-                && !b.kind()
-                    .pylonHead()) {
-                        // A line runs over pylon heads; a terminal only ends one (DESIGN.md 5.2).
-                        return Result.INCOMPATIBLE;
-                    }
+            if (a.kind()
+                .antenna()
+                || b.kind()
+                    .antenna()) {
+                        // An antenna bridges a Pylon Head or a Line Terminal (DESIGN.md 7); antennas reach each other
+                        // by
+                        // radio.
+                        NetNode wired = a.kind()
+                            .antenna() ? b : a;
+                        if (!wired.kind()
+                            .pylonHead() && wired.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
+                    } else
+                if (!a.kind()
+                    .pylonHead()
+                    && !b.kind()
+                        .pylonHead()) {
+                            // A line runs over pylon heads; a terminal only ends one (DESIGN.md 5.2).
+                            return Result.INCOMPATIBLE;
+                        }
         if (!a.formed() || !b.formed()) return Result.NOT_FORMED;
         if (!a.hasFreeSlot() || !b.hasFreeSlot()) return Result.NO_FREE_SLOT;
         if (a.distanceTo(b) > maxSpan(a, b)) return Result.TOO_FAR;

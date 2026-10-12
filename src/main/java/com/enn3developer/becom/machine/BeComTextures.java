@@ -34,6 +34,8 @@ public final class BeComTextures {
     public static final IIconContainer LAUNCH_PAD_GLOW = icon("OVERLAY_LAUNCH_PAD_GLOW");
     public static final IIconContainer SATELLITE_DISH = icon("OVERLAY_SATELLITE_DISH");
     public static final IIconContainer SATELLITE_DISH_GLOW = icon("OVERLAY_SATELLITE_DISH_GLOW");
+    public static final IIconContainer PORTAL_RELAY = icon("OVERLAY_PORTAL_RELAY");
+    public static final IIconContainer PORTAL_RELAY_GLOW = icon("OVERLAY_PORTAL_RELAY_GLOW");
 
     private BeComTextures() {}
 

@@ -32,6 +32,7 @@ import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.space.Gateways;
+import com.enn3developer.becom.logic.space.Portals;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
@@ -63,6 +64,8 @@ public final class NetworkService {
     private final Map<NodeRef, Double> dishes = new HashMap<>();
     // Each Rocket Radio Receiver standing on a pad, by its rocket's spot; working while heard (DESIGN.md 9.3).
     private final Set<NodeRef> receivers = new HashSet<>();
+    // Each working Portal Relay, and the kinds of portal in its reach (DESIGN.md 9.4).
+    private final Map<NodeRef, Set<Portals.Kind>> relays = new HashMap<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
     private final Map<Integer, Long> wiresSent = new HashMap<>();
     private long tick;
@@ -127,6 +130,8 @@ public final class NetworkService {
         dishes.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
         receivers.removeIf(ref -> ref.dimension() == dimension);
+        relays.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
         wiresSent.remove(dimension);
         version++;
     }
@@ -166,16 +171,19 @@ public final class NetworkService {
         return node;
     }
 
-    /** The machine was broken: its node and every link to it go (DESIGN.md 14). */
+    /** The machine was broken: its node and every link to it go (DESIGN.md 14), a relay's partner included. */
     public void removeNode(World world, long pos) {
         NetworkModel model = model(world);
-        model.remove(pos);
         NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
+        NetNode node = model.node(pos);
+        if (node != null && node.partner() != null) forgetPartner(node.partner(), ref);
+        model.remove(pos);
         lastHeard.remove(ref);
         attachments.remove(ref);
         phonesSeen.remove(ref);
         meBridges.remove(ref);
         dishes.remove(ref);
+        relays.remove(ref);
         version++;
     }
 
@@ -249,6 +257,64 @@ public final class NetworkService {
         NodeRef ref = new NodeRef(dimension, pos);
         if (receivers.remove(ref)) version++;
         if (lastHeard.remove(ref) != null) version++;
+    }
+
+    /** A Portal Relay is powered this tick, with these kinds of portal in its reach (DESIGN.md 9.4). */
+    public void relay(World world, long pos, Set<Portals.Kind> portals) {
+        heartbeat(world, pos);
+        Set<Portals.Kind> before = relays.put(new NodeRef(world.provider.dimensionId, pos), portals);
+        if (!portals.equals(before)) version++;
+    }
+
+    /** A Portal Relay lost its power, or every portal in its reach. */
+    public void relayOff(World world, long pos) {
+        if (relays.remove(new NodeRef(world.provider.dimensionId, pos)) != null) version++;
+    }
+
+    /** The relay at {@code ref}'s partner, when both are relays of loaded dimensions paired with each other. */
+    public NodeRef partnerOf(NodeRef ref) {
+        NetNode node = relayAt(ref);
+        if (node == null || node.partner() == null) return null;
+        NetNode other = relayAt(node.partner());
+        return other != null && ref.equals(other.partner()) ? node.partner() : null;
+    }
+
+    private NetNode relayAt(NodeRef ref) {
+        NetworkModel model = models.get(ref.dimension());
+        NetNode node = model == null ? null : model.node(ref.pos());
+        return node != null && node.kind() == NodeKind.PORTAL_RELAY ? node : null;
+    }
+
+    /** Pairs two Portal Relays through their portal (DESIGN.md 9.4); the link service checks who may. */
+    public void pair(NodeRef a, NodeRef b) {
+        NetNode nodeA = relayAt(a);
+        NetNode nodeB = relayAt(b);
+        if (nodeA == null || nodeB == null) return;
+        if (nodeA.partner() != null && !nodeA.partner()
+            .equals(b)) forgetPartner(nodeA.partner(), a);
+        if (nodeB.partner() != null && !nodeB.partner()
+            .equals(a)) forgetPartner(nodeB.partner(), b);
+        nodeA.setPartner(b);
+        nodeB.setPartner(a);
+        models.get(a.dimension())
+            .changed();
+        models.get(b.dimension())
+            .changed();
+    }
+
+    /** Unpairs two Portal Relays paired with each other. */
+    public void unpair(NodeRef a, NodeRef b) {
+        forgetPartner(a, b);
+        forgetPartner(b, a);
+    }
+
+    /** The relay at {@code ref} forgets {@code partner}, if it's loaded and paired with it. */
+    private void forgetPartner(NodeRef ref, NodeRef partner) {
+        NetNode node = relayAt(ref);
+        if (node == null || !partner.equals(node.partner())) return;
+        node.setPartner(null);
+        models.get(ref.dimension())
+            .changed();
     }
 
     public boolean working(int dimension, long pos) {
@@ -348,7 +414,7 @@ public final class NetworkService {
                 Double.POSITIVE_INFINITY,
                 CallGraph.HopKind.ME_BRIDGE);
         }
-        gateways.addTo(builder, this::satellitesOver, workingDishes(), workingReceivers(), List.of());
+        gateways.addTo(builder, this::satellitesOver, workingDishes(), workingReceivers(), workingRelayPairs());
         Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
         for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);
         for (Map.Entry<NodeRef, Integer> entry : attachments.entrySet()) {
@@ -380,6 +446,41 @@ public final class NetworkService {
             }
         }
         return working;
+    }
+
+    /**
+     * Every pair of working Portal Relays, once each: both in reach of the portal between their dimensions (DESIGN.md
+     * 9.4), one end in the Overworld (9.5).
+     */
+    private List<Gateways.RelayPair> workingRelayPairs() {
+        List<Gateways.RelayPair> pairs = new ArrayList<>();
+        for (Map.Entry<NodeRef, Set<Portals.Kind>> entry : relays.entrySet()) {
+            NodeRef a = entry.getKey();
+            NodeRef b = partnerOf(a);
+            // Each pair once, from the end that sorts first.
+            if (b == null || compare(a, b) >= 0) continue;
+            if (!working(a.dimension(), a.pos()) || !working(b.dimension(), b.pos())) continue;
+            Portals.Kind portal = Portals
+                .pairKind(a.dimension(), providerOf(a.dimension()), b.dimension(), providerOf(b.dimension()));
+            Set<Portals.Kind> atB = relays.get(b);
+            if (portal == null || !entry.getValue()
+                .contains(portal) || atB == null || !atB.contains(portal)) continue;
+            pairs.add(new Gateways.RelayPair(a.dimension(), a.pos(), b.dimension(), b.pos()));
+        }
+        return pairs;
+    }
+
+    private static int compare(NodeRef a, NodeRef b) {
+        int byDimension = Integer.compare(a.dimension(), b.dimension());
+        return byDimension != 0 ? byDimension : Long.compare(a.pos(), b.pos());
+    }
+
+    /** The class of a loaded dimension's world provider, which tells the Twilight Forest and Personal Space apart. */
+    public static String providerOf(int dimension) {
+        WorldServer world = DimensionManager.getWorld(dimension);
+        return world == null ? null
+            : world.provider.getClass()
+                .getName();
     }
 
     private List<Gateways.Receiver> workingReceivers() {

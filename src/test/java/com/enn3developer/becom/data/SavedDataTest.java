@@ -22,6 +22,7 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
@@ -65,6 +66,34 @@ class SavedDataTest {
             read.model()
                 .isBlocked(a, b));
         assertFalse(read.isDirty(), "freshly read data has nothing to save");
+    }
+
+    @Test
+    void aPortalRelaysPartnerRoundTrips() {
+        // DESIGN.md 9.4: each end of a pair keeps its partner, in the other dimension, with its own network.
+        long relay = BlockPos.pack(10, 64, -20);
+        long other = BlockPos.pack(1, 40, -3);
+        NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
+        NetNode node = new NetNode(relay, NodeKind.PORTAL_RELAY, null);
+        node.setFormed(true);
+        node.setPartner(new NodeRef(-1, other));
+        data.model()
+            .add(node);
+        data.model()
+            .add(new NetNode(other, NodeKind.PORTAL_RELAY, null));
+        NBTTagCompound nbt = new NBTTagCompound();
+        data.writeToNBT(nbt);
+        NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
+        read.readFromNBT(nbt);
+        assertEquals(
+            new NodeRef(-1, other),
+            read.model()
+                .node(relay)
+                .partner());
+        assertNull(
+            read.model()
+                .node(other)
+                .partner());
     }
 
     @Test

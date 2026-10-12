@@ -16,6 +16,7 @@ public final class NetNode {
     private UUID owner;
     private int height;
     private boolean formed;
+    private NodeRef partner;
     private final Set<Long> links = new LinkedHashSet<>();
     private final Set<Long> linksView = Collections.unmodifiableSet(links);
 
@@ -70,6 +71,16 @@ public final class NetNode {
 
     public void setFormed(boolean formed) {
         this.formed = formed;
+    }
+
+    /** A Portal Relay's partner on the far side of its portal (DESIGN.md 9.4), or null. */
+    public NodeRef partner() {
+        return partner;
+    }
+
+    /** Sets or clears the partner; the caller marks the model changed. */
+    public void setPartner(NodeRef partner) {
+        this.partner = partner;
     }
 
     public Set<Long> links() {

@@ -30,6 +30,7 @@ public final class BeComMachines {
     public static final int VIDEOPHONE_ID = 25009;
     public static final int LAUNCH_PAD_ID = 25010;
     public static final int SATELLITE_DISH_ID = 25011;
+    public static final int PORTAL_RELAY_ID = 25012;
 
     public static MTEPylonHead pylonHead;
     public static MTEPylonHead repeaterHead;
@@ -43,6 +44,7 @@ public final class BeComMachines {
     public static MTEVideophone videophone;
     public static MTELaunchPad launchPad;
     public static MTESatelliteDish satelliteDish;
+    public static MTEPortalRelay portalRelay;
 
     private BeComMachines() {}
 
@@ -61,6 +63,7 @@ public final class BeComMachines {
         ids.put(VIDEOPHONE_ID, "becom.videophone");
         ids.put(LAUNCH_PAD_ID, "becom.launch_pad");
         ids.put(SATELLITE_DISH_ID, "becom.satellite_dish");
+        ids.put(PORTAL_RELAY_ID, "becom.portal_relay");
         return ids;
     }
 
@@ -112,5 +115,6 @@ public final class BeComMachines {
         videophone = new MTEVideophone(VIDEOPHONE_ID, "becom.videophone", "Videophone");
         launchPad = new MTELaunchPad(LAUNCH_PAD_ID, "becom.launch_pad", "Satellite Launch Pad");
         satelliteDish = new MTESatelliteDish(SATELLITE_DISH_ID, "becom.satellite_dish", "Satellite Dish");
+        portalRelay = new MTEPortalRelay(PORTAL_RELAY_ID, "becom.portal_relay", "Portal Relay");
     }
 }

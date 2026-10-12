@@ -32,7 +32,12 @@ public enum NodeKind {
      * The Satellite Dish (DESIGN.md 9.2): its one wrench link is a bridge onto an antenna, a Pylon Head or a Line
      * Terminal within the bridge distance, and it joins that network to the satellites over its dimension.
      */
-    SATELLITE_DISH(1, true, false, 0);
+    SATELLITE_DISH(1, true, false, 0),
+    /**
+     * The Portal Relay (DESIGN.md 9.4): its one wrench link is a bridge onto its own network, as a dish's is (X36), and
+     * its partner, the relay on the far side of a portal, is a link of its own between two dimensions.
+     */
+    PORTAL_RELAY(1, true, false, 0);
 
     private final int linkSlots;
     private final boolean powered;
@@ -69,9 +74,14 @@ public enum NodeKind {
         return antennaTier > 0;
     }
 
-    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna, an ME Bridge or a dish. */
+    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna, an ME Bridge, a dish or a relay. */
     public boolean bridge() {
-        return antenna() || this == ME_BRIDGE || this == SATELLITE_DISH;
+        return antenna() || this == ME_BRIDGE || gateway();
+    }
+
+    /** Joins its network to others far away, and links only onto an antenna, a Pylon Head or a Line Terminal. */
+    public boolean gateway() {
+        return this == SATELLITE_DISH || this == PORTAL_RELAY;
     }
 
     /** Needs its multiblock formed before it works or links. */

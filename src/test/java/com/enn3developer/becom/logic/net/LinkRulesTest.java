@@ -160,6 +160,19 @@ class LinkRulesTest {
     }
 
     @Test
+    void aRelayJoinsItsNetworkTheWayADishDoes() {
+        // X36: a relay's one wrench link bridges an antenna, a Pylon Head or a Line Terminal within 16 blocks; its
+        // partner through the portal is no wrench link of the same dimension.
+        NetNode relay = node(0, 0, NodeKind.PORTAL_RELAY, 0);
+        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(16, 0, NodeKind.TERMINAL, 0)));
+        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 9, NodeKind.ANTENNA_T2, 8), relay));
+        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(-9, 0, NodeKind.ROUTER, 16)));
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(3, 3, NodeKind.PORTAL_RELAY, 0)));
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(-3, 3, NodeKind.SATELLITE_DISH, 0)));
+        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, relay, node(0, -17, NodeKind.PYLON, 16)));
+    }
+
+    @Test
     void aDishHasOneLinkAndNeedsItsStructure() {
         NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
         NetNode antenna = node(8, 0, NodeKind.ANTENNA_T1, 8);

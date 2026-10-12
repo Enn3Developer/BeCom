@@ -562,3 +562,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   through the Overworld's satellites, which 9.5 rules out. The planets 9.5 speaks of are Galacticraft's worlds.
 - **To match the design:** drop the world provider check in `RocketReceivers.counts`, and accept a link from any
   dimension a rocket can stand in.
+
+### X36: A Portal Relay joins its own network by a wrench link
+
+- **Where:** 0.4, DESIGN.md 9.4, 12.2
+- **Design says:** two relays on opposite sides of a portal pair the way pylons link, and a linked pair is a fixed High
+  hop between the two dimensions' networks. It doesn't say how a relay joins the network of its own dimension.
+- **Built:** like a Satellite Dish, a relay has one wrench link, a bridge onto an antenna, a Pylon Head or a Line
+  Terminal within 16 blocks, which joins it to that network. Its partner through the portal is apart from that link. A
+  pair carries calls while both relays are powered and each has the portal between their dimensions in reach: a
+  Nether portal for the Nether, an End portal for the End, and the Twilight Forest's or Personal Space's own portal
+  for theirs.
+- **Why:** dishes and ME Bridges join networks the same way, and a relay standing by a portal is seldom where a line
+  ends.
+- **To match the design:** nothing to undo if the owner agrees; otherwise, say how a relay joins its network.
