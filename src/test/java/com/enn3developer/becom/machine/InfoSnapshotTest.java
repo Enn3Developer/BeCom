@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -55,6 +57,27 @@ class InfoSnapshotTest {
         InfoSnapshot.refreshWanted();
         assertEquals(List.of("becom.test.before"), asked(failing));
         assertEquals(List.of("becom.test.fine"), asked(fine));
+        InfoSnapshot.refreshWanted();
+    }
+
+    @Test
+    void aRequestMadeWhileATickWorksWaitsForTheNext() {
+        AtomicInteger made = new AtomicInteger();
+        AtomicBoolean flooding = new AtomicBoolean(true);
+        AtomicReference<InfoSnapshot> self = new AtomicReference<>();
+        self.set(new InfoSnapshot(() -> {
+            // WAILA asking again on the network thread meanwhile, as a flood of requests would.
+            if (made.incrementAndGet() < 1000 && flooding.get()) self.get()
+                .write(new NBTTagCompound());
+            return new InfoLines();
+        }));
+        self.get()
+            .write(new NBTTagCompound());
+        InfoSnapshot.refreshWanted();
+        assertEquals(1, made.get(), "a tick works out what was asked before it");
+        InfoSnapshot.refreshWanted();
+        assertEquals(2, made.get());
+        flooding.set(false);
         InfoSnapshot.refreshWanted();
     }
 }
