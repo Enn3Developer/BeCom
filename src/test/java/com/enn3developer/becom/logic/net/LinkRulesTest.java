@@ -173,6 +173,14 @@ class LinkRulesTest {
     }
 
     @Test
+    void anMeBridgeDoesntLinkOntoADishOrARelay() {
+        // DESIGN.md 9.2 and X36 name what a dish and a relay link to; an ME Bridge isn't among them.
+        NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, node(5, 0, NodeKind.SATELLITE_DISH, 0)));
+        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, node(0, 5, NodeKind.PORTAL_RELAY, 0), bridge));
+    }
+
+    @Test
     void aDishHasOneLinkAndNeedsItsStructure() {
         NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
         NetNode antenna = node(8, 0, NodeKind.ANTENNA_T1, 8);
