@@ -356,8 +356,10 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
-            NetworkModel model = becom.network.model(tile.getWorld());
-            NetNode node = model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
+            // Only a loaded dimension's model: asking by world would load it again for one unloaded since WAILA asked.
+            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
+            NetNode node = model == null ? null
+                : model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             if (node != null) {
                 info.add(
                     "becom.info.links",

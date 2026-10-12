@@ -18,6 +18,7 @@ import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
+import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.server.BeComServer;
@@ -262,8 +263,10 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         else info.add("becom.info.no_phone");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
-            NetNode node = becom.network.model(tile.getWorld())
-                .node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
+            // Only a loaded dimension's model: asking by world would load it again for one unloaded since WAILA asked.
+            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
+            NetNode node = model == null ? null
+                : model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             if (node != null) {
                 info.add(
                     "becom.info.links",

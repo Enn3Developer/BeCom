@@ -56,4 +56,12 @@ public final class InfoSnapshot {
             }
         }
     }
+
+    /**
+     * Drops every request still queued: their server is stopping, or a new one is starting. Otherwise they'd keep the
+     * old worlds' machines, and through them the worlds, until the next server's first tick ran them against it.
+     */
+    public static void forgetWanted() {
+        for (InfoSnapshot next = WANTED.poll(); next != null; next = WANTED.poll()) next.queued.set(false);
+    }
 }

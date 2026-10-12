@@ -80,4 +80,20 @@ class InfoSnapshotTest {
         flooding.set(false);
         InfoSnapshot.refreshWanted();
     }
+
+    @Test
+    void requestsLeftWhenTheServerStopsAreForgotten() {
+        AtomicInteger made = new AtomicInteger();
+        InfoSnapshot snapshot = new InfoSnapshot(() -> {
+            made.incrementAndGet();
+            return new InfoLines();
+        });
+        snapshot.write(new NBTTagCompound());
+        InfoSnapshot.forgetWanted();
+        InfoSnapshot.refreshWanted();
+        assertEquals(0, made.get(), "the stopped server's request never runs");
+        snapshot.write(new NBTTagCompound());
+        InfoSnapshot.refreshWanted();
+        assertEquals(1, made.get(), "and the machine can be asked about again");
+    }
 }
