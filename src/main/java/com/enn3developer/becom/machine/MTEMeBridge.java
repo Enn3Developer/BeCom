@@ -287,7 +287,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             StatCollector.translateToLocalFormatted("becom.machine.power", t.meBridgePower(), "EV") };
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     @Override
     public String[] getInfoData() {

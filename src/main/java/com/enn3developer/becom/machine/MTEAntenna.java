@@ -436,7 +436,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         return tt;
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     @Override
     public String[] getInfoData() {

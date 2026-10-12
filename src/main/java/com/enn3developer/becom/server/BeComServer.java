@@ -19,7 +19,6 @@ import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Terrain;
-import com.enn3developer.becom.machine.InfoSnapshot;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 
@@ -134,8 +133,6 @@ public final class BeComServer {
 
     /** Makes BeCom's services for a server about to start, before its worlds load, on its server thread. */
     public static synchronized BeComServer create(MinecraftServer server) {
-        // A WAILA request the last server took after it stopped would otherwise run against this one.
-        InfoSnapshot.forgetWanted();
         instance = new BeComServer(server, BeComConfig.get());
         return instance;
     }
@@ -164,7 +161,6 @@ public final class BeComServer {
         BeComServer becom = mine();
         if (becom == null) return;
         LATER.clear();
-        InfoSnapshot.forgetWanted();
         stopping = becom;
         becom.calls.stop();
         becom.video.stop();

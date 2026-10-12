@@ -314,7 +314,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.relayPower(), "MV") };
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     @Override
     public String[] getInfoData() {

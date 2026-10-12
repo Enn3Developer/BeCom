@@ -256,7 +256,7 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.transceiverPower(), "MV") };
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     @Override
     public String[] getInfoData() {

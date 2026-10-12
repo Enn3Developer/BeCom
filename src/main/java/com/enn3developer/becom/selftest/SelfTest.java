@@ -879,31 +879,20 @@ public final class SelfTest {
             .linked(pos(autoA), pos(autoB));
     }
 
-    /**
-     * A call through the call service, as players make one but with fake players: picking up, dialling through every
-     * check the service makes (voice, do-not-disturb, the block list, a busy handset, the path), answering, the levels
-     * the Telephone's own cap gives, the routes from the very first frame, hanging up and the history it leaves.
-     */
     private List<String> firstWailaLook = List.of();
 
-    /** WAILA asks for a machine's lines on its network thread (DESIGN.md 16.4); the server tick works them out. */
+    /** WAILA asks for a machine's lines on the server thread (DESIGN.md 16.4), so they come with the first look. */
     private int askWaila() {
         firstWailaLook = wailaLines(repeaterLine.start);
-        wailaLines(repeaterLine.phoneStart);
         return 2;
     }
 
     private int checkWaila() {
         check(
-            "WAILA's first look at a Line Terminal gets no lines worked out off the server thread",
-            firstWailaLook.isEmpty(),
-            firstWailaLook.toString());
-        List<String> terminal = wailaLines(repeaterLine.start);
-        check(
-            "a server tick later, WAILA gets the Line Terminal's lines",
-            terminal.contains(StatCollector.translateToLocal("becom.info.online")) && terminal.contains(
+            "WAILA's first look at a Line Terminal gets its lines",
+            firstWailaLook.contains(StatCollector.translateToLocal("becom.info.online")) && firstWailaLook.contains(
                 StatCollector.translateToLocalFormatted("becom.info.phone", repeaterLine.phoneStart.number())),
-            terminal.toString());
+            firstWailaLook.toString());
         List<String> phone = wailaLines(repeaterLine.phoneStart);
         check(
             "and the Telephone's number",
@@ -911,10 +900,10 @@ public final class SelfTest {
                 StatCollector.translateToLocalFormatted("becom.mobile.number", repeaterLine.phoneStart.number())),
             phone.toString());
         int dimension = world.provider.dimensionId;
-        List<String> far = wailaLines(repeaterLine.start, 9, dimension);
+        List<String> far = wailaLines(repeaterLine.start, 14, dimension);
         List<String> elsewhere = wailaLines(repeaterLine.start, 2, dimension + 1);
         check(
-            "WAILA gives none of BeCom's lines to a player 9 blocks off, or one in another dimension",
+            "WAILA gives none of BeCom's lines to a player 14 blocks off, or one in another dimension",
             far.isEmpty() && elsewhere.isEmpty(),
             far + " " + elsewhere);
         check(
@@ -965,6 +954,11 @@ public final class SelfTest {
         return tip;
     }
 
+    /**
+     * A call through the call service, as players make one but with fake players: picking up, dialling through every
+     * check the service makes (voice, do-not-disturb, the block list, a busy handset, the path), answering, the levels
+     * the Telephone's own cap gives, the routes from the very first frame, hanging up and the history it leaves.
+     */
     private int checkCall() {
         CallService calls = becom.calls;
         CallBook book = calls.book();

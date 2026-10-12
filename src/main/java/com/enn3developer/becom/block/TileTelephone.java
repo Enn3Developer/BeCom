@@ -17,7 +17,7 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.Cord;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.machine.InfoLines;
-import com.enn3developer.becom.machine.InfoSnapshot;
+import com.enn3developer.becom.machine.WailaInfo;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.PhoneHandle;
 
@@ -184,10 +184,10 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         return tooNew != null;
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
-    /** Its lines for WAILA, worked out on the server thread (see {@link InfoSnapshot}). */
-    public InfoSnapshot waila() {
+    /** Its lines for WAILA. */
+    public WailaInfo waila() {
         return waila;
     }
 

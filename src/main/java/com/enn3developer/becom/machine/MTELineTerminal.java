@@ -227,7 +227,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
             StatCollector.translateToLocalFormatted("becom.machine.power", t.terminalPower(), "LV") };
     }
 
-    private final InfoSnapshot waila = new InfoSnapshot(this::info);
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     @Override
     public String[] getInfoData() {
@@ -263,7 +263,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         else info.add("becom.info.no_phone");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
-            // Only a loaded dimension's model: asking by world would load it again for one unloaded since WAILA asked.
+            // Only a loaded dimension's model: asking by world would load one that isn't.
             NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
             NetNode node = model == null ? null
                 : model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
