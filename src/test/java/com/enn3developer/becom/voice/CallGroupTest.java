@@ -40,12 +40,12 @@ class CallGroupTest {
         assertEquals(
             SourceState.FLAT,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceState());
         assertEquals(
             alice,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceId());
     }
 
@@ -172,11 +172,11 @@ class CallGroupTest {
         for (RoutingFixture.Sent sent : fixture.sent) {
             assertEquals(
                 SourceState.POSITIONAL,
-                sent.packet()
+                sent.delivery()
                     .getSourceState());
             assertEquals(
                 500.5,
-                sent.packet()
+                sent.delivery()
                     .getX(),
                 1e-9);
         }
@@ -201,7 +201,7 @@ class CallGroupTest {
         assertEquals(
             SourceState.FLAT,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceState());
     }
 

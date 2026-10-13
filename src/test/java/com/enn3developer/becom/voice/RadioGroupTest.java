@@ -71,7 +71,7 @@ class RadioGroupTest {
         assertEquals(
             SourceState.FLAT,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceState());
     }
 
@@ -167,11 +167,11 @@ class RadioGroupTest {
         RoutingFixture.Sent around = fixture.sent.get(1);
         assertEquals(
             SourceState.POSITIONAL,
-            around.packet()
+            around.delivery()
                 .getSourceState());
         assertEquals(
             100,
-            around.packet()
+            around.delivery()
                 .getX(),
             1e-9);
         assertTrue(
@@ -211,7 +211,7 @@ class RadioGroupTest {
         assertEquals(2, fixture.sent.size());
         for (RoutingFixture.Sent s : fixture.sent) assertEquals(
             SourceState.FLAT,
-            s.packet()
+            s.delivery()
                 .getSourceState());
     }
 
@@ -231,7 +231,7 @@ class RadioGroupTest {
         assertEquals(
             200.5,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getX(),
             1e-9);
         assertTrue(
@@ -269,7 +269,7 @@ class RadioGroupTest {
         assertEquals(
             SourceState.FLAT,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceState());
     }
 
@@ -293,7 +293,7 @@ class RadioGroupTest {
         assertEquals(
             alice,
             fixture.sent.get(0)
-                .packet()
+                .delivery()
                 .getSourceId());
         // Once Alice has been quiet for over 100 ms, Cat gets through.
         now += 101 * MS;
@@ -301,7 +301,7 @@ class RadioGroupTest {
         assertEquals(
             cat,
             fixture.sent.get(1)
-                .packet()
+                .delivery()
                 .getSourceId());
     }
 
@@ -778,8 +778,7 @@ class RadioGroupTest {
         // Pat stands by Bob's walkie but has no voice session: they hear nothing, so nothing holds them.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 100, 64, 0, 0);
-        UUID pat = fixture.player("pat", 104, 64, 0, 0);
-        fixture.sessions.remove(pat);
+        UUID pat = fixture.playerWithoutVoice("pat", 104, 64, 0, 0);
         shared.publish(
             RadioSnapshot.builder()
                 .transmitter(alice, 1)
