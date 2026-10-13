@@ -1207,7 +1207,9 @@ guide. It's on 1.0's owner checklist, with its fallback built if it fails there.
 - Radio publishes cost far less at scale, from the review: an antenna mesh's reach is worked out over its link matrix
   without building a graph, the players who hear each speaker are found by cell, and a press of push-to-talk works out
   only that radio's links, everyone's being worked out once a second (6.4).
-- Forge refuses to load BeCom beside a GTNH Voice older than v0.10.1, naming the version it needs.
+- Forge refuses to load BeCom beside a GTNH Voice older than v0.10.1, naming the version it needs. Not so, found on
+  `voice-api`: mcmod.info's `useDependencyInformation` made FML take its unversioned lists over @Mod's, so it loaded
+  BeCom beside any GTNH Voice. `voice-api` fixes that, and a dev boot with 0.10.1 now stops at the missing-mods error.
 - A README for players and server operators, a changelog that reads as release notes, and a release workflow that takes
   its notes from the tag's changelog section, or from Unreleased when there's none.
 
@@ -1263,7 +1265,9 @@ test, a self-test check or the code before it was fixed, as each item says.
     "Call". Confirmed in GTNH Voice 0.10.1's bytecode; logged as VOICE.md V6, with the server-side translation in one
     marked class (a3bdf68).
   - Design 7: the GTNH Voice version the README asks for wasn't enforced. Fixed (7306826): GtnhVoiceVersionTest, which
-    failed before because the dependency accepted v0.9.2 and v0.10.0, and a dev boot with v0.10.1.
+    failed before because the dependency accepted v0.9.2 and v0.10.0, and a dev boot with v0.10.1. That fix didn't
+    work: FML read mcmod.info's dependencies instead, and the dev boot ran the version it allowed anyway. Fixed on
+    `voice-api`, with a test that reads mcmod.info as FML does.
   - Design 8: the load test let a survey tick run 1 ms over its 2 ms budget. Tightened to 0.5 ms (5e0b422), on p95
     rather than p99 (e5a7685) once the tighter bound failed one run in four on this VM's stalls.
 - First round, code review (4 minor):
