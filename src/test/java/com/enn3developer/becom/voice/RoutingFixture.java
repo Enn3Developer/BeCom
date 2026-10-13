@@ -7,20 +7,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.enn3developer.gtnhvoice.api.server.IAudioFrame;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 import com.enn3developer.gtnhvoice.core.encryption.aes.AesEncryption;
 import com.enn3developer.gtnhvoice.core.proto.packets.udp.clientbound.SourceAudioPacket;
-import com.enn3developer.gtnhvoice.core.proto.packets.udp.serverbound.PlayerAudioPacket;
 import com.enn3developer.gtnhvoice.server.VoiceServerSession;
 
 /**
  * Hand-built sessions and positions for routing tests, run through GTNH Voice's own {@link RoutingContext} with a
  * capturing packet sender (CLAUDE.md: checking your work).
  * <p>
- * VOICE.md V4: the builder only takes GTNH Voice's internal session and packet types, so this fixture, and only this
- * fixture, builds them.
+ * VOICE.md V4: the builder only takes GTNH Voice's internal session type, and the sender gets its internal packets, so
+ * this fixture, and only this fixture, touches them. The frame is the API's own {@link IAudioFrame}.
  */
 final class RoutingFixture {
 
@@ -59,12 +59,33 @@ final class RoutingFixture {
             .positionSnapshot(positions)
             .sessions(sessions)
             .speakerSession(sessions.get(speaker))
-            .audio(new PlayerAudioPacket(1L, new byte[] { 1, 2, 3 }, activation, (short) 0, false))
+            .audio(frame(activation))
             .group(group)
             .membershipTest((player, g) -> true)
             .groupIdResolver(g -> 0)
             .build();
         group.route(context);
+    }
+
+    /** One inbound frame sent under {@code activation}. GTNH Voice forwards the payload unread, so any bytes do. */
+    private static IAudioFrame frame(UUID activation) {
+        return new IAudioFrame() {
+
+            @Override
+            public long getSequenceNumber() {
+                return 1L;
+            }
+
+            @Override
+            public byte[] getData() {
+                return new byte[] { 1, 2, 3 };
+            }
+
+            @Override
+            public UUID getActivationId() {
+                return activation;
+            }
+        };
     }
 
     List<UUID> recipients() {
