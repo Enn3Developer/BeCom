@@ -673,15 +673,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   touches its own UUIDs, so players keep their progress. It says nothing about a BeCom whose quests changed.
 - **Built:** at server start, once BetterQuesting has loaded the book and reloaded it, BeCom compares each of its quests
   the book holds with the one it ships. Both are written through BetterQuesting's own code, the shipped one after the
-  installed-rewards filter, so a reward left out for a mod that isn't installed is no change. A quest that differs
-  takes the shipped definition: its tasks, rewards, properties and prerequisites. Every player keeps their
-  completions and claimed rewards, even where the tasks or rewards changed, and each task's progress where the task at
-  that position has the same kind and requirements; the rest starts over. The questline's places and sizes are
-  refreshed the same way. BeCom logs how many it refreshed, touches nothing outside its own UUIDs, and with the
-  config's off switch still leaves the book alone. So a server that edits BeCom's quests by hand loses those edits at
-  the next start, as the option's comment says; to keep them, it turns the questline off and manages it by hand. When a
-  pack update's reload takes BeCom's quests out of the book, BeCom adds them back as it ships them, and the progress it
-  restores is matched to tasks by position and kind alone, since the reload took their old definitions with it.
+  installed-rewards filter, so a reward left out for a mod that isn't installed is no change. A quest that differs takes
+  the shipped definition: its tasks, rewards, properties and prerequisites. Every player keeps their completions and
+  claimed rewards, even where the tasks or rewards changed, and each task's progress where the task at that position is
+  defined just as before, its kind, requirements and other settings alike; the rest starts over. BeCom marks everyone
+  whose progress a replaced quest held, so BetterQuesting saves their files again and the next start doesn't read the
+  old progress back. The questline's places and sizes are refreshed the same way. BeCom logs how many it refreshed,
+  touches nothing outside its own UUIDs, and with the config's off switch still leaves the book alone. So a server that
+  edits BeCom's quests by hand loses those edits at the next start, as the option's comment says; to keep them, it turns
+  the questline off and manages it by hand. When a pack update's reload takes BeCom's quests out of the book, BeCom adds
+  them back as it ships them, and the progress it restores is matched to tasks by position and kind alone, since the
+  reload took their old definitions with it.
 - **Why:** BeCom added only the quests a book was missing, so a world that had them kept their old tasks and rewards
   for good after an update, X41's coin choices included.
 - **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds
@@ -694,11 +696,13 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   its player stands (6.1), and routing sends to the players within each device's range (13.3).
 - **Built:** a player whose coordinates aren't all finite has no position for BeCom. From their next refresh, within a
   second, their walkie is on no channel and no Transceiver transmits for them; their Mobile Phone has no service, and
-  the Signal Analyzer and `/becom signal` read nothing. In routing, they hear no walkie, loudspeaker or Videophone, and
-  nobody hears them in person; a call still carries what they say to its other members, as it does anyone's. They
-  can't lock an antenna from anywhere, a silent phone has nowhere to buzz for them, and video shows them standing
-  still. Clients play a walkie or loudspeaker frame from such a position, and every BeCom frame while their own
-  position isn't finite, at a gain of 0.
+  the Signal Analyzer and `/becom signal` read nothing. In routing, they hear no walkie or loudspeaker around them and
+  no Videophone, and nobody hears them in person. Their own walkie still reaches them, flat, until it's off its channel
+  and the speakers on it are worked out again, within two seconds. A call carries them both ways, flat, as it does
+  anyone, for as long as it lasts: on a Mobile Phone, until its lost service drops it. They can't lock an antenna from
+  anywhere, a silent phone has nowhere to buzz for them, and video shows them standing still. Clients play a walkie or
+  loudspeaker frame from such a position at a gain of 0, and every positional BeCom frame while their own position isn't
+  finite; flat frames play as they come.
 - **Why:** NaN passed every range check written as "skip when farther", and Nearby put it in the cell at the world's
   origin, so a player at NaN heard devices they weren't near and lent their walkie's audio to the players by spawn.
   Only a modified client gets such a position past 1.7.10's move checks, so taking it all away costs no honest player

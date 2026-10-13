@@ -1312,6 +1312,31 @@ test, a self-test check or the code before it was fixed, as each item says.
     by IMC, the exception comment, ClientProxy's comment about the packet thread, and comments spotless had wrapped
     mid-sentence.
 
+**Review of `milestone/1.0-fixes`.** A design reviewer and a code reviewer side by side on `voice-api..32362fd`. Each
+finding was confirmed by a self-test check that failed (run 117) before it was fixed, or by the code, as each item says.
+
+- Both reviewers, major: the quest refresh marked no player for saving, and BetterQuesting writes a player's progress
+  file only once they're marked, then reads every file back at the next start. A changed task's old progress came back
+  for everyone who did nothing in the session after the update, offline players included. Fixed (69086a4): everyone
+  whose progress a replaced quest held is marked; the self-test's offline player failed before and passes now.
+- Both reviewers, major: a radio's access to the antennas counted as what it transmits from, and every change to the
+  antennas gave every keyed radio new access, so the publish that runs every tick worked them all out at once: on each
+  survey finishing, each weather step, and each lock toggle, which an owner can make every tick. Fixed (99de7e3): the
+  antennas and the sky reach each radio in its own tick. With a lock toggled every tick, the self-test's keyed radio
+  was worked out 19 times in a second before, once after.
+- Design, minor: the refresh's "claimed" check used BetterQuesting's hasClaimed, true of any quest with no rewards,
+  which the dev server's filtered Portal Relay quest is. Fixed (68c4e08): it reads the claim itself.
+- Code, minor: a throw partway through the refresh left the quests it had replaced unsaved, and its log said they kept
+  their old definitions. Fixed with the first item: the marking happens in a finally, and the log says the rest keep
+  theirs.
+- Both reviewers, minor: X43 said a player at NaN hears no walkie and every BeCom frame plays silent, but their own
+  walkie reaches them flat for up to two seconds and flat frames play. Fixed in X43 and the changelog.
+- Design, noted: BudgetLoadTest's check that every radio is worked out once a second counts its own loop, not
+  RadioService's. Kept, as a guard that the second it times holds all of a second's work, with a comment saying so;
+  RadioService is the self-test's to check, and now is, with the antennas changing.
+- Design, noted: the refresh resets a task whose settings changed, not only its kind or requirements. Kept, and X42
+  says so: none of BeCom's tasks consume items, so starting over costs a player nothing they handed in.
+
 **Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
 BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
 fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
@@ -1327,23 +1352,28 @@ a dedicated server sees "Call".
   questline's places with them. Players keep their completions and claimed rewards, and each task's progress where the
   task didn't change. QuestRefreshTest (5): an unchanged quest left alone, a changed task starting over while the other
   keeps its progress, a changed reward keeping everyone's, a completed quest staying complete and claimed, and task
-  progress without an index dropped. A self-test step stores the Portal Relay quest with a changed task and an extra
-  reward and checks that it comes back as shipped, its player still complete and claimed, the unchanged task's progress
-  kept and the other quests left alone (4 checks). A second start of the same world brought nothing up to date.
+  progress without an index dropped, and everyone with progress found wherever their task keeps them (6). A self-test
+  step stores the Portal Relay quest with a changed task and an extra reward and checks that it comes back as shipped,
+  its player still complete and with the claim in their completion entry, the unchanged task's progress kept, the
+  other quests left alone, and, for a second player who wasn't on, the reset still there once BetterQuesting has saved
+  and their file has been read back in as the next start would (5 checks). A second start of the same world brought
+  nothing up to date.
 - Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
   "Radio 3" reads the same in both. On `voice-api`, each client translates them (GTNH Voice 0.11.0; LangTest), which
   needs an Italian client to see.
 - A whole radio publish, once a second, still works out every keyed radio's links in one tick: 5 to 6 ms with 30 radios
   keyed on one channel and 200 hearing them all. Spreading it over the second's ticks by radio would flatten that.
   Fixed on `milestone/1.0-fixes`: each keyed radio is worked out in its own tick of the second, the one its holder's
-  radio is refreshed in, and at once when it keys, moves or changes what it transmits from. A publish uses the other
-  radios' transmissions as they were, and looks only at the dropout chains of the radios whose transmission changed. In
+  radio is refreshed in, and at once when it keys, moves or changes what it transmits from. A change to the antennas or
+  the sky reaches each radio in its own tick too. A publish uses the other radios' transmissions as they were, and
+  looks only at the dropout chains of the radios whose transmission changed. In
   the load test, with every link's chain made, the slowest tick of a spread second took 0.48 to 0.94 ms over seven
   runs, a median of 0.56 ms, working out 3 to 5 radios. Every radio at once took 3.1 to 8.3 ms, a median of 3.3 ms, and
   a Transceiver going offline or broken still costs that, once. The 0.94 and 8.3 came from one run where the VM ran
   slow. BudgetLoadTest asserts under 2 ms and under half of every radio at once. Tests: SlotsTest (1),
   RadioSnapshotTest (2), RadioGroupTest on chains kept and dropped by speaker (2), and two self-test checks over a
-  second of real ticks: a keyed radio is worked out again once, and not in every tick.
+  second of real ticks with an antenna's lock toggled in every one: a keyed radio is worked out again, once, in its
+  own tick.
 - The squelch tail at a release still looks at every online player for each walkie that held the speaker.
 - A player watching a Satellite Dish or a Launch Pad through GT's Drone Centre camera, with a Drone Downlink as its
   maintenance hatch, sees GT's WAILA lines without BeCom's.

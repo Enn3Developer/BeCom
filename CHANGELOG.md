@@ -118,5 +118,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at once, the busiest tick's radio work fell from 3 to 5 ms to about 0.6 ms in the load test. A broken Transceiver
   stops carrying radio from the next tick, as one gone offline already did.
 - A player at a position that isn't a number, which only a modified client can bring about, gets no radio, phone
-  service or Signal Analyzer reading, hears nothing through BeCom's devices and can't lock an antenna. Clients play
-  BeCom audio from such a position silent.
+  service or Signal Analyzer reading, hears no walkie, loudspeaker or Videophone around them and can't lock an
+  antenna. Clients play walkie and loudspeaker audio from such a position silent.
