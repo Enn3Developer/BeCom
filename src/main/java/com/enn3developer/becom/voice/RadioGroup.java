@@ -8,6 +8,7 @@ import net.minecraft.util.IChatComponent;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.IVoiceSession;
@@ -93,7 +94,7 @@ public final class RadioGroup implements IGroup {
 
         Map<UUID, PlayerSnapshot> positions = context.getPositionSnapshot();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
-        PlayerSnapshot from = positions.get(speaker);
+        PlayerSnapshot from = Snapshots.of(positions, speaker);
         double direct = DirectHearing.range(shared.directRange, shared.proximity.getAsInt());
         double fx = from == null ? 0 : from.getX();
         double fy = from == null ? 0 : from.getY();
@@ -116,7 +117,7 @@ public final class RadioGroup implements IGroup {
             if (session == null) continue;
             // Hearing the speaker in person (D17) counts as hearing them, for the hold, though BeCom sends nothing.
             if (!shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
-            if (!walkieGot[i] || DirectHearing.hears(from, positions.get(holder), direct)) continue;
+            if (!walkieGot[i] || DirectHearing.hears(from, Snapshots.of(positions, holder), direct)) continue;
             boolean heard = reaches(context, session);
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
             if (heard) shared.contact(speaker, holder, now);
@@ -125,7 +126,7 @@ public final class RadioGroup implements IGroup {
         for (int i = 0; i < tx.walkies().length; i++) {
             if (!walkieHeld[i]) continue;
             UUID holder = tx.walkies()[i].holder();
-            PlayerSnapshot at = positions.get(holder);
+            PlayerSnapshot at = Snapshots.of(positions, holder);
             if (at == null) continue;
             if (nearby == null) nearby = new Nearby(positions.values());
             playAround(
@@ -188,15 +189,11 @@ public final class RadioGroup implements IGroup {
      */
     private void playAround(RoutingContext context, Nearby nearby, UUID speaker, PlayerSnapshot from, double direct,
         UUID holder, int dimension, double x, double y, double z, double range, double snr, long now, boolean send) {
-        double rangeSq = range * range;
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         for (PlayerSnapshot p : nearby.around(dimension, x, z, range)) {
             UUID id = p.getUuid();
             if (id.equals(speaker) || id.equals(holder)) continue;
-            double dx = p.getX() - x;
-            double dy = p.getY() - y;
-            double dz = p.getZ() - z;
-            if (dx * dx + dy * dy + dz * dz > rangeSq) continue;
+            if (!Positions.within(p.getX() - x, p.getY() - y, p.getZ() - z, range)) continue;
             IVoiceSession session = sessions.get(id);
             if (session == null) continue;
             if (!shared.listeners.admit(id, channel, speaker, snr, now)) continue;

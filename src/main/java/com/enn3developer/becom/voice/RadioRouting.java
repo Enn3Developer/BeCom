@@ -14,6 +14,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import com.enn3developer.becom.logic.DropoutModel;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.radio.Capture;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
@@ -131,11 +132,11 @@ public final class RadioRouting {
         Map<UUID, List<Carrier>> carriers = new HashMap<>();
         for (RadioSnapshot.Link link : tx.walkies()) {
             if (link.holder()
-                .equals(speaker) || !positions.containsKey(link.holder())) continue;
+                .equals(speaker) || Snapshots.of(positions, link.holder()) == null) continue;
             carry(carriers, link.holder(), link, levelOf);
         }
         for (RadioSnapshot.Link link : tx.walkies()) {
-            PlayerSnapshot holder = positions.get(link.holder());
+            PlayerSnapshot holder = Snapshots.of(positions, link.holder());
             if (holder == null) continue;
             for (UUID listener : around(
                 nearby,
@@ -163,8 +164,7 @@ public final class RadioRouting {
         double range) {
         List<UUID> found = new ArrayList<>();
         for (PlayerSnapshot p : nearby.around(dimension, x, z, range)) {
-            double dx = p.getX() - x, dy = p.getY() - y, dz = p.getZ() - z;
-            if (dx * dx + dy * dy + dz * dz <= range * range && !p.getUuid()
+            if (Positions.within(p.getX() - x, p.getY() - y, p.getZ() - z, range) && !p.getUuid()
                 .equals(speaker)) found.add(p.getUuid());
         }
         return found;

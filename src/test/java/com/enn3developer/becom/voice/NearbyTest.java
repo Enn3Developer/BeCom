@@ -1,5 +1,6 @@
 package com.enn3developer.becom.voice;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,5 +53,21 @@ class NearbyTest {
         assertTrue(
             nearby.around(0, 16.5, -0.5, 1)
                 .contains(inside));
+    }
+
+    @Test
+    void aPlayerWhosePositionIsntANumberIsInNoCell() {
+        // NaN used to land in the cell at the world's origin, where spawn often is.
+        PlayerSnapshot spawn = at(1, 64, 1, 0);
+        Nearby nearby = new Nearby(
+            List.of(
+                spawn,
+                at(Double.NaN, 64, Double.NaN, 0),
+                at(Double.NaN, Double.NaN, Double.NaN, 0),
+                at(Double.POSITIVE_INFINITY, 64, 0, 0),
+                at(0, Double.NEGATIVE_INFINITY, 0, 0)));
+        assertEquals(List.of(spawn), nearby.around(0, 0, 0, 16));
+        assertEquals(List.of(), nearby.around(0, Double.NaN, 0, 16), "and a device at NaN finds nobody");
+        assertEquals(List.of(), nearby.around(0, 0, Double.POSITIVE_INFINITY, 16));
     }
 }

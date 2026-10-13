@@ -188,6 +188,37 @@ class CallGroupTest {
     }
 
     @Test
+    void aListenerWhosePositionIsntANumberHearsNoVideophone() {
+        // NaN used to pass the loudspeaker's range check, so they heard every Videophone in their dimension.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID room = fixture.player("room", 502, 64, 0, 0);
+        fixture.player("lost", Double.NaN, Double.NaN, Double.NaN, 0);
+        fixture.player("far", Double.POSITIVE_INFINITY, 64, 0, 0);
+        group.publish(
+            CallSnapshot.builder()
+                .loudspeaker(alice, loudspeaker(500.5, 0, 1.0 / 3))
+                .build());
+        fixture.route(group, alice, ActivationIds.DEFAULT);
+        assertEquals(List.of(room), fixture.recipients());
+    }
+
+    @Test
+    void aSpeakerWhosePositionIsntANumberIsCarriedToEveryone() {
+        // Nobody can hear a speaker with no position in person (D17): the call carries Alice to Bob 3 blocks from the
+        // origin, and the Videophone to its room.
+        UUID alice = fixture.player("alice", Double.NaN, Double.NaN, Double.NaN, 0);
+        UUID bob = fixture.player("bob", 3, 64, 0, 0);
+        UUID room = fixture.player("room", 502, 64, 0, 0);
+        group.publish(
+            CallSnapshot.builder()
+                .route(alice, new CallSnapshot.Route(bob, 0, 1.0 / 3))
+                .loudspeaker(alice, loudspeaker(500.5, 0, 1.0 / 3))
+                .build());
+        fixture.route(group, alice, ActivationIds.DEFAULT);
+        assertEquals(List.of(bob, room), fixture.recipients());
+    }
+
+    @Test
     void someoneOnTheirOwnPhoneHearsItFlatAndNotFromALoudspeakerToo() {
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 505, 64, 0, 0);

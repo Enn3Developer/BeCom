@@ -157,6 +157,57 @@ class RadioGroupTest {
     }
 
     @Test
+    void aWalkieHeldWherePositionsArentNumbersPlaysAroundNobody() {
+        // Bob's position isn't a number. NaN used to land in the cell at the world's origin and pass every range check,
+        // so his walkie played to Carol by spawn. His own walkie still plays to him flat, which needs no position.
+        UUID alice = fixture.player("alice", 0, 64, 300, 0);
+        UUID bob = fixture.player("bob", Double.NaN, Double.NaN, Double.NaN, 0);
+        fixture.player("carol", 2, 64, 2, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(List.of(bob), fixture.recipients());
+    }
+
+    @Test
+    void aListenerWhosePositionIsntANumberHearsNoDevice() {
+        // Dan's walkie and a Transceiver by spawn receive Alice. Eve at NaN used to land in their cell and pass the
+        // range checks; Frank, infinitely far, is out of range too.
+        UUID alice = fixture.player("alice", 0, 64, 300, 0);
+        UUID dan = fixture.player("dan", 3, 64, 3, 0);
+        fixture.player("eve", Double.NaN, Double.NaN, Double.NaN, 0);
+        fixture.player("frank", Double.POSITIVE_INFINITY, 64, 0, 0);
+        RadioSnapshot.Transceiver on = new RadioSnapshot.Transceiver(0, 1L, 5.5, 64.5, 0.5, true);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(dan, 10))
+                .link(alice, transceiver(on, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(List.of(dan), fixture.recipients());
+    }
+
+    @Test
+    void aSpeakerWhosePositionIsntANumberIsHeardInPersonByNobody() {
+        // Nobody can be close enough to hear a speaker with no position (D17), so BeCom carries Alice to Bob's walkie,
+        // 5 blocks from the origin, and around it.
+        UUID alice = fixture.player("alice", Double.NaN, Double.NaN, Double.NaN, 0);
+        UUID bob = fixture.player("bob", 5, 64, 0, 0);
+        UUID close = fixture.player("close", 8, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(List.of(bob, close), fixture.recipients());
+    }
+
+    @Test
     void playsAroundAReceivingWalkieWithinSixBlocks() {
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 100, 64, 0, 0);

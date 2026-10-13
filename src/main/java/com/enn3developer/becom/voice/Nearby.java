@@ -12,7 +12,8 @@ import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
  * One frame's players by dimension and 16-block cell, so a device finds the players around it without looking at
  * everyone: with every listener's walkie playing around it (D21), that was one look per listener per player, for every
  * frame (DESIGN.md 6.5). Built from the frame's own position snapshot, on the thread that routes it, and on the server
- * thread from the online players when a radio publish works out who hears whom.
+ * thread from the online players when a radio publish works out who hears whom. A player whose position isn't finite
+ * is in no cell, so nobody finds them, where NaN would have put them in the cell at the world's origin.
  */
 public final class Nearby {
 
@@ -24,6 +25,7 @@ public final class Nearby {
 
     public Nearby(Collection<PlayerSnapshot> players) {
         for (PlayerSnapshot p : players) {
+            if (!Snapshots.placed(p)) continue;
             cells
                 .computeIfAbsent(
                     new Cell(p.getDimensionId(), cellOf(p.getX()), cellOf(p.getZ())),
@@ -41,6 +43,7 @@ public final class Nearby {
      * some further, so the caller still checks the distance.
      */
     public List<PlayerSnapshot> around(int dimension, double x, double z, double range) {
+        if (!Double.isFinite(x) || !Double.isFinite(z)) return List.of();
         List<PlayerSnapshot> found = new ArrayList<>();
         int minX = cellOf(x - range), maxX = cellOf(x + range);
         int minZ = cellOf(z - range), maxZ = cellOf(z + range);

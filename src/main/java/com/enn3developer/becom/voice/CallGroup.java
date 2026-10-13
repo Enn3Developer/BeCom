@@ -12,6 +12,7 @@ import net.minecraft.util.IChatComponent;
 import org.jetbrains.annotations.NotNull;
 
 import com.enn3developer.becom.logic.DropoutModel;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.gtnhvoice.api.server.IVoiceSession;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
@@ -96,12 +97,12 @@ public final class CallGroup implements IGroup {
         if (routes.length == 0 && loudspeakers.length == 0) return;
         Map<UUID, PlayerSnapshot> positions = context.getPositionSnapshot();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
-        PlayerSnapshot from = positions.get(speaker);
+        PlayerSnapshot from = Snapshots.of(positions, speaker);
         double range = DirectHearing.range(directRange, proximity.getAsInt());
         for (CallSnapshot.Route route : routes) {
             IVoiceSession listener = sessions.get(route.listener());
             if (listener == null) continue;
-            if (DirectHearing.hears(from, positions.get(route.listener()), range)) continue;
+            if (DirectHearing.hears(from, Snapshots.of(positions, route.listener()), range)) continue;
             if (dropped(speaker, route.listener(), route.enterBad(), route.leaveBad())) continue;
             double x = from == null ? 0 : from.getX();
             double y = from == null ? 0 : from.getY();
@@ -127,17 +128,16 @@ public final class CallGroup implements IGroup {
      */
     private static void playFrom(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct,
         CallSnapshot.Loudspeaker loudspeaker) {
-        double rangeSq = loudspeaker.range() * loudspeaker.range();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         for (PlayerSnapshot p : context.getPositionSnapshot()
             .values()) {
-            if (p.getDimensionId() != loudspeaker.dimension()) continue;
+            if (!Snapshots.placed(p) || p.getDimensionId() != loudspeaker.dimension()) continue;
             UUID id = p.getUuid();
             if (id.equals(speaker)) continue;
             double dx = p.getX() - loudspeaker.x();
             double dy = p.getY() - loudspeaker.y();
             double dz = p.getZ() - loudspeaker.z();
-            if (dx * dx + dy * dy + dz * dz > rangeSq) continue;
+            if (!Positions.within(dx, dy, dz, loudspeaker.range())) continue;
             IVoiceSession session = sessions.get(id);
             if (session == null || DirectHearing.hears(from, p, direct)) continue;
             context.sendTo(session, SourceState.POSITIONAL, loudspeaker.x(), loudspeaker.y(), loudspeaker.z());
