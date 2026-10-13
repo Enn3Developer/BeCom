@@ -3,6 +3,7 @@ package com.enn3developer.becom.voice;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
+import com.enn3developer.gtnhvoice.api.server.group.IGroup;
+import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 
 /**
  * DESIGN.md 13.3: who gets each radio frame and how. Flat to walkie holders, positional around receiving walkies
@@ -354,9 +357,7 @@ class RadioGroupTest {
                 .build());
         fixture.route(one, alice, RADIO);
         fixture.route(one, alice, RADIO);
-        Set<RadioRouting.Contact> contacts = new HashSet<>();
-        for (RadioRouting.Contact c; (c = shared.pollContact()) != null;) contacts.add(c);
-        assertEquals(Set.of(new RadioRouting.Contact(alice, bob), new RadioRouting.Contact(alice, close)), contacts);
+        assertEquals(Set.of(new RadioRouting.Contact(alice, bob), new RadioRouting.Contact(alice, close)), contacts());
     }
 
     @Test
@@ -376,9 +377,93 @@ class RadioGroupTest {
                 .build());
         fixture.route(one, alice, RADIO);
         assertEquals(Set.of(close, carol), new HashSet<>(fixture.recipients()));
+        assertEquals(
+            Set.of(new RadioRouting.Contact(alice, close), new RadioRouting.Contact(alice, carol)),
+            contacts());
+    }
+
+    @Test
+    void aListenerTheCallAlreadyServedIsNoRadioContact() {
+        // Alice and Bob are in a call and share channel 1. GTNH Voice sends each frame to a player once, from the
+        // highest group: Bob hears Alice through the call, so the radio's send to him is dropped and isn't a contact.
+        // Close, by Bob's walkie and not in the call, hears her on the radio.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID close = fixture.player("close", 103, 64, 0, 0);
+        CallGroup call = new CallGroup("Call", 16, () -> proximity, () -> roll);
+        call.publish(
+            CallSnapshot.builder()
+                .route(alice, new CallSnapshot.Route(bob, 0, 1.0 / 3))
+                .build());
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        fixture.route(alice, RADIO, one, call);
+        assertEquals(List.of(bob, close), fixture.recipients());
+        assertSame(
+            call,
+            fixture.sent.get(0)
+                .delivery()
+                .getGroup());
+        assertEquals(Set.of(new RadioRouting.Contact(alice, close)), contacts());
+    }
+
+    @Test
+    void aListenerAnyHigherGroupAlreadyServedIsNoRadioContact() {
+        // Another addon's group above radio sends Bob this frame first. Carol, whom it leaves alone, is a contact.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID carol = fixture.player("carol", 200, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .link(alice, walkie(carol, 10))
+                .build());
+        fixture.route(alice, RADIO, one, above(bob));
+        assertEquals(List.of(bob, carol), fixture.recipients());
+        assertEquals(Set.of(new RadioRouting.Contact(alice, carol)), contacts());
+    }
+
+    /** A group just above radio that sends every frame flat to {@code listener}, as another addon's might. */
+    private static IGroup above(UUID listener) {
+        return new IGroup() {
+
+            @Override
+            public String getName() {
+                return "test:above";
+            }
+
+            @Override
+            public String getDisplayName() {
+                return "Above";
+            }
+
+            @Override
+            public int priority() {
+                return RadioGroup.PRIORITY + 1;
+            }
+
+            @Override
+            public void route(RoutingContext context) {
+                context.sendTo(
+                    context.getSessionsByPlayerUuid()
+                        .get(listener),
+                    SourceState.FLAT,
+                    0,
+                    0,
+                    0);
+            }
+        };
+    }
+
+    /** Every radio contact noticed so far, drained. */
+    private Set<RadioRouting.Contact> contacts() {
         Set<RadioRouting.Contact> contacts = new HashSet<>();
         for (RadioRouting.Contact c; (c = shared.pollContact()) != null;) contacts.add(c);
-        assertEquals(Set.of(new RadioRouting.Contact(alice, close), new RadioRouting.Contact(alice, carol)), contacts);
+        return contacts;
     }
 
     @Test
