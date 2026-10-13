@@ -1,7 +1,7 @@
 # Better Communications: design
 
 Draft 10, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
-the GTNH Voice 0.10.1 API. From now on this file is the source of truth. How BeCom gets built is in
+the GTNH Voice 0.11.0 API. From now on this file is the source of truth. How BeCom gets built is in
 [16](#16-roadmap), and the build's working rules are in [`CLAUDE.md`](CLAUDE.md).
 
 Every choice is in the [decision log](#2-decision-log): **decided** means settled with the owner, **proposed** means it
@@ -592,7 +592,7 @@ From D39:
 - **Rate limit:** at most 5 call attempts per minute per caller, enforced by the server.
 - **Admin commands** (ops only): list active calls, hang up any call, set a dimension's satellite count for testing.
 
-## 13. GTNH Voice integration (0.10.1)
+## 13. GTNH Voice integration (0.11.0)
 
 ### 13.1 Groups
 
@@ -632,8 +632,7 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   snapshot.
 - **Direct hearing (D17):** a listener in the speaker's dimension within `min(16, r)` blocks of them, measured the way
   GTNH Voice measures it, is skipped. `r` is GTNH Voice's effective proximity range, `min(distance, maxDistance)` from
-  its server config. GTNH Voice has no public way to read `r` yet: [`VOICE.md`](VOICE.md) V1 asks for one, and until
-  then BeCom uses 16.
+  its server config, which `route()` reads from `GtnhVoiceApi.proximityRange()` for each frame.
 - **`becom:call`:**
   - For each other participant at Low or better, unless they hear the speaker directly (D17), apply the dropout model.
   - If the frame survives, `sendTo(listener, SourceState.FLAT, ...)`.
@@ -675,6 +674,12 @@ Calls beat radio, radio beats proximity. GTNH Voice's global group stays above e
   instance. Its `beginFrame` tells it which source each frame comes from. It measures each source's loudness and passes
   every sample through unchanged. The front camera ([10.1](#101-video)) uses the loudness of the people in the call,
   whichever group their voice arrives through.
+- **Distance fade:** a stage at the end of the chain scales each positional BeCom frame by `1 - (d/range)^2`, silent at
+  the range, where the server stops sending. `d` runs from the frame's position (`IPlaybackFrame.x()`, `y()`, `z()`) to
+  the player's feet, which the client tick records for the decode threads. The range is the server's: a Videophone's
+  loudspeaker on `becom:call`, and on radio a Transceiver's loudspeaker for a frame from a block's exact middle and a
+  walkie's speaker (D21) for any other. The server moves a walkie's position off any block's middle, so the two can't
+  be confused.
 
 ### 13.6 Other sounds
 
@@ -931,7 +936,7 @@ these; if one can't be used, that's a deviation.
 
 | Mod                                     | Artifact                                 | Version                              | Used for                                       |
 |-----------------------------------------|------------------------------------------|--------------------------------------|------------------------------------------------|
-| GTNH Voice                              | `com.github.Enn3Developer:gtnh-voice`    | v0.10.1                              | compile, from 0.1                              |
+| GTNH Voice                              | `com.github.Enn3Developer:gtnh-voice`    | v0.11.0                              | compile, from 0.1                              |
 | GregTech                                | `GT5-Unofficial`                         | 5.09.54.205                          | compile, from 0.1                              |
 | StructureLib, ModularUI2, GTNHLib       | `StructureLib`, `ModularUI2`, `GTNHLib`  | 1.4.45, 2.3.92-1.7.10, 0.11.52       | through GregTech                               |
 | BetterQuesting                          | `BetterQuesting`                         | 3.8.89-GTNH                          | optional, from 0.1                             |
@@ -977,10 +982,10 @@ gives it. For the owner:
 - **Usage limits:** the run shares the plan's limits and stops when it hits one. Once the limit resets, send it a
   message to carry on, from the app or with `claude -p "continue" --cloud <session-id>`. It pushes after every commit,
   so nothing is lost in between.
-- **For the in-game checks:** update the GTNH install's GTNH Voice from 0.9.2 to 0.10.1 or newer, and check that GTNH
-  Voice Radio 0.1.0 still loads with it.
-- **Optional:** ship [`VOICE.md`](VOICE.md)'s V1 in a GTNH Voice release and point BeCom's dependency at it. Otherwise
-  the run uses V1's stopgap.
+- **For the in-game checks:** update the GTNH install's GTNH Voice from 0.9.2 to 0.11.0 or newer, on the server and
+  every client, and check that GTNH Voice Radio 0.1.0 still loads with it.
+- **[`VOICE.md`](VOICE.md):** GTNH Voice 0.11.0 has V1, V3, V4, V5 and V6, and BeCom builds against it, so none of
+  their stopgaps are left.
 
 ## 17. Tunables
 

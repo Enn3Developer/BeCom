@@ -219,7 +219,8 @@ types) is new. V2 and V3 belong to later milestones.
 - The clearance re-check's per-tick budget (1 ms) is fixed in code. 0.2 brings the survey budget into the config
   (2 ms) and should share it out.
 - Direct hearing uses 16 blocks until GTNH Voice can report its proximity range (VOICE.md V1); on servers with a
-  smaller range, players between it and 16 blocks hear neither.
+  smaller range, players between it and 16 blocks hear neither. Fixed on `voice-api`: GTNH Voice 0.11.0 reports the
+  range, and direct hearing stops at the smaller of the two (CallGroupTest, RadioGroupTest).
 - Quest text shows DESIGN.md's default numbers whatever the server's config says (X14).
 - The boot log has a GT-ERR-01 line about IC2 rubber that isn't BeCom's as far as I can tell; I didn't trace it.
 - A single-player world refused over a bad config value or unreadable saved data should show the reason and go back
@@ -457,10 +458,13 @@ plays it with its own falloff) is in use from 0.2, and so is V1's 16 blocks for 
   antenna is in reach, though the two can talk directly. Whether it should explain direct links is a question for
   the owner.
 - The squelch tail's choice of players is tested through its inputs, not by receiving the packet.
-- A radio contact counts on every send, including sends GTNH Voice drops (VOICE.md V5).
+- A radio contact counts on every send, including sends GTNH Voice drops (VOICE.md V5). Fixed on `voice-api`: a
+  contact counts only for a listener whose voice connection is up and whom no group served that frame first, a call
+  included (GTNH Voice 0.11.0's `isServed`; RadioGroupTest).
 - Players between GTNH Voice's proximity range and 16 blocks of a speaker hear neither (V1), now on radio as well as
   calls. A loudspeaker or a walkie's speaker plays with GTNH Voice's own falloff and stops at the device's range, so
-  it cuts off instead of fading out (V3).
+  it cuts off instead of fading out (V3). On `voice-api`, V1 is fixed as for calls, and the speakers fade to silence
+  at their range, which needs a client to hear.
 - Left for 0.3, which DESIGN.md 16 gives them to: walkies in Baubles slots (D14; for now they work from the
   inventory), the antenna screen's coverage map, and weather loss (D26). Weather touches only UHF and satellite hops,
   so radio channels don't miss it, but calls over UHF links between antennas ignore the rain until then.
@@ -1314,7 +1318,8 @@ a dedicated server sees "Call".
   choices included, until `/bq_admin default load` or BetterQuesting's pack-version reload adds them again. Fix: refresh
   BeCom's own quests' definitions at server start, keeping progress.
 - Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
-  "Radio 3" reads the same in both.
+  "Radio 3" reads the same in both. On `voice-api`, each client translates them (GTNH Voice 0.11.0; LangTest), which
+  needs an Italian client to see.
 - A whole radio publish, once a second, still works out every keyed radio's links in one tick: 5 to 6 ms with 30 radios
   keyed on one channel and 200 hearing them all. Spreading it over the second's ticks by radio would flatten that.
 - The squelch tail at a release still looks at every online player for each walkie that held the speaker.
@@ -1328,7 +1333,8 @@ a dedicated server sees "Call".
   pair made under /save-off, the pad slowing where GT draws more power, and radio through satellites making a walkie's
   range moot outdoors. From 0.3: video under Angelica and shader packs, a far player's skin, video's own channel, the ME
   Phone's Infinity Booster Card and security checks (X27), the Phone key and Telephones (X1), the corner window's size
-  (X29). From 0.1 and 0.2: the IC2 rubber GT-ERR-01 line in the boot log, X22's survey cost, and V1, V3 and V5.
+  (X29). From 0.1 and 0.2: the IC2 rubber GT-ERR-01 line in the boot log, X22's survey cost, and V1, V3 and V5, which
+  `voice-api` fixes with GTNH Voice 0.11.0.
 
 **Owner checks.** A GTNH 2.8 client with GuideNH and WAILA, GTNH Voice 0.10.1 or newer, BeCom from this branch, and for
 the second part a dedicated server and a second player:

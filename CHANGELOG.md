@@ -103,4 +103,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their label alone.
 - Three big quests offer their coins as a choice: First call against two Pylon Heads, Radio contact against a
   Walkie-Talkie, Five satellites against a Satellite Rocket. A choice keeps only the options whose items are installed.
-- Forge refuses to load BeCom beside a GTNH Voice older than 0.10.1, and names the version it needs.
+- BeCom needs GTNH Voice 0.11.0 or newer, on the server and every client. Forge refuses to load it beside an older
+  one, and names the version it needs.
+- A radio contact counts only when the listener hears the speaker on the radio: not before their voice connection is
+  up, and not when they already hear the speaker through a call.
+- Walkie speakers and loudspeakers fade to silence at the edge of their range instead of cutting off there.
+- The voice chat's speaker list shows BeCom's group names, Call and Radio 1 to 16, in each player's own language.
+- On a server whose voice proximity range is under 16 blocks, calls and radio carry a speaker to the players beyond it.

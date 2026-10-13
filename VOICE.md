@@ -25,7 +25,7 @@ stopgap.
 
 ### V1: Read the proximity range
 
-- **Status:** open
+- **Status:** in GTNH Voice 0.11.0
 - **Needed by:** 0.1, DESIGN.md D17 and [13.3](DESIGN.md#133-routing)
 - **Missing:** BeCom doesn't route call or radio audio to a listener who hears the speaker directly: one within
   `min(16, r)` blocks, where `r` is GTNH Voice's effective proximity range. GTNH Voice routes proximity audio up to
@@ -52,7 +52,7 @@ stopgap.
 
 ### V3: Quieter positional audio with its own range
 
-- **Status:** open, polish
+- **Status:** in GTNH Voice 0.11.0
 - **Needed by:** 0.2, DESIGN.md D21 and [8.1](DESIGN.md#81-radio-channels)
 - **Missing:** BeCom plays radio from a walkie-talkie's holder to players within 6 blocks (D21), and from a Transceiver
   or Videophone loudspeaker to players within 16. A POSITIONAL send always plays with voice's own falloff (inverse
@@ -65,7 +65,7 @@ stopgap.
 
 ### V4: Routing tests through API types
 
-- **Status:** open, tests only
+- **Status:** in GTNH Voice 0.11.0
 - **Needed by:** 0.1, DESIGN.md [16.3](DESIGN.md#163-verification) (routing tests)
 - **Missing:** `RoutingContext.builder()` takes GTNH Voice's internal `VoiceServerSession`, and a capturing
   `PacketSender` receives internal packet classes. So BeCom's routing tests, which CLAUDE.md asks to go through that
@@ -80,7 +80,7 @@ stopgap.
 
 ### V5: Whether a send went through
 
-- **Status:** open, polish
+- **Status:** in GTNH Voice 0.11.0
 - **Needed by:** 0.2, DESIGN.md 15.5 (the Radio contact task)
 - **Missing:** `RoutingContext.sendTo` returns nothing, and drops a send silently when a higher-priority group already
   served that listener this frame, or when the listener has no UDP address yet. BeCom counts a radio contact for the
@@ -93,7 +93,7 @@ stopgap.
 
 ### V6: Group names in each player's language
 
-- **Status:** open, polish
+- **Status:** in GTNH Voice 0.11.0
 - **Needed by:** 1.0, DESIGN.md [15.3](DESIGN.md#153-languages)
 - **Missing:** `IGroup.getDisplayName()` is a plain string. GTNH Voice sends it to clients in its group update packet
   and its HUD's speaker list draws it as it is, so BeCom can only translate it on the server. A dedicated server's
