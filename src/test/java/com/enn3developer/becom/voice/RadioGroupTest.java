@@ -605,6 +605,51 @@ class RadioGroupTest {
     }
 
     @Test
+    void aSpeakerWhoseSessionEndsTakesTheirChainsAndNoOneElses() {
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID carol = fixture.player("carol", 1000, 64, 0, 0);
+        UUID dave = fixture.player("dave", 1100, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmission(alice, RadioSnapshot.transmission(1, List.of(walkie(bob, 10))))
+                .transmission(carol, RadioSnapshot.transmission(1, List.of(walkie(dave, 10))))
+                .build());
+        fixture.route(one, alice, RADIO);
+        fixture.route(one, carol, RADIO);
+        assertEquals(2, shared.chainCount());
+        one.onPlayerRemoved(alice);
+        assertEquals(1, shared.chainCount(), "Carol's chain to Dave's walkie stays");
+    }
+
+    @Test
+    void aTransmissionPublishedAgainAsItWasKeepsItsChains() {
+        // Publishing every tick, a radio's transmission stays the same object until it's worked out again.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        UUID carol = fixture.player("carol", 200, 64, 0, 0);
+        RadioSnapshot.Transmission both = RadioSnapshot.transmission(1, List.of(walkie(bob, 10), walkie(carol, 10)));
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmission(alice, both)
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(2, shared.chainCount());
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmission(alice, both)
+                .build());
+        assertEquals(2, shared.chainCount(), "the same transmission keeps its chains");
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmission(alice, RadioSnapshot.transmission(1, List.of(walkie(bob, 10))))
+                .build());
+        assertEquals(1, shared.chainCount(), "worked out again without Carol, her chain goes");
+        shared.publish(RadioSnapshot.EMPTY);
+        assertEquals(0, shared.chainCount(), "and a speaker gone takes theirs");
+    }
+
+    @Test
     void publishingDropsChainsOfPairsThatAreGone() {
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 100, 64, 0, 0);

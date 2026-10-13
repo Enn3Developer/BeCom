@@ -2,9 +2,12 @@ package com.enn3developer.becom.voice;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -34,8 +37,6 @@ public final class RadioRouting {
     /** When a speaker's last radio frame went through, and on which channel. */
     public record Keyed(int channel, long nanos) {}
 
-    private record Pair(UUID speaker, Object device) {}
-
     final double directRange;
     final IntSupplier proximity;
     final double walkieSpeakerRange;
@@ -48,7 +49,8 @@ public final class RadioRouting {
     final Capture<Object> capture;
     final Capture<UUID> listeners;
     private volatile RadioSnapshot snapshot = RadioSnapshot.EMPTY;
-    private final Map<Pair, DropoutModel.Chain> chains = new ConcurrentHashMap<>();
+    // Each speaker's burst-loss chains by receiving device, so a publish looks only at the speakers it changes.
+    private final Map<UUID, Map<Object, DropoutModel.Chain>> chains = new ConcurrentHashMap<>();
     private final Map<UUID, Keyed> keyed = new ConcurrentHashMap<>();
     // When each contact was last reported. A pair is reported again after a while, so a contact made while its quest
     // was still locked isn't used up for good.
@@ -77,11 +79,34 @@ public final class RadioRouting {
         return snapshot;
     }
 
-    /** Server thread: replaces what the channels route from, and forgets chains of pairs that are gone. */
+    /**
+     * Server thread: replaces what the channels route from, and forgets the chains of pairs that are gone. A chain the
+     * network thread makes from the snapshot before is kept until its speaker's transmission next changes.
+     */
     public void publish(RadioSnapshot next) {
+        RadioSnapshot before = snapshot;
         snapshot = next;
-        chains.keySet()
-            .removeIf(pair -> !next.hasPair(pair.speaker, pair.device));
+        // A transmission used as it was keeps the same receivers, whose chains stay: only a speaker gone or worked out
+        // again is looked through, so publishing every tick doesn't look at every chain every tick.
+        Iterator<Map.Entry<UUID, Map<Object, DropoutModel.Chain>>> it = chains.entrySet()
+            .iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Map<Object, DropoutModel.Chain>> entry = it.next();
+            UUID speaker = entry.getKey();
+            RadioSnapshot.Transmission now = next.transmission(speaker);
+            if (now == null) it.remove();
+            else if (now != before.transmission(speaker)) entry.getValue()
+                .keySet()
+                .retainAll(devices(now));
+        }
+    }
+
+    /** The devices a transmission reaches. */
+    private static Set<Object> devices(RadioSnapshot.Transmission transmission) {
+        Set<Object> devices = new HashSet<>();
+        for (RadioSnapshot.Link link : transmission.walkies()) devices.add(link.device());
+        for (RadioSnapshot.Link link : transmission.transceivers()) devices.add(link.device());
+        return devices;
     }
 
     public RadioSnapshot published() {
@@ -89,8 +114,9 @@ public final class RadioRouting {
     }
 
     boolean drop(UUID speaker, RadioSnapshot.Link link) {
-        DropoutModel.Chain chain = chains
-            .computeIfAbsent(new Pair(speaker, link.device()), p -> new DropoutModel.Chain());
+        // A chain added just as its speaker is forgotten goes with the map it was added to: the next frame starts anew.
+        DropoutModel.Chain chain = chains.computeIfAbsent(speaker, s -> new ConcurrentHashMap<>())
+            .computeIfAbsent(link.device(), d -> new DropoutModel.Chain());
         return chain.drop(link.enterBad(), link.leaveBad(), random.getAsDouble());
     }
 
@@ -221,8 +247,8 @@ public final class RadioRouting {
     void forget(UUID player) {
         capture.forgetListener(player);
         listeners.forgetListener(player);
-        chains.keySet()
-            .removeIf(pair -> pair.speaker.equals(player) || player.equals(pair.device));
+        chains.remove(player);
+        for (Map<Object, DropoutModel.Chain> heard : chains.values()) heard.remove(player);
         keyed.remove(player);
         reported.keySet()
             .removeIf(
@@ -243,6 +269,8 @@ public final class RadioRouting {
     }
 
     public int chainCount() {
-        return chains.size();
+        int count = 0;
+        for (Map<Object, DropoutModel.Chain> heard : chains.values()) count += heard.size();
+        return count;
     }
 }

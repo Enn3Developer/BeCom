@@ -56,17 +56,6 @@ public final class RadioSnapshot {
         return transmissions.get(speaker);
     }
 
-    /** Whether {@code device} is still a receiver of {@code speaker}; used to drop stale per-pair state. */
-    public boolean hasPair(UUID speaker, Object device) {
-        Transmission t = transmissions.get(speaker);
-        if (t == null) return false;
-        for (Link link : t.walkies) if (link.device()
-            .equals(device)) return true;
-        for (Link link : t.transceivers) if (link.device()
-            .equals(device)) return true;
-        return false;
-    }
-
     public int speakers() {
         return transmissions.size();
     }
