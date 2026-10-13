@@ -39,10 +39,7 @@ public final class QuestRefresh {
         NBTTagList kept = new NBTTagList();
         for (int i = 0; i < tasks.tagCount(); i++) {
             NBTTagCompound task = tasks.getCompoundTagAt(i);
-            // BetterQuesting matches a task's progress to its task by this index, and drops progress without one.
-            if (!task.hasKey("index", Constants.NBT.TAG_ANY_NUMERIC)) continue;
-            NBTTagCompound was = before.get(task.getInteger("index"));
-            if (was != null && was.equals(after.get(task.getInteger("index")))) kept.appendTag(task.copy());
+            if (kept(task, before, after)) kept.appendTag(task.copy());
         }
         NBTTagCompound result = (NBTTagCompound) progress.copy();
         result.setTag("tasks", kept);
@@ -50,15 +47,31 @@ public final class QuestRefresh {
     }
 
     /**
-     * Everyone with progress in a quest, from its progress as BetterQuesting writes it: each completion's player, and
-     * each task's, wherever the task keeps them. BetterQuesting saves a player's progress to their own file only once
-     * something marks them, and reads every file back at the next start, so each of them is marked when their quest
-     * takes a newer definition; otherwise a task that started over would get its old progress back.
+     * Everyone whose progress {@link #progressFor} drops: each player of a task that starts over, wherever the task
+     * keeps them. BetterQuesting saves a player's progress to their own file only once something marks them, and
+     * reads every file back at the next start, so each of them is marked when their quest takes the newer definition;
+     * otherwise the task would get their old progress back. Completions and claims stay as they were, so they need no
+     * mark of their own.
      */
-    public static Set<UUID> players(NBTTagCompound progress) {
+    public static Set<UUID> losingProgress(NBTTagCompound stored, NBTTagCompound shipped, NBTTagCompound progress) {
+        Map<Integer, NBTTagCompound> before = tasksByIndex(stored);
+        Map<Integer, NBTTagCompound> after = tasksByIndex(shipped);
+        NBTTagList tasks = progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND);
         Set<UUID> players = new HashSet<>();
-        collect(progress, players);
+        for (int i = 0; i < tasks.tagCount(); i++) {
+            NBTTagCompound task = tasks.getCompoundTagAt(i);
+            if (!kept(task, before, after)) collect(task, players);
+        }
         return players;
+    }
+
+    /** Whether a task's progress stays: the task at its index is defined just as before. */
+    private static boolean kept(NBTTagCompound task, Map<Integer, NBTTagCompound> before,
+        Map<Integer, NBTTagCompound> after) {
+        // BetterQuesting matches a task's progress to its task by this index, and drops progress without one.
+        if (!task.hasKey("index", Constants.NBT.TAG_ANY_NUMERIC)) return false;
+        NBTTagCompound was = before.get(task.getInteger("index"));
+        return was != null && was.equals(after.get(task.getInteger("index")));
     }
 
     private static void collect(NBTBase tag, Set<UUID> players) {

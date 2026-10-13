@@ -152,21 +152,34 @@ class QuestRefreshTest {
     }
 
     @Test
-    void everyoneWithProgressIsFoundWhereverTheirTaskKeepsThem() {
-        // Carol has counted one of the two relays a retrieval task asks for, under her UUID, and finished nothing.
+    void everyoneWhoseTaskStartsOverIsFoundWhereverTheTaskKeepsThem() {
+        // Carol has counted one of the relays the retrieval task asks for, under her UUID, and finished nothing. The
+        // task now asks for more, so Alice's completion of it and Carol's count go; Bob only did BeCom's own task.
         NBTTagCompound progress = progress();
-        NBTTagCompound counting = taskProgress("bq_standard:retrieval", 0);
+        NBTTagCompound counting = progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND)
+            .getCompoundTagAt(0);
         NBTTagCompound carol = new NBTTagCompound();
         carol.setString("uuid", CAROL);
         carol.setTag("value", new NBTTagIntArray(new int[] { 1 }));
         NBTTagList users = new NBTTagList();
         users.appendTag(carol);
         counting.setTag("userProgress", users);
-        progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND)
-            .appendTag(counting);
         assertEquals(
-            Set.of(UUID.fromString(ALICE), UUID.fromString(BOB), UUID.fromString(CAROL)),
-            QuestRefresh.players(progress));
+            Set.of(UUID.fromString(ALICE), UUID.fromString(CAROL)),
+            QuestRefresh.losingProgress(
+                portalQuest(1, "dreamcraft:CoinTechnician"),
+                portalQuest(2, "dreamcraft:CoinTechnician"),
+                progress));
+    }
+
+    @Test
+    void aChangedRewardTakesNobodysProgress() {
+        assertEquals(
+            Set.of(),
+            QuestRefresh.losingProgress(
+                portalQuest(2, "dreamcraft:CoinTechnician"),
+                portalQuest(2, "dreamcraft:CoinTechnicianI"),
+                progress()));
     }
 
     @Test
