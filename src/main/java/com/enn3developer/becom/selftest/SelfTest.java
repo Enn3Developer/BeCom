@@ -250,6 +250,7 @@ public final class SelfTest {
         steps.add(this::checkRepeaterOff);
         steps.add(this::checkQuests);
         steps.add(this::checkQuestReload);
+        steps.add(this::checkQuestRefresh);
         steps.add(this::checkRadioRegistration);
         steps.add(this::buildRadio);
         steps.add(this::formRadio);
@@ -1300,6 +1301,36 @@ public final class SelfTest {
                 cpw.mods.fml.common.Loader.instance()
                     .getConfigDir(),
                 "betterquesting/saved_quests/" + RELOAD_DATABASE));
+        return 1;
+    }
+
+    /**
+     * X42: at server start, a BeCom quest the book holds with an older definition takes the one BeCom ships, and keeps
+     * its players' progress where it still means the same.
+     */
+    private int checkQuestRefresh() {
+        if (!cpw.mods.fml.common.Loader.isModLoaded(BeComQuests.BQ_MODID)) return 1;
+        Object outcome = invoke(
+            BeComQuests.backend(),
+            "refreshForSelfTest",
+            UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000ab"));
+        Map<?, ?> result = outcome instanceof Map<?, ?>map ? map : Map.of();
+        check(
+            "BeCom's start-up refresh gives a quest stored with an older definition the one BeCom ships",
+            Boolean.TRUE.equals(result.get("refreshed")) && Boolean.TRUE.equals(result.get("shipped")),
+            String.valueOf(result));
+        check(
+            "...keeping the player's completion and claimed reward",
+            Boolean.TRUE.equals(result.get("complete")) && Boolean.TRUE.equals(result.get("claimed")),
+            String.valueOf(result));
+        check(
+            "...and the progress of the task that didn't change, while the one that did starts over",
+            Boolean.TRUE.equals(result.get("unchangedTaskKept")) && Boolean.TRUE.equals(result.get("changedTaskReset")),
+            String.valueOf(result));
+        check(
+            "...and leaves a quest that didn't change as it was",
+            Boolean.TRUE.equals(result.get("othersLeftAlone")),
+            String.valueOf(result));
         return 1;
     }
 

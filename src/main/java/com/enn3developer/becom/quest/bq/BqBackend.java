@@ -23,6 +23,7 @@ import net.minecraftforge.common.util.Constants;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.quest.BeComQuests;
+import com.enn3developer.becom.quest.QuestRefresh;
 import com.enn3developer.becom.quest.QuestRewards;
 import com.enn3developer.becom.quest.QuestTask;
 import com.google.common.collect.Maps;
@@ -33,6 +34,7 @@ import betterquesting.api.api.ApiReference;
 import betterquesting.api.api.QuestingAPI;
 import betterquesting.api.questing.IQuest;
 import betterquesting.api.questing.IQuestLine;
+import betterquesting.api.questing.IQuestLineEntry;
 import betterquesting.api.questing.tasks.ITask;
 import betterquesting.api.storage.BQ_Settings;
 import betterquesting.api.utils.NBTConverter;
@@ -49,7 +51,8 @@ import betterquesting.questing.QuestLineEntry;
 
 /**
  * BeCom and BetterQuesting (DESIGN.md 15.5): registers BeCom's task type, puts BeCom's questline into the book once
- * the server has started, puts it back whenever something removed it, and completes BeCom's tasks.
+ * the server has started, brings the quests a world already holds up to the ones BeCom ships (X42), puts it back
+ * whenever something removed it, and completes BeCom's tasks.
  * <p>
  * Only ever touches BeCom's own questline and quests, found by their fixed UUIDs. BQ keeps progress inside each quest,
  * so whoever removes them (a DefaultQuests reload) takes the progress too; BeCom keeps a copy of its quests' progress
@@ -92,6 +95,11 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         }
         try {
             questline = load();
+            try {
+                refresh();
+            } catch (Throwable t) {
+                BeCom.LOG.error("Couldn't bring BeCom's quests up to date; they keep the definitions they had", t);
+            }
             ensure(true);
         } catch (Throwable t) {
             BeCom.LOG.error("Couldn't add BeCom's questline; carrying on without it", t);
@@ -143,12 +151,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         for (Map.Entry<UUID, NBTTagCompound> entry : q.quests()
             .entrySet()) {
             if (QuestDatabase.INSTANCE.containsKey(entry.getKey())) continue;
-            IQuest quest = new QuestInstance();
-            quest.readFromNBT(
-                withInstalledRewards(
-                    (NBTTagCompound) entry.getValue()
-                        .copy()));
-            QuestDatabase.INSTANCE.put(entry.getKey(), quest);
+            QuestDatabase.INSTANCE.put(entry.getKey(), shipped(entry.getValue()));
             added.add(entry.getKey());
         }
         boolean lineAdded = false;
@@ -178,6 +181,67 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         NetQuestSync.quickSync(null, true, true);
         NetChapterSync.sendSync(null, null);
         SaveLoadHandler.INSTANCE.markDirty();
+    }
+
+    // endregion
+
+    // region Bringing quests up to date
+
+    /**
+     * Brings the quests and questline entries of BeCom's that the book already holds up to the ones BeCom ships, and
+     * keeps their progress (X42). Runs at server start, once BQ has loaded the book and, after a pack update, reloaded
+     * it. Each quest is compared as BQ writes it, the shipped one after the installed-rewards filter, so a reward left
+     * out for a mod that isn't installed is no change. Only BeCom's own UUIDs are touched.
+     *
+     * @return how many quests changed
+     */
+    private int refresh() {
+        Questline q = questline;
+        int quests = 0;
+        for (Map.Entry<UUID, NBTTagCompound> entry : q.quests()
+            .entrySet()) {
+            IQuest stored = QuestDatabase.INSTANCE.get(entry.getKey());
+            // A quest the book is missing is ensure()'s to add.
+            if (stored == null) continue;
+            IQuest fresh = shipped(entry.getValue());
+            NBTTagCompound was = stored.writeToNBT(new NBTTagCompound());
+            NBTTagCompound now = fresh.writeToNBT(new NBTTagCompound());
+            if (!QuestRefresh.changed(was, now)) continue;
+            fresh.readProgressFromNBT(
+                QuestRefresh.progressFor(was, now, stored.writeProgressToNBT(new NBTTagCompound(), null)),
+                false);
+            QuestDatabase.INSTANCE.put(entry.getKey(), fresh);
+            quests++;
+        }
+        int entries = 0;
+        IQuestLine line = QuestLineDatabase.INSTANCE.get(q.lineId());
+        if (line != null) {
+            for (Map.Entry<UUID, NBTTagCompound> entry : q.entries()
+                .entrySet()) {
+                IQuestLineEntry stored = line.get(entry.getKey());
+                if (stored == null) continue;
+                NBTTagCompound now = new QuestLineEntry(entry.getValue()).writeToNBT(new NBTTagCompound());
+                if (now.equals(stored.writeToNBT(new NBTTagCompound()))) continue;
+                stored.readFromNBT(now);
+                entries++;
+            }
+        }
+        if (quests == 0 && entries == 0) return 0;
+        BeCom.LOG.info(
+            "Brought {} of BeCom's quests and {} of its questline's places up to date, keeping players' progress",
+            quests,
+            entries);
+        NetQuestSync.quickSync(null, true, true);
+        NetChapterSync.sendSync(null, null);
+        SaveLoadHandler.INSTANCE.markDirty();
+        return quests;
+    }
+
+    /** A quest as BeCom ships it, without the rewards whose items aren't installed. */
+    private static IQuest shipped(NBTTagCompound file) {
+        IQuest quest = new QuestInstance();
+        quest.readFromNBT(withInstalledRewards((NBTTagCompound) file.copy()));
+        return quest;
     }
 
     /** DESIGN.md 15.5: a reward whose item isn't installed is left out. */
@@ -359,6 +423,90 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             return found;
         }
         return List.of();
+    }
+
+    /**
+     * The self-test's look at the refresh BeCom runs at server start (X42). Stores the Portal Relay quest as an older
+     * BeCom might have left it, one relay to hold instead of two and a diamond as well, gives {@code player} both its
+     * tasks, its completion and its claim, runs the refresh, and says what came of it.
+     */
+    public Map<String, Boolean> refreshForSelfTest(UUID player) {
+        Map<String, Boolean> outcome = new LinkedHashMap<>();
+        UUID id = questWith(QuestTask.PORTAL_RELAY_PAIR);
+        UUID other = questWith(QuestTask.FIRST_CALL);
+        if (id == null || other == null) return outcome;
+        IQuest otherBefore = QuestDatabase.INSTANCE.get(other);
+        NBTTagCompound older = QuestDatabase.INSTANCE.get(id)
+            .writeToNBT(new NBTTagCompound());
+        NBTTagList tasks = older.getTagList("tasks", Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < tasks.tagCount(); i++) {
+            NBTTagList required = tasks.getCompoundTagAt(i)
+                .getTagList("requiredItems", Constants.NBT.TAG_COMPOUND);
+            if (required.tagCount() > 0) required.getCompoundTagAt(0)
+                .setInteger("Count", 1);
+        }
+        NBTTagList rewards = older.getTagList("rewards", Constants.NBT.TAG_COMPOUND);
+        NBTTagCompound diamond = new NBTTagCompound();
+        diamond.setString("id", "minecraft:diamond");
+        diamond.setInteger("Count", 1);
+        NBTTagList items = new NBTTagList();
+        items.appendTag(diamond);
+        NBTTagCompound reward = new NBTTagCompound();
+        reward.setString("rewardID", "bq_standard:item");
+        reward.setInteger("index", rewards.tagCount());
+        reward.setTag("rewards", items);
+        rewards.appendTag(reward);
+        older.setTag("rewards", rewards);
+        IQuest stored = new QuestInstance();
+        stored.readFromNBT(older);
+        for (DBEntry<ITask> task : stored.getTasks()
+            .getEntries()) {
+            task.getValue()
+                .setComplete(player);
+        }
+        stored.setComplete(player, 1L);
+        stored.setClaimed(player, 1L);
+        QuestDatabase.INSTANCE.put(id, stored);
+
+        int refreshed = refresh();
+        IQuest now = QuestDatabase.INSTANCE.get(id);
+        boolean unchangedKept = false, changedReset = false;
+        for (DBEntry<ITask> task : now.getTasks()
+            .getEntries()) {
+            boolean complete = task.getValue()
+                .isComplete(player);
+            if (task.getValue() instanceof TaskBeCom) unchangedKept = complete;
+            else changedReset = !complete;
+        }
+        outcome.put("refreshed", refreshed >= 1 && now != stored);
+        outcome.put(
+            "shipped",
+            now.writeToNBT(new NBTTagCompound())
+                .equals(
+                    shipped(
+                        questline.quests()
+                            .get(id)).writeToNBT(new NBTTagCompound())));
+        outcome.put("complete", now.isComplete(player));
+        outcome.put("claimed", now.hasClaimed(player));
+        outcome.put("unchangedTaskKept", unchangedKept);
+        outcome.put("changedTaskReset", changedReset);
+        outcome.put("othersLeftAlone", QuestDatabase.INSTANCE.get(other) == otherBefore);
+        return outcome;
+    }
+
+    /** The UUID of BeCom's quest with a BeCom task of {@code kind}, or null. */
+    private UUID questWith(QuestTask kind) {
+        Questline q = questline;
+        if (q == null) return null;
+        for (UUID id : q.quests()
+            .keySet()) {
+            IQuest quest = QuestDatabase.INSTANCE.get(id);
+            if (quest != null && quest.getTasks()
+                .getEntries()
+                .stream()
+                .anyMatch(task -> task.getValue() instanceof TaskBeCom becom && becom.kind() == kind)) return id;
+        }
+        return null;
     }
 
     /** The self-test's handle on a BeCom quest's task, to check progress survives removal. */

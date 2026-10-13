@@ -665,3 +665,24 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   Satellite Rocket is worth is a guess no player has tried.
 - **To match the design:** whatever the owner meant by the choice, `COIN_CHOICE` in `tools/quests/make_quests.py`
   holds it: drop an entry to give that quest's coins outright again, or change what they're set against.
+
+### X42: BeCom's quests are brought up to date at every server start
+
+- **Where:** 1.0 fixes, DESIGN.md 15.5
+- **Design says:** BeCom adds its questline once server start has finished, puts it back when it's gone, and only
+  touches its own UUIDs, so players keep their progress. It says nothing about a BeCom whose quests changed.
+- **Built:** at server start, once BetterQuesting has loaded the book and reloaded it, BeCom compares each of its quests
+  the book holds with the one it ships. Both are written through BetterQuesting's own code, the shipped one after the
+  installed-rewards filter, so a reward left out for a mod that isn't installed is no change. A quest that differs
+  takes the shipped definition: its tasks, rewards, properties and prerequisites. Every player keeps their
+  completions and claimed rewards, even where the tasks or rewards changed, and each task's progress where the task at
+  that position has the same kind and requirements; the rest starts over. The questline's places and sizes are
+  refreshed the same way. BeCom logs how many it refreshed, touches nothing outside its own UUIDs, and with the
+  config's off switch still leaves the book alone. So a server that edits BeCom's quests by hand loses those edits at
+  the next start, as the option's comment says; to keep them, it turns the questline off and manages it by hand. When a
+  pack update's reload takes BeCom's quests out of the book, BeCom adds them back as it ships them, and the progress it
+  restores is matched to tasks by position and kind alone, since the reload took their old definitions with it.
+- **Why:** BeCom added only the quests a book was missing, so a world that had them kept their old tasks and rewards
+  for good after an update, X41's coin choices included.
+- **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds
+  only what's missing again.

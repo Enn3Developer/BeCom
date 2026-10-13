@@ -245,7 +245,9 @@ public final class BeComConfig {
                 "questlineEnabled",
                 QUESTS,
                 (Boolean) Tunables.defaultOf("questlineEnabled"),
-                "Add BeCom's questline to the BetterQuesting book. Turn off for servers with a curated book."));
+                "Add BeCom's questline to the BetterQuesting book, and bring BeCom's quests up to date at each start,"
+                    + " keeping progress: hand edits to BeCom's own quests are lost at the next start. Turn off for"
+                    + " servers with a curated book, and BeCom leaves the book alone."));
         integer(config, v, QUESTS, "questlineRecheckSeconds", "Seconds between checks that the tab is there.");
         Tunables loaded = Tunables.fromMap(v);
         // Checked when a server is about to use them, not here: a client never acts on its own file (DESIGN.md
