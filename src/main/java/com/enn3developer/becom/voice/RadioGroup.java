@@ -106,9 +106,9 @@ public final class RadioGroup implements IGroup {
             // Hearing the speaker in person (D17) counts as hearing them, for the hold, though BeCom sends nothing.
             if (!shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
             if (!walkieGot[i] || DirectHearing.hears(from, positions.get(holder), direct)) continue;
+            boolean heard = reaches(session);
             context.sendTo(session, SourceState.FLAT, fx, fy, fz);
-            // VOICE.md V5: GTNH Voice doesn't say whether this send went through or a higher group had served them.
-            shared.contact(speaker, holder, now);
+            if (heard) shared.contact(speaker, holder, now);
         }
         Nearby nearby = null;
         for (int i = 0; i < tx.walkies().length; i++) {
@@ -191,10 +191,21 @@ public final class RadioGroup implements IGroup {
             if (session == null) continue;
             if (!shared.listeners.admit(id, channel, speaker, snr, now)) continue;
             if (!send || DirectHearing.hears(from, p, direct)) continue;
+            boolean heard = reaches(session);
             context.sendTo(session, SourceState.POSITIONAL, x, y, z);
-            // VOICE.md V5
-            shared.contact(speaker, id, now);
+            if (heard) shared.contact(speaker, id, now);
         }
+    }
+
+    /**
+     * Whether a send to this listener reaches them, so it counts as a radio contact (DESIGN.md 15.5). Asked before the
+     * send. {@code sendTo} silently drops a send to a listener whose client hasn't sent its first voice datagram yet.
+     * VOICE.md V5: GTNH Voice can't yet say whether a higher group already served them this frame, so a send it drops
+     * for that still counts.
+     */
+    private static boolean reaches(IVoiceSession listener) {
+        // VOICE.md V5
+        return listener.hasUdpAddress();
     }
 
     @Override

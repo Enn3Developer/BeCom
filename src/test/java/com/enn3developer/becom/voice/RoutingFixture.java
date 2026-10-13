@@ -34,16 +34,18 @@ final class RoutingFixture {
     private int nextPort = 40_000;
 
     UUID player(String name, double x, double y, double z, int dimension) {
-        UUID id = UUID.randomUUID();
-        VoiceServerSession session = new VoiceServerSession(
-            id,
-            name,
-            UUID.randomUUID(),
-            new AesEncryption(new byte[32]));
+        UUID id = playerWithoutUdpAddress(name, x, y, z, dimension);
         InetSocketAddress address = new InetSocketAddress("127.0.0.1", nextPort++);
-        session.touch(address);
-        sessions.put(id, session);
+        sessions.get(id)
+            .touch(address);
         byAddress.put(address, id);
+        return id;
+    }
+
+    /** A player whose voice handshake is done but whose client hasn't sent its first datagram: sends to them drop. */
+    UUID playerWithoutUdpAddress(String name, double x, double y, double z, int dimension) {
+        UUID id = UUID.randomUUID();
+        sessions.put(id, new VoiceServerSession(id, name, UUID.randomUUID(), new AesEncryption(new byte[32])));
         positions.put(id, new PlayerSnapshot(id, name, x, y, z, dimension));
         return id;
     }

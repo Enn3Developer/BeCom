@@ -329,6 +329,28 @@ class RadioGroupTest {
     }
 
     @Test
+    void aListenerWhoseVoiceIsntConnectedYetIsNoContact() {
+        // GTNH Voice drops a send to a session with no UDP address yet, so Bob and Dave hear nothing: flat on Bob's
+        // own walkie, positional for Dave by Carol's. Close and Carol do hear Alice.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.playerWithoutUdpAddress("bob", 100, 64, 0, 0);
+        UUID close = fixture.player("close", 103, 64, 0, 0);
+        UUID carol = fixture.player("carol", 200, 64, 0, 0);
+        fixture.playerWithoutUdpAddress("dave", 203, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .link(alice, walkie(carol, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(Set.of(close, carol), new HashSet<>(fixture.recipients()));
+        Set<RadioRouting.Contact> contacts = new HashSet<>();
+        for (RadioRouting.Contact c; (c = shared.pollContact()) != null;) contacts.add(c);
+        assertEquals(Set.of(new RadioRouting.Contact(alice, close), new RadioRouting.Contact(alice, carol)), contacts);
+    }
+
+    @Test
     void directHearingIsNoContact() {
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID near = fixture.player("near", 5, 64, 0, 0);
