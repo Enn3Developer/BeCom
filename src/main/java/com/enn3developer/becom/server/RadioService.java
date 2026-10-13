@@ -29,6 +29,7 @@ import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.Slots;
 import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
@@ -60,8 +61,9 @@ import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
  * <p>
  * Each player's radio and each Transceiver's links to the antennas are refreshed once a second, spread over the twenty
  * ticks (DESIGN.md 6.5). Direct links are worked out only for speakers keyed right now: a speaker shows up in the
- * routing state with their first frame, gets a transmission on the next tick, and is re-evaluated once a second after
- * that. Levels go to clients only when they change (DESIGN.md 13.5).
+ * routing state with their first frame, gets a transmission on the next tick, and is worked out again once a second
+ * after that, in their own tick of the second, so the radios keyed at once are spread over it too. Levels go to
+ * clients only when they change (DESIGN.md 13.5).
  */
 public final class RadioService {
 
@@ -129,8 +131,8 @@ public final class RadioService {
 
     private record Pair(UUID speaker, Object device) {}
 
-    /** A keyed radio's links as last worked out, and what it transmitted from then. */
-    private record Links(Tx tx, List<RadioSnapshot.Link> links) {}
+    /** A keyed radio's transmission as last worked out, and what it transmitted from then. */
+    private record Links(Tx tx, RadioSnapshot.Transmission transmission) {}
 
     /** A pair's link level, and the tick it was last evaluated. */
     private static final class PairLevel {
@@ -155,6 +157,8 @@ public final class RadioService {
     private final Map<Pair, PairLevel> pairLevels = new HashMap<>();
     private final Map<Heard, Sent> sent = new HashMap<>();
     private RadioSnapshot published = RadioSnapshot.EMPTY;
+    // A Transceiver broken since the last tick, which, like one gone offline, nobody hears through from the next.
+    private boolean broken;
     private long tick;
 
     public RadioService(MinecraftServer server, Tunables tunables, AntennaNetwork antennas, HeightCaches heights,
@@ -206,6 +210,7 @@ public final class RadioService {
         sent.clear();
         evaluated.clear();
         published = RadioSnapshot.EMPTY;
+        broken = false;
     }
 
     public RadioGroup group(int channel) {
@@ -256,7 +261,7 @@ public final class RadioService {
     }
 
     public void transceiverGone(NodeRef ref) {
-        transceivers.remove(ref);
+        if (transceivers.remove(ref) != null) broken = true;
     }
 
     private boolean working(Transceiver t) {
@@ -278,15 +283,12 @@ public final class RadioService {
             contacted.add(contact.listener());
         }
         if (!contacted.isEmpty()) BeComQuests.complete(QuestTask.RADIO_CONTACT, contacted);
-        Set<UUID> pressed = new HashSet<>();
-        boolean changed = keys(now, pressed);
-        boolean everyone = false;
-        int slot = (int) (tick % TICKS_PER_SECOND);
+        Set<UUID> fresh = new HashSet<>();
+        keys(now, fresh);
+        boolean everyone = broken;
+        broken = false;
         for (EntityPlayerMP player : players()) {
-            if (Math.floorMod(
-                player.getUniqueID()
-                    .hashCode(),
-                TICKS_PER_SECOND) == slot) refresh(player);
+            if (Slots.due(player.getUniqueID(), tick)) refresh(player);
         }
         Iterator<Transceiver> it = transceivers.values()
             .iterator();
@@ -294,8 +296,9 @@ public final class RadioService {
             Transceiver t = it.next();
             if (!working(t)) {
                 it.remove();
+                // Nobody hears through a device that's gone, so every radio's links are worked out again now.
                 everyone = true;
-            } else if (Math.floorMod(t.ref.hashCode(), TICKS_PER_SECOND) == slot) {
+            } else if (Slots.due(t.ref, tick)) {
                 refreshAccess(t);
                 t.sky = skyHop(t.ref.dimension(), t.end, t.rains);
             }
@@ -304,26 +307,22 @@ public final class RadioService {
             memberships();
             drainWalkies(players());
             forgetOld(now);
-            everyone = true;
         }
         if (tick % ((long) tunables.analyzerRefreshSeconds() * TICKS_PER_SECOND) == 0) analyzers();
-        if (everyone) publish(null);
-        else if (changed) publish(pressed);
+        // Each keyed radio is worked out once a second, in its own tick of the second, the one its holder is refreshed
+        // in (DESIGN.md 6.4, 6.5); one that pressed push-to-talk, moved or changed what it transmits from, at once.
+        for (UUID speaker : active) {
+            if (Slots.due(speaker, tick)) fresh.add(speaker);
+        }
+        publish(everyone ? null : fresh);
     }
 
-    /**
-     * Notices speakers pressing and releasing push-to-talk, and adds those who pressed to {@code pressed}. Returns
-     * whether anyone did either.
-     */
-    private boolean keys(long now, Set<UUID> pressed) {
-        boolean changed = false;
+    /** Notices speakers pressing and releasing push-to-talk, and adds those who pressed to {@code pressed}. */
+    private void keys(long now, Set<UUID> pressed) {
         Map<UUID, RadioRouting.Keyed> keyed = routing.keyedSpeakers();
         for (Map.Entry<UUID, RadioRouting.Keyed> entry : keyed.entrySet()) {
             if (now - entry.getValue()
-                .nanos() <= RELEASED_AFTER_NANOS && active.add(entry.getKey())) {
-                pressed.add(entry.getKey());
-                changed = true;
-            }
+                .nanos() <= RELEASED_AFTER_NANOS && active.add(entry.getKey())) pressed.add(entry.getKey());
         }
         Iterator<UUID> it = active.iterator();
         while (it.hasNext()) {
@@ -332,10 +331,8 @@ public final class RadioService {
             if (k == null || now - k.nanos() > RELEASED_AFTER_NANOS) {
                 squelch(speaker);
                 it.remove();
-                changed = true;
             }
         }
-        return changed;
     }
 
     private void forgetOld(long now) {
@@ -483,17 +480,18 @@ public final class RadioService {
     /**
      * Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. A keyed radio's
      * links are worked out again when it keys, moves or changes what it transmits from, and once a second (DESIGN.md
-     * 6.4); otherwise its last ones stand, so one press doesn't work out every other keyed radio's links again.
+     * 6.4); otherwise its last transmission stands as it was, so neither a press nor a radio's tick of the second works
+     * out every other keyed radio's links again. Nothing is published when nothing changed.
      *
      * @param fresh the radios to work out again even if nothing changed, or null for all of them
      */
     private void publish(Set<UUID> fresh) {
-        RadioSnapshot.Builder builder = RadioSnapshot.builder();
         List<UUID> speakers = new ArrayList<>(active);
         speakers.sort(Comparator.naturalOrder());
         List<Radio> receivers = null;
         List<Transceiver> loudspeakers = null;
         List<UUID> worked = new ArrayList<>();
+        Map<UUID, RadioSnapshot.Transmission> transmissions = new HashMap<>();
         for (UUID speaker : speakers) {
             Radio radio = radios.get(speaker);
             Tx tx = radio == null ? null : txOf(radio);
@@ -513,14 +511,25 @@ public final class RadioService {
                 evaluated.put(speaker, links);
                 worked.add(speaker);
             }
-            builder.transmitter(speaker, tx.channel);
-            for (RadioSnapshot.Link link : links.links()) builder.link(speaker, link);
+            transmissions.put(speaker, links.transmission());
         }
         evaluated.keySet()
             .retainAll(active);
+        if (worked.isEmpty() && published(transmissions)) return;
+        RadioSnapshot.Builder builder = RadioSnapshot.builder();
+        transmissions.forEach(builder::transmission);
         published = builder.build();
         routing.publish(published);
         sendLevels(worked);
+    }
+
+    /** Whether the published snapshot holds exactly these transmissions, so publishing them again changes nothing. */
+    private boolean published(Map<UUID, RadioSnapshot.Transmission> transmissions) {
+        if (transmissions.size() != published.speakers()) return false;
+        for (Map.Entry<UUID, RadioSnapshot.Transmission> entry : transmissions.entrySet()) {
+            if (published.transmission(entry.getKey()) != entry.getValue()) return false;
+        }
+        return true;
     }
 
     /**
@@ -557,7 +566,7 @@ public final class RadioService {
                         snr));
             }
         }
-        return new Links(tx, links);
+        return new Links(tx, RadioSnapshot.transmission(tx.channel, links));
     }
 
     private RadioSnapshot.Link link(UUID holder, RadioSnapshot.Transceiver transceiver, double snr) {
@@ -825,8 +834,8 @@ public final class RadioService {
     }
 
     /**
-     * Evaluates every keyed speaker now. A speaker keyed already is otherwise re-evaluated at the next whole second,
-     * so a check right after a change would read the snapshot from before it.
+     * Evaluates every keyed speaker now. A speaker keyed already is otherwise worked out again in their own tick of the
+     * second, so a check right after a change could read the snapshot from before it.
      */
     public void publishForSelfTest() {
         keys(System.nanoTime(), new HashSet<>());

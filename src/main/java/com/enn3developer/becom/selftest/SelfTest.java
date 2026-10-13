@@ -260,6 +260,9 @@ public final class SelfTest {
         steps.add(this::checkTransceiver);
         steps.add(this::checkLoudspeaker);
         steps.add(this::checkPress);
+        steps.add(this::startSpread);
+        for (int i = 0; i < TICKS_PER_SECOND; i++) steps.add(this::watchSpread);
+        steps.add(this::checkSpread);
         steps.add(this::keyThroughAntennas);
         steps.add(this::checkThroughAntennas);
         steps.add(this::keyLocked);
@@ -1700,7 +1703,7 @@ public final class SelfTest {
 
     /**
      * DESIGN.md 6.4: a press of push-to-talk works out the pressing radio, and any keyed radio whose transmitter
-     * changed since, and leaves the others' links as they were until the next whole second.
+     * changed since, and leaves the others' links as they were until their own tick of the second.
      */
     private int checkPress() {
         becom.radio.keyForSelfTest(alice.getUniqueID());
@@ -1725,12 +1728,51 @@ public final class SelfTest {
             bobToAlice.snr());
         RadioSnapshot.Link aliceToBobNow = linkTo(published.transmission(alice.getUniqueID()), bob.getUniqueID());
         check(
-            "...and leaves Alice's, whose radio didn't change, as it was until the next whole second",
+            "...and leaves Alice's, whose radio didn't change, as it was until her own tick of the second",
             aliceToBob != null && aliceToBobNow == aliceToBob,
             aliceToBob + " then " + aliceToBobNow);
         bob.setPosition(X0 + 30.5, Y, DIRECT_Z + 0.5);
         becom.radio.refreshForSelfTest(bob);
         becom.radio.publishForSelfTest();
+        return 1;
+    }
+
+    // Alice's transmission as last seen while the ticks spread the publish, and how often it was worked out again.
+    private RadioSnapshot.Transmission spreadSeen;
+    private int spreadWorked;
+
+    /**
+     * DESIGN.md 6.4, 6.5: a radio keyed for a second, with nothing about it changed, is worked out again once, in its
+     * own tick of the second; the other ticks publish its transmission as it was.
+     */
+    private int startSpread() {
+        becom.radio.keyForSelfTest(alice.getUniqueID());
+        spreadSeen = becom.radio.published()
+            .transmission(alice.getUniqueID());
+        spreadWorked = 0;
+        return 1;
+    }
+
+    private int watchSpread() {
+        // A frame every tick, as from someone holding push-to-talk, keeps Alice keyed without pressing again.
+        becom.radio.keyForSelfTest(alice.getUniqueID());
+        RadioSnapshot.Transmission now = becom.radio.published()
+            .transmission(alice.getUniqueID());
+        if (now != spreadSeen) spreadWorked++;
+        spreadSeen = now;
+        return 1;
+    }
+
+    private int checkSpread() {
+        check(
+            "a keyed radio is worked out again within a second, with no press",
+            spreadWorked >= 1,
+            spreadWorked + " times in a second");
+        // Once in its own tick, and once more at most if what it transmits from changed, as an antenna's survey can.
+        check(
+            "...and not in every tick: the other ticks publish its transmission as it was",
+            spreadWorked <= 2,
+            spreadWorked + " times in a second");
         return 1;
     }
 
