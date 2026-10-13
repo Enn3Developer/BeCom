@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.DoubleSupplier;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import com.enn3developer.becom.logic.DropoutModel;
@@ -35,6 +36,7 @@ public final class RadioRouting {
     private record Pair(UUID speaker, Object device) {}
 
     final double directRange;
+    final IntSupplier proximity;
     final double walkieSpeakerRange;
     final double loudspeakerRange;
     final DoubleSupplier random;
@@ -54,12 +56,14 @@ public final class RadioRouting {
     private final Queue<Contact> contacts = new ConcurrentLinkedQueue<>();
 
     /**
-     * @param random uniform numbers in [0, 1) for the dropout model; must be safe on the network thread
-     * @param clock  nanoseconds, for the capture hold and who is keyed
+     * @param proximity GTNH Voice's proximity range in blocks, a cap on the direct range; called on the network thread
+     * @param random    uniform numbers in [0, 1) for the dropout model; must be safe on the network thread
+     * @param clock     nanoseconds, for the capture hold and who is keyed
      */
-    public RadioRouting(double directRange, double walkieSpeakerRange, double loudspeakerRange, long holdNanos,
-        double margin, DoubleSupplier random, LongSupplier clock) {
+    public RadioRouting(double directRange, IntSupplier proximity, double walkieSpeakerRange, double loudspeakerRange,
+        long holdNanos, double margin, DoubleSupplier random, LongSupplier clock) {
         this.directRange = directRange;
+        this.proximity = proximity;
         this.walkieSpeakerRange = walkieSpeakerRange;
         this.loudspeakerRange = loudspeakerRange;
         this.random = random;

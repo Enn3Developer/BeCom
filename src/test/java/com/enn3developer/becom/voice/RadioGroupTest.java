@@ -28,7 +28,16 @@ class RadioGroupTest {
     private final RoutingFixture fixture = new RoutingFixture();
     private double roll = 0.99;
     private long now = 1_000 * MS;
-    private final RadioRouting shared = new RadioRouting(16, 6, 16, 100 * MS, 3, () -> roll, () -> now);
+    private int proximity = 48;
+    private final RadioRouting shared = new RadioRouting(
+        16,
+        () -> proximity,
+        6,
+        16,
+        100 * MS,
+        3,
+        () -> roll,
+        () -> now);
     private final RadioGroup one = new RadioGroup(1, "Radio 1", shared);
 
     private static RadioSnapshot.Link walkie(UUID holder, double snr) {
@@ -117,6 +126,28 @@ class RadioGroupTest {
                 .build());
         fixture.route(one, alice, RADIO);
         assertTrue(fixture.sent.isEmpty());
+    }
+
+    @Test
+    void aShortProximityRangeLeavesTheRadioToCarryThoseBeyondIt() {
+        // GTNH Voice's proximity reaches 10 blocks on this server. Bob, 12 blocks from Alice, doesn't hear her
+        // directly,
+        // so his walkie plays her, and so does it for Dan beside him. Eve, 9 blocks from Alice, hears her in person.
+        proximity = 10;
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 12, 64, 0, 0);
+        UUID dan = fixture.player("dan", 15, 64, 0, 0);
+        UUID eve = fixture.player("eve", 9, 64, 0, 0);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 30))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(List.of(bob, dan), fixture.recipients());
+        assertTrue(
+            !fixture.recipients()
+                .contains(eve));
     }
 
     @Test

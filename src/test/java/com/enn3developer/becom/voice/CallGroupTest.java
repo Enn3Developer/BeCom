@@ -23,7 +23,8 @@ class CallGroupTest {
 
     private final RoutingFixture fixture = new RoutingFixture();
     private double roll = 0.99;
-    private final CallGroup group = new CallGroup("Call", 16, () -> roll);
+    private int proximity = 48;
+    private final CallGroup group = new CallGroup("Call", 16, () -> proximity, () -> roll);
 
     @Test
     void sendsFlatToTheOtherParticipant() {
@@ -75,6 +76,25 @@ class CallGroupTest {
         fixture.route(group, alice, ActivationIds.DEFAULT);
         // Exactly 16 blocks still hears directly, as GTNH Voice keeps exactly-at-cutoff.
         assertEquals(List.of(far, otherWorld), fixture.recipients());
+    }
+
+    @Test
+    void aShortProximityRangeLeavesTheCallToCarryThoseBeyondIt() {
+        // GTNH Voice's proximity reaches 10 blocks on this server, so Alice is heard directly up to 10 and no further:
+        // the call carries her to whoever is past that, inside BeCom's own 16 too.
+        proximity = 10;
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID near = fixture.player("near", 6, 64, 8, 0);
+        UUID edge = fixture.player("edge", 10, 64, 0, 0);
+        UUID past = fixture.player("past", 10.01, 64, 0, 0);
+        UUID twelve = fixture.player("twelve", 0, 64, 12, 0);
+        CallSnapshot.Builder snapshot = CallSnapshot.builder();
+        for (UUID listener : List.of(near, edge, past, twelve)) {
+            snapshot.route(alice, new CallSnapshot.Route(listener, 0, 1.0 / 3));
+        }
+        group.publish(snapshot.build());
+        fixture.route(group, alice, ActivationIds.DEFAULT);
+        assertEquals(List.of(past, twelve), fixture.recipients());
     }
 
     @Test

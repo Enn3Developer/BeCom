@@ -11,12 +11,12 @@ public final class DirectHearing {
     private DirectHearing() {}
 
     /**
-     * The range to skip within. VOICE.md V1: GTNH Voice can't tell an addon its effective proximity range yet, so the
-     * configured range is used as if voice's own were at least that large.
+     * The range to skip within: the configured range, capped by {@code proximity}, the range GTNH Voice's proximity
+     * group cuts off at ({@code GtnhVoiceApi.proximityRange()}). Past that, nobody hears the speaker directly, so BeCom
+     * carries the voice to them.
      */
-    public static double range(double configured) {
-        // VOICE.md V1
-        return configured;
+    public static double range(double configured, double proximity) {
+        return Math.min(configured, proximity);
     }
 
     /** Whether {@code listener} hears {@code speaker} directly, measured the way GTNH Voice measures it. */

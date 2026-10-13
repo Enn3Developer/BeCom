@@ -27,6 +27,7 @@ class CarriersTest {
 
     private final RadioRouting routing = new RadioRouting(
         16,
+        () -> 48,
         WALKIE_RANGE,
         LOUDSPEAKER_RANGE,
         100_000_000L,

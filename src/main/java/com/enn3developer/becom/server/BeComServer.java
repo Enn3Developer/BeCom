@@ -95,6 +95,7 @@ public final class BeComServer {
         CallGroup callGroup = new CallGroup(
             GroupNames.call(),
             tunables.directHearingRange(),
+            GtnhVoiceApi::proximityRange,
             () -> java.util.concurrent.ThreadLocalRandom.current()
                 .nextDouble());
         this.radio = new RadioService(server, tunables, antennas, heights, space);

@@ -169,6 +169,7 @@ public final class RadioService {
         this.dropGraceMillis = (long) (tunables.dropAfterSeconds() * 1000);
         this.routing = new RadioRouting(
             tunables.directHearingRange(),
+            GtnhVoiceApi::proximityRange,
             tunables.walkieSpeakerRange(),
             tunables.loudspeakerRange(),
             tunables.captureHoldMillis() * 1_000_000L,

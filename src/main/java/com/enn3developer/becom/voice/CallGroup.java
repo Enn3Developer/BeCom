@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -31,16 +32,19 @@ public final class CallGroup implements IGroup {
 
     private final String displayName;
     private final double directRange;
+    private final IntSupplier proximity;
     private final DoubleSupplier random;
     private volatile CallSnapshot snapshot = CallSnapshot.EMPTY;
     private final Map<Pair, DropoutModel.Chain> chains = new ConcurrentHashMap<>();
 
     /**
-     * @param random uniform numbers in [0, 1) for the dropout model; must be safe on the network thread
+     * @param proximity GTNH Voice's proximity range in blocks, a cap on the direct range; called on the network thread
+     * @param random    uniform numbers in [0, 1) for the dropout model; must be safe on the network thread
      */
-    public CallGroup(String displayName, double directRange, DoubleSupplier random) {
+    public CallGroup(String displayName, double directRange, IntSupplier proximity, DoubleSupplier random) {
         this.displayName = displayName;
         this.directRange = directRange;
+        this.proximity = proximity;
         this.random = random;
     }
 
@@ -84,7 +88,7 @@ public final class CallGroup implements IGroup {
         Map<UUID, PlayerSnapshot> positions = context.getPositionSnapshot();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         PlayerSnapshot from = positions.get(speaker);
-        double range = DirectHearing.range(directRange);
+        double range = DirectHearing.range(directRange, proximity.getAsInt());
         for (CallSnapshot.Route route : routes) {
             IVoiceSession listener = sessions.get(route.listener());
             if (listener == null) continue;

@@ -83,7 +83,7 @@ public final class RadioGroup implements IGroup {
         Map<UUID, PlayerSnapshot> positions = context.getPositionSnapshot();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         PlayerSnapshot from = positions.get(speaker);
-        double direct = DirectHearing.range(shared.directRange);
+        double direct = DirectHearing.range(shared.directRange, shared.proximity.getAsInt());
         double fx = from == null ? 0 : from.getX();
         double fy = from == null ? 0 : from.getY();
         double fz = from == null ? 0 : from.getZ();
