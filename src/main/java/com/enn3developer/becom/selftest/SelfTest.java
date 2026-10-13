@@ -49,6 +49,7 @@ import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
@@ -1646,6 +1647,15 @@ public final class SelfTest {
             heard != null && heard.transceiver()
                 .loudspeaker(),
             "");
+        // Clients fade a radio frame over a loudspeaker's range only when it plays from a block's middle (13.5).
+        RadioSnapshot.Transceiver at = heard == null ? null : heard.transceiver();
+        check(
+            "...playing from the middle of its block, so clients fade it over the loudspeaker's range",
+            at != null && at.x() == X0 + 100.5
+                && at.y() == Y + 0.5
+                && at.z() == DIRECT_Z + 0.5
+                && SpeakerFade.blockMiddle(at.x(), at.y(), at.z()),
+            at == null ? "no link" : at.x() + ", " + at.y() + ", " + at.z());
         return 1;
     }
 
