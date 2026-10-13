@@ -35,8 +35,9 @@
  */
 dependencies {
     // GTNH Voice carries every call: group routing on the server, frame filters and activations on the client.
-    // 0.10.0 added the addon API BeCom needs; 0.10.1 is the first of those JitPack can build.
-    implementation("com.github.Enn3Developer:gtnh-voice:v0.10.1:dev")
+    // 0.11.0 adds what VOICE.md asked for: the proximity range, isServed, frame positions, translated group names and
+    // routing test support.
+    implementation("com.github.Enn3Developer:gtnh-voice:v0.11.0:dev")
     // GregTech is a hard dependency: tiers, EU power and multiblocks. Pulls StructureLib/ModularUI transitively.
     implementation("com.github.GTNewHorizons:GT5-Unofficial:5.09.54.205:dev")
     // From 0.3 (DESIGN.md 16.4, D27): AE2 for the ME Phone and ME Bridge, Baubles Expanded for phones and walkies

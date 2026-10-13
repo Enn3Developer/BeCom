@@ -25,7 +25,7 @@ tab, an in-game guide and WAILA info come with them, all in English and Italian.
 
 On both the server and every client, for Minecraft 1.7.10 with Forge 10.13.4.1614:
 
-- GTNH Voice 0.10.1 or newer
+- GTNH Voice 0.11.0 or newer
 - GregTech 5 Unofficial, Applied Energistics 2 Unofficial, Baubles Expanded and Galacticraft, the GTNH versions
 
 Used when they're installed:

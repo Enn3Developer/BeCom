@@ -13,7 +13,7 @@ import cpw.mods.fml.common.versioning.DefaultArtifactVersion;
 import cpw.mods.fml.common.versioning.VersionParser;
 
 /**
- * DESIGN.md 16.4: BeCom builds against GTNH Voice 0.10.1, and an older one fails on a missing API after loading. FML
+ * DESIGN.md 16.4: BeCom builds against GTNH Voice 0.11.0, and an older one fails on a missing API after loading. FML
  * checks the version only if the dependency names one, written as GTNH Voice writes its own, with the "v".
  */
 class GtnhVoiceVersionTest {
@@ -32,7 +32,7 @@ class GtnhVoiceVersionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "v0.10.1", "v0.10.2", "v0.11.0", "v1.0.0" })
+    @ValueSource(strings = { "v0.11.0", "v0.11.1", "v0.12.0", "v1.0.0" })
     void loadsWithGtnhVoice(String version) {
         assertTrue(
             required().containsVersion(new DefaultArtifactVersion("gtnhvoice", version)),
@@ -40,7 +40,7 @@ class GtnhVoiceVersionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "v0.9.2", "v0.10.0" })
+    @ValueSource(strings = { "v0.9.2", "v0.10.0", "v0.10.1" })
     void refusesAnOlderGtnhVoice(String version) {
         assertFalse(required().containsVersion(new DefaultArtifactVersion("gtnhvoice", version)), "refuses " + version);
     }
