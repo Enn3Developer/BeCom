@@ -8,6 +8,7 @@ import net.minecraft.util.IChatComponent;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.IVoiceSession;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
@@ -136,7 +137,7 @@ public final class RadioGroup implements IGroup {
                 holder,
                 at.getDimensionId(),
                 at.getX(),
-                at.getY(),
+                SpeakerFade.walkieY(at.getX(), at.getY(), at.getZ()),
                 at.getZ(),
                 shared.walkieSpeakerRange,
                 tx.walkies()[i].snr(),
@@ -182,12 +183,11 @@ public final class RadioGroup implements IGroup {
     /**
      * Positional from a device to the players around it, minus the speaker, its holder, direct hearers and anyone
      * already held by another speaker (D24). Players around a device holding the speaker keep hearing them for the
-     * hold even when this frame didn't get through ({@code send} false), or they hear the speaker in person. VOICE.md
-     * V3: GTNH Voice plays it with its own falloff, so BeCom can only stop sending past the device's range.
+     * hold even when this frame didn't get through ({@code send} false), or they hear the speaker in person. Sending
+     * stops at the device's range, where each client's fade reaches silence ({@link SpeakerFade}).
      */
     private void playAround(RoutingContext context, Nearby nearby, UUID speaker, PlayerSnapshot from, double direct,
         UUID holder, int dimension, double x, double y, double z, double range, double snr, long now, boolean send) {
-        // VOICE.md V3
         double rangeSq = range * range;
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         for (PlayerSnapshot p : nearby.around(dimension, x, z, range)) {

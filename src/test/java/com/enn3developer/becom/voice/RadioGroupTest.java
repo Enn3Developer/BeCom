@@ -14,10 +14,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
 import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
+import com.enn3developer.gtnhvoice.api.server.group.RoutingTestKit;
 
 /**
  * DESIGN.md 13.3: who gets each radio frame and how. Flat to walkie holders, positional around receiving walkies
@@ -241,6 +243,32 @@ class RadioGroupTest {
         assertTrue(
             !fixture.recipients()
                 .contains(eve));
+    }
+
+    @Test
+    void aWalkiesFramesNeverPlayFromABlocksMiddleAndATransceiversAlwaysDo() {
+        // A client fades a radio frame from a block's middle over a loudspeaker's range, and any other over a
+        // walkie's (DESIGN.md 13.5). Bob stands on a slab at a block's middle, Close by him, Dan by a Transceiver.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100.5, 64.5, 0.5, 0);
+        UUID close = fixture.player("close", 103, 64, 0, 0);
+        UUID dan = fixture.player("dan", 205, 64, 0, 0);
+        RadioSnapshot.Transceiver on = new RadioSnapshot.Transceiver(0, 1L, 200.5, 64.5, 0.5, true);
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .link(alice, transceiver(on, 10))
+                .build());
+        fixture.route(one, alice, RADIO);
+        assertEquals(List.of(bob, close, dan), fixture.recipients());
+        RoutingTestKit.Delivery fromWalkie = fixture.sent.get(1)
+            .delivery();
+        assertTrue(!SpeakerFade.blockMiddle(fromWalkie.getX(), fromWalkie.getY(), fromWalkie.getZ()));
+        assertEquals(64.5, fromWalkie.getY(), 1e-9);
+        RoutingTestKit.Delivery fromTransceiver = fixture.sent.get(2)
+            .delivery();
+        assertTrue(SpeakerFade.blockMiddle(fromTransceiver.getX(), fromTransceiver.getY(), fromTransceiver.getZ()));
     }
 
     @Test

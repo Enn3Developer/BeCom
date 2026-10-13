@@ -122,12 +122,11 @@ public final class CallGroup implements IGroup {
 
     /**
      * Positional from a Videophone to everyone within its loudspeaker's range, minus the speaker and whoever hears
-     * them directly (D17). VOICE.md V3: GTNH Voice plays it with its own falloff, so BeCom can only stop sending past
-     * the range.
+     * them directly (D17). Sending stops at the range, where each client's fade reaches silence
+     * ({@link com.enn3developer.becom.logic.SpeakerFade}).
      */
     private static void playFrom(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct,
         CallSnapshot.Loudspeaker loudspeaker) {
-        // VOICE.md V3
         double rangeSq = loudspeaker.range() * loudspeaker.range();
         Map<UUID, IVoiceSession> sessions = context.getSessionsByPlayerUuid();
         for (PlayerSnapshot p : context.getPositionSnapshot()

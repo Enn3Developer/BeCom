@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -21,6 +23,7 @@ import com.enn3developer.becom.client.ClientRadio;
 import com.enn3developer.becom.client.ClientVideo;
 import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.CoverageMapDrawer;
+import com.enn3developer.becom.client.DistanceFade;
 import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
 import com.enn3developer.becom.client.SignalBars;
@@ -107,6 +110,9 @@ public class ClientProxy extends CommonProxy {
         Runnable task;
         while ((task = mainThread.poll()) != null) task.run();
         ClientRadio.tick();
+        EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
+        if (player == null) DistanceFade.forget();
+        else DistanceFade.listen(player.posX, player.boundingBox.minY, player.posZ, BeComConfig.get());
     }
 
     @SubscribeEvent

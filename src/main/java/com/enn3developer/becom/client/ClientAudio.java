@@ -11,7 +11,7 @@ import com.enn3developer.gtnhvoice.api.client.IVoiceAddon;
  * How BeCom audio sounds on the listener's client (DESIGN.md 4.3, 13.5): one playback chain with a branch per level
  * and kind of group, picking frames by the group that routed them and the level the server said this player hears
  * that source at. These are DESIGN.md's starting recipes, to be tuned by ear; Max is left clean, and radios stop at
- * Medium.
+ * Medium. Last, frames from a walkie or loudspeaker fade with distance, hiss and all.
  */
 public final class ClientAudio {
 
@@ -59,7 +59,8 @@ public final class ClientAudio {
                         frame -> radioLevel(frame) == SignalLevel.MEDIUM,
                         medium -> medium.bandPass(300, 3400)
                             .softClip()
-                            .noise(0.02)))
+                            .noise(0.02))
+                    .stage(DistanceFade::new))
             .done();
     }
 
