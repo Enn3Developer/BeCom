@@ -686,3 +686,22 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   for good after an update, X41's coin choices included.
 - **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds
   only what's missing again.
+
+### X43: A player at a position that isn't a number has none
+
+- **Where:** 1.0 fixes, DESIGN.md 6.1, 13.3
+- **Design says:** nothing about positions that aren't numbers. A radio's links and a phone's service start from where
+  its player stands (6.1), and routing sends to the players within each device's range (13.3).
+- **Built:** a player whose coordinates aren't all finite has no position for BeCom. From their next refresh, within a
+  second, their walkie is on no channel and no Transceiver transmits for them; their Mobile Phone has no service, and
+  the Signal Analyzer and `/becom signal` read nothing. In routing, they hear no walkie, loudspeaker or Videophone, and
+  nobody hears them in person; a call still carries what they say to its other members, as it does anyone's. They
+  can't lock an antenna from anywhere, a silent phone has nowhere to buzz for them, and video shows them standing
+  still. Clients play a walkie or loudspeaker frame from such a position, and every BeCom frame while their own
+  position isn't finite, at a gain of 0.
+- **Why:** NaN passed every range check written as "skip when farther", and Nearby put it in the cell at the world's
+  origin, so a player at NaN heard devices they weren't near and lent their walkie's audio to the players by spawn.
+  Only a modified client gets such a position past 1.7.10's move checks, so taking it all away costs no honest player
+  anything.
+- **To match the design:** nothing to undo if the owner agrees; otherwise, the design says what a player with no
+  position gets.

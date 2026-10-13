@@ -110,3 +110,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Walkie speakers and loudspeakers fade to silence at the edge of their range instead of cutting off there.
 - The voice chat's speaker list shows BeCom's group names, Call and Radio 1 to 16, in each player's own language.
 - On a server whose voice proximity range is under 16 blocks, calls and radio carry a speaker to the players beyond it.
+- BeCom's quests in an existing world are brought up to date at each server start: a quest whose tasks, rewards or
+  settings changed in an update takes the new ones. Players keep their finished quests and claimed rewards, and their
+  progress on each task that didn't change. Hand edits to BeCom's own quests are lost at the next start; to keep them,
+  turn `questlineEnabled` off and manage the questline by hand.
+- Radio work is spread over each second's ticks, radio by radio, instead of landing in one tick: with 30 radios keyed
+  at once, the busiest tick's radio work fell from 3 to 5 ms to about 0.6 ms in the load test. A broken Transceiver stops
+  carrying radio from the next tick, as one gone offline already did.
+- A player at a position that isn't a number, which only a modified client can bring about, gets no radio, phone
+  service or Signal Analyzer reading, hears nothing through BeCom's devices and can't lock an antenna. Clients play
+  BeCom audio from such a position silent.

@@ -60,8 +60,9 @@ Both can be changed in Minecraft's controls screen.
 ## For server operators
 
 The server's settings are in `config/becom.cfg`: every range, budget, power draw and timing of DESIGN.md's tunables,
-read at startup. Clients learn what they need from the server. Setting `questlineEnabled`, under `quests`, to false
-keeps BeCom out of the quest book, for servers with a curated one.
+read at startup. Clients learn what they need from the server. At each start, BeCom brings its own quests up to date
+with the ones it ships, keeping players' progress, so hand edits to them are lost. Setting `questlineEnabled`, under
+`quests`, to false keeps BeCom out of the quest book, for servers with a curated one.
 
 Commands, for operators:
 
@@ -71,7 +72,8 @@ Commands, for operators:
 - `/becom satellites [<dimension> <count>]`: each dimension's satellites, or sets how many orbit one, for testing.
 
 Pack makers can merge BeCom's quests into their own book: the files are in the jar, under
-`assets/becom/questline/DefaultQuests`, in GTNH's layout and with fixed IDs.
+`assets/becom/questline/DefaultQuests`, in GTNH's layout and with fixed IDs. A pack that changes them sets
+`questlineEnabled` to false, or BeCom puts its own back at the next start.
 
 ## Building
 

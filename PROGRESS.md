@@ -1322,17 +1322,45 @@ a dedicated server sees "Call".
 - BeCom adds only the quests a book is missing, so a world that already holds them keeps their old rewards and tasks
   after an update; the text does update, from the language files. The 0.x test worlds keep 0.x's rewards, X41's coin
   choices included, until `/bq_admin default load` or BetterQuesting's pack-version reload adds them again. Fix: refresh
-  BeCom's own quests' definitions at server start, keeping progress.
+  BeCom's own quests' definitions at server start, keeping progress. Fixed on `milestone/1.0-fixes` (X42): at each
+  server start, BeCom brings each of its quests whose definition differs from the one it ships up to date, and its
+  questline's places with them. Players keep their completions and claimed rewards, and each task's progress where the
+  task didn't change. QuestRefreshTest (5): an unchanged quest left alone, a changed task starting over while the other
+  keeps its progress, a changed reward keeping everyone's, a completed quest staying complete and claimed, and task
+  progress without an index dropped. A self-test step stores the Portal Relay quest with a changed task and an extra
+  reward and checks that it comes back as shipped, its player still complete and claimed, the unchanged task's progress
+  kept and the other quests left alone (4 checks). A second start of the same world brought nothing up to date.
 - Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
   "Radio 3" reads the same in both. On `voice-api`, each client translates them (GTNH Voice 0.11.0; LangTest), which
   needs an Italian client to see.
 - A whole radio publish, once a second, still works out every keyed radio's links in one tick: 5 to 6 ms with 30 radios
   keyed on one channel and 200 hearing them all. Spreading it over the second's ticks by radio would flatten that.
+  Fixed on `milestone/1.0-fixes`: each keyed radio is worked out in its own tick of the second, the one its holder's
+  radio is refreshed in, and at once when it keys, moves or changes what it transmits from. A publish uses the other
+  radios' transmissions as they were, and looks only at the dropout chains of the radios whose transmission changed. In
+  the load test, with every link's chain made, the slowest tick of a spread second took 0.48 to 0.94 ms over seven
+  runs, a median of 0.56 ms, working out 3 to 5 radios. Every radio at once took 3.1 to 8.3 ms, a median of 3.3 ms, and
+  a Transceiver going offline or broken still costs that, once. The 0.94 and 8.3 came from one run where the VM ran
+  slow. BudgetLoadTest asserts under 2 ms and under half of every radio at once. Tests: SlotsTest (1),
+  RadioSnapshotTest (2), RadioGroupTest on chains kept and dropped by speaker (2), and two self-test checks over a
+  second of real ticks: a keyed radio is worked out again once, and not in every tick.
 - The squelch tail at a release still looks at every online player for each walkie that held the speaker.
 - A player watching a Satellite Dish or a Launch Pad through GT's Drone Centre camera, with a Drone Downlink as its
   maintenance hatch, sees GT's WAILA lines without BeCom's.
 - A radio at a position that isn't a number gets NaN for its paths through antennas and satellites: it keeps its links
   for the drop grace, then loses them. It takes a modified client getting such a position past 1.7.10's move checks.
+  Fixed on `milestone/1.0-fixes` (X43): such a player has no position for BeCom, so their walkie is on no channel from
+  their next refresh, within a second, their Mobile Phone has no service, and the Signal Analyzer reads nothing there.
+  AntennaNetworkTest (1), and a self-test step that moves a phone holder and a walkie holder to NaN and back (3
+  checks).
+- Found and fixed on `milestone/1.0-fixes` (X43): BeCom's range checks skipped a player when the squared distance was
+  greater than the range's, which NaN never is, and Nearby put NaN in the cell at the world's origin. A listener at NaN
+  heard every Videophone in their dimension and the devices by spawn, a walkie held at NaN played to the players by
+  spawn, an owner at NaN could lock their antenna from anywhere, and the client's fade passed a BeCom frame from NaN at
+  full gain. Now a position that isn't finite is no position, and every range check keeps only what's within range.
+  Tests: PositionsTest (2); NearbyTest and the routing tests for a listener, a walkie holder and a speaker at NaN (6,
+  four of which failed before the fix); DistanceFadeTest (1); and a self-test check that an owner at NaN can't lock
+  their antenna.
 - The coin choices' values were never tried in a played game.
 - The load figures come from one 4-core cloud VM, which stalls the odd tick.
 - From 0.4: GregTech's rain hazards on BeCom's machines, relays through Personal Space and End portals at MV, a relay
@@ -1355,7 +1383,9 @@ a dedicated server sees "Call".
    state, link counts and the phone's number in English, and in Italian after switching.
 4. Put `Modernity-GTNHAddon-BeCom.zip` from a CI run above Modernity: BeCom's textures switch to the Modernity style.
 5. On a new world, the First call, Radio contact and Five satellites quests offer their coins or the BeCom item as a
-   choice. On a 0.x world, run `/bq_admin default load` first.
+   choice. On a 0.x world, run `/bq_admin default load` first. From `milestone/1.0-fixes`, a 0.x world needs no
+   command: the server log says how many of BeCom's quests it brought up to date, the choices are there, and the
+   quests a player had finished stay finished and claimed.
 6. With GTNH Voice 0.10.1 in the mods folder, the game stops at Forge's missing-mods screen, naming gtnhvoice and the
    version BeCom needs. 1.0 itself loaded beside any GTNH Voice; `voice-api` fixes that.
 7. On a dedicated server, two players on one walkie channel: the speaker list shows "Radio 1"; in a call, "Call", and
