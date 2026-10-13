@@ -676,14 +676,14 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   installed-rewards filter, so a reward left out for a mod that isn't installed is no change. A quest that differs takes
   the shipped definition: its tasks, rewards, properties and prerequisites. Every player keeps their completions and
   claimed rewards, even where the tasks or rewards changed, and each task's progress where the task at that position is
-  defined just as before, its kind, requirements and other settings alike; the rest starts over. BeCom marks everyone
-  whose task progress it drops, so BetterQuesting saves their files again and the next start doesn't read the old
-  progress back. The questline's places and sizes are refreshed the same way. BeCom logs how many it refreshed, touches
-  nothing outside its own UUIDs, and with the config's off switch still leaves the book alone. So a server that edits
-  BeCom's quests by hand loses those edits at the next start, as the option's comment says; to keep them, it turns the
-  questline off and manages it by hand. When a pack update's reload takes BeCom's quests out of the book, BeCom adds
-  them back as it ships them, and the progress it restores is matched to tasks by position and kind alone, since the
-  reload took their old definitions with it.
+  defined just as before, its kind, requirements and other settings alike; the rest starts over. When any of a quest's
+  tasks changed, BeCom marks everyone with progress in it, so BetterQuesting writes their files again and the next start
+  doesn't read old progress back from them. The questline's places and sizes are refreshed the same way. BeCom logs how
+  many it refreshed, touches nothing outside its own UUIDs, and with the config's off switch still leaves the book
+  alone. So a server that edits BeCom's quests by hand loses those edits at the next start, as the option's comment
+  says; to keep them, it turns the questline off and manages it by hand. When a pack update's reload takes BeCom's
+  quests out of the book, BeCom adds them back as it ships them, and the progress it restores is matched to tasks by
+  position and kind alone, since the reload took their old definitions with it.
 - **Why:** BeCom added only the quests a book was missing, so a world that had them kept their old tasks and rewards
   for good after an update, X41's coin choices included.
 - **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds

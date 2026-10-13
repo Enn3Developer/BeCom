@@ -153,9 +153,9 @@ class QuestRefreshTest {
 
     @Test
     void aChangedTaskMarksEveryoneWithProgressInTheQuest() {
-        // Carol has counted one of the relays the retrieval task asks for, under her UUID, and finished nothing. Bob
-        // only did BeCom's own task, which doesn't change, but his file could hold progress for a task an older BeCom
-        // had at index 0, which the new retrieval task would take back unless his file is written again.
+        // Carol has counted one of the relays the retrieval task asks for, under Carol's UUID, and finished nothing.
+        // Bob only did BeCom's own task, which doesn't change, but Bob's file could hold progress for a task an older
+        // BeCom had at index 0, which the new retrieval task would take back unless the file is written again.
         NBTTagCompound progress = progress();
         NBTTagCompound counting = progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND)
             .getCompoundTagAt(0);

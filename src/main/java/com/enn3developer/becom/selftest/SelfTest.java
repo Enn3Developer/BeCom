@@ -1736,7 +1736,7 @@ public final class SelfTest {
             bobToAlice.snr());
         RadioSnapshot.Link aliceToBobNow = linkTo(published.transmission(alice.getUniqueID()), bob.getUniqueID());
         check(
-            "...and leaves Alice's, whose radio didn't change, as it was until her own tick of the second",
+            "...and leaves Alice's, whose radio didn't change, as it was until its own tick of the second",
             aliceToBob != null && aliceToBobNow == aliceToBob,
             aliceToBob + " then " + aliceToBobNow);
         bob.setPosition(X0 + 30.5, Y, DIRECT_Z + 0.5);
@@ -1746,7 +1746,7 @@ public final class SelfTest {
     }
 
     // Alice's transmission as last seen while the ticks spread the publish, how often it was worked out again, and how
-    // often that was in another tick than her own.
+    // often that was in another tick than the radio's own.
     private RadioSnapshot.Transmission spreadSeen;
     private int spreadWorked;
     private int spreadOffTick;
@@ -1825,7 +1825,7 @@ public final class SelfTest {
         if (!skyTick && Slots.due(transceiver.ref(), tick)) {
             skyTick = true;
             skyOwnTick = Slots.due(dave.getUniqueID(), tick);
-            // A tick over 250 ms lets Dave go unkeyed, and his press after it works him out again: no evidence.
+            // A tick over 250 ms lets Dave go unkeyed, and the press after it works Dave out again: no evidence.
             skyWorked = now != null && skySeen != null && now != skySeen;
         }
         skySeen = now;
@@ -1841,7 +1841,7 @@ public final class SelfTest {
             skyTick ? "not worked out in the Transceiver's tick, or not keyed through it"
                 : "the Transceiver's tick didn't come");
         check(
-            "...Dave's own tick isn't his Transceiver's, so the check tells the two apart",
+            "...Dave's own tick isn't the Transceiver's, so the check tells the two apart",
             skyTick && !skyOwnTick,
             "move the Transceiver or Dave to a tick of their own");
         return 1;

@@ -159,7 +159,7 @@ class RadioGroupTest {
     @Test
     void aWalkieHeldWherePositionsArentNumbersPlaysAroundNobody() {
         // Bob's position isn't a number. NaN used to land in the cell at the world's origin and pass every range check,
-        // so his walkie played to Carol by spawn. His own walkie still plays to him flat, which needs no position.
+        // so Bob's walkie played to Carol by spawn. It still plays to Bob, flat, which needs no position.
         UUID alice = fixture.player("alice", 0, 64, 300, 0);
         UUID bob = fixture.player("bob", Double.NaN, Double.NaN, Double.NaN, 0);
         fixture.player("carol", 2, 64, 2, 0);
@@ -644,7 +644,7 @@ class RadioGroupTest {
             RadioSnapshot.builder()
                 .transmission(alice, RadioSnapshot.transmission(1, List.of(walkie(bob, 10))))
                 .build());
-        assertEquals(1, shared.chainCount(), "worked out again without Carol, her chain goes");
+        assertEquals(1, shared.chainCount(), "worked out again without Carol, Carol's chain goes");
         shared.publish(RadioSnapshot.EMPTY);
         assertEquals(0, shared.chainCount(), "and a speaker gone takes theirs");
     }
