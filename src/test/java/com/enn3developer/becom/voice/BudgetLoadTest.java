@@ -327,7 +327,7 @@ class BudgetLoadTest {
             ids.add(fixture.player("p" + i, p.x(), p.y(), p.z(), 0));
         }
         RadioRouting radio = new RadioRouting(16, () -> 48, 6, 16, 100_000_000L, 3, () -> 0.99, System::nanoTime);
-        RadioGroup channel = new RadioGroup(1, "Radio 1", radio);
+        RadioGroup channel = new RadioGroup(1, radio);
         UUID speaker = ids.get(0);
         RadioSnapshot.Builder snapshot = RadioSnapshot.builder()
             .transmitter(speaker, 1);
@@ -385,7 +385,7 @@ class BudgetLoadTest {
         fixture.route(channel, speaker, RadioGroup.ACTIVATION);
         int heard = fixture.sent.size();
         fixture.sent.clear();
-        CallGroup call = new CallGroup("Call", 16, () -> 48, () -> 0.99);
+        CallGroup call = new CallGroup(16, () -> 48, () -> 0.99);
         CallSnapshot.Builder calls = CallSnapshot.builder();
         List<UUID> members = ids.subList(100, 108);
         for (UUID a : members) for (UUID b : members) if (a != b) calls.route(a, new CallSnapshot.Route(b, 0, 1.0 / 3));

@@ -17,6 +17,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.IChatComponent;
+
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
@@ -25,6 +28,10 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.quest.QuestTask;
+import com.enn3developer.becom.voice.CallGroup;
+import com.enn3developer.becom.voice.RadioGroup;
+import com.enn3developer.becom.voice.RadioRouting;
+import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 
 /**
  * DESIGN.md 15.3: every player-facing string is in the language files. The keys built from an enum's names are the
@@ -104,5 +111,30 @@ class LangTest {
         List<String> missing = new ArrayList<>();
         for (String key : wanted) if (!keys.contains(key)) missing.add(key);
         assertEquals(List.of(), missing);
+    }
+
+    /**
+     * What a client shows for a voice group in {@code language}: GTNH Voice sends the group's display component as
+     * JSON, and the client formats it with its own lang files.
+     */
+    private static String clientText(IGroup group, Map<String, String> language) {
+        String json = IChatComponent.Serializer.func_150696_a(group.getDisplayComponent());
+        ChatComponentTranslation sent = (ChatComponentTranslation) IChatComponent.Serializer.func_150699_a(json);
+        return String.format(language.get(sent.getKey()), sent.getFormatArgs());
+    }
+
+    @Test
+    void eachClientShowsVoiceGroupNamesInItsOwnLanguage() throws IOException {
+        IGroup call = new CallGroup(16, () -> 48, () -> 0);
+        IGroup radio = new RadioGroup(3, new RadioRouting(16, () -> 48, 6, 16, 1, 3, () -> 0, () -> 0));
+        Map<String, String> english = entries("en_US.lang");
+        Map<String, String> italian = entries("it_IT.lang");
+        assertEquals("Call", clientText(call, english));
+        assertEquals("Chiamata", clientText(call, italian));
+        assertEquals("Radio 3", clientText(radio, english));
+        assertEquals("Radio 3", clientText(radio, italian));
+        // Logs, and a client without BeCom's lang files, get the names in English.
+        assertEquals("Call", call.getDisplayName());
+        assertEquals("Radio 3", radio.getDisplayName());
     }
 }

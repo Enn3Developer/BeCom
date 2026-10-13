@@ -24,7 +24,7 @@ class CallGroupTest {
     private final RoutingFixture fixture = new RoutingFixture();
     private double roll = 0.99;
     private int proximity = 48;
-    private final CallGroup group = new CallGroup("Call", 16, () -> proximity, () -> roll);
+    private final CallGroup group = new CallGroup(16, () -> proximity, () -> roll);
 
     @Test
     void sendsFlatToTheOtherParticipant() {

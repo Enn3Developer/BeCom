@@ -41,7 +41,7 @@ class RadioGroupTest {
         3,
         () -> roll,
         () -> now);
-    private final RadioGroup one = new RadioGroup(1, "Radio 1", shared);
+    private final RadioGroup one = new RadioGroup(1, shared);
 
     private static RadioSnapshot.Link walkie(UUID holder, double snr) {
         return new RadioSnapshot.Link(holder, null, snr, 0, 1);
@@ -55,6 +55,7 @@ class RadioGroupTest {
     void namesSixteenChannelsBelowCalls() {
         assertEquals("becom:radio.1", one.getName());
         assertEquals("becom:radio.16", RadioGroup.nameOf(16));
+        assertEquals("Radio 1", one.getDisplayName());
         assertEquals(100, one.priority());
         assertTrue(one.priority() < CallGroup.PRIORITY);
         assertEquals(ActivationIds.of("BeCom", "radio"), RADIO);
@@ -390,7 +391,7 @@ class RadioGroupTest {
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 100, 64, 0, 0);
         UUID close = fixture.player("close", 103, 64, 0, 0);
-        CallGroup call = new CallGroup("Call", 16, () -> proximity, () -> roll);
+        CallGroup call = new CallGroup(16, () -> proximity, () -> roll);
         call.publish(
             CallSnapshot.builder()
                 .route(alice, new CallSnapshot.Route(bob, 0, 1.0 / 3))

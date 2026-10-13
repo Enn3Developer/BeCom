@@ -3,6 +3,9 @@ package com.enn3developer.becom.voice;
 import java.util.Map;
 import java.util.UUID;
 
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.IChatComponent;
+
 import org.jetbrains.annotations.NotNull;
 
 import com.enn3developer.gtnhvoice.api.server.ActivationIds;
@@ -33,13 +36,14 @@ public final class RadioGroup implements IGroup {
 
     private final int channel;
     private final String name;
+    // English, for logs and for a client with no translation of the display component.
     private final String displayName;
     private final RadioRouting shared;
 
-    public RadioGroup(int channel, String displayName, RadioRouting shared) {
+    public RadioGroup(int channel, RadioRouting shared) {
         this.channel = channel;
         this.name = PREFIX + channel;
-        this.displayName = displayName;
+        this.displayName = "Radio " + channel;
         this.shared = shared;
     }
 
@@ -59,6 +63,12 @@ public final class RadioGroup implements IGroup {
     @Override
     public @NotNull String getDisplayName() {
         return displayName;
+    }
+
+    /** Each client translates the group's name into its own player's language (DESIGN.md 15.3). */
+    @Override
+    public IChatComponent getDisplayComponent() {
+        return new ChatComponentTranslation("becom.group.radio", channel);
     }
 
     @Override

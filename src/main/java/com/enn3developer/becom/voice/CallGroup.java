@@ -6,6 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.IChatComponent;
+
 import org.jetbrains.annotations.NotNull;
 
 import com.enn3developer.becom.logic.DropoutModel;
@@ -29,8 +32,9 @@ public final class CallGroup implements IGroup {
 
     public static final String NAME = "becom:call";
     public static final int PRIORITY = 200;
+    // English, for logs and for a client with no translation of the display component.
+    private static final String DISPLAY_NAME = "Call";
 
-    private final String displayName;
     private final double directRange;
     private final IntSupplier proximity;
     private final DoubleSupplier random;
@@ -41,8 +45,7 @@ public final class CallGroup implements IGroup {
      * @param proximity GTNH Voice's proximity range in blocks, a cap on the direct range; called on the network thread
      * @param random    uniform numbers in [0, 1) for the dropout model; must be safe on the network thread
      */
-    public CallGroup(String displayName, double directRange, IntSupplier proximity, DoubleSupplier random) {
-        this.displayName = displayName;
+    public CallGroup(double directRange, IntSupplier proximity, DoubleSupplier random) {
         this.directRange = directRange;
         this.proximity = proximity;
         this.random = random;
@@ -58,7 +61,13 @@ public final class CallGroup implements IGroup {
 
     @Override
     public @NotNull String getDisplayName() {
-        return displayName;
+        return DISPLAY_NAME;
+    }
+
+    /** Each client translates the group's name into its own player's language (DESIGN.md 15.3). */
+    @Override
+    public IChatComponent getDisplayComponent() {
+        return new ChatComponentTranslation("becom.group.call");
     }
 
     @Override

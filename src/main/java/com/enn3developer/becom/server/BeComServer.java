@@ -93,7 +93,6 @@ public final class BeComServer {
         this.rockets = new RocketReceivers(network, antennas);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
-            GroupNames.call(),
             tunables.directHearingRange(),
             GtnhVoiceApi::proximityRange,
             () -> java.util.concurrent.ThreadLocalRandom.current()

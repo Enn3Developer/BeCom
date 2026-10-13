@@ -178,7 +178,7 @@ public final class RadioService {
                 .nextDouble(),
             System::nanoTime);
         for (int channel = 1; channel <= RadioGroup.CHANNELS; channel++) {
-            groups[channel] = new RadioGroup(channel, GroupNames.radio(channel), routing);
+            groups[channel] = new RadioGroup(channel, routing);
         }
     }
 
