@@ -22,6 +22,14 @@ public final class SpeakerFade {
         return 1 - share * share;
     }
 
+    /**
+     * The volume of another sound a speaker plays, such as the radio's squelch tail: {@code full} up close, and faded
+     * as the voice is, so it never outlasts the voice toward the edge of the range.
+     */
+    public static float volume(float full, double distance, double range) {
+        return (float) (full * gain(distance, range));
+    }
+
     /** Whether a frame plays from the exact middle of a block, as a loudspeaker's do and a walkie's never do. */
     public static boolean blockMiddle(double x, double y, double z) {
         return middle(x) && middle(y) && middle(z);

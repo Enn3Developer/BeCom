@@ -25,6 +25,14 @@ class SpeakerFadeTest {
     }
 
     @Test
+    void aSpeakersOtherSoundsFadeAsItsVoiceDoes() {
+        // The squelch tail at 5.5 blocks from a walkie: as faint, against its own close-up volume, as the voice.
+        assertEquals(0.5f * (float) SpeakerFade.gain(5.5, 6), SpeakerFade.volume(0.5f, 5.5, 6), 1e-6);
+        assertEquals(0.5f, SpeakerFade.volume(0.5f, 0, 6), 1e-6);
+        assertEquals(0, SpeakerFade.volume(0.5f, 6, 6), 1e-6);
+    }
+
+    @Test
     void quieterTheFurtherAway() {
         double last = 1;
         for (double d = 0.25; d <= 6; d += 0.25) {

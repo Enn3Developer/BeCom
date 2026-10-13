@@ -28,6 +28,7 @@ import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
@@ -683,12 +684,14 @@ public final class RadioService {
     }
 
     private void playAround(UUID speaker, int channel, int dimension, double x, double y, double z, double range) {
-        S29PacketSoundEffect sound = new S29PacketSoundEffect(SQUELCH, x, y, z, SQUELCH_VOLUME, 1.0f);
         for (EntityPlayerMP player : players()) {
             if (player.dimension != dimension || player.getDistanceSq(x, y, z) > range * range) continue;
             if (player instanceof FakePlayer || player.playerNetServerHandler == null) continue;
             if (!routing.listenerHeldBy(player.getUniqueID(), channel, speaker)) continue;
-            player.playerNetServerHandler.sendPacket(sound);
+            // Faded like the voice it ends, to nothing at the range (DESIGN.md 13.5).
+            float volume = SpeakerFade.volume(SQUELCH_VOLUME, Math.sqrt(player.getDistanceSq(x, y, z)), range);
+            if (volume <= 0) continue;
+            player.playerNetServerHandler.sendPacket(new S29PacketSoundEffect(SQUELCH, x, y, z, volume, 1.0f));
         }
     }
 
