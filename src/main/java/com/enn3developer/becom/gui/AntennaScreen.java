@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.LevelScale;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
@@ -49,6 +50,8 @@ public final class AntennaScreen {
     private static final int ROWS = 7;
     private static final int ROW_HEIGHT = 11;
     private static final String LOCK = "lock";
+    // How close a player must stand to lock an antenna, as for any machine's screen.
+    private static final double LOCK_REACH = 8;
 
     private AntennaScreen() {}
 
@@ -252,7 +255,9 @@ public final class AntennaScreen {
     public static void setLocked(MTEAntenna antenna, EntityPlayer player, boolean locked) {
         IGregTechTileEntity tile = antenna.getBaseMetaTileEntity();
         if (tile == null || tile.isDead() || !Ownership.mayManage(player, antenna.owner())) return;
-        if (player.getDistanceSq(tile.getXCoord() + 0.5, tile.getYCoord() + 0.5, tile.getZCoord() + 0.5) > 64) return;
+        double distanceSq = player
+            .getDistanceSq(tile.getXCoord() + 0.5, tile.getYCoord() + 0.5, tile.getZCoord() + 0.5);
+        if (!Positions.withinSq(distanceSq, LOCK_REACH)) return;
         antenna.setLocked(locked);
     }
 

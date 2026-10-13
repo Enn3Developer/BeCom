@@ -27,6 +27,7 @@ import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.PhoneNumbers;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
@@ -553,6 +554,8 @@ public final class CallService implements CallBook.Listener {
         PhoneRecord record = phones.record(number);
         if (holder == null || record == null) return;
         if (record.silent()) {
+            // A holder whose position isn't a number has none to buzz at.
+            if (!Positions.finite(holder.posX, holder.posY, holder.posZ)) return;
             holder.playerNetServerHandler.sendPacket(
                 new S29PacketSoundEffect(
                     BeCom.MODID + ":phone.buzz",

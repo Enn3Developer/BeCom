@@ -358,7 +358,8 @@ public final class AntennaNetwork {
         private void link(Antenna other) {
             if (antennas.get(other.ref) != other || other.end == null) return;
             double budget = Math.min(target.budget, other.budget);
-            if (from.distanceTo(other.end) > tunables.rangeToLow(budget)) return;
+            // Written so a distance that isn't a number is out of range too.
+            if (!(from.distanceTo(other.end) <= tunables.rangeToLow(budget))) return;
             // The head's latest end: same spot as when the survey started, but its cover may have changed since.
             RadioHops.End here = target.end;
             RadioModel.Losses onVhf = hops.direct(terrain, here, other.end, budget, vhf, 0, noSky);
@@ -532,7 +533,8 @@ public final class AntennaNetwork {
         boolean noSky) {
         if (antenna.survey == null) return null;
         if (antenna.locked && !sameTeam.test(user, antenna.owner)) return null;
-        if (antenna.end.distanceTo(device) > tunables.rangeToHold(antenna.budget)) return null;
+        // Written so a device at a position that isn't a number is out of range, not linked with a NaN SNR.
+        if (!(antenna.end.distanceTo(device) <= tunables.rangeToHold(antenna.budget))) return null;
         return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, weather, noSky);
     }
 

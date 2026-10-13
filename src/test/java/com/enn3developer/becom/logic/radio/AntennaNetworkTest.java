@@ -122,6 +122,19 @@ class AntennaNetworkTest {
     }
 
     @Test
+    void aDeviceAtAPositionThatIsntANumberReachesNoAntenna() {
+        // Its distance is NaN, which the range check used to let through to a link with a NaN SNR.
+        NodeRef a = at(0, 0);
+        run(2, List.of(a), 1);
+        RadioHops.End lost = new RadioHops.End(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+        assertEquals(Double.NEGATIVE_INFINITY, network.access(network.mesh(DIM), DIM, lost, owner)[0]);
+        assertTrue(
+            network.reach(DIM, lost, owner, network.uhf(), false)
+                .isEmpty());
+        assertNull(network.best(DIM, lost, owner, network.vhf()));
+    }
+
+    @Test
     void aLockedAntennaRefusesStrangersButStillRelays() {
         NodeRef a = at(0, 0);
         NodeRef b = at(100, 0);

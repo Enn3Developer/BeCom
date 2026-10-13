@@ -1533,6 +1533,13 @@ public final class SelfTest {
             !AntennaScreen.view(antennaA, stranger)
                 .mayManage() && !antennaA.isLocked(),
             "");
+        // A distance that isn't a number used to pass the 8-block check, so the owner could lock it from anywhere.
+        double[] ownerAt = { owner.posX, owner.posY, owner.posZ };
+        owner.setPosition(Double.NaN, Double.NaN, Double.NaN);
+        AntennaScreen.setLocked(antennaA, owner, true);
+        owner.setPosition(ownerAt[0], ownerAt[1], ownerAt[2]);
+        check("...nor its owner from a position that isn't a number", !antennaA.isLocked(), "");
+        antennaA.setLocked(false);
         int a = bridgePhoneA.number(), b = bridgePhoneB.number();
         near(
             "a call between lines bridged onto them: its weakest hop is the UHF link",

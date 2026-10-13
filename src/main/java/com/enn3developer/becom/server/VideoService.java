@@ -15,6 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 
 import com.enn3developer.becom.logic.DropoutModel;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.RepeatReports;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
@@ -307,10 +308,12 @@ public final class VideoService {
         if (player == null) return null;
         Source source = sources.computeIfAbsent(id, s -> new Source());
         source.seq++;
-        double speed = Double.isNaN(source.lastX) ? 0
+        // A player whose position isn't a number has none: they stand still, and the next pose starts afresh.
+        boolean placed = Positions.finite(player.posX, player.posY, player.posZ);
+        double speed = !placed || Double.isNaN(source.lastX) ? 0
             : Math.hypot(player.posX - source.lastX, player.posZ - source.lastZ) / poseTicks;
-        source.lastX = player.posX;
-        source.lastZ = player.posZ;
+        source.lastX = placed ? player.posX : Double.NaN;
+        source.lastZ = placed ? player.posZ : Double.NaN;
         boolean changed = false;
         for (int slot = 0; slot < EQUIPMENT_SLOTS; slot++) {
             ItemStack now = player.getEquipmentInSlot(slot);
