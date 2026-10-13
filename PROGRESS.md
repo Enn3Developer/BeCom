@@ -464,7 +464,9 @@ plays it with its own falloff) is in use from 0.2, and so is V1's 16 blocks for 
 - Players between GTNH Voice's proximity range and 16 blocks of a speaker hear neither (V1), now on radio as well as
   calls. A loudspeaker or a walkie's speaker plays with GTNH Voice's own falloff and stops at the device's range, so
   it cuts off instead of fading out (V3). On `voice-api`, V1 is fixed as for calls, and the speakers fade to silence
-  at their range, which needs a client to hear.
+  at their range, which needs a client to hear. Walking toward one, its voice still cuts in about a block inside the
+  range: the server judges the range from where it last saw the listener, a fraction of a second behind their client.
+  The fade makes that cut about 11 dB quieter than before.
 - Left for 0.3, which DESIGN.md 16 gives them to: walkies in Baubles slots (D14; for now they work from the
   inventory), the antenna screen's coverage map, and weather loss (D26). Weather touches only UHF and satellite hops,
   so radio channels don't miss it, but calls over UHF links between antennas ignore the rain until then.
@@ -1340,8 +1342,8 @@ a dedicated server sees "Call".
   (X29). From 0.1 and 0.2: the IC2 rubber GT-ERR-01 line in the boot log, X22's survey cost, and V1, V3 and V5, which
   `voice-api` fixes with GTNH Voice 0.11.0.
 
-**Owner checks.** A GTNH 2.8 client with GuideNH and WAILA, GTNH Voice 0.10.1 or newer, BeCom from this branch, and for
-the second part a dedicated server and a second player:
+**Owner checks.** A GTNH 2.8 client with GuideNH and WAILA, GTNH Voice 0.11.0 or newer on the server and every client
+(0.10.1 on 1.0 itself), BeCom from this branch, and for the second part a dedicated server and a second player:
 
 1. GuideNH (16.2's untested assumption): `/guide list` names `becom:guidenh`, and `/guide open becom:guidenh` opens the
    start page, with the eight pages in the navigation and items drawn with their icons. Switch Minecraft to Italian: the
@@ -1354,9 +1356,16 @@ the second part a dedicated server and a second player:
 4. Put `Modernity-GTNHAddon-BeCom.zip` from a CI run above Modernity: BeCom's textures switch to the Modernity style.
 5. On a new world, the First call, Radio contact and Five satellites quests offer their coins or the BeCom item as a
    choice. On a 0.x world, run `/bq_admin default load` first.
-6. With GTNH Voice 0.9.2 in the mods folder, the game stops at Forge's missing-mods screen, naming gtnhvoice and the
-   version BeCom needs.
-7. On a dedicated server, two players on one walkie channel: the speaker list shows "Radio 1"; in a call, "Call", for an
-   Italian client too (V6).
-8. To release: merge into master; if wanted, rename `## [Unreleased]` to `## [1.0.0] - <date>` with an empty Unreleased
-   above it; tag `v1.0.0`. The release gets the jars, the Modernity zip and the changelog's section as its notes.
+6. With GTNH Voice 0.10.1 in the mods folder, the game stops at Forge's missing-mods screen, naming gtnhvoice and the
+   version BeCom needs. 1.0 itself loaded beside any GTNH Voice; `voice-api` fixes that.
+7. On a dedicated server, two players on one walkie channel: the speaker list shows "Radio 1"; in a call, "Call", and
+   "Chiamata" for an Italian client (V6, from `voice-api`).
+8. The fade (V3, from `voice-api`): while someone talks on a walkie channel, walk away from another player's receiving
+   walkie. The voice fades to silence by 6 blocks, and the squelch tail at the end of the over fades with it. Walking
+   back, the voice comes in about a block inside the range, quietly (a known issue). Do the same from a Transceiver's
+   loudspeaker and from a Videophone in a call, over 16 blocks. `SpeakerFade.gain` is the one place to tune it.
+9. Direct hearing (V1, from `voice-api`): with `distance` at 10 in the server's GTNH Voice config, a call partner 12
+   blocks from the speaker hears them through the call, and one 8 blocks away hears them in person only.
+10. To release: merge into master; if wanted, rename `## [Unreleased]` to `## [1.0.0] - <date>` with an empty
+    Unreleased above it; tag `v1.0.0`. The release gets the jars, the Modernity zip and the changelog's section as its
+    notes.
