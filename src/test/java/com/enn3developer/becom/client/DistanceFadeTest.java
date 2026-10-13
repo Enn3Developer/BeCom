@@ -76,7 +76,20 @@ class DistanceFadeTest {
         assertEquals(1, DistanceFade.gain(new Frame("becom:call", false, Double.NaN, Double.NaN, Double.NaN), AT));
         assertEquals(1, DistanceFade.gain(new Frame("local", true, 140, 64, 0), AT));
         assertEquals(1, DistanceFade.gain(radio(140, 64, 0), null), "no player in a world yet");
-        assertEquals(1, DistanceFade.gain(radio(Double.NaN, Double.NaN, Double.NaN), AT), "a frame with no position");
+        assertEquals(1, DistanceFade.gain(new Frame("local", true, Double.NaN, Double.NaN, Double.NaN), AT));
+    }
+
+    @Test
+    void aBeComFrameFromAPositionThatIsntANumberIsSilent() {
+        // It used to play at full gain.
+        assertEquals(0, DistanceFade.gain(radio(Double.NaN, Double.NaN, Double.NaN), AT));
+        assertEquals(0, DistanceFade.gain(radio(100, Double.NaN, 0), AT));
+        assertEquals(0, DistanceFade.gain(radio(Double.POSITIVE_INFINITY, 64, 0), AT));
+        assertEquals(0, DistanceFade.gain(new Frame("becom:call", true, Double.NaN, 64.5, 0.5), AT));
+        // Nor is anything in range of a player whose own position isn't a number.
+        DistanceFade.Listener lost = new DistanceFade.Listener(Double.NaN, 64, 0, 6, 16, 16);
+        assertEquals(0, DistanceFade.gain(radio(100, 64, 0), lost));
+        assertEquals(1, DistanceFade.gain(new Frame("becom:radio.3", false, Double.NaN, Double.NaN, Double.NaN), lost));
     }
 
     @Test

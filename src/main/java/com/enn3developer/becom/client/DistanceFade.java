@@ -2,6 +2,7 @@ package com.enn3developer.becom.client;
 
 import java.util.function.LongSupplier;
 
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.voice.CallGroup;
@@ -77,11 +78,16 @@ public final class DistanceFade implements IPcmChain.Stage {
         return x * gain;
     }
 
-    /** The gain a frame ends at: faded by distance for a positional BeCom frame, 1 for anything else. */
+    /**
+     * The gain a frame ends at: faded by distance for a positional BeCom frame, 1 for anything else. A BeCom frame from
+     * a
+     * position that isn't finite, or heard where this player's isn't, is out of every range: silent.
+     */
     static double gain(IPlaybackFrame frame, Listener at) {
-        if (at == null || !frame.positional() || Double.isNaN(frame.x())) return 1;
+        if (at == null || !frame.positional()) return 1;
         double range = range(frame, at);
         if (Double.isNaN(range)) return 1;
+        if (!Positions.finite(frame.x(), frame.y(), frame.z()) || !Positions.finite(at.x(), at.y(), at.z())) return 0;
         double dx = frame.x() - at.x();
         double dy = frame.y() - at.y();
         double dz = frame.z() - at.z();
