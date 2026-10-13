@@ -504,11 +504,13 @@ class BudgetLoadTest {
         // once whatever the machine, with room for the VM's stalls.
         assertTrue(spread < 2_000_000, "a spread second's slowest tick stays under 2 ms: " + ms(spread));
         assertTrue(2 * spread < everyone, "spreading takes at least half off the slowest tick");
-        assertEquals(TRANSMITTERS, workedOut.size(), "every keyed radio is worked out in a spread second");
+        // The second timed works each keyed radio out once, so its slowest tick is timed over all of a second's work.
+        // That RadioService does the same, with the antenna network changing every tick, is the self-test's to check.
+        assertEquals(TRANSMITTERS, workedOut.size(), "the spread second timed works out every keyed radio");
         assertTrue(
             workedOut.values()
                 .stream()
                 .allMatch(n -> n == 1),
-            "...once");
+            "...once each");
     }
 }

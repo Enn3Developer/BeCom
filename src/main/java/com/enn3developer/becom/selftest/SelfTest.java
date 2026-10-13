@@ -1743,7 +1743,9 @@ public final class SelfTest {
 
     /**
      * DESIGN.md 6.4, 6.5: a radio keyed for a second, with nothing about it changed, is worked out again once, in its
-     * own tick of the second; the other ticks publish its transmission as it was.
+     * own tick of the second; the other ticks publish its transmission as it was. The antenna network changing in
+     * every one of those ticks, as an owner toggling a lock makes it, doesn't change that: each radio takes the new
+     * network in its own tick.
      */
     private int startSpread() {
         becom.radio.keyForSelfTest(alice.getUniqueID());
@@ -1756,6 +1758,7 @@ public final class SelfTest {
     private int watchSpread() {
         // A frame every tick, as from someone holding push-to-talk, keeps Alice keyed without pressing again.
         becom.radio.keyForSelfTest(alice.getUniqueID());
+        antennaA.setLocked(!antennaA.isLocked());
         RadioSnapshot.Transmission now = becom.radio.published()
             .transmission(alice.getUniqueID());
         if (now != spreadSeen) spreadWorked++;
@@ -1764,14 +1767,14 @@ public final class SelfTest {
     }
 
     private int checkSpread() {
+        antennaA.setLocked(false);
         check(
             "a keyed radio is worked out again within a second, with no press",
             spreadWorked >= 1,
             spreadWorked + " times in a second");
-        // Once in its own tick, and once more at most if what it transmits from changed, as an antenna's survey can.
         check(
-            "...and not in every tick: the other ticks publish its transmission as it was",
-            spreadWorked <= 2,
+            "...once, in its own tick, though an antenna's lock changed in every tick of that second",
+            spreadWorked == 1,
             spreadWorked + " times in a second");
         return 1;
     }

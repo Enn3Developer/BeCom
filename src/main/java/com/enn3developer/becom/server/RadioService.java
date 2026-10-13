@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -127,7 +128,20 @@ public final class RadioService {
      * hop up to the satellites (9.1).
      */
     private record Tx(int channel, int dimension, RadioHops.End end, double budget, double[] access, NodeRef from,
-        double sky) {}
+        double sky) {
+
+        /**
+         * Whether this is the same radio in the same place on the same channel as {@code other}. Its access to the
+         * antennas and its sky hop aren't compared: they change with the network and the weather, which each keyed
+         * radio takes in its own tick of the second, so one antenna's change doesn't work out every radio at once.
+         */
+        boolean sameSource(Tx other) {
+            return channel == other.channel && dimension == other.dimension
+                && end.equals(other.end)
+                && Double.compare(budget, other.budget) == 0
+                && Objects.equals(from, other.from);
+        }
+    }
 
     private record Pair(UUID speaker, Object device) {}
 
@@ -481,7 +495,9 @@ public final class RadioService {
      * Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. A keyed radio's
      * links are worked out again when it keys, moves or changes what it transmits from, and once a second (DESIGN.md
      * 6.4); otherwise its last transmission stands as it was, so neither a press nor a radio's tick of the second works
-     * out every other keyed radio's links again. Nothing is published when nothing changed.
+     * out every other keyed radio's links again. A change to the antennas or the sky reaches each radio in its own
+     * tick.
+     * Nothing is published when nothing changed.
      *
      * @param fresh the radios to work out again even if nothing changed, or null for all of them
      */
@@ -500,7 +516,7 @@ public final class RadioService {
             if (fresh == null || fresh.contains(speaker)
                 || links == null
                 || !links.tx()
-                    .equals(tx)) {
+                    .sameSource(tx)) {
                 if (receivers == null) {
                     receivers = new ArrayList<>(radios.values());
                     receivers.sort(Comparator.comparing(r -> r.id));
