@@ -518,7 +518,13 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                         questline.quests()
                             .get(id)).writeToNBT(new NBTTagCompound())));
         outcome.put("complete", now.isComplete(player));
-        outcome.put("claimed", now.hasClaimed(player));
+        // Not hasClaimed, which is true of any quest left with no rewards, as on a server without the reward mods.
+        NBTTagCompound completion = now.getCompletionInfo(player);
+        outcome.put("claimed", completion != null && completion.getBoolean("claimed"));
+        outcome.put(
+            "rewards",
+            now.getRewards()
+                .size() > 0);
         outcome.put("offlineResetSaved", offlineReset);
         outcome.put("unchangedTaskKept", unchangedKept);
         outcome.put("changedTaskReset", changedReset);
