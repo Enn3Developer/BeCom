@@ -49,6 +49,7 @@ import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.Slots;
 import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
@@ -263,6 +264,9 @@ public final class SelfTest {
         steps.add(this::startSpread);
         for (int i = 0; i < TICKS_PER_SECOND; i++) steps.add(this::watchSpread);
         steps.add(this::checkSpread);
+        steps.add(this::startSky);
+        for (int i = 0; i < TICKS_PER_SECOND; i++) steps.add(this::watchSky);
+        steps.add(this::checkSky);
         steps.add(this::keyThroughAntennas);
         steps.add(this::checkThroughAntennas);
         steps.add(this::keyLocked);
@@ -1741,9 +1745,11 @@ public final class SelfTest {
         return 1;
     }
 
-    // Alice's transmission as last seen while the ticks spread the publish, and how often it was worked out again.
+    // Alice's transmission as last seen while the ticks spread the publish, how often it was worked out again, and how
+    // often that was in another tick than her own.
     private RadioSnapshot.Transmission spreadSeen;
     private int spreadWorked;
+    private int spreadOffTick;
 
     /**
      * DESIGN.md 6.4, 6.5: a radio keyed for a second, with nothing about it changed, is worked out again once, in its
@@ -1756,6 +1762,7 @@ public final class SelfTest {
         spreadSeen = becom.radio.published()
             .transmission(alice.getUniqueID());
         spreadWorked = 0;
+        spreadOffTick = 0;
         return 1;
     }
 
@@ -1765,7 +1772,11 @@ public final class SelfTest {
         antennaA.setLocked(!antennaA.isLocked());
         RadioSnapshot.Transmission now = becom.radio.published()
             .transmission(alice.getUniqueID());
-        if (now != spreadSeen) spreadWorked++;
+        if (now != spreadSeen) {
+            spreadWorked++;
+            // The radio's tick is the one its last publish ran in.
+            if (!Slots.due(alice.getUniqueID(), becom.radio.tickForSelfTest())) spreadOffTick++;
+        }
         spreadSeen = now;
         return 1;
     }
@@ -1778,8 +1789,51 @@ public final class SelfTest {
             spreadWorked + " times in a second");
         check(
             "...once, in its own tick, though an antenna's lock changed in every tick of that second",
-            spreadWorked == 1,
-            spreadWorked + " times in a second");
+            spreadWorked == 1 && spreadOffTick == 0,
+            spreadWorked + " times in a second, " + spreadOffTick + " in another tick");
+        return 1;
+    }
+
+    // Dave's transmission through the Transceiver while satellites come up over it, and whether it was worked out
+    // again in the Transceiver's tick of the second, when its sky hop is.
+    private RadioSnapshot.Transmission skySeen;
+    private boolean skyTick;
+    private boolean skyWorked;
+
+    /**
+     * DESIGN.md 9.1, 6.4: a Transceiver's sky hop is worked out in its own tick of the second, and a speaker standing
+     * at it is worked out again in that tick when the hop changed, not up to a second later in their own.
+     */
+    private int startSky() {
+        becom.radio.keyForSelfTest(dave.getUniqueID());
+        becom.radio.publishForSelfTest();
+        skySeen = becom.radio.published()
+            .transmission(dave.getUniqueID());
+        skyTick = false;
+        skyWorked = false;
+        becom.space.set(world.provider.dimensionId, 100);
+        return 1;
+    }
+
+    private int watchSky() {
+        becom.radio.keyForSelfTest(dave.getUniqueID());
+        RadioSnapshot.Transmission now = becom.radio.published()
+            .transmission(dave.getUniqueID());
+        if (!skyTick && Slots.due(transceiver.ref(), becom.radio.tickForSelfTest())) {
+            skyTick = true;
+            skyWorked = now != skySeen;
+        }
+        skySeen = now;
+        return 1;
+    }
+
+    private int checkSky() {
+        becom.space.satellitesForSelfTest()
+            .clear(world.provider.dimensionId);
+        check(
+            "a speaker at a Transceiver is worked out again in the tick its sky hop changes, satellites having come up",
+            skyTick && skyWorked,
+            skyTick ? "not worked out in the Transceiver's tick" : "the Transceiver's tick didn't come");
         return 1;
     }
 

@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -125,23 +124,11 @@ public final class RadioService {
 
     /**
      * What a speaker transmits from: their walkie, or the Transceiver they stand at (DESIGN.md 8.1); {@code sky} is its
-     * hop up to the satellites (9.1).
+     * hop up to the satellites (9.1), worked out in the radio's own tick of the second: the holder's for a walkie, the
+     * Transceiver's for one. Its access to the antennas isn't part of it: that changes with the whole network, and is
+     * worked out with its links, so one antenna's change doesn't work out every keyed radio at once.
      */
-    private record Tx(int channel, int dimension, RadioHops.End end, double budget, double[] access, NodeRef from,
-        double sky) {
-
-        /**
-         * Whether this is the same radio in the same place on the same channel as {@code other}. Its access to the
-         * antennas and its sky hop aren't compared: they change with the network and the weather, which each keyed
-         * radio takes in its own tick of the second, so one antenna's change doesn't work out every radio at once.
-         */
-        boolean sameSource(Tx other) {
-            return channel == other.channel && dimension == other.dimension
-                && end.equals(other.end)
-                && Double.compare(budget, other.budget) == 0
-                && Objects.equals(from, other.from);
-        }
-    }
+    private record Tx(int channel, int dimension, RadioHops.End end, double budget, NodeRef from, double sky) {}
 
     private record Pair(UUID speaker, Object device) {}
 
@@ -440,24 +427,10 @@ public final class RadioService {
     private Tx txOf(Radio radio) {
         Transceiver at = radio.transceiver == null ? null : transceivers.get(radio.transceiver);
         if (at != null && working(at)) {
-            return new Tx(
-                at.channel,
-                at.ref.dimension(),
-                at.end,
-                tunables.transceiverBudget(),
-                refreshAccess(at),
-                at.ref,
-                at.sky);
+            return new Tx(at.channel, at.ref.dimension(), at.end, tunables.transceiverBudget(), at.ref, at.sky);
         }
         if (radio.walkieChannel > 0) {
-            return new Tx(
-                radio.walkieChannel,
-                radio.dimension,
-                radio.end,
-                tunables.walkieBudget(),
-                accessOf(radio),
-                null,
-                radio.sky);
+            return new Tx(radio.walkieChannel, radio.dimension, radio.end, tunables.walkieBudget(), null, radio.sky);
         }
         return null;
     }
@@ -495,9 +468,8 @@ public final class RadioService {
      * Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. A keyed radio's
      * links are worked out again when it keys, moves or changes what it transmits from, and once a second (DESIGN.md
      * 6.4); otherwise its last transmission stands as it was, so neither a press nor a radio's tick of the second works
-     * out every other keyed radio's links again. A change to the antennas or the sky reaches each radio in its own
-     * tick.
-     * Nothing is published when nothing changed.
+     * out every other keyed radio's links again. A change to the antennas reaches each radio in its own tick, and a
+     * change to its sky hop in the tick that hop is worked out. Nothing is published when nothing changed.
      *
      * @param fresh the radios to work out again even if nothing changed, or null for all of them
      */
@@ -511,12 +483,16 @@ public final class RadioService {
         for (UUID speaker : speakers) {
             Radio radio = radios.get(speaker);
             Tx tx = radio == null ? null : txOf(radio);
-            if (tx == null) continue;
+            if (tx == null) {
+                // Links from before are no use once it transmits again: the devices around may have changed since.
+                evaluated.remove(speaker);
+                continue;
+            }
             Links links = evaluated.get(speaker);
             if (fresh == null || fresh.contains(speaker)
                 || links == null
                 || !links.tx()
-                    .sameSource(tx)) {
+                    .equals(tx)) {
                 if (receivers == null) {
                     receivers = new ArrayList<>(radios.values());
                     receivers.sort(Comparator.comparing(r -> r.id));
@@ -554,9 +530,11 @@ public final class RadioService {
     private Links links(UUID speaker, Radio radio, Tx tx, List<Radio> receivers, List<Transceiver> loudspeakers) {
         List<RadioSnapshot.Link> links = new ArrayList<>();
         AntennaNetwork.Mesh mesh = antennas.mesh(tx.dimension);
-        double[] reach = tx.access != null && tx.access.length == mesh.antennas()
+        Transceiver from = tx.from == null ? null : transceivers.get(tx.from);
+        double[] access = from != null ? refreshAccess(from) : accessOf(radio);
+        double[] reach = access != null && access.length == mesh.antennas()
             .size() ? mesh.vhf()
-                .reach(tx.access) : null;
+                .reach(access) : null;
         for (Radio other : receivers) {
             if (other == radio || other.walkieChannel != tx.channel || other.dimension != tx.dimension) continue;
             double snr = snr(tx, other.end, accessOf(other), reach, other.sky);
@@ -842,6 +820,11 @@ public final class RadioService {
 
     public void drainForSelfTest(EntityPlayerMP player) {
         drainWalkies(List.of(player));
+    }
+
+    /** The tick the service last ran, which a publish in it ran in too. */
+    public long tickForSelfTest() {
+        return tick;
     }
 
     /** Stands in for a radio frame from {@code speaker}: the next tick builds their transmission. */
