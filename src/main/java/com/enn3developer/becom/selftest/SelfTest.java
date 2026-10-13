@@ -1794,11 +1794,12 @@ public final class SelfTest {
         return 1;
     }
 
-    // Dave's transmission through the Transceiver while satellites come up over it, and whether it was worked out
-    // again in the Transceiver's tick of the second, when its sky hop is.
+    // Dave's transmission through the Transceiver while satellites come up over it, whether it was worked out again in
+    // the Transceiver's tick of the second, when its sky hop is, and whether that is Dave's own tick too.
     private RadioSnapshot.Transmission skySeen;
     private boolean skyTick;
     private boolean skyWorked;
+    private boolean skyOwnTick;
 
     /**
      * DESIGN.md 9.1, 6.4: a Transceiver's sky hop is worked out in its own tick of the second, and a speaker standing
@@ -1811,6 +1812,7 @@ public final class SelfTest {
             .transmission(dave.getUniqueID());
         skyTick = false;
         skyWorked = false;
+        skyOwnTick = false;
         becom.space.set(world.provider.dimensionId, 100);
         return 1;
     }
@@ -1819,9 +1821,12 @@ public final class SelfTest {
         becom.radio.keyForSelfTest(dave.getUniqueID());
         RadioSnapshot.Transmission now = becom.radio.published()
             .transmission(dave.getUniqueID());
-        if (!skyTick && Slots.due(transceiver.ref(), becom.radio.tickForSelfTest())) {
+        long tick = becom.radio.tickForSelfTest();
+        if (!skyTick && Slots.due(transceiver.ref(), tick)) {
             skyTick = true;
-            skyWorked = now != skySeen;
+            skyOwnTick = Slots.due(dave.getUniqueID(), tick);
+            // A tick over 250 ms lets Dave go unkeyed, and his press after it works him out again: no evidence.
+            skyWorked = now != null && skySeen != null && now != skySeen;
         }
         skySeen = now;
         return 1;
@@ -1833,7 +1838,12 @@ public final class SelfTest {
         check(
             "a speaker at a Transceiver is worked out again in the tick its sky hop changes, satellites having come up",
             skyTick && skyWorked,
-            skyTick ? "not worked out in the Transceiver's tick" : "the Transceiver's tick didn't come");
+            skyTick ? "not worked out in the Transceiver's tick, or not keyed through it"
+                : "the Transceiver's tick didn't come");
+        check(
+            "...Dave's own tick isn't his Transceiver's, so the check tells the two apart",
+            skyTick && !skyOwnTick,
+            "move the Transceiver or Dave to a tick of their own");
         return 1;
     }
 
