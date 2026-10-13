@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.Slots;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
@@ -53,6 +55,8 @@ class BudgetLoadTest {
      * reported.
      */
     private static final int SURVEY_RUNS = 10;
+    // Spread seconds timed, after as many to warm up; the median of their slowest ticks is reported.
+    private static final int SPREAD_SECONDS = 9;
     /**
      * How far a tick may run past the survey budget: the budget is checked between steps, and a step, one bearing or
      * one link, takes a few microseconds, so half a millisecond leaves room for the clock and nothing more.
@@ -132,22 +136,22 @@ class BudgetLoadTest {
     /**
      * One radio publish, as RadioService runs it on the server thread: the links of each keyed radio in
      * {@code fresh}, or of every one when it's null, to every other radio on the channel, direct when in range and
-     * through the antennas, each pair's level kept; the other radios' links as last worked out; then, for the radios
-     * worked out, the devices each listener could hear them through and the level they hear them at. Returns how many
-     * hear someone, so none of it goes unused.
+     * through the antennas, each pair's level kept; the other radios' transmissions as last worked out; then, for the
+     * radios worked out, the devices each listener could hear them through and the level they hear them at. With none
+     * worked out, nothing is published. Returns how many hear someone, so none of it goes unused.
      */
     private int publish(List<UUID> ids, List<RadioHops.End> players, double[][] access, AntennaNetwork.Mesh mesh,
         RadioHops hops, RadioRouting radio, Map<UUID, PlayerSnapshot> positions, Map<Pair, SignalLevel> kept,
-        Map<UUID, List<RadioSnapshot.Link>> evaluated, Set<UUID> fresh) {
+        Map<UUID, RadioSnapshot.Transmission> evaluated, Set<UUID> fresh) {
         LevelScale scale = t.levelScale();
         double range = t.rangeToHold(t.walkieBudget());
         RadioSnapshot.Builder builder = RadioSnapshot.builder();
         List<UUID> worked = new ArrayList<>();
         for (int s = 0; s < TRANSMITTERS; s++) {
             UUID speaker = ids.get(s);
-            List<RadioSnapshot.Link> links = evaluated.get(speaker);
-            if (fresh == null || fresh.contains(speaker) || links == null) {
-                links = new ArrayList<>();
+            RadioSnapshot.Transmission transmission = evaluated.get(speaker);
+            if (fresh == null || fresh.contains(speaker) || transmission == null) {
+                List<RadioSnapshot.Link> links = new ArrayList<>();
                 RadioHops.End from = players.get(s);
                 double[] reach = mesh.vhf()
                     .reach(access[s]);
@@ -163,12 +167,13 @@ class BudgetLoadTest {
                     kept.put(new Pair(speaker, ids.get(r)), level);
                     if (level.atLeast(SignalLevel.LOW)) links.add(new RadioSnapshot.Link(ids.get(r), null, snr, 0, 1));
                 }
-                evaluated.put(speaker, links);
+                transmission = RadioSnapshot.transmission(1, links);
+                evaluated.put(speaker, transmission);
                 worked.add(speaker);
             }
-            builder.transmitter(speaker, 1);
-            for (RadioSnapshot.Link link : links) builder.link(speaker, link);
+            builder.transmission(speaker, transmission);
         }
+        if (worked.isEmpty()) return 0;
         RadioSnapshot snapshot = builder.build();
         radio.publish(snapshot);
         Nearby nearby = new Nearby(positions.values());
@@ -422,8 +427,16 @@ class BudgetLoadTest {
             access[i] = network.access(mesh, 0, p, ids.get(i));
         }
         Map<Pair, SignalLevel> kept = new HashMap<>();
-        Map<UUID, List<RadioSnapshot.Link>> evaluated = new HashMap<>();
+        Map<UUID, RadioSnapshot.Transmission> evaluated = new HashMap<>();
         int hearing = publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, null);
+        // Every link with its dropout chain, as if each had carried a frame: each publish looks through them.
+        for (UUID transmitter : ids.subList(0, TRANSMITTERS)) {
+            RadioSnapshot.Transmission tx = radio.published()
+                .transmission(transmitter);
+            for (RadioSnapshot.Link link : tx.walkies()) radio.drop(transmitter, link);
+            for (RadioSnapshot.Link link : tx.transceivers()) radio.drop(transmitter, link);
+        }
+        int chains = radio.chainCount();
         long everyone = median(
             9,
             () -> publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, null));
@@ -431,15 +444,49 @@ class BudgetLoadTest {
         long press = median(
             9,
             () -> publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, pressed));
+        // A second as RadioService spreads it: each keyed radio worked out in its own tick of the second.
+        Map<UUID, Integer> workedOut = new HashMap<>();
+        int busiest = 0;
+        for (int tick = 0; tick < TICKS_PER_SECOND; tick++) {
+            int due = 0;
+            for (UUID transmitter : ids.subList(0, TRANSMITTERS)) {
+                if (Slots.due(transmitter, tick)) {
+                    workedOut.merge(transmitter, 1, Integer::sum);
+                    due++;
+                }
+            }
+            busiest = Math.max(busiest, due);
+        }
+        long[] slowest = new long[SPREAD_SECONDS];
+        for (int second = -SPREAD_SECONDS; second < SPREAD_SECONDS; second++) {
+            long worst = 0;
+            for (int tick = 0; tick < TICKS_PER_SECOND; tick++) {
+                Set<UUID> due = new HashSet<>();
+                for (UUID transmitter : ids.subList(0, TRANSMITTERS))
+                    if (Slots.due(transmitter, tick)) due.add(transmitter);
+                start = System.nanoTime();
+                publish(ids, players, access, mesh, hops, radio, positions, kept, evaluated, due);
+                worst = Math.max(worst, System.nanoTime() - start);
+            }
+            // The first half warms up.
+            if (second >= 0) slowest[second] = worst;
+        }
+        Arrays.sort(slowest);
+        long spread = slowest[SPREAD_SECONDS / 2];
         line(
-            "Radio publish on the server thread: %d keyed radios to %d on their channel, %d hearing someone",
+            "Radio publish on the server thread: %d keyed radios to %d on their channel, %d hearing someone, %d"
+                + " dropout chains",
             TRANSMITTERS,
             PLAYERS,
-            hearing);
+            hearing,
+            chains);
         line(
-            "  every radio's links, once a second: %s in one tick; one radio pressing push-to-talk: %s",
-            ms(everyone),
+            "  spread over a second, each radio in its own tick: the slowest tick %s, working out %d radios;"
+                + " one radio pressing push-to-talk: %s",
+            ms(spread),
+            busiest,
             ms(press));
+        line("  every radio's links at once, as when a Transceiver stops working: %s in one tick", ms(everyone));
         System.out.print(report);
 
         // What DESIGN.md 6.5 promises: surveys keep to their budget, give or take one step, and the rest is small
@@ -449,7 +496,19 @@ class BudgetLoadTest {
         assertTrue(p95 <= budget + STEP_SLACK_NANOS, "surveys keep to their budget: p95 " + ms(p95));
         assertTrue(accessPerTick + directPerTick < 5_000_000, "access and direct links stay small beside a tick");
         assertTrue(hearing > 0, "a publish finds listeners");
-        assertTrue(everyone < 10_000_000, "a whole radio publish, once a second, takes under a fifth of a tick");
+        assertTrue(everyone < 10_000_000, "every radio's links at once take under a fifth of a tick");
         assertTrue(press < 1_000_000, "a press of push-to-talk works out only that radio");
+        // Spread, a tick works out only the radios due in it, three to five of the 30 here, each about a thirtieth of
+        // everyone at once: measured at 0.5 to 0.7 ms beside 3.1 to 3.4 ms at once, on a 4-core VM. So a spread
+        // second's slowest tick keeps under what DESIGN.md 6.5 lets surveys take, 2 ms, and under half of everyone at
+        // once whatever the machine, with room for the VM's stalls.
+        assertTrue(spread < 2_000_000, "a spread second's slowest tick stays under 2 ms: " + ms(spread));
+        assertTrue(2 * spread < everyone, "spreading takes at least half off the slowest tick");
+        assertEquals(TRANSMITTERS, workedOut.size(), "every keyed radio is worked out in a spread second");
+        assertTrue(
+            workedOut.values()
+                .stream()
+                .allMatch(n -> n == 1),
+            "...once");
     }
 }
