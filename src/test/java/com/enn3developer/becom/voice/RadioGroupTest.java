@@ -440,6 +440,32 @@ class RadioGroupTest {
     }
 
     @Test
+    void aFrameTheCallDropsComesOverTheRadioAndIsAContact() {
+        // The same pair, on a call losing every frame: GTNH Voice gives Bob the radio's send, so he hears Alice on the
+        // radio and it counts.
+        UUID alice = fixture.player("alice", 0, 64, 0, 0);
+        UUID bob = fixture.player("bob", 100, 64, 0, 0);
+        CallGroup call = new CallGroup(16, () -> proximity, () -> roll);
+        call.publish(
+            CallSnapshot.builder()
+                .route(alice, new CallSnapshot.Route(bob, 1, 0))
+                .build());
+        shared.publish(
+            RadioSnapshot.builder()
+                .transmitter(alice, 1)
+                .link(alice, walkie(bob, 10))
+                .build());
+        fixture.route(alice, RADIO, one, call);
+        assertEquals(List.of(bob), fixture.recipients());
+        assertSame(
+            one,
+            fixture.sent.get(0)
+                .delivery()
+                .getGroup());
+        assertEquals(Set.of(new RadioRouting.Contact(alice, bob)), contacts());
+    }
+
+    @Test
     void aListenerAnyHigherGroupAlreadyServedIsNoRadioContact() {
         // Another addon's group above radio sends Bob this frame first. Carol, whom it leaves alone, is a contact.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
