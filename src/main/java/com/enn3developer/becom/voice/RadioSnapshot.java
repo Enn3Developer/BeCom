@@ -8,8 +8,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * What the {@code becom:radio.N} groups route from (DESIGN.md 13.3), built on the server thread once a second and
- * handed to the network thread whole. Immutable once published.
+ * What the {@code becom:radio.N} groups route from (DESIGN.md 13.3), built on the server thread and handed to the
+ * network thread whole. Immutable once published. A transmission worked out once is used as it is by the snapshots
+ * after, until its radio is worked out again.
  * <p>
  * For each player transmitting, it holds the channel they transmit on and every receiving device their signal reaches
  * at Low or better: walkie-talkie holders first, then Transceivers. The SNR rides along for the capture rule (D24),
@@ -35,6 +36,14 @@ public final class RadioSnapshot {
 
     /** One player's transmission: the channel, then walkie links, then Transceiver links. */
     public record Transmission(int channel, Link[] walkies, Link[] transceivers) {}
+
+    /** A transmission on {@code channel} to {@code links}: walkie links and Transceiver links, each in their order. */
+    public static Transmission transmission(int channel, List<Link> links) {
+        List<Link> walkies = new ArrayList<>();
+        List<Link> transceivers = new ArrayList<>();
+        for (Link link : links) (link.holder() != null ? walkies : transceivers).add(link);
+        return new Transmission(channel, walkies.toArray(new Link[0]), transceivers.toArray(new Link[0]));
+    }
 
     private final Map<UUID, Transmission> transmissions;
 
@@ -71,6 +80,13 @@ public final class RadioSnapshot {
         private final Map<UUID, Integer> channels = new HashMap<>();
         private final Map<UUID, List<Link>> walkies = new HashMap<>();
         private final Map<UUID, List<Link>> transceivers = new HashMap<>();
+        private final Map<UUID, Transmission> whole = new HashMap<>();
+
+        /** {@code speaker}'s transmission as worked out before, used as it is; not for a speaker given links. */
+        public Builder transmission(UUID speaker, Transmission transmission) {
+            whole.put(speaker, transmission);
+            return this;
+        }
 
         /** Declares that {@code speaker} transmits on {@code channel}, even with nobody in reach. */
         public Builder transmitter(UUID speaker, int channel) {
@@ -85,7 +101,7 @@ public final class RadioSnapshot {
         }
 
         public RadioSnapshot build() {
-            Map<UUID, Transmission> frozen = new HashMap<>();
+            Map<UUID, Transmission> frozen = new HashMap<>(whole);
             for (Map.Entry<UUID, Integer> entry : channels.entrySet()) {
                 UUID speaker = entry.getKey();
                 frozen.put(
