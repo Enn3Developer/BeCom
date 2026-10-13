@@ -152,9 +152,10 @@ class QuestRefreshTest {
     }
 
     @Test
-    void everyoneWhoseTaskStartsOverIsFoundWhereverTheTaskKeepsThem() {
-        // Carol has counted one of the relays the retrieval task asks for, under her UUID, and finished nothing. The
-        // task now asks for more, so Alice's completion of it and Carol's count go; Bob only did BeCom's own task.
+    void aChangedTaskMarksEveryoneWithProgressInTheQuest() {
+        // Carol has counted one of the relays the retrieval task asks for, under her UUID, and finished nothing. Bob
+        // only did BeCom's own task, which doesn't change, but his file could hold progress for a task an older BeCom
+        // had at index 0, which the new retrieval task would take back unless his file is written again.
         NBTTagCompound progress = progress();
         NBTTagCompound counting = progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND)
             .getCompoundTagAt(0);
@@ -165,18 +166,18 @@ class QuestRefreshTest {
         users.appendTag(carol);
         counting.setTag("userProgress", users);
         assertEquals(
-            Set.of(UUID.fromString(ALICE), UUID.fromString(CAROL)),
-            QuestRefresh.losingProgress(
+            Set.of(UUID.fromString(ALICE), UUID.fromString(BOB), UUID.fromString(CAROL)),
+            QuestRefresh.toMark(
                 portalQuest(1, "dreamcraft:CoinTechnician"),
                 portalQuest(2, "dreamcraft:CoinTechnician"),
                 progress));
     }
 
     @Test
-    void aChangedRewardTakesNobodysProgress() {
+    void aChangedRewardMarksNobody() {
         assertEquals(
             Set.of(),
-            QuestRefresh.losingProgress(
+            QuestRefresh.toMark(
                 portalQuest(2, "dreamcraft:CoinTechnician"),
                 portalQuest(2, "dreamcraft:CoinTechnicianI"),
                 progress()));

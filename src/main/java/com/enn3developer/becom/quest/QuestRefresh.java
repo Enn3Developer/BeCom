@@ -47,21 +47,16 @@ public final class QuestRefresh {
     }
 
     /**
-     * Everyone whose progress {@link #progressFor} drops: each player of a task that starts over, wherever the task
-     * keeps them. BetterQuesting saves a player's progress to their own file only once something marks them, and
-     * reads every file back at the next start, so each of them is marked when their quest takes the newer definition;
-     * otherwise the task would get their old progress back. Completions and claims stay as they were, so they need no
-     * mark of their own.
+     * Everyone whose progress file BetterQuesting has to write again once their quest takes {@code shipped}'s
+     * definition. BetterQuesting saves a player's progress to their own file only once something marks them, and reads
+     * every file back at the next start, matching each task's progress by index and kind. A file can hold progress the
+     * book doesn't, for a task an older definition had at an index, which a newer task there may match again. So when
+     * any task changed, everyone with progress in the quest is marked, wherever their task keeps them; when only its
+     * rewards or properties did, nobody is, since every task's progress stays and the files hold nothing new to match.
      */
-    public static Set<UUID> losingProgress(NBTTagCompound stored, NBTTagCompound shipped, NBTTagCompound progress) {
-        Map<Integer, NBTTagCompound> before = tasksByIndex(stored);
-        Map<Integer, NBTTagCompound> after = tasksByIndex(shipped);
-        NBTTagList tasks = progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND);
+    public static Set<UUID> toMark(NBTTagCompound stored, NBTTagCompound shipped, NBTTagCompound progress) {
         Set<UUID> players = new HashSet<>();
-        for (int i = 0; i < tasks.tagCount(); i++) {
-            NBTTagCompound task = tasks.getCompoundTagAt(i);
-            if (!kept(task, before, after)) collect(task, players);
-        }
+        if (!tasksByIndex(stored).equals(tasksByIndex(shipped))) collect(progress, players);
         return players;
     }
 

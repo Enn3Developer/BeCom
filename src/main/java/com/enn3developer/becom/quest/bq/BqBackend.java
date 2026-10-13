@@ -217,7 +217,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                 NBTTagCompound progress = stored.writeProgressToNBT(new NBTTagCompound(), null);
                 fresh.readProgressFromNBT(QuestRefresh.progressFor(was, now, progress), false);
                 QuestDatabase.INSTANCE.put(entry.getKey(), fresh);
-                players.addAll(QuestRefresh.losingProgress(was, now, progress));
+                players.addAll(QuestRefresh.toMark(was, now, progress));
                 quests++;
             }
             IQuestLine line = QuestLineDatabase.INSTANCE.get(q.lineId());
@@ -234,8 +234,8 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             }
         } finally {
             // Saved with the book's next save, even when a later quest failed: what changed stays changed. BQ writes a
-            // player's progress file only once they're marked, and reads every file back at the next start, so
-            // everyone whose task started over is marked, or the task gets their old progress back.
+            // player's progress file only once they're marked, and reads every file back at the next start, so the
+            // players of a quest whose tasks changed are marked, or a task gets old progress back from their file.
             if (quests > 0 || entries > 0) SaveLoadHandler.INSTANCE.markDirty();
             if (!players.isEmpty()) DirtyPlayerMarker.markDirty(players);
         }
