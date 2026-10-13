@@ -1337,6 +1337,31 @@ finding was confirmed by a self-test check that failed (run 117) before it was f
 - Design, noted: the refresh resets a task whose settings changed, not only its kind or requirements. Kept, and X42
   says so: none of BeCom's tasks consume items, so starting over costs a player nothing they handed in.
 
+A fresh code reviewer then took the first round's fixes, `32362fd..92ea1dd`, which touch saved data and what the
+server thread hands the network thread. No critical or major findings; its minor ones:
+
+- Code 1: every keyed radio's access to the antennas was still worked out whenever the network changed, in every
+  tick, and every holder's at each whole second, so a lock toggled every tick cost that every tick. Fixed (0ff562d):
+  a radio's access is worked out with its links, in its own tick. What's left is a known issue, below.
+- Code 2: with the sky hop out of the comparison, a speaker at a Transceiver took a sky hop the Transceiver had worked
+  out up to about 2 s late. Fixed (0ff562d): the sky hop counts again; it's only ever worked out in a slot, so it
+  reworks the speakers at one Transceiver, never every radio. A new self-test check fails without it (run 120).
+- Code 3: a transmission from before a Transceiver's outage could be published again when it came back. Fixed
+  (0ff562d): a speaker with nothing to transmit from forgets its links. Not covered by a test: it needs a Transceiver
+  offline for 41 ticks, its speaker keyed throughout and its return landing outside the speaker's tick, and the change
+  can only make a radio worked out again sooner.
+- Code 4: the refresh marked everyone with progress in a replaced quest, so a reward-only change had BetterQuesting
+  rewrite all their files once. Fixed (4230377): only the players whose task progress it drops; a changed reward
+  marks nobody (QuestRefreshTest).
+- Code 5: the marks live in BetterQuesting's memory, and it clears them before its writes finish, so a player's file
+  that fails to write keeps their old progress for good: the next start finds nothing to refresh. A known issue.
+- Code 6: the spread check counted reworks without checking their tick, and the self-test's offline player shared a
+  UUID with the quest probe. Fixed (0ff562d, 4230377): the check reads the radio's tick, and the player has a UUID of
+  its own.
+- Older than this branch, and known issues below: a Transceiver dropping out works every keyed radio out at once, so
+  many on timers could do it every tick; one change anywhere in the antenna network rebuilds every dimension's mesh;
+  and a Transceiver's access isn't worked out again when its owner's team changes.
+
 **Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
 BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
 fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
@@ -1352,7 +1377,8 @@ a dedicated server sees "Call".
   questline's places with them. Players keep their completions and claimed rewards, and each task's progress where the
   task didn't change. QuestRefreshTest (5): an unchanged quest left alone, a changed task starting over while the other
   keeps its progress, a changed reward keeping everyone's, a completed quest staying complete and claimed, and task
-  progress without an index dropped, and everyone with progress found wherever their task keeps them (6). A self-test
+  progress without an index dropped, the players whose task starts over found wherever the task keeps them, and a
+  changed reward marking nobody (7). A self-test
   step stores the Portal Relay quest with a changed task and an extra reward and checks that it comes back as shipped,
   its player still complete and with the claim in their completion entry, the unchanged task's progress kept, the
   other quests left alone, and, for a second player who wasn't on, the reset still there once BetterQuesting has saved
@@ -1364,17 +1390,31 @@ a dedicated server sees "Call".
 - A whole radio publish, once a second, still works out every keyed radio's links in one tick: 5 to 6 ms with 30 radios
   keyed on one channel and 200 hearing them all. Spreading it over the second's ticks by radio would flatten that.
   Fixed on `milestone/1.0-fixes`: each keyed radio is worked out in its own tick of the second, the one its holder's
-  radio is refreshed in, and at once when it keys, moves or changes what it transmits from. A change to the antennas or
-  the sky reaches each radio in its own tick too. A publish uses the other radios' transmissions as they were, and
-  looks only at the dropout chains of the radios whose transmission changed. In
+  radio is refreshed in, and at once when it keys, moves or changes what it transmits from. A change to the antennas
+  reaches each keyed radio in its own tick, its access worked out with its links, and a Transceiver's sky hop reaches
+  the speakers at it in the Transceiver's tick. A publish uses the other radios' transmissions as they were, and looks
+  only at the dropout chains of the radios whose transmission changed. In
   the load test, with every link's chain made, the slowest tick of a spread second took 0.48 to 0.94 ms over seven
   runs, a median of 0.56 ms, working out 3 to 5 radios. Every radio at once took 3.1 to 8.3 ms, a median of 3.3 ms, and
   a Transceiver going offline or broken still costs that, once. The 0.94 and 8.3 came from one run where the VM ran
   slow. BudgetLoadTest asserts under 2 ms and under half of every radio at once. Tests: SlotsTest (1),
-  RadioSnapshotTest (2), RadioGroupTest on chains kept and dropped by speaker (2), and two self-test checks over a
-  second of real ticks with an antenna's lock toggled in every one: a keyed radio is worked out again, once, in its
-  own tick.
+  RadioSnapshotTest (2), RadioGroupTest on chains kept and dropped by speaker (2), two self-test checks over a second
+  of real ticks with an antenna's lock toggled in every one, that a keyed radio is worked out again once and in its
+  own tick, and one that a speaker at a Transceiver is worked out again in the Transceiver's tick when satellites come
+  up over it.
 - The squelch tail at a release still looks at every online player for each walkie that held the speaker.
+- Found on `milestone/1.0-fixes`: an antenna's owner toggling its lock every tick, from its screen, changes the
+  antenna network every tick, and the first radio worked out in each tick then works out the access of every radio on
+  its channel again: about 1 ms a tick at the load test's 200, where it was once a second before this branch. Not
+  invalidating access on a lock change, with a Transceiver's access worked out once a second as a player's is, or a
+  limit on how often the lock can change, would end it.
+- Found on `milestone/1.0-fixes`: BeCom marks the players whose progress the quest refresh dropped, and BetterQuesting
+  clears those marks before its writes finish, so a player's file that fails to write keeps their old progress after
+  the next start, which finds nothing left to refresh.
+- From before `milestone/1.0-fixes`, found in its review: a Transceiver going offline works every keyed radio out at
+  once (as one broken does now too), so many Transceivers on redstone timers could make that happen every tick. Any
+  change to the antenna network rebuilds every dimension's mesh. A Transceiver's access to a team-locked antenna isn't
+  worked out again when its owner joins or leaves the team, until the network next changes.
 - A player watching a Satellite Dish or a Launch Pad through GT's Drone Centre camera, with a Drone Downlink as its
   maintenance hatch, sees GT's WAILA lines without BeCom's.
 - A radio at a position that isn't a number gets NaN for its paths through antennas and satellites: it keeps its links
