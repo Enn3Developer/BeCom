@@ -1334,6 +1334,10 @@ public final class SelfTest {
             "...and leaves a quest that didn't change as it was",
             Boolean.TRUE.equals(result.get("othersLeftAlone")),
             String.valueOf(result));
+        check(
+            "...and saves the reset for a player who isn't on, so the next start doesn't read their old progress back",
+            Boolean.TRUE.equals(result.get("offlineResetSaved")),
+            String.valueOf(result));
         return 1;
     }
 

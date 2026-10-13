@@ -6,8 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagIntArray;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.util.Constants;
@@ -22,6 +25,7 @@ class QuestRefreshTest {
 
     private static final String ALICE = "a1a1a1a1-0000-4000-8000-000000000001";
     private static final String BOB = "b0b0b0b0-0000-4000-8000-000000000002";
+    private static final String CAROL = "c0c0c0c0-0000-4000-8000-000000000003";
 
     /** Two Portal Relays to hold, then BeCom's own task. */
     private static NBTTagCompound portalQuest(int relays, String coinId) {
@@ -145,6 +149,24 @@ class QuestRefreshTest {
         NBTTagCompound kept = QuestRefresh.progressFor(stored, shipped, progress());
         assertEquals(List.of(), keptTasks(kept));
         assertEquals(progress().getTag("completed"), kept.getTag("completed"), "Alice's completion and claim stay");
+    }
+
+    @Test
+    void everyoneWithProgressIsFoundWhereverTheirTaskKeepsThem() {
+        // Carol has counted one of the two relays a retrieval task asks for, under her UUID, and finished nothing.
+        NBTTagCompound progress = progress();
+        NBTTagCompound counting = taskProgress("bq_standard:retrieval", 0);
+        NBTTagCompound carol = new NBTTagCompound();
+        carol.setString("uuid", CAROL);
+        carol.setTag("value", new NBTTagIntArray(new int[] { 1 }));
+        NBTTagList users = new NBTTagList();
+        users.appendTag(carol);
+        counting.setTag("userProgress", users);
+        progress.getTagList("tasks", Constants.NBT.TAG_COMPOUND)
+            .appendTag(counting);
+        assertEquals(
+            Set.of(UUID.fromString(ALICE), UUID.fromString(BOB), UUID.fromString(CAROL)),
+            QuestRefresh.players(progress));
     }
 
     @Test

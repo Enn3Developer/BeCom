@@ -1,10 +1,15 @@
 package com.enn3developer.becom.quest;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
+import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.util.Constants;
 
 /**
@@ -42,6 +47,33 @@ public final class QuestRefresh {
         NBTTagCompound result = (NBTTagCompound) progress.copy();
         result.setTag("tasks", kept);
         return result;
+    }
+
+    /**
+     * Everyone with progress in a quest, from its progress as BetterQuesting writes it: each completion's player, and
+     * each task's, wherever the task keeps them. BetterQuesting saves a player's progress to their own file only once
+     * something marks them, and reads every file back at the next start, so each of them is marked when their quest
+     * takes a newer definition; otherwise a task that started over would get its old progress back.
+     */
+    public static Set<UUID> players(NBTTagCompound progress) {
+        Set<UUID> players = new HashSet<>();
+        collect(progress, players);
+        return players;
+    }
+
+    private static void collect(NBTBase tag, Set<UUID> players) {
+        if (tag instanceof NBTTagCompound compound) {
+            for (String key : compound.func_150296_c()) collect(compound.getTag(key), players);
+        } else if (tag instanceof NBTTagList list) {
+            NBTTagList left = (NBTTagList) list.copy();
+            while (left.tagCount() > 0) collect(left.removeTag(0), players);
+        } else if (tag instanceof NBTTagString string) {
+            try {
+                players.add(UUID.fromString(string.func_150285_a_()));
+            } catch (IllegalArgumentException notAPlayer) {
+                // A task's kind, or another string a task keeps.
+            }
+        }
     }
 
     /** A definition's tasks by index, each with its kind ({@code taskID}) and requirements. */

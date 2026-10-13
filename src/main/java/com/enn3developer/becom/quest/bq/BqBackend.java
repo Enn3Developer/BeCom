@@ -9,9 +9,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -37,9 +39,11 @@ import betterquesting.api.questing.IQuestLine;
 import betterquesting.api.questing.IQuestLineEntry;
 import betterquesting.api.questing.tasks.ITask;
 import betterquesting.api.storage.BQ_Settings;
+import betterquesting.api.utils.JsonHelper;
 import betterquesting.api.utils.NBTConverter;
 import betterquesting.api2.cache.QuestCache;
 import betterquesting.api2.storage.DBEntry;
+import betterquesting.api2.utils.DirtyPlayerMarker;
 import betterquesting.handlers.SaveLoadHandler;
 import betterquesting.network.handlers.NetChapterSync;
 import betterquesting.network.handlers.NetQuestSync;
@@ -98,7 +102,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             try {
                 refresh();
             } catch (Throwable t) {
-                BeCom.LOG.error("Couldn't bring BeCom's quests up to date; they keep the definitions they had", t);
+                BeCom.LOG.error("Couldn't bring all of BeCom's quests up to date; the rest keep what they had", t);
             }
             ensure(true);
         } catch (Throwable t) {
@@ -198,33 +202,42 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     private int refresh() {
         Questline q = questline;
         int quests = 0;
-        for (Map.Entry<UUID, NBTTagCompound> entry : q.quests()
-            .entrySet()) {
-            IQuest stored = QuestDatabase.INSTANCE.get(entry.getKey());
-            // A quest the book is missing is ensure()'s to add.
-            if (stored == null) continue;
-            IQuest fresh = shipped(entry.getValue());
-            NBTTagCompound was = stored.writeToNBT(new NBTTagCompound());
-            NBTTagCompound now = fresh.writeToNBT(new NBTTagCompound());
-            if (!QuestRefresh.changed(was, now)) continue;
-            fresh.readProgressFromNBT(
-                QuestRefresh.progressFor(was, now, stored.writeProgressToNBT(new NBTTagCompound(), null)),
-                false);
-            QuestDatabase.INSTANCE.put(entry.getKey(), fresh);
-            quests++;
-        }
         int entries = 0;
-        IQuestLine line = QuestLineDatabase.INSTANCE.get(q.lineId());
-        if (line != null) {
-            for (Map.Entry<UUID, NBTTagCompound> entry : q.entries()
+        Set<UUID> players = new HashSet<>();
+        try {
+            for (Map.Entry<UUID, NBTTagCompound> entry : q.quests()
                 .entrySet()) {
-                IQuestLineEntry stored = line.get(entry.getKey());
+                IQuest stored = QuestDatabase.INSTANCE.get(entry.getKey());
+                // A quest the book is missing is ensure()'s to add.
                 if (stored == null) continue;
-                NBTTagCompound now = new QuestLineEntry(entry.getValue()).writeToNBT(new NBTTagCompound());
-                if (now.equals(stored.writeToNBT(new NBTTagCompound()))) continue;
-                stored.readFromNBT(now);
-                entries++;
+                IQuest fresh = shipped(entry.getValue());
+                NBTTagCompound was = stored.writeToNBT(new NBTTagCompound());
+                NBTTagCompound now = fresh.writeToNBT(new NBTTagCompound());
+                if (!QuestRefresh.changed(was, now)) continue;
+                NBTTagCompound progress = stored.writeProgressToNBT(new NBTTagCompound(), null);
+                fresh.readProgressFromNBT(QuestRefresh.progressFor(was, now, progress), false);
+                QuestDatabase.INSTANCE.put(entry.getKey(), fresh);
+                players.addAll(QuestRefresh.players(progress));
+                quests++;
             }
+            IQuestLine line = QuestLineDatabase.INSTANCE.get(q.lineId());
+            if (line != null) {
+                for (Map.Entry<UUID, NBTTagCompound> entry : q.entries()
+                    .entrySet()) {
+                    IQuestLineEntry stored = line.get(entry.getKey());
+                    if (stored == null) continue;
+                    NBTTagCompound now = new QuestLineEntry(entry.getValue()).writeToNBT(new NBTTagCompound());
+                    if (now.equals(stored.writeToNBT(new NBTTagCompound()))) continue;
+                    stored.readFromNBT(now);
+                    entries++;
+                }
+            }
+        } finally {
+            // Saved with the book's next save, even when a later quest failed: what changed stays changed. BQ writes a
+            // player's progress file only once they're marked, and reads every file back at the next start, so
+            // everyone a replaced quest held progress for is marked, or a task that started over gets it back.
+            if (quests > 0 || entries > 0) SaveLoadHandler.INSTANCE.markDirty();
+            if (!players.isEmpty()) DirtyPlayerMarker.markDirty(players);
         }
         if (quests == 0 && entries == 0) return 0;
         BeCom.LOG.info(
@@ -233,7 +246,6 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             entries);
         NetQuestSync.quickSync(null, true, true);
         NetChapterSync.sendSync(null, null);
-        SaveLoadHandler.INSTANCE.markDirty();
         return quests;
     }
 
@@ -459,17 +471,36 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         older.setTag("rewards", rewards);
         IQuest stored = new QuestInstance();
         stored.readFromNBT(older);
+        // A second player who did only the task that changes, and isn't on when the server starts after the update.
+        UUID offline = new UUID(player.getMostSignificantBits(), player.getLeastSignificantBits() ^ 1);
         for (DBEntry<ITask> task : stored.getTasks()
             .getEntries()) {
             task.getValue()
                 .setComplete(player);
+            if (!(task.getValue() instanceof TaskBeCom)) task.getValue()
+                .setComplete(offline);
         }
         stored.setComplete(player, 1L);
         stored.setClaimed(player, 1L);
         QuestDatabase.INSTANCE.put(id, stored);
+        // The save before the update writes each player's file, and nobody is left to save after it.
+        SaveLoadHandler.INSTANCE.saveDatabases();
 
         int refreshed = refresh();
+        // The save after the update; then the next start reads the offline player's file back in, as BQ's loader does.
+        SaveLoadHandler.INSTANCE.saveDatabases();
+        NBTTagCompound file = NBTConverter.JSONtoNBT_Object(
+            JsonHelper.ReadFromFile(new File(new File(BQ_Settings.curWorldDir, "QuestProgress"), offline + ".json")),
+            new NBTTagCompound(),
+            true);
+        QuestDatabase.INSTANCE.readProgressFromNBT(file.getTagList("questProgress", Constants.NBT.TAG_COMPOUND), true);
         IQuest now = QuestDatabase.INSTANCE.get(id);
+        boolean offlineReset = true;
+        for (DBEntry<ITask> task : now.getTasks()
+            .getEntries()) {
+            if (!(task.getValue() instanceof TaskBeCom) && task.getValue()
+                .isComplete(offline)) offlineReset = false;
+        }
         boolean unchangedKept = false, changedReset = false;
         for (DBEntry<ITask> task : now.getTasks()
             .getEntries()) {
@@ -488,6 +519,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                             .get(id)).writeToNBT(new NBTTagCompound())));
         outcome.put("complete", now.isComplete(player));
         outcome.put("claimed", now.hasClaimed(player));
+        outcome.put("offlineResetSaved", offlineReset);
         outcome.put("unchangedTaskKept", unchangedKept);
         outcome.put("changedTaskReset", changedReset);
         outcome.put("othersLeftAlone", QuestDatabase.INSTANCE.get(other) == otherBefore);
