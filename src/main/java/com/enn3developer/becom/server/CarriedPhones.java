@@ -84,6 +84,7 @@ public final class CarriedPhones {
     private final Map<UUID, SignalLevel> shown = new HashMap<>();
     private long ticks;
 
+    /** @param endOf where a holder hears and talks from, or null when they have no position */
     public CarriedPhones(MinecraftServer server, Tunables tunables, PhoneService phones, AntennaNetwork antennas,
         SpaceService space, Function<EntityPlayer, RadioHops.End> endOf) {
         this.server = server;
@@ -93,10 +94,12 @@ public final class CarriedPhones {
         // The Mobile Phone: every antenna that reaches its holder on UHF (DESIGN.md 8.2), and the satellites over
         // their dimension (9.1), rain included (D26).
         access.put(PhoneKind.MOBILE, (holder, phone) -> {
+            // A holder whose position isn't a number has none, and so no service.
+            RadioHops.End end = endOf.apply(holder);
+            if (end == null) return List.of();
             List<CallGraph.Entry> entries = new ArrayList<>();
             boolean rains = BeComServer
                 .rains(holder.worldObj, (int) Math.floor(holder.posX), (int) Math.floor(holder.posZ));
-            RadioHops.End end = endOf.apply(holder);
             double sky = space
                 .hop(holder.dimension, end.depth(), antennas.uhf(), rains ? space.weather(holder.dimension) : 0);
             if (sky > Double.NEGATIVE_INFINITY) {

@@ -27,6 +27,7 @@ import com.enn3developer.becom.item.ItemSignalAnalyzer;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.DropoutModel;
 import com.enn3developer.becom.logic.LevelScale;
+import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.SpeakerFade;
 import com.enn3developer.becom.logic.Tunables;
@@ -369,14 +370,16 @@ public final class RadioService {
         Carried.Slot slot = ItemWalkieTalkie.active(player);
         int walkieChannel = slot == null ? 0 : ItemWalkieTalkie.channel(slot.stack());
         NodeRef at = transceiverAt(player);
-        if (walkieChannel == 0 && at == null) {
+        // A player whose position isn't a number has none, and a radio with no position has no links.
+        RadioHops.End end = endOf(player);
+        if ((walkieChannel == 0 && at == null) || end == null) {
             radios.remove(id);
             return;
         }
         Radio radio = radios.computeIfAbsent(id, k -> new Radio());
         radio.id = id;
         radio.dimension = player.dimension;
-        radio.end = endOf(player);
+        radio.end = end;
         radio.rains = BeComServer.rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
         radio.sky = skyHop(radio.dimension, radio.end, radio.rains);
         radio.walkieChannel = walkieChannel;
@@ -611,6 +614,8 @@ public final class RadioService {
         List<EntityPlayerMP> online = players();
         Map<UUID, PlayerSnapshot> positions = new HashMap<>();
         for (EntityPlayerMP player : online) {
+            // A listener whose position isn't a number has none, so no device carries anything to them.
+            if (!Positions.finite(player.posX, player.posY, player.posZ)) continue;
             positions.put(
                 player.getUniqueID(),
                 new PlayerSnapshot(
@@ -666,7 +671,7 @@ public final class RadioService {
         for (RadioSnapshot.Link link : tx.walkies()) {
             if (!routing.deviceHeldBy(link.device(), tx.channel(), speaker)) continue;
             EntityPlayerMP holder = player(link.holder());
-            if (holder == null) continue;
+            if (holder == null || !Positions.finite(holder.posX, holder.posY, holder.posZ)) continue;
             playAround(
                 speaker,
                 tx.channel(),
@@ -685,7 +690,7 @@ public final class RadioService {
 
     private void playAround(UUID speaker, int channel, int dimension, double x, double y, double z, double range) {
         for (EntityPlayerMP player : players()) {
-            if (player.dimension != dimension || player.getDistanceSq(x, y, z) > range * range) continue;
+            if (player.dimension != dimension || !Positions.withinSq(player.getDistanceSq(x, y, z), range)) continue;
             if (player instanceof FakePlayer || player.playerNetServerHandler == null) continue;
             if (!routing.listenerHeldBy(player.getUniqueID(), channel, speaker)) continue;
             // Faded like the voice it ends, to nothing at the range (DESIGN.md 13.5).
@@ -756,6 +761,7 @@ public final class RadioService {
      */
     public AnalyzerPacket reading(EntityPlayer player) {
         RadioHops.End end = endOf(player);
+        if (end == null) return new AnalyzerPacket(AnalyzerPacket.Reading.NONE, AnalyzerPacket.Reading.NONE);
         UUID id = player.getUniqueID();
         int dimension = player.dimension;
         boolean rains = BeComServer
@@ -843,8 +849,12 @@ public final class RadioService {
 
     // region World
 
-    /** Where a player hears and talks from (DESIGN.md 6.1): their eyes, their depth under the surface, their feet. */
+    /**
+     * Where a player hears and talks from (DESIGN.md 6.1): their eyes, their depth under the surface, their feet. Null
+     * when their position isn't a number: a player with no position has no links.
+     */
     public static RadioHops.End endOf(EntityPlayer player) {
+        if (!Positions.finite(player.posX, player.posY, player.posZ)) return null;
         double eye = player.posY + EYE_HEIGHT;
         int surface = player.worldObj
             .getHeightValue(MathHelper.floor_double(player.posX), MathHelper.floor_double(player.posZ));

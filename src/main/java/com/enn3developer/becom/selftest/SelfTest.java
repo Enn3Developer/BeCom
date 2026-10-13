@@ -276,6 +276,7 @@ public final class SelfTest {
         steps.add(this::buildPhones);
         steps.add(this::formPhones);
         steps.add(this::checkMobileService);
+        steps.add(this::checkNotANumber);
         steps.add(this::checkMobileCall);
         steps.add(this::checkGroupCall);
         steps.add(this::checkPhonePower);
@@ -2081,6 +2082,49 @@ public final class SelfTest {
                 + ", expected "
                 + expected);
         clearService = service.best();
+        return 1;
+    }
+
+    /**
+     * A player whose position isn't a number has none: their Mobile Phone loses its service and their walkie its
+     * channel at once, where NaN paths through antennas and satellites used to hold them for the drop grace.
+     */
+    private int checkNotANumber() {
+        double[] monaAt = { mona.posX, mona.posY, mona.posZ };
+        double[] ginaAt = { gina.posX, gina.posY, gina.posZ };
+        becom.radio.refreshForSelfTest(gina);
+        int channel = becom.radio.channelOf(gina.getUniqueID());
+        mona.setPosition(Double.NaN, Double.NaN, Double.NaN);
+        gina.setPosition(Double.NaN, Double.NaN, Double.NaN);
+        becom.carried.refreshForSelfTest(mona);
+        becom.radio.refreshForSelfTest(gina);
+        AnalyzerPacket reading = becom.radio.reading(mona);
+        check(
+            "a Mobile Phone whose holder's position isn't a number has no service, and an analyzer there reads nothing",
+            becom.carried.serviceOf(monaNumber)
+                .entries()
+                .isEmpty()
+                && !reading.radio()
+                    .served()
+                && !reading.phone()
+                    .served(),
+            becom.carried.serviceOf(monaNumber)
+                .entries()
+                .size() + " entries");
+        check(
+            "...and a walkie there is on no channel",
+            channel == 9 && becom.radio.channelOf(gina.getUniqueID()) == 0,
+            "channel " + channel + ", then " + becom.radio.channelOf(gina.getUniqueID()));
+        mona.setPosition(monaAt[0], monaAt[1], monaAt[2]);
+        gina.setPosition(ginaAt[0], ginaAt[1], ginaAt[2]);
+        becom.carried.refreshForSelfTest(mona);
+        becom.radio.refreshForSelfTest(gina);
+        check(
+            "...until they have a position again",
+            !becom.carried.serviceOf(monaNumber)
+                .entries()
+                .isEmpty() && becom.radio.channelOf(gina.getUniqueID()) == channel,
+            "");
         return 1;
     }
 

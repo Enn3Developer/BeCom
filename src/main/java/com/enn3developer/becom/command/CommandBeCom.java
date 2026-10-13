@@ -151,9 +151,11 @@ public final class CommandBeCom extends CommandBase {
         AnalyzerPacket reading = becom.radio.reading(player);
         signal(sender, "becom.analyzer.radios", reading.radio());
         signal(sender, "becom.analyzer.phones", reading.phone());
+        RadioHops.End end = RadioService.endOf(player);
+        // A player whose position isn't a number has none: nothing reaches them, as the lines above say.
+        if (end == null) return;
         AntennaNetwork.Mesh mesh = becom.antennas.mesh(player.dimension);
-        double[] access = becom.antennas
-            .access(mesh, player.dimension, RadioService.endOf(player), player.getUniqueID());
+        double[] access = becom.antennas.access(mesh, player.dimension, end, player.getUniqueID());
         for (int i = 0; i < access.length; i++) {
             if (access[i] == Double.NEGATIVE_INFINITY) continue;
             NodeRef ref = mesh.antennas()
@@ -170,7 +172,6 @@ public final class CommandBeCom extends CommandBase {
         }
         AnalyzerPacket.Reading radio = reading.radio();
         AnalyzerPacket.Reading phone = reading.phone();
-        RadioHops.End end = RadioService.endOf(player);
         boolean rains = BeComServer
             .rains(player.worldObj, (int) Math.floor(player.posX), (int) Math.floor(player.posZ));
         double weather = rains ? becom.space.weather(player.dimension) : 0;
