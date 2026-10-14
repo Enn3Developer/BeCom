@@ -120,3 +120,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A player at a position that isn't a number, which only a modified client can bring about, gets no radio, phone
   service or Signal Analyzer reading, hears no walkie, loudspeaker or Videophone around them and can't lock an
   antenna. Clients play walkie and loudspeaker audio from such a position silent.
+- Teams are ServerUtilities' teams now, not GT's `/sp` teams. A team's owner, moderators and members can unlink each
+  other's nodes, lock each other's antennas and change each other's phone settings, and an antenna locked to a team
+  serves all of them; its allies can't. Without ServerUtilities, only a machine's owner and operators can.

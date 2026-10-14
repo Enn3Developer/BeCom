@@ -33,6 +33,9 @@ Used when they're installed:
 - **BetterQuesting:** BeCom adds its own tab to the quest book.
 - **GuideNH:** the in-game guide, in English and Italian.
 - **WAILA:** what each BeCom machine and Telephone is doing.
+- **ServerUtilities:** its teams are BeCom's teams. A team's owner, moderators and members can unlink each other's
+  nodes, lock each other's antennas and change each other's phone settings, and an antenna locked to the team serves
+  all of them; its allies can't. Without ServerUtilities, only a machine's owner and server operators can.
 - **Twilight Forest, Personal Space:** Portal Relays work at their portals too.
 
 ## Installing

@@ -52,7 +52,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 ### X5: Operators may always unlink, and alone manage what has no owner
 
 - **Where:** 0.1, DESIGN.md 12.2, D37
-- **Design says:** only the owner of either end, or their team, can unlink.
+- **Design says:** only the owner of either end, or their team, can unlink. D59 now names operators too, for a server
+  without ServerUtilities.
 - **Built:** also server operators (permission level 2), so a griefed or orphaned network can be repaired. GT records
   whoever places a machine as its owner, fake players included, so a machine a robot placed belongs to that robot's
   fake player, and anything acting as that same fake player can manage it. A machine with no owner recorded at all
@@ -716,3 +717,18 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   anything.
 - **To match the design:** nothing to undo if the owner agrees; otherwise, the design says what a player with no
   position gets.
+
+### X44: A locked antenna serves its owner's team, not operators
+
+- **Where:** 1.0 teams, DESIGN.md 12.1, 12.2, D38, D59
+- **Design says:** a locked antenna refuses other players' devices (12.2). The members of the owner's team count, its
+  owner and moderators included; its allies don't, and without ServerUtilities only the owner and operators (D59).
+- **Built:** a locked antenna serves the devices of its owner and of the members of the owner's ServerUtilities team,
+  and refuses everyone else's, operators' included, with ServerUtilities or without. Operators still manage it: they
+  can unlock it from its screen, as they can unlink anything (X5). D59's "operators" is read as who may manage, where
+  operators already count, not as whose devices a locked antenna serves. A player ServerUtilities doesn't know, such as
+  another mod's fake player, counts only as themselves.
+- **Why:** 12.2 has a locked antenna refuse other players' devices, and serving operators only on a server without
+  ServerUtilities would make what the lock does depend on whether it's installed.
+- **To match the design:** `AntennaNetwork.losses` would have to know whether a device's user is an operator. It has
+  their id on the server thread, so it can ask the server's operator list.

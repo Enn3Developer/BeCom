@@ -1562,3 +1562,91 @@ a dedicated server sees "Call".
 10. To release: merge into master; if wanted, rename `## [Unreleased]` to `## [1.0.0] - <date>` with an empty
     Unreleased above it; tag `v1.0.0`. The release gets the jars, the Modernity zip and the changelog's section as its
     notes.
+
+## 1.0 teams (D59)
+
+Branch `milestone/1.0-teams`, from `master` once it held every milestone, `voice-api` and `milestone/1.0-fixes`. D59
+makes BeCom's teams ServerUtilities' teams, the ones its team screen makes and chunk claims use, instead of the
+space-project teams GT keeps for wireless EU and `/sp`.
+
+### Contents
+
+| Item                                                                                            | Status |
+|-------------------------------------------------------------------------------------------------|--------|
+| ServerUtilities 2.4.10 at compile time only; GregTech's dependencies bring it at runtime (16.4) | done   |
+| The team rule, free of Minecraft and ServerUtilities, with its unit tests (12.1, D59)           | done   |
+| One adapter for ServerUtilities' teams, loaded only when it's installed                         | done   |
+| Unlinking, the antenna lock, phone settings and locked antennas read those teams (12.2, D37-39) | done   |
+| Nothing in `src` reads `SpaceProjectManager`                                                    | done   |
+| The guide's antenna and wired pages point at ServerUtilities' team screen, in both languages    | done   |
+| A self-test step with a ServerUtilities team                                                    | done   |
+| README, CHANGELOG, DEVIATIONS                                                                   | done   |
+
+### Summary
+
+**Built.**
+
+- `TeamRule` says who is in an owner's team: the owner, and the owner, moderators and members of the team the owner is
+  in. An ally of that team, a player with no team, and a player the team system doesn't know aren't. It asks the
+  owner's team about the player and never compares two players' teams, since every ServerUtilities player without one
+  is in the same "no team". It reads a small lookup and holds no Minecraft or ServerUtilities code.
+- `ServerUtilitiesTeams` answers that lookup from ServerUtilities' universe, through `ForgeTeam.isMember`,
+  `isModerator`, `isOwner` and `isAlly`. It's the one class that touches ServerUtilities, and `Ownership` loads it by
+  name only when `Loader.isModLoaded("serverutilities")`. Without ServerUtilities, before its universe has loaded, or
+  for a player it doesn't know, only a machine's owner and operators manage it, and a locked antenna serves its owner
+  alone. A ServerUtilities without the methods BeCom was built against turns teams off with one logged error.
+- Everything that asks runs on the server thread, the thread ServerUtilities' universe belongs to: the wrench, the
+  antenna lock and phone settings in screen actions, which 1.7.10 handles on the main thread, and the radio and phone
+  service work that checks a locked antenna. `route()` never asks.
+- `OwnerRule` and the antenna lock ask with the owner first, as D59 words it. For real players either order gives the
+  same answer.
+- `SpaceProjectManager` is gone from `src`.
+- The guide's antenna and wired pages, in English and Italian, say teams are ServerUtilities' teams, made with its My
+  Team button beside the inventory, and that a team's allies don't count. The lang files, tooltips and quest text only
+  ever said "team", which still holds.
+
+**Tests.**
+
+- Unit tests: 481, all passing, 9 of them new in TeamRuleTest. The owner, a member and a moderator count; an ally, a
+  stranger in another team, two players with no team and an unknown player don't; without a team system only the owner
+  and operators manage; and through OwnerRule a member manages and an ally doesn't. A rule that compares teams fails
+  the teamless case, and one that counts allies fails the ally's. AntennaNetworkTest's lock test now has a teammate
+  whom only the owner's team counts, which fails the old argument order.
+- Self-test: 320 checks on a fresh world, all passing, 9 of them new in one step. The self-test's fake players never
+  log in, so ServerUtilities never learns them: the adapter makes them a team for the length of one call, and forgets
+  them before anything can save it. In that team, the owner's ally and a player with no team can't unlink the owner's
+  line and a member can; the owner's locked antenna serves the owner, a moderator and a member at the same level and
+  refuses the ally and the teamless player; two teamless players aren't one team; and a member can take a player off
+  the owner's Telephone's block list where the ally and the teamless player can't, and their screens don't offer it.
+  Afterwards the member manages nothing of the owner's.
+
+**Review.** Pending.
+
+**Deviations and GTNH Voice.** X44 is new: a locked antenna serves its owner's team, not operators, reading D59's
+"operators" as who may manage. X5 notes that D59 now names operators for a server without ServerUtilities. Nothing here
+touches GTNH Voice, so VOICE.md has no new entry.
+
+**Known issues.**
+
+- On a single-player or LAN world, ServerUtilities puts every player in its "singleplayer" team by default
+  (`autocreate_sp`), so there they are all one team for BeCom too: each can unlink the others' nodes, change their
+  phone settings and use their locked antennas. ServerUtilities' claims treat them the same way.
+- From before this branch: a Transceiver's access to a team-locked antenna isn't worked out again when its owner joins
+  or leaves the team, until the antenna network next changes. A player's walkie and Mobile Phone are worked out again
+  within a second.
+
+**Owner checks.** A dedicated server with ServerUtilities, which GTNH has, BeCom from this branch, and four players: A,
+B in A's team, C an ally of A's team, and D in no team.
+
+1. A makes a team with the My Team button beside the inventory and invites B, who joins. In the team screen, A makes C
+   an ally. D joins nothing.
+2. A links two Pylon Heads. C wrenches both ends: the chat says only an owner of either end, or their team, can unlink
+   it, and the link stays. The same for D. B wrenches both ends: the link goes.
+3. A locks an antenna to their team in its screen and steps back. Where that antenna is the only one in range, B's
+   Mobile Phone has service and B's walkie carries a channel through it; C's and D's get nothing from it.
+4. A blocks a player in their Telephone's settings. B opens that Telephone's screen and takes them off the block list.
+   C and D find the settings closed, with "Only the owner or their team can change these."
+5. B leaves the team. Within a second, B's phone and walkie lose the locked antenna, and B can no longer unlink A's
+   nodes.
+6. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
+   operators manage BeCom's machines". B can't unlink A's nodes; an operator can.
