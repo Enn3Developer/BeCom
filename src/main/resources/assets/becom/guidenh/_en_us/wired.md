@@ -53,7 +53,9 @@ it's clear. Plain pylons need no power and carry the line through unloaded chunk
 
 When a Pylon Head forms, it links by itself if exactly one other formed Pylon Head in range has a free slot and a clear
 line to it. Otherwise, link by hand: wrench one head, then the other. Wrench a linked pair again to unlink it. Anyone
-can link into any network; only an owner of either end, their GT team or a server operator can unlink.
+can link into any network; only an owner of either end, their team or a server operator can unlink. Teams are
+ServerUtilities' teams, made with its My Team button beside the inventory: a team's owner, moderators and members
+count, its allies don't. Without ServerUtilities, only the owner and operators can.
 
 ## Repeaters and Routers
 
@@ -72,4 +74,4 @@ there.
 Every phone has a six-digit number: a Telephone or a Videophone from when it's placed, a carried phone from when
 someone first carries it. It belongs to whoever placed it, or first carried it. The phone screen has a keypad, contacts
 listed by their owners' names, and recent and missed calls. Its settings hold do-not-disturb, hiding from contacts and
-a block list, which only the owner or their GT team can change. A caller gets at most 5 attempts a minute.
+a block list, which only the owner or their team can change. A caller gets at most 5 attempts a minute.

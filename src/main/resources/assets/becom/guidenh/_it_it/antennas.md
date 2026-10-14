@@ -48,8 +48,9 @@ Un'antenna funziona solo se caricata e alimentata.
 
 Clic destro sulla testa per il suo schermo: le antenne a cui si collega e le linee che aggancia, e una mappa di
 copertura del segnale che avrebbe un giocatore in piedi a terra intorno a lei, per le radio o per le chiamate. Il
-proprietario può riservarla alla sua squadra GT: allora serve solo i loro dispositivi, ma continua a portare le chiamate
-lungo i suoi collegamenti.
+proprietario può riservarla alla sua squadra: allora serve solo i dispositivi della squadra, ma continua a portare le
+chiamate lungo i suoi collegamenti. Le squadre sono quelle di ServerUtilities, che si creano con il suo pulsante My Team
+accanto all'inventario, e gli alleati di una squadra non ne fanno parte.
 
 Un'antenna mappa il terreno intorno quando si forma, e di nuovo ogni 5 minuti. Un edificio nuovo in mezzo compare al
 controllo successivo.
