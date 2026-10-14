@@ -1673,15 +1673,23 @@ touches GTNH Voice, so VOICE.md has no new entry.
 **Owner checks.** A dedicated server with ServerUtilities, which GTNH has, BeCom from this branch, and two players: A,
 and B, who is in turn A's teammate, an ally of A's team and a stranger.
 
-1. A makes a team with the My Team button beside the inventory, links two Pylon Heads, locks an antenna to their team
-   in its screen, and blocks someone in their Telephone's settings.
+1. A makes a team with the My Team button beside the inventory and links two Pylon Heads. A's Telephone sits on a line
+   that one of A's antennas bridges. B stands by that antenna with a Mobile Phone, so B shows in the Telephone's
+   contacts, and A blocks B there. Then A locks the antenna to their team.
 2. As a teammate: A invites B, who joins. B wrenches both ends of A's pylon pair, and the link goes; A links it again.
    Where the locked antenna is the only one in range, B's Mobile Phone has service and B's walkie carries a channel
-   through it. B opens A's Telephone screen and takes the blocked player off its block list; A blocks them again.
-3. As an ally: B leaves the team, and A makes B an ally in the team screen. Within a second, B's phone and walkie
-   lose the locked antenna. B's wrench on A's pair gets "Only an owner of either end, or their team, can unlink
-   this.", and the link stays. A's Telephone screen shows B the settings closed, with "Only the owner or their team
-   can change these."
+   through it. B opens A's Telephone screen and takes themselves off its block list. B unticks the antenna's lock in
+   its screen and ticks it again (X45).
+3. As an ally: B leaves the team, and A makes B an ally in the team screen. Within a second, B's phone and walkie lose
+   the locked antenna. B's wrench on A's pair gets "Only an owner of either end, or their team, can unlink this.", and
+   the link stays. A's Telephone screen shows B the settings closed, with "Only the owner or their team can change
+   these.", and the antenna's screen shows B its lock greyed out.
 4. As a stranger: A takes B's ally standing away. B gets the same refusals as in step 3.
-5. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
-   operators manage BeCom's machines". B can't unlink A's nodes; an operator can.
+5. The "singleplayer" team (X46): A plays a new world alone first, so ServerUtilities puts A in its "singleplayer"
+   team, links a pylon pair and locks an antenna there, then hosts the world on the dedicated server. B runs `/team
+   join singleplayer`, and ServerUtilities lets them in. B still gets step 3's refusals from A's pair and A's locked
+   antenna.
+6. On LAN, the known issue: A opens a single-player world to LAN and B joins. ServerUtilities puts both in its
+   "singleplayer" team, so B may unlink A's pair there.
+7. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
+   operators manage BeCom's machines". B can't unlink A's nodes; made an operator with `/op`, B can.
