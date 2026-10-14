@@ -44,9 +44,10 @@ An antenna works only while it's loaded and powered.
 ## Its screen
 
 Right-click the head for its screen: the antennas it links to and the lines it bridges, and a coverage map of the
-signal a player standing on the ground would get around it, for radios or for calls. The owner can lock it to their
-team: it then serves only their team's devices, but still carries calls along its links. Teams are ServerUtilities'
-teams, made with its My Team button beside the inventory, and a team's allies aren't part of it.
+signal a player standing on the ground would get around it, for radios or for calls. The owner, their team or a
+server operator can lock it to the owner's team: it then serves only that team's devices, but still carries calls
+along its links. Teams are ServerUtilities' teams, made with its My Team button beside the inventory, and a team's
+allies aren't part of it.
 
 An antenna maps the land around it when it forms, and again every 5 minutes. A new building in the way shows up at
 the next look.

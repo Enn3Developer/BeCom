@@ -498,8 +498,8 @@ branch, and the Modernity add-on pack for the second look at the textures:
    loudspeaker off and changes the channel.
 9. Two players talk at once on one channel: a listener hears only the stronger one, and the other takes over once the
    first lets go.
-10. The antenna's owner ticks "Serve only my team" on its screen: a player outside the team loses that antenna; the
-    owner and their team keep it.
+10. The antenna's owner ticks "Serve only its owner's team" (once "Serve only my team") on its screen: a player
+    outside the team loses that antenna; the owner and their team keep it.
 11. A Telephone on a Line Terminal wrench-linked to one antenna (within 16 blocks) calls a Telephone on a terminal
     linked to another antenna, through their UHF link.
 12. Leave a walkie switched on: its charge bar goes down; at empty it switches off. A GT battery buffer charges it.
