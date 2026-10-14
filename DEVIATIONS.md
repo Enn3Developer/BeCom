@@ -61,7 +61,8 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   other end.
 - **Why:** admins have no other way to undo a link in 0.1. The first version let anyone manage what had no owner,
   which the 0.1 design review pointed out opened those links, and ownerless phones' settings, to everyone.
-- **To match the design:** remove the operator check in `Ownership.mayManage`.
+- **To match the design:** leave operators out of `Ownership.mayManage` while ServerUtilities' teams are in use. On a
+  server without ServerUtilities, D59 already counts them.
 
 ### X6: A Telephone's owner is whoever placed it
 
@@ -728,10 +729,13 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   can unlock it from its screen, as they can unlink anything (X5). D59's "operators" is read as who may manage, where
   operators already count, not as whose devices a locked antenna serves. A player ServerUtilities doesn't know, such as
   another mod's fake player, counts only as themselves.
-- **Why:** 12.2 has a locked antenna refuse other players' devices, and serving operators only on a server without
-  ServerUtilities would make what the lock does depend on whether it's installed.
-- **To match the design:** `AntennaNetwork.losses` would have to know whether a device's user is an operator. It has
-  their id on the server thread, so it can ask the server's operator list.
+- **Why:** 12.2 has a locked antenna refuse other players' devices, and D59 names operators only for a server without
+  ServerUtilities. Read as whose devices a locked antenna serves, it would serve operators' devices on such a server
+  and refuse them on one with ServerUtilities, where D59 doesn't name them. Read as who may manage, it matches what
+  operators already do on both (X5). The cost: on a server without ServerUtilities, an operator's walkie and phone get
+  nothing from a locked antenna until they unlock it.
+- **To match the design:** `AntennaNetwork.losses` would have to know whether a device's user is an operator, on a
+  server without ServerUtilities. It has their id on the server thread, so it can ask the server's operator list.
 
 ### X45: An antenna's owner's team and operators may lock and unlock it
 

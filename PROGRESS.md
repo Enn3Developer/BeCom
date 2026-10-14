@@ -1634,19 +1634,23 @@ touches GTNH Voice, so VOICE.md has no new entry.
 - From before this branch: a Transceiver's access to a team-locked antenna isn't worked out again when its owner joins
   or leaves the team, until the antenna network next changes. A player's walkie and Mobile Phone are worked out again
   within a second.
+- By default (`merge_offline_mode_players`), ServerUtilities gives a player who logs in under a name it knows that
+  name's old record, team and all. If a player renames and someone else takes the name, the newcomer is in the old
+  player's team for BeCom too, and the old player's machines, which GT still knows by their old id, lose their team.
+  ServerUtilities' claims do the same.
 
-**Owner checks.** A dedicated server with ServerUtilities, which GTNH has, BeCom from this branch, and four players: A,
-B in A's team, C an ally of A's team, and D in no team.
+**Owner checks.** A dedicated server with ServerUtilities, which GTNH has, BeCom from this branch, and two players: A,
+and B, who is in turn A's teammate, an ally of A's team and a stranger.
 
-1. A makes a team with the My Team button beside the inventory and invites B, who joins. In the team screen, A makes C
-   an ally. D joins nothing.
-2. A links two Pylon Heads. C wrenches both ends: the chat says only an owner of either end, or their team, can unlink
-   it, and the link stays. The same for D. B wrenches both ends: the link goes.
-3. A locks an antenna to their team in its screen and steps back. Where that antenna is the only one in range, B's
-   Mobile Phone has service and B's walkie carries a channel through it; C's and D's get nothing from it.
-4. A blocks a player in their Telephone's settings. B opens that Telephone's screen and takes them off the block list.
-   C and D find the settings closed, with "Only the owner or their team can change these."
-5. B leaves the team. Within a second, B's phone and walkie lose the locked antenna, and B can no longer unlink A's
-   nodes.
-6. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
+1. A makes a team with the My Team button beside the inventory, links two Pylon Heads, locks an antenna to their team
+   in its screen, and blocks someone in their Telephone's settings.
+2. As a teammate: A invites B, who joins. B wrenches both ends of A's pylon pair, and the link goes; A links it again.
+   Where the locked antenna is the only one in range, B's Mobile Phone has service and B's walkie carries a channel
+   through it. B opens A's Telephone screen and takes the blocked player off its block list; A blocks them again.
+3. As an ally: B leaves the team, and A makes B an ally in the team screen. Within a second, B's phone and walkie
+   lose the locked antenna. B's wrench on A's pair gets "Only an owner of either end, or their team, can unlink
+   this.", and the link stays. A's Telephone screen shows B the settings closed, with "Only the owner or their team
+   can change these."
+4. As a stranger: A takes B's ally standing away. B gets the same refusals as in step 3.
+5. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
    operators manage BeCom's machines". B can't unlink A's nodes; an operator can.
