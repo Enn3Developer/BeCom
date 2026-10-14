@@ -123,4 +123,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Teams are ServerUtilities' teams now, not GT's `/sp` teams. A team's owner, moderators and members can unlink each
   other's nodes, lock each other's antennas and change each other's phone settings, and an antenna locked to a team
   serves all of them; its allies can't. Without ServerUtilities, only a machine's owner and operators manage it, and a
-  locked antenna serves its owner alone.
+  locked antenna serves its owner alone. On a dedicated server, the "singleplayer" team a world first played alone
+  keeps isn't one for BeCom, since anyone there may join it.

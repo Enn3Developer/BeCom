@@ -58,7 +58,9 @@ formata con un posto libero e la linea sgombra. Altrimenti collegale a mano: usa
 Usa di nuovo la chiave su una coppia collegata per scollegarla. Chiunque può collegarsi a qualsiasi rete; scollegare
 possono solo un proprietario di uno dei due capi, la sua squadra o un operatore del server. Le squadre sono quelle di
 ServerUtilities, che si creano con il suo pulsante My Team accanto all'inventario: contano il proprietario della
-squadra, i moderatori e i membri, non gli alleati. Senza ServerUtilities, possono solo il proprietario e gli operatori.
+squadra, i moderatori e i membri, non gli alleati. Su un server dedicato non conta la squadra "singleplayer" che un
+mondo giocato prima da soli si porta dietro, perché lì chiunque può entrarci. Senza ServerUtilities, possono solo il
+proprietario e gli operatori.
 
 ## Ripetitori e router
 
@@ -78,4 +80,5 @@ Ogni telefono ha un numero di sei cifre: un Telefono o un Videotelefono da quand
 da quando qualcuno lo porta con sé la prima volta. Appartiene a chi lo ha piazzato, o a chi lo ha portato per primo. Lo
 schermo del telefono ha una tastiera, i contatti elencati per nome del proprietario, e le chiamate recenti e perse. Le
 sue impostazioni hanno il non disturbare, il nascondersi dai contatti e una lista dei bloccati, che solo il
-proprietario o la sua squadra possono cambiare. Chi chiama ha al massimo 5 tentativi al minuto.
+proprietario, la sua squadra o un operatore del server possono cambiare. Chi chiama ha al massimo 5 tentativi al
+minuto.
