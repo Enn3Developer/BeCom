@@ -1616,7 +1616,7 @@ space-project teams GT keeps for wireless EU and `/sp`.
   that compares teams fails the teamless case, and one that counts allies fails the ally's. AntennaNetworkTest's lock
   test now has a teammate whom only the owner's team counts, which fails the old argument order, and OwnerRuleTest a
   one-way team that does the same for OwnerRule.
-- Self-test: 323 checks on a fresh world, all passing, 12 of them new in one step. The self-test's fake players never
+- Self-test: 325 checks on a fresh world, all passing, 14 of them new in one step. The self-test's fake players never
   log in, so ServerUtilities never learns them: the adapter makes them a team for the length of one call, and forgets
   them before anything can save it. In that team, the owner's ally and a player with no team can't unlink the owner's
   line and a member can; the owner's locked antenna serves the owner, a moderator and a member at the same level and
@@ -1624,8 +1624,9 @@ space-project teams GT keeps for wireless EU and `/sp`.
   the owner's Telephone's block list where the ally and the teamless player can't, and their screens don't offer it.
   The member can unlock and lock the owner's antenna from its screen, and the ally can't (X45). Then the owner and the
   teamless player are put in a "singleplayer" team, as a player who joined it would be, and on the dedicated dev
-  server that player still can't unlink the owner's line (X46); put in a server team an admin made, they can.
-  Afterwards the moderator and the member are no team, and the member manages nothing of the owner's.
+  server that player still can't unlink the owner's line (X46), while on a single player's server the same team counts.
+  Put in a player's own team that happens to be called "singleplayer", or in a server team an admin made, they can.
+  Afterwards neither pair is a team, and the member manages nothing of the owner's.
 
 **Review.** A design reviewer and a code reviewer side by side on `master..4588709`, the whole change. Each finding
 was confirmed by the code, by ServerUtilities' own source, or by a self-test row that failed first, as each item says.
@@ -1677,6 +1678,32 @@ anything critical or major, and both called the fixes ready. Their minor finding
 
 One boot with both of the code reviewer's mutations, no restore and every server team dropped, failed exactly those two
 rows (321 passed, 2 failed).
+
+A third pair of reviewers took the second round's fixes, `01014c1..0c8a187`, side by side. Again neither found anything
+critical or major, and both called the fixes ready. Their minor findings:
+
+- Both: X46 had the first players leave "singleplayer" and then unclaim their land, which ServerUtilities refuses: once
+  out of a team, only an operator may unclaim its chunks. Fixed (3bbe151): they unclaim before they leave.
+- Code: X46 said the `teams.disable_teams` config stops anyone joining or making a team, but whoever already joined
+  stays, and every new player still gets a team of their own. Fixed (3bbe151).
+- Design: X46's game rule isn't out of reach after all: 1.7.10 loads every rule it finds in a world's level.dat, so an
+  admin can add it there with the server stopped. The second round's record above says it can't be used; X46 now says
+  how (3bbe151).
+- Design: owner check 6 shows nothing about teams on a LAN world with cheats on, where every player is an operator.
+  Fixed (bc2cb2f): cheats off.
+- Design: owner check 3 said B sees the lock greyed out, where ModularUI2 doesn't draw a disabled widget at all. Fixed
+  (bc2cb2f): B sees no lock toggle.
+- Design: X46's single-player half didn't need a client after all, since a server with an owner is a single player's.
+  Fixed (2a7fc81): the self-test gives the dedicated dev server an owner for one question, and the "singleplayer" team
+  must count. The second round's "needs a client" above no longer holds.
+- Code: nothing pinned the guard's test for a server team. A guard matching the id alone passed everything, though any
+  player may make an ordinary team called "singleplayer" where none exists. Fixed (2a7fc81): a phase puts the owner and
+  the stranger in such a team, and the stranger's wrench must unlink the owner's line.
+- Code: the row that catches players left behind missed the owner and the stranger, who end the helper in a team. Fixed
+  (2a7fc81): it checks them too.
+
+One boot with the guard matching the id alone failed exactly the two new rows that pin it (323 passed, 2 failed). One
+with the helper leaving the owner and the stranger behind failed exactly the row that catches it (324 passed, 1 failed).
 
 **Deviations and GTNH Voice.** Three new entries: X44, a locked antenna serves its owner's team and not operators;
 X45, an antenna's owner's team and operators may lock and unlock it; X46, ServerUtilities' "singleplayer" team is no
