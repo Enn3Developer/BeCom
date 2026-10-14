@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import net.minecraft.block.Block;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemBlock;
@@ -63,6 +64,7 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.Coverage;
+import com.enn3developer.becom.logic.radio.RadioHops;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.logic.video.VideoPlan;
 import com.enn3developer.becom.machine.BeComMachines;
@@ -81,9 +83,11 @@ import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.CarriedPhones;
 import com.enn3developer.becom.server.LinkService;
+import com.enn3developer.becom.server.Ownership;
 import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 import com.enn3developer.becom.server.RadioService;
+import com.enn3developer.becom.server.teams.ServerUtilitiesTeams;
 import com.enn3developer.becom.voice.CallGroup;
 import com.enn3developer.becom.voice.CallSnapshot;
 import com.enn3developer.becom.voice.RadioGroup;
@@ -177,6 +181,9 @@ public final class SelfTest {
     private static final int FORM_Z = RADIO_Z + 600;
     private static final int ANTENNA_GAP = 60;
     private MTEAntenna antennaA;
+    private FakePlayer teamModerator;
+    private FakePlayer teamMember;
+    private FakePlayer teamAlly;
     private MTEAntenna antennaB;
     private MTEAntenna antennaT2;
     private MTEAntenna antennaT3;
@@ -272,6 +279,8 @@ public final class SelfTest {
         steps.add(this::checkThroughAntennas);
         steps.add(this::keyLocked);
         steps.add(this::checkLocked);
+        steps.add(this::lockForTeams);
+        steps.add(this::checkTeams);
         steps.add(this::checkFlatWalkie);
         steps.add(this::checkOffWalkie);
         steps.add(this::keyEdge);
@@ -1979,6 +1988,128 @@ public final class SelfTest {
             "");
         antennaA.setLocked(false);
         return 1;
+    }
+
+    private int lockForTeams() {
+        antennaA.setLocked(true);
+        return 3;
+    }
+
+    /**
+     * Teams are ServerUtilities' (D59). The self-test's players are fake, so ServerUtilities never saw them log in: its
+     * adapter puts them in a team for the length of one call, and forgets them before anything can save it.
+     */
+    private int checkTeams() {
+        boolean installed = cpw.mods.fml.common.Loader.isModLoaded(Ownership.SERVER_UTILITIES_MODID);
+        check("ServerUtilities is in the dev server, through GregTech's dependencies (D59)", installed, "");
+        if (installed) {
+            teamModerator = teamPlayer("BeComTeamModerator", 1);
+            teamMember = teamPlayer("BeComTeamMember", 2);
+            teamAlly = teamPlayer("BeComTeamAlly", 3);
+            double[] strangerAt = { stranger.posX, stranger.posY, stranger.posZ };
+            stranger.setPosition(teamMember.posX, teamMember.posY, teamMember.posZ);
+            boolean ran = ServerUtilitiesTeams.withTeamForSelfTest(
+                owner.getGameProfile(),
+                teamModerator.getGameProfile(),
+                teamMember.getGameProfile(),
+                teamAlly.getGameProfile(),
+                stranger.getGameProfile(),
+                this::checkInTeam);
+            stranger.setPosition(strangerAt[0], strangerAt[1], strangerAt[2]);
+            check("the self-test made its ServerUtilities team: ServerUtilities' universe is loaded", ran, "");
+            check(
+                "...and forgets the self-test's players after: the member manages nothing of the owner's again",
+                !Ownership.mayManage(teamMember, owner.getUniqueID()),
+                "");
+        }
+        antennaA.setLocked(false);
+        return 1;
+    }
+
+    private FakePlayer teamPlayer(String name, int n) {
+        FakePlayer player = FakePlayerFactory.get(
+            world,
+            new GameProfile(
+                UUID.fromString(String.format(Locale.ROOT, "b3c0b3c0-0000-4000-8000-0000000000%02x", 0xc0 + n)),
+                name));
+        // Within reach of the owner's Telephone by the antenna, as its screen asks.
+        player.setPosition(X0 + 1.5, Y, RADIO_Z + 5.5);
+        return player;
+    }
+
+    /** Runs while the owner's team holds the moderator and the member, and the ally is its ally. */
+    private void checkInTeam() {
+        UUID o = owner.getUniqueID(), s = stranger.getUniqueID();
+        UUID mod = teamModerator.getUniqueID(), mem = teamMember.getUniqueID(), ally = teamAlly.getUniqueID();
+
+        // Unlinking (D37): the ally's wrench and a teamless stranger's can't cut the owner's line; a member's can.
+        NetworkModel model = becom.network.model(world);
+        LinkService.Outcome byAlly = wrenchBoth(teamAlly, clearA, clearB);
+        LinkService.Outcome byStranger = wrenchBoth(stranger, clearA, clearB);
+        check(
+            "an ally of the owner's ServerUtilities team can't unlink the owner's line, nor a player with no team",
+            byAlly == LinkService.Outcome.NOT_ALLOWED && byStranger == LinkService.Outcome.NOT_ALLOWED
+                && model.linked(pos(clearA), pos(clearB)),
+            byAlly + "/" + byStranger);
+        LinkService.Outcome byMember = wrenchBoth(teamMember, clearA, clearB);
+        check(
+            "...but a member of it can (D37, D59)",
+            byMember == LinkService.Outcome.UNLINKED && !model.linked(pos(clearA), pos(clearB)),
+            byMember.name());
+        // Back as it was: linked, and blocked by the stone the clearance check left on it.
+        model.link(pos(clearA), pos(clearB));
+        becom.network.recheckAll();
+
+        // The lock (D38): a locked antenna serves its owner's team and nobody else, wherever they stand.
+        AntennaNetwork.Mesh mesh = becom.antennas.mesh(world.provider.dimensionId);
+        AntennaNetwork.Antenna known = becom.antennas.antenna(antennaA.ref());
+        int i = mesh.antennas()
+            .indexOf(known);
+        RadioHops.End at = RadioService.endOf(eve);
+        double[] level = new double[5];
+        UUID[] users = { o, mod, mem, ally, s };
+        for (int k = 0; i >= 0 && at != null && k < users.length; k++) {
+            level[k] = becom.antennas.access(mesh, world.provider.dimensionId, at, users[k])[i];
+        }
+        boolean refused = i >= 0 && level[3] == Double.NEGATIVE_INFINITY && level[4] == Double.NEGATIVE_INFINITY;
+        check(
+            "an antenna locked to its owner's team serves the owner, a moderator and a member of it (D38, D59)",
+            known != null && known.locked()
+                && i >= 0
+                && level[0] > Double.NEGATIVE_INFINITY
+                && level[1] == level[0]
+                && level[2] == level[0],
+            Arrays.toString(level));
+        check("...and refuses its ally and a player with no team", refused, Arrays.toString(level));
+        check(
+            "two players ServerUtilities knows with no team aren't one team",
+            !Ownership.sameTeam(ally, s) && !Ownership.sameTeam(s, ally),
+            "");
+
+        // A phone's settings (D39): its owner's team may change its block list, nobody else.
+        PhoneHandle handle = new PhoneHandle.Telephone(bridgePhoneA);
+        PhoneRecord record = becom.phones.record(bridgePhoneA.number());
+        UUID blocked = looker.getUniqueID();
+        record.block(blocked, looker.getCommandSenderName());
+        PhoneScreenActions.unblock(teamAlly, handle, blocked);
+        PhoneScreenActions.unblock(stranger, handle, blocked);
+        boolean kept = record.blocks(blocked);
+        boolean othersSeeIt = !PhoneScreenActions.view(teamAlly, handle)
+            .mayManage()
+            && !PhoneScreenActions.view(stranger, handle)
+                .mayManage();
+        PhoneScreenActions.unblock(teamMember, handle, blocked);
+        check(
+            "a member of the owner's team may change their Telephone's block list; its ally and a player with no team can't",
+            o.equals(record.owner()) && kept && othersSeeIt && !record.blocks(blocked),
+            "kept " + kept + ", others manage " + !othersSeeIt + ", still blocked " + record.blocks(blocked));
+        record.unblock(blocked);
+    }
+
+    private LinkService.Outcome wrenchBoth(EntityPlayer player, MTEPylonHead a, MTEPylonHead b) {
+        becom.links.forget(player.getUniqueID());
+        becom.links.wrench(player, world, pos(a));
+        return becom.links.wrench(player, world, pos(b));
     }
 
     private int checkFlatWalkie() {
