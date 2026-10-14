@@ -1371,6 +1371,11 @@ public final class SelfTest {
             "the world's last saved quests read as the book holds them when BetterQuesting didn't reload it",
             Boolean.TRUE.equals(result.get("savedMatchesBook")),
             String.valueOf(result));
+        check(
+            "quests a reload took out come back with progress from the players' files, read under the definition the"
+                + " world last saved: a task changed since starts over, in the book and in the file",
+            Boolean.TRUE.equals(result.get("restoredFromFiles")),
+            String.valueOf(result));
         return 1;
     }
 
