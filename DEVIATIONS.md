@@ -753,18 +753,24 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 
 ### X46: ServerUtilities' "singleplayer" team isn't a team on a dedicated server
 
-- **Where:** 1.0 teams, DESIGN.md 12.1, 12.2, D37, D59
+- **Where:** 1.0 teams, DESIGN.md 12.1, 12.2, 12.3, D37, D38, D39, D59
 - **Design says:** teams are ServerUtilities' teams: the members of the owner's team count, its owner and moderators
   included.
 - **Built:** on a dedicated server, BeCom doesn't count the "singleplayer" server team. Its members are only
-  themselves to BeCom: they manage nothing of each other's, and an antenna one of them locks serves them alone. On a
-  single-player or LAN world, where ServerUtilities puts every player in it, it counts as any team does.
+  themselves to BeCom: they can't unlink each other's lines, change each other's phone settings or lock each other's
+  antennas, and an antenna one of them locks serves them alone. ServerUtilities still shows them as teammates, and
+  nothing but BeCom's usual refusals tells them otherwise. On a single-player or LAN world, where ServerUtilities puts
+  every player in it, it counts as any team does.
 - **Why:** ServerUtilities makes every player a moderator of that team, so on a dedicated server anyone may join it,
   with `/team join singleplayer` or from its team screen. A world first played alone or on LAN and then hosted keeps
   it, with its first players in it. A stranger who joined could unlink their lines across land no claim covers, change
-  their phones' settings and use their locked antennas. ServerUtilities' own claims have the same hole, but BeCom's
-  unlink rule is all that protects a line outside a claim. The world's first players get their rights back by making a
-  team of their own in the team screen.
+  their phones' settings and use their locked antennas. ServerUtilities' claims don't stop them either: a claim lets
+  the team's allies edit by default, and every player counts as one. BeCom's unlink rule is all that protects those
+  lines. The cost falls on those first players: to be a team for BeCom again, they leave "singleplayer", since
+  ServerUtilities won't let a team's member make another, make a team and invite each other again. Their claims stay
+  with "singleplayer", so they unclaim and claim them again.
 - **To match the design:** drop the "singleplayer" check from `ServerUtilitiesTeams.isTeam`. A server's admin can then
-  close the hole with `/team delete singleplayer`, or with ServerUtilities' `serverutilities:disable_team_joining` game
-  rule.
+  close the hole with `/team delete singleplayer`, which also unclaims every chunk the team holds and leaves its
+  players without a team, or with ServerUtilities' `teams.disable_teams` config, which stops anyone joining or making
+  any team. Its `serverutilities:disable_team_joining` game rule would close it more narrowly, but ServerUtilities never
+  registers that rule, so 1.7.10's `/gamerule` refuses to set it.
