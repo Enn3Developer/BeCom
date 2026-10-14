@@ -1616,7 +1616,7 @@ space-project teams GT keeps for wireless EU and `/sp`.
   that compares teams fails the teamless case, and one that counts allies fails the ally's. AntennaNetworkTest's lock
   test now has a teammate whom only the owner's team counts, which fails the old argument order, and OwnerRuleTest a
   one-way team that does the same for OwnerRule.
-- Self-test: 322 checks on a fresh world, all passing, 11 of them new in one step. The self-test's fake players never
+- Self-test: 323 checks on a fresh world, all passing, 12 of them new in one step. The self-test's fake players never
   log in, so ServerUtilities never learns them: the adapter makes them a team for the length of one call, and forgets
   them before anything can save it. In that team, the owner's ally and a player with no team can't unlink the owner's
   line and a member can; the owner's locked antenna serves the owner, a moderator and a member at the same level and
@@ -1624,7 +1624,8 @@ space-project teams GT keeps for wireless EU and `/sp`.
   the owner's Telephone's block list where the ally and the teamless player can't, and their screens don't offer it.
   The member can unlock and lock the owner's antenna from its screen, and the ally can't (X45). Then the owner and the
   teamless player are put in a "singleplayer" team, as a player who joined it would be, and on the dedicated dev
-  server that player still can't unlink the owner's line (X46). Afterwards the member manages nothing of the owner's.
+  server that player still can't unlink the owner's line (X46); put in a server team an admin made, they can.
+  Afterwards the moderator and the member are no team, and the member manages nothing of the owner's.
 
 **Review.** A design reviewer and a code reviewer side by side on `master..4588709`, the whole change. Each finding
 was confirmed by the code, by ServerUtilities' own source, or by a self-test row that failed first, as each item says.
@@ -1651,6 +1652,31 @@ was confirmed by the code, by ServerUtilities' own source, or by a self-test row
   ServerUtilities. Fixed (ce73b8d).
 - Design, minor: D38 has the owner lock an antenna, and the screen lets the owner's team and operators lock it too, as
   it did before this branch. Logged as X45 for the owner to decide (bef1633), with a self-test row that shows it.
+
+A fresh design reviewer and a fresh code reviewer then took the fixes, `4588709..01014c1`, side by side. Neither found
+anything critical or major, and both called the fixes ready. Their minor findings:
+
+- Design: X46 said less than it costs. The first players must leave "singleplayer" before ServerUtilities lets them make
+  a team, their claims stay behind, and the admin's remedies unclaim the team's land or stop all joining. Fixed
+  (c219655): X46 says so, and names D38 and D39 too.
+- Both: the README, the changelog and the guide said ServerUtilities' teams count, with no word of X46. Fixed (182e068).
+- Design: owner check 1 had A block B, whose phone couldn't yet be in the Telephone's contacts. Fixed (0f10280): A
+  blocks B while B's phone reaches the Telephone, before the lock.
+- Both: no owner check covered X45, X46 or the LAN known issue. Fixed (0f10280).
+- Design: the wired page left operators out of who can change a block list. Fixed (182e068).
+- Code: the row meant to catch players the helper leaves behind in ServerUtilities passed either way, once the owner
+  ended the helper in the "singleplayer" team. Fixed (ef5ba9d): it also checks the moderator and the member are no team,
+  and fails when the helper restores nothing.
+- Code: nothing pinned how narrow X46's guard is. A guard dropping every server team passed everything, and so did one
+  dropping the team on single-player worlds too. Fixed (ef5ba9d): a server team an admin made must still count, which
+  the first fails, and the X46 row is skipped on the guard's own test. The single-player half needs a client: owner
+  check 6.
+- Code: X46's game-rule remedy can't be used: ServerUtilities never registers the rule, and the dev server answers "No
+  game rule called 'serverutilities:disable_team_joining' is available". Fixed (c219655): X46 names the
+  `teams.disable_teams` config instead, and says why not the rule.
+
+One boot with both of the code reviewer's mutations, no restore and every server team dropped, failed exactly those two
+rows (321 passed, 2 failed).
 
 **Deviations and GTNH Voice.** Three new entries: X44, a locked antenna serves its owner's team and not operators;
 X45, an antenna's owner's team and operators may lock and unlock it; X46, ServerUtilities' "singleplayer" team is no
