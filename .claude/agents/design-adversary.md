@@ -19,7 +19,7 @@ Check:
   behaving as the design says, not just present.
 - Its "Done when": would it hold in game? Do the tests and the self-test actually show it?
 - Every number it uses, against 17: read from the config (14.2), not written into the code.
-- Every decision it touches, D1 to D58.
+- Every decision it touches, D1 to D59.
 - DEVIATIONS.md: every difference from the design is logged, and each entry is honest about what it costs. A logged
   deviation isn't a finding unless the log is wrong about it.
 - PROGRESS.md: every `done` is done, and nothing is claimed that the code doesn't do.

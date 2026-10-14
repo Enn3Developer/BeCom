@@ -1,6 +1,6 @@
 # Better Communications: design
 
-Draft 10, 2026-10-12. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
+Draft 11, 2026-10-14. This rewrites the original Google Doc draft, adds the decisions made since, and fits everything to
 the GTNH Voice 0.11.0 API. From now on this file is the source of truth. How BeCom gets built is in
 [16](#16-roadmap), and the build's working rules are in [`CLAUDE.md`](CLAUDE.md).
 
@@ -70,8 +70,8 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D34 | Two keys: radio push-to-talk, and Phone, which answers, hangs up or opens the dialer. Sneak + Phone rejects a call. Incoming calls show an on-screen notice. | decided  |
 | D35 | The Signal Analyzer shows a live on-screen overlay while held.                                                                     | decided  |
 | D36 | Walkie-talkies and phones drain their battery on standby too, more while in use, and can be switched off.                          | decided  |
-| D37 | Anyone can wrench-link a node into any network. Only a node's owner or their GT team can unlink it.                               | decided  |
-| D38 | Antennas serve everyone. The owner can lock one to their GT team.                                                                  | decided  |
+| D37 | Anyone can wrench-link a node into any network. Only a node's owner or their team (D59) can unlink it.                            | decided  |
+| D38 | Antennas serve everyone. The owner can lock one to their team (D59).                                                               | decided  |
 | D39 | Phones get do-not-disturb, a block list and a hide-from-contacts option. The server rate-limits call attempts.                    | decided  |
 | D40 | Only the Satellite Launch Pad and the Satellite Dish need a maintenance hatch.                                                     | decided  |
 | D41 | Video calls stay in-game, with no real webcam. The front camera shows the caller's character; the rear camera streams their first-person view, in one-to-one calls only, off by default. | decided  |
@@ -92,6 +92,7 @@ without anyone reserving anything for it ([14.1](#141-machine-ids)).
 | D56 | When an untested assumption fails, the run takes its agreed fallback ([16.2](#162-untested-assumptions)), logs it and carries on. The owner decides afterwards whether to keep it. | decided  |
 | D57 | What BeCom needs from GTNH Voice gets added to GTNH Voice. [`VOICE.md`](VOICE.md) lists each need, starting with reading its proximity range (D17), and the run adds any it finds. | decided  |
 | D58 | Each milestone ends with two adversarial reviews: one checks it against this design, the other tries to break the code. The run proves a finding with a test before fixing it, and records each one it rejects, with the reason. | decided  |
+| D59 | Teams are ServerUtilities' teams, the ones its team screen makes and chunk claims use: the members of the owner's team count, its allies don't. Without ServerUtilities, only the owner and operators. Replaces GT's `/sp` teams. | decided  |
 
 ## 3. Progression
 
@@ -566,8 +567,9 @@ its own push-to-talk unbound.
 
 - A machine's owner is the player who placed it; GT already records this for every machine. A phone's owner is its
   first user.
-- Teams are GT's own, the ones it uses for wireless EU and space projects (`/sp invite`, `/sp accept`, `/sp leave`).
-  BeCom adds no team system of its own.
+- Teams are ServerUtilities' (D59), the ones its team screen makes and chunk claims use. The members of the owner's
+  team count, its owner and moderators included. Its allies don't, and two players with no team aren't one. Without
+  ServerUtilities, only the owner and operators count. BeCom adds no team system of its own.
 
 ### 12.2 Networks
 
@@ -940,6 +942,7 @@ these; if one can't be used, that's a deviation.
 | GregTech                                | `GT5-Unofficial`                         | 5.09.54.205                          | compile, from 0.1                              |
 | StructureLib, ModularUI2, GTNHLib       | `StructureLib`, `ModularUI2`, `GTNHLib`  | 1.4.45, 2.3.92-1.7.10, 0.11.52       | through GregTech                               |
 | BetterQuesting                          | `BetterQuesting`                         | 3.8.89-GTNH                          | optional, from 0.1                             |
+| ServerUtilities                         | `ServerUtilities`                        | 2.4.10                               | optional, teams (D59)                          |
 | Applied Energistics 2                   | `Applied-Energistics-2-Unofficial`       | rv3-beta-1080-GTNH                   | compile, from 0.3                              |
 | Baubles Expanded                        | `Baubles-Expanded`                       | 2.2.25-GTNH                          | compile, from 0.3                              |
 | Galacticraft                            | `Galacticraft`                           | 3.4.34-GTNH                          | compile, from 0.4                              |
