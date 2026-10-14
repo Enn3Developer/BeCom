@@ -1709,13 +1709,14 @@ and B, who is in turn A's teammate, an ally of A's team and a stranger.
 3. As an ally: B leaves the team, and A makes B an ally in the team screen. Within a second, B's phone and walkie lose
    the locked antenna. B's wrench on A's pair gets "Only an owner of either end, or their team, can unlink this.", and
    the link stays. A's Telephone screen shows B the settings closed, with "Only the owner or their team can change
-   these.", and the antenna's screen shows B its lock greyed out.
+   these.", and the antenna's screen shows B no lock toggle at all.
 4. As a stranger: A takes B's ally standing away. B gets the same refusals as in step 3.
 5. The "singleplayer" team (X46): A plays a new world alone first, so ServerUtilities puts A in its "singleplayer"
    team, links a pylon pair and locks an antenna there, then hosts the world on the dedicated server. B runs `/team
    join singleplayer`, and ServerUtilities lets them in. B still gets step 3's refusals from A's pair and A's locked
    antenna.
-6. On LAN, the known issue: A opens a single-player world to LAN and B joins. ServerUtilities puts both in its
-   "singleplayer" team, so B may unlink A's pair there.
+6. On LAN, the known issue: A opens a single-player world to LAN with Allow Cheats off and B joins. ServerUtilities
+   puts both in its "singleplayer" team, so B may unlink A's pair there. With cheats on, every LAN player is an
+   operator, and the step shows nothing about teams.
 7. Without ServerUtilities in the mods folder, the server log says "ServerUtilities isn't installed: only owners and
    operators manage BeCom's machines". B can't unlink A's nodes; made an operator with `/op`, B can.
