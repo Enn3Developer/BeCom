@@ -4,9 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -382,18 +382,24 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         return saved;
     }
 
-    /** Each of BeCom's quests' entries in the players' progress files. */
+    /**
+     * Each of BeCom's quests' entries in the players' progress files, read as BQ reads them at a start: a world's old
+     * single file first, if it still has one, then each player's, through BQ's own reader, which leaves out the copies
+     * BQ keeps of files it couldn't read.
+     */
     private Map<UUID, List<NBTTagCompound>> savedProgress() {
         if (savedProgress != null) return savedProgress;
         Map<UUID, List<NBTTagCompound>> saved = new HashMap<>();
-        File dir = BQ_Settings.curWorldDir == null ? null : new File(BQ_Settings.curWorldDir, "QuestProgress");
-        File[] files = dir == null ? null : dir.listFiles((d, name) -> name.endsWith(".json"));
-        for (File file : files == null ? new File[0] : files) {
-            try (Reader reader = new InputStreamReader(new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
-                JsonObject json = new JsonParser().parse(reader)
-                    .getAsJsonObject();
-                NBTTagCompound nbt = NBTConverter.JSONtoNBT_Object(json, new NBTTagCompound(), true);
-                NBTTagList all = nbt.getTagList("questProgress", Constants.NBT.TAG_COMPOUND);
+        if (BQ_Settings.curWorldDir != null) {
+            List<File> files = new ArrayList<>();
+            files.add(new File(BQ_Settings.curWorldDir, "QuestProgress.json"));
+            File[] players = new File(BQ_Settings.curWorldDir, "QuestProgress")
+                .listFiles((d, name) -> name.endsWith(".json"));
+            if (players != null) files.addAll(Arrays.asList(players));
+            for (File file : files) {
+                NBTTagList all = NBTConverter
+                    .JSONtoNBT_Object(JsonHelper.ReadFromFile(file), new NBTTagCompound(), true)
+                    .getTagList("questProgress", Constants.NBT.TAG_COMPOUND);
                 for (int i = 0; i < all.tagCount(); i++) {
                     NBTTagCompound entry = all.getCompoundTagAt(i);
                     NBTConverter.UuidValueType.QUEST.tryReadId(entry)
@@ -404,8 +410,6 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                             id -> saved.computeIfAbsent(id, k -> new ArrayList<>())
                                 .add(entry));
                 }
-            } catch (Exception e) {
-                BeCom.LOG.warn("Couldn't read quest progress from {}", file, e);
             }
         }
         savedProgress = saved;
