@@ -239,6 +239,7 @@ public final class SelfTest {
                 .keySet()))
             becom.space.satellitesForSelfTest()
                 .clear(dimension);
+        steps.add(this::checkQuestBookBuild);
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::formAndLink);
@@ -1312,6 +1313,25 @@ public final class SelfTest {
     }
 
     /**
+     * Before the self-test saves anything: the quest book BeCom saved at this start, having added its quests to a
+     * fresh world, names BetterQuesting's own version, which BetterQuesting compares with its own at each start and
+     * makes backups when they differ.
+     */
+    private int checkQuestBookBuild() {
+        if (!cpw.mods.fml.common.Loader.isModLoaded(BeComQuests.BQ_MODID)) return 1;
+        String build = String.valueOf(invoke(BeComQuests.backend(), "savedBuildForSelfTest"));
+        String version = cpw.mods.fml.common.Loader.instance()
+            .getIndexedModList()
+            .get(BeComQuests.BQ_MODID)
+            .getVersion();
+        check(
+            "the quest book saved at this start names BetterQuesting's version, not BeCom's",
+            version.equalsIgnoreCase(build),
+            build + " where BetterQuesting is " + version);
+        return 1;
+    }
+
+    /**
      * X42: at server start, a BeCom quest the book holds with an older definition takes the one BeCom ships, and keeps
      * its players' progress where it still means the same.
      */
@@ -1367,6 +1387,17 @@ public final class SelfTest {
     }
 
     /** BQ classes stay out of this class's signature, so it loads without BQ. */
+    private static Object invoke(Object target, String method) {
+        try {
+            return target.getClass()
+                .getMethod(method)
+                .invoke(target);
+        } catch (ReflectiveOperationException e) {
+            BeCom.LOG.error(PREFIX + "couldn't call {}", method, e);
+            return null;
+        }
+    }
+
     private static Object invoke(Object target, String method, Object arg) {
         try {
             for (java.lang.reflect.Method m : target.getClass()

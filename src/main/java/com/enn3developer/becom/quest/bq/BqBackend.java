@@ -75,8 +75,10 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     // last saved them, and their entries in its players' progress files.
     private Map<UUID, NBTTagCompound> savedQuests;
     private Map<UUID, List<NBTTagCompound>> savedProgress;
-    // Whether this start changed the book, so it's saved before anyone joins.
+    // Whether this start changed the book, and so whether to save it on the first tick, before anyone joins: saved
+    // from FMLServerStartedEvent itself, BQ would take BeCom for the mod saving and write BeCom's version as its own.
     private boolean changed;
+    private boolean saveOnFirstTick;
     private long ticks;
 
     /** BeCom's questline as its files describe it. */
@@ -102,6 +104,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         progressCopy.clear();
         forgetSaved();
         changed = false;
+        saveOnFirstTick = false;
         if (!enabled()) {
             BeCom.LOG.info("BeCom's questline is switched off in the config: the quest book is left alone");
             return;
@@ -120,13 +123,21 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         } finally {
             forgetSaved();
         }
-        // Writing every marked player's progress file takes the server thread a while: now, before anyone can join,
-        // rather than at the first autosave.
-        if (changed) SaveLoadHandler.INSTANCE.saveDatabases();
+        // Writing every marked player's progress file takes the server thread a while: at the first tick, before
+        // anyone can join, rather than at the first autosave with players on.
+        saveOnFirstTick = changed;
     }
 
     @Override
     public void tick() {
+        if (saveOnFirstTick) {
+            saveOnFirstTick = false;
+            try {
+                SaveLoadHandler.INSTANCE.saveDatabases();
+            } catch (Throwable t) {
+                BeCom.LOG.error("Couldn't save the quest book BeCom brought up to date; the next save will", t);
+            }
+        }
         if (questline == null || !enabled()) return;
         ticks++;
         // A reload takes BeCom's quests with their progress, and the copy is all that brings it back: keep it fresh,
@@ -161,6 +172,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         questline = null;
         progressCopy.clear();
         forgetSaved();
+        saveOnFirstTick = false;
     }
 
     // region Adding the questline
@@ -701,6 +713,17 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                 .isPresent()) next.readProgressFromNBT(entry, true);
         }
         return inBook && becomTaskDone(next, earner);
+    }
+
+    /** BQ's version as this world's quest book file last names it, which BQ compares with its own at each start. */
+    public String savedBuildForSelfTest() {
+        if (BQ_Settings.curWorldDir == null) return "";
+        return NBTConverter
+            .JSONtoNBT_Object(
+                JsonHelper.ReadFromFile(new File(BQ_Settings.curWorldDir, "QuestDatabase.json")),
+                new NBTTagCompound(),
+                true)
+            .getString("build");
     }
 
     private static boolean becomTaskDone(IQuest quest, UUID player) {
