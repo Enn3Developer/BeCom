@@ -1429,6 +1429,12 @@ A fifth fresh code reviewer took the fourth round's fixes, `dbdf486..8a81cc8`:
   with BeCom's quests not in the pack's, every start pays that and a parse of every progress file. Acceptable at a
   start; a known issue.
 
+A sixth fresh code reviewer took the fifth round's fixes, `8a81cc8..706afbc`, and found them ready: the first-tick
+save records BetterQuesting's version (checked against FML 1.7.10's stack lookup), and the files are read as
+BetterQuesting reads them. Its one minor finding: the version check could pass on a world whose start saved nothing,
+reading a file an earlier run wrote. Fixed (ba98e13): the check runs only when this
+start's save did, and says NOT CHECKED otherwise (run 131 checks it, run 132 on the same world doesn't).
+
 **Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
 BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
 fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
