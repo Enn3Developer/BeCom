@@ -31,6 +31,7 @@ import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.recipe.BeComRecipes;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.Ownership;
 import com.enn3developer.becom.server.ServerEvents;
 import com.enn3developer.becom.server.VoiceSessions;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
@@ -66,6 +67,7 @@ public class CommonProxy {
         // Session listeners outlive voice server restarts, so this is added once (DESIGN.md 13.2).
         GtnhVoiceApi.addSessionListener(new VoiceSessions());
         BeComQuests.init();
+        Ownership.init();
         // By name, so the class and WAILA's API load only if WAILA is there to call it. GT covers BeCom's machines.
         FMLInterModComms.sendMessage("Waila", "register", "com.enn3developer.becom.block.WailaTelephone.register");
     }

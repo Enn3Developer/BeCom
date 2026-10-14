@@ -6,28 +6,55 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.common.util.FakePlayer;
 
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.OwnerRule;
+import com.enn3developer.becom.logic.TeamRule;
 
-import gregtech.common.misc.spaceprojects.SpaceProjectManager;
+import cpw.mods.fml.common.Loader;
 
 /**
- * Who owns what (DESIGN.md 12.1): the player who placed a machine, and their GT team, the one GT uses for wireless EU
- * and space projects. BeCom has no teams of its own.
+ * Who owns what (DESIGN.md 12.1): the player who placed a machine, and their team, which is ServerUtilities' (D59).
+ * BeCom has no teams of its own. Server thread only: ServerUtilities' universe is the server thread's.
  */
 public final class Ownership {
 
+    public static final String SERVER_UTILITIES_MODID = "serverutilities";
     // Operators may always undo a link, so a griefed network can be repaired without the owner.
     private static final int OP_LEVEL = 2;
 
+    private static TeamRule.Teams<?> teams = TeamRule.Teams.NONE;
+
     private Ownership() {}
 
-    /** Whether two players are in the same GT team. Reads GT's teams without creating any. */
-    public static boolean sameTeam(UUID a, UUID b) {
-        if (a == null || b == null) return false;
-        if (a.equals(b)) return true;
-        UUID leaderA = SpaceProjectManager.spaceTeams.getOrDefault(a, a);
-        UUID leaderB = SpaceProjectManager.spaceTeams.getOrDefault(b, b);
-        return leaderA.equals(leaderB);
+    /**
+     * Reads teams from ServerUtilities when it's installed (D59); called once at startup. Without it, nobody has one.
+     */
+    public static void init() {
+        if (!Loader.isModLoaded(SERVER_UTILITIES_MODID)) {
+            BeCom.LOG.info("ServerUtilities isn't installed: only owners and operators manage BeCom's machines");
+            return;
+        }
+        try {
+            // By name, so a server without ServerUtilities never loads a class that refers to it.
+            teams = (TeamRule.Teams<?>) Class.forName("com.enn3developer.becom.server.teams.ServerUtilitiesTeams")
+                .getConstructor()
+                .newInstance();
+        } catch (Throwable t) {
+            BeCom.LOG
+                .error("Couldn't read ServerUtilities' teams: only owners and operators manage BeCom's machines", t);
+        }
+    }
+
+    /** Whether {@code player} is {@code owner}, or in their ServerUtilities team (TeamRule). */
+    public static boolean sameTeam(UUID owner, UUID player) {
+        try {
+            return TeamRule.sameTeam(owner, player, teams);
+        } catch (LinkageError e) {
+            // A ServerUtilities without what BeCom was built against: carry on as if it weren't installed.
+            BeCom.LOG.error("ServerUtilities' teams don't match the version BeCom was built against; teams are off", e);
+            teams = TeamRule.Teams.NONE;
+            return TeamRule.sameTeam(owner, player, teams);
+        }
     }
 
     /**

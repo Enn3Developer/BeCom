@@ -141,7 +141,10 @@ public final class AntennaNetwork {
     private long version;
     private long tick;
 
-    /** @param sameTeam whether two players share a GT team, for team-locked antennas (DESIGN.md 12.2) */
+    /**
+     * @param sameTeam whether a player, the second argument, is in an owner's team, the first: for team-locked
+     *                 antennas (DESIGN.md 12.2, D59)
+     */
     public AntennaNetwork(Tunables tunables, Dimensions dimensions, BiPredicate<UUID, UUID> sameTeam) {
         this.tunables = tunables;
         this.hops = new RadioHops(tunables.radioModel(), tunables.surveyStep());
@@ -532,7 +535,7 @@ public final class AntennaNetwork {
     private RadioModel.Losses losses(Antenna antenna, RadioHops.End device, UUID user, Band band, double weather,
         boolean noSky) {
         if (antenna.survey == null) return null;
-        if (antenna.locked && !sameTeam.test(user, antenna.owner)) return null;
+        if (antenna.locked && !sameTeam.test(antenna.owner, user)) return null;
         // Written so a device at a position that isn't a number is out of range, not linked with a NaN SNR.
         if (!(antenna.end.distanceTo(device) <= tunables.rangeToHold(antenna.budget))) return null;
         return hops.access(antenna.survey, antenna.end, antenna.budget, device, band, weather, noSky);

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +24,12 @@ class AntennaNetworkTest {
     private final Tunables t = Tunables.defaults();
     private final UUID owner = UUID.randomUUID();
     private final UUID stranger = UUID.randomUUID();
+    private final UUID teammate = UUID.randomUUID();
     private long clock;
+    // The owner's team counts the teammate. Asked the wrong way round, the teammate's own team wouldn't count the
+    // owner.
+    private final BiPredicate<UUID, UUID> sameTeam = (o, p) -> o != null
+        && (o.equals(p) || o.equals(owner) && p.equals(teammate));
     private final AntennaNetwork network = new AntennaNetwork(t, new AntennaNetwork.Dimensions() {
 
         @Override
@@ -35,7 +41,7 @@ class AntennaNetworkTest {
         public boolean noSky(int dimension) {
             return false;
         }
-    }, (a, b) -> a != null && a.equals(b));
+    }, sameTeam);
 
     private static NodeRef at(int x, int z) {
         return new NodeRef(DIM, BlockPos.pack(x, 84, z));
@@ -135,7 +141,7 @@ class AntennaNetworkTest {
     }
 
     @Test
-    void aLockedAntennaRefusesStrangersButStillRelays() {
+    void aLockedAntennaServesItsOwnersTeamRefusesStrangersAndStillRelays() {
         NodeRef a = at(0, 0);
         NodeRef b = at(100, 0);
         for (int i = 0; i < 2; i++) {
@@ -148,6 +154,7 @@ class AntennaNetworkTest {
             .indexOf(network.antenna(a));
         assertEquals(Double.NEGATIVE_INFINITY, network.access(mesh, DIM, player(10.5, 0.5), stranger)[ia]);
         assertTrue(network.access(mesh, DIM, player(10.5, 0.5), owner)[ia] >= t.levelLow());
+        assertTrue(network.access(mesh, DIM, player(10.5, 0.5), teammate)[ia] >= t.levelLow());
         // DESIGN.md 12.2: "still relays calls along its links".
         assertTrue(
             mesh.vhf()
