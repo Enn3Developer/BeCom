@@ -2086,6 +2086,16 @@ public final class SelfTest {
             "two players ServerUtilities knows with no team aren't one team",
             !Ownership.sameTeam(ally, s) && !Ownership.sameTeam(s, ally),
             "");
+        // Its screen's lock (X45): the owner's team may lock and unlock it, as it manages the owner's other machines.
+        AntennaScreen.setLocked(antennaA, teamAlly, false);
+        boolean allyUnlocked = !antennaA.isLocked();
+        AntennaScreen.setLocked(antennaA, teamMember, false);
+        boolean memberUnlocked = !antennaA.isLocked();
+        AntennaScreen.setLocked(antennaA, teamMember, true);
+        check(
+            "a member of the owner's team may unlock and lock the owner's antenna from its screen; its ally can't (X45)",
+            !allyUnlocked && memberUnlocked && antennaA.isLocked(),
+            "ally unlocked " + allyUnlocked + ", member unlocked " + memberUnlocked);
 
         // A phone's settings (D39): its owner's team may change its block list, nobody else.
         PhoneHandle handle = new PhoneHandle.Telephone(bridgePhoneA);

@@ -733,6 +733,20 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
 - **To match the design:** `AntennaNetwork.losses` would have to know whether a device's user is an operator. It has
   their id on the server thread, so it can ask the server's operator list.
 
+### X45: An antenna's owner's team and operators may lock and unlock it
+
+- **Where:** 0.2, kept in 1.0 teams, DESIGN.md 12.1, 12.2, D38, D59
+- **Design says:** the owner can lock an antenna to their team in its screen (D38, 12.2). The members of the owner's
+  team count, its owner and moderators included (12.1).
+- **Built:** the lock in the antenna's screen goes through `Ownership.mayManage`, like unlinking and a phone's
+  settings: the owner, any member of the owner's ServerUtilities team, and operators may lock or unlock it. An ally of
+  the team and anyone else can't. 12.1's "the members of the owner's team count" is read as covering every owner's
+  right, not only unlinking, which 12.2 names.
+- **Why:** one rule for everything an owner manages, and a team that shares antennas can manage them together. Before
+  this branch the same held for GT's teams; D59 only changed whose team it is.
+- **To match the design:** if only the owner should lock, `AntennaScreen.setLocked` and the screen's `mayManage` flag
+  ask `player.getUniqueID().equals(antenna.owner())`, plus operators if X5 stands.
+
 ### X46: ServerUtilities' "singleplayer" team isn't a team on a dedicated server
 
 - **Where:** 1.0 teams, DESIGN.md 12.1, 12.2, D37, D59
