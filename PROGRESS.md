@@ -1345,7 +1345,8 @@ server thread hands the network thread. No critical or major findings; its minor
   a radio's access is worked out with its links, in its own tick. What's left is a known issue, below.
 - Code 2: with the sky hop out of the comparison, a speaker at a Transceiver took a sky hop the Transceiver had worked
   out up to about 2 s late. Fixed (0ff562d): the sky hop counts again; it's worked out in a radio's own tick, or when a
-  Transceiver is placed or moved, so it reworks the speakers at one Transceiver, never every radio. A new self-test
+  Transceiver comes back, moves or has its cover changed, so it reworks the speakers at one Transceiver, never every
+  radio. A new self-test
   check fails without it (run 120).
 - Code 3: a transmission from before a Transceiver's outage could be published again when it came back. Fixed
   (0ff562d): a speaker with nothing to transmit from forgets its links. Not covered by a test: it needs a Transceiver
@@ -1379,6 +1380,31 @@ major findings. Its minor ones:
 - Code 3: the docs said a sky hop is only ever worked out in a slot, where a Transceiver placed or moved works its own
   out at once too, and PROGRESS.md gave two counts for QuestRefreshTest. Both corrected.
 
+A fourth fresh code reviewer took the third round's fixes, `0df6c48..dbdf486`:
+
+- Code 1 (major, rated so because nothing shipped triggers it yet): BetterQuesting's own reload of a pack's quests at a
+  start can put a pack's older copy of a BeCom quest in the book, carrying progress over by index and kind, so progress
+  for a task the copy lacks isn't loaded while the players' files still hold it. The refresh compared that copy with
+  the shipped quest and, since 5060ed8, marked the players, so their files were rewritten without progress earned
+  under exactly the shipped definition: lost for good. Where the copy kept a task's kind but changed it, the refresh
+  dropped and saved that progress even before, since 69086a4. Fixed (46e291c): the world's QuestDatabase.json still
+  holds the definitions from before the reload when BeCom runs, so the refresh takes the definition the progress was
+  earned under from there, and when it isn't the book's, reads the progress from the players' files under it. The
+  quests a reload took out get theirs the same way. A self-test check simulates the reload and fails comparing against
+  the book (run 124); another shows the saved quests read as the book does without a reload (run 123: 309 pass).
+- Code 2: the known issue's remedy, scanning the progress files, doesn't cover a failed write: BetterQuesting writes
+  no definition with progress, so an entry the write missed reads like one earned under the new definition. Corrected
+  in the known issue.
+- Code 3: X42 said a reload that takes BeCom's quests out takes their old definitions with it, so their progress could
+  only be matched by position and kind. Not so: the world's file still holds them. Fixed with Code 1, and X42 says so.
+- Code 4: marking many players makes BetterQuesting's first save after an update stall the server thread, with players
+  on. Fixed with Code 1: when a start changed the book, BeCom saves it at once, before anyone can join.
+- Code 5: a Transceiver's sky hop is also worked out when its cover changes or it comes back after going offline.
+  Corrected in the javadoc and here.
+- Gaps: QuestRefreshTest had no player found only in completions, and no name or prerequisite change; the self-test had
+  nothing to show a sky hop reworks no other radio. Added (17bddb9): both unit cases, and Bob keyed on a walkie
+  elsewhere, left alone in the Transceiver's tick.
+
 **Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
 BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
 fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
@@ -1392,15 +1418,17 @@ a dedicated server sees "Call".
   BeCom's own quests' definitions at server start, keeping progress. Fixed on `milestone/1.0-fixes` (X42): at each
   server start, BeCom brings each of its quests whose definition differs from the one it ships up to date, and its
   questline's places with them. Players keep their completions and claimed rewards, and each task's progress where the
-  task didn't change. QuestRefreshTest (7): an unchanged quest left alone, a changed task starting over while the other
-  keeps its progress, a changed reward keeping everyone's, a completed quest staying complete and claimed, task
-  progress without an index dropped, a changed task marking everyone with progress in the quest for saving, wherever
-  their task keeps them, and a changed reward marking nobody. A self-test
-  step stores the Portal Relay quest with a changed task and an extra reward and checks that it comes back as shipped,
-  its player still complete and with the claim in their completion entry, the unchanged task's progress kept, the
-  other quests left alone, and, for a second player who wasn't on, the reset still there once BetterQuesting has saved
-  and their file has been read back in as the next start would (5 checks). A second start of the same world brought
-  nothing up to date.
+  task didn't change. QuestRefreshTest (8): an unchanged quest left alone, a changed task starting over while the other
+  keeps its progress, a changed reward keeping everyone's, a completed quest staying complete and claimed, task progress
+  without an index dropped, a changed task marking everyone with progress in the quest for saving, wherever their task
+  keeps them and a player found only in completions too, and a changed reward, name or prerequisite marking nobody. A
+  self-test step stores the Portal Relay quest with a changed task and an extra reward and checks that it comes back as
+  shipped, its player still complete and with the claim in their completion entry, the unchanged task's progress kept,
+  the other quests left alone, and, for a second player who wasn't on, the reset still there once BetterQuesting has
+  saved and their file has been read back in as the next start would. It then puts an older copy without BeCom's task in
+  the book as BetterQuesting's own reload would, and checks that a player who finished both tasks under the shipped
+  quest gets BeCom's task back from their file; and that the world's saved quests read as the book holds them when
+  nothing was reloaded (7 checks). A second start of the same world brought nothing up to date.
 - Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
   "Radio 3" reads the same in both. On `voice-api`, each client translates them (GTNH Voice 0.11.0; LangTest), which
   needs an Italian client to see.
@@ -1417,8 +1445,8 @@ a dedicated server sees "Call".
   slow. BudgetLoadTest asserts under 2 ms and under half of every radio at once. Tests: SlotsTest (1),
   RadioSnapshotTest (2), RadioGroupTest on chains kept and dropped by speaker (2), two self-test checks over a second
   of real ticks with an antenna's lock toggled in every one, that a keyed radio is worked out again once and in its
-  own tick, and two that a speaker at a Transceiver is worked out again in the Transceiver's tick when satellites come
-  up over it, the speaker's own tick being another.
+  own tick, and three that a speaker at a Transceiver is worked out again in the Transceiver's tick when satellites
+  come up over it, the speaker's own tick being another, and that a walkie speaker elsewhere isn't.
 - The squelch tail at a release still looks at every online player for each walkie that held the speaker.
 - Found on `milestone/1.0-fixes`: an antenna's owner toggling its lock every tick, from its screen, changes the
   antenna network every tick, and the first radio worked out in each tick then works out the access of every radio on
@@ -1427,10 +1455,11 @@ a dedicated server sees "Call".
   limit on how often the lock can change, would end it.
 - Found on `milestone/1.0-fixes`: BeCom marks the players of each quest whose tasks the refresh changed, and
   BetterQuesting clears those marks before its writes finish, so a player's file that fails to write keeps their old
-  progress after the next start, which finds nothing left to refresh. And a player with no progress left in the book
-  for such a quest isn't marked, so their file keeps whatever it held for it, which a later task of the same kind at
-  the same index would take back. Scanning the progress files at each start, as the pack-version reload's restore
-  already does, would cover both.
+  progress after the next start, which finds nothing left to refresh; BetterQuesting writes no definition with
+  progress, so nothing in the file tells it apart. BeCom would have to remember whom it marked until it sees their file
+  written. And a player whose file holds, for such a quest, only progress for tasks the saved definition doesn't have
+  isn't marked, so their file keeps it, for a later task of that kind at that index to take back; reading every entry
+  of the files, not just those that match, would cover that.
 - From before `milestone/1.0-fixes`, found in its review: a Transceiver going offline works every keyed radio out at
   once (as one broken does now too), so many Transceivers on redstone timers could make that happen every tick. Any
   change to the antenna network rebuilds every dimension's mesh. A Transceiver's access to a team-locked antenna isn't

@@ -125,9 +125,9 @@ public final class RadioService {
     /**
      * What a speaker transmits from: their walkie, or the Transceiver they stand at (DESIGN.md 8.1); {@code sky} is its
      * hop up to the satellites (9.1), worked out in the radio's own tick of the second, the holder's for a walkie and
-     * the Transceiver's for one, or when a Transceiver is placed or moved. Its access to the antennas isn't part of it:
-     * that changes with the whole network, and is worked out with its links, so one antenna's change doesn't work out
-     * every keyed radio at once.
+     * the Transceiver's for one, and when a Transceiver comes back, moves or has its cover changed. Its access to the
+     * antennas isn't part of it: that changes with the whole network, and is worked out with its links, so one
+     * antenna's change doesn't work out every keyed radio at once.
      */
     private record Tx(int channel, int dimension, RadioHops.End end, double budget, NodeRef from, double sky) {}
 

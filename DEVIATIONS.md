@@ -681,9 +681,12 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   doesn't read old progress back from them. The questline's places and sizes are refreshed the same way. BeCom logs how
   many it refreshed, touches nothing outside its own UUIDs, and with the config's off switch still leaves the book
   alone. So a server that edits BeCom's quests by hand loses those edits at the next start, as the option's comment
-  says; to keep them, it turns the questline off and manages it by hand. When a pack update's reload takes BeCom's
-  quests out of the book, BeCom adds them back as it ships them, and the progress it restores is matched to tasks by
-  position and kind alone, since the reload took their old definitions with it.
+  says; to keep them, it turns the questline off and manages it by hand. BetterQuesting's own reload of a pack's quests
+  at a start (every start under its default config, after a pack-version bump under GTNH's) can put another copy of a
+  BeCom quest in the book, or take BeCom's quests out of it. Either way, the world's own QuestDatabase.json still holds
+  the definitions the players' progress was earned under, and their progress files still hold that progress. So when the
+  saved definition isn't the book's, BeCom reads the progress from the files under it, and brings it to the quest it
+  ships as above; it does the same for the quests it adds back. Those files are read only when a quest needs it.
 - **Why:** BeCom added only the quests a book was missing, so a world that had them kept their old tasks and rewards
   for good after an update, X41's coin choices included.
 - **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds
