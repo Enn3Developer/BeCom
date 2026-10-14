@@ -26,6 +26,15 @@ class OwnerRuleTest {
     }
 
     @Test
+    void theOwnersTeamIsAskedAboutThePlayer() {
+        // A one-way team, as ServerUtilities' setting for fake players can make one: Alice's team counts Carol, and
+        // Carol's doesn't count Alice. Asked the wrong way round, Carol couldn't manage what Alice owns.
+        BiPredicate<UUID, UUID> oneWay = (owner, player) -> owner.equals(alice) && player.equals(carol);
+        assertTrue(OwnerRule.mayManage(carol, alice, false, oneWay));
+        assertFalse(OwnerRule.mayManage(alice, carol, false, oneWay));
+    }
+
+    @Test
     void nobodyButOperatorsManagesWhatNobodyOwns() {
         assertFalse(OwnerRule.mayManage(carol, null, false, team));
         assertTrue(OwnerRule.mayManage(carol, null, true, team));
