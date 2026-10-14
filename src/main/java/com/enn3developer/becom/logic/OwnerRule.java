@@ -12,9 +12,10 @@ public final class OwnerRule {
 
     private OwnerRule() {}
 
+    /** @param sameTeam whether a player, the second argument, is in an owner's team, the first (TeamRule) */
     public static boolean mayManage(UUID player, UUID owner, boolean operator, BiPredicate<UUID, UUID> sameTeam) {
         if (operator) return true;
         if (player == null || owner == null) return false;
-        return player.equals(owner) || sameTeam.test(player, owner);
+        return player.equals(owner) || sameTeam.test(owner, player);
     }
 }
