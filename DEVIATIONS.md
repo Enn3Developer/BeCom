@@ -686,7 +686,11 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   BeCom quest in the book, or take BeCom's quests out of it. Either way, the world's own QuestDatabase.json still holds
   the definitions the players' progress was earned under, and their progress files still hold that progress. So when the
   saved definition isn't the book's, BeCom reads the progress from the files under it, and brings it to the quest it
-  ships as above; it does the same for the quests it adds back. Those files are read only when a quest needs it.
+  ships as above; it does the same for the quests it adds back. BeCom reads those files only when a quest needs it: when
+  the book's copy differs from the one BeCom ships, or a quest is missing. So when BetterQuesting's reload puts exactly
+  the shipped quest in the book, the progress BetterQuesting carried over to it from the saved definition stays, even
+  for a task changed in place: a known issue. When a start changed the book, BeCom saves it at the first tick, before
+  anyone can join.
 - **Why:** BeCom added only the quests a book was missing, so a world that had them kept their old tasks and rewards
   for good after an update, X41's coin choices included.
 - **To match the design:** nothing to undo if the owner agrees; otherwise drop `BqBackend.refresh()`, and BeCom adds

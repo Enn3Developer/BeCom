@@ -1405,6 +1405,30 @@ A fourth fresh code reviewer took the third round's fixes, `0df6c48..dbdf486`:
   nothing to show a sky hop reworks no other radio. Added (17bddb9): both unit cases, and Bob keyed on a walkie
   elsewhere, left alone in the Transceiver's tick.
 
+A fifth fresh code reviewer took the fourth round's fixes, `dbdf486..8a81cc8`:
+
+- Code 1 (major, latent): when BetterQuesting's reload puts exactly the shipped quest in the book, the refresh sees
+  nothing to do and never reads the saved definition, so progress BetterQuesting carried over from an older one stays,
+  even for a task changed in place, where 46e291c's message and X42 said it would be brought over from the saved one.
+  Players keep progress, nobody loses any. Left as a known issue: reading the saved file at every start a reload may
+  have happened would cost every server a parse of its whole book; X42 now says so.
+- Code 2: the save at server start wrote BeCom's version into QuestDatabase.json as BetterQuesting's own, since FML
+  names BeCom the active mod inside BeCom's FMLServerStartedEvent handler, and the next start then warned that
+  BetterQuesting had been updated and made backups. Fixed (866a225): the save waits for the first tick, where
+  BetterQuesting finds itself; a self-test check, run before the self-test saves anything, read BeCom's version with
+  the old timing (run 128).
+- Code 3: when a player's file was last written under another definition than the world's saved one, after an
+  admin's in-game edit, a restored backup or a deleted QuestDatabase.json, the refresh and the re-add can mark them and
+  write their file without progress the saved definition has no task for. A known issue; X42 already says hand edits
+  to BeCom's quests are lost, and now the known issues say what it costs a player.
+- Code 4: nothing tested the re-add path's new reading of the files under the saved definition. Added (6788a43): it
+  fails reading them under the shipped one (run 128).
+- Code 5: the progress files were read beside BetterQuesting's own reading, malformed copies included and the old
+  single file left out. Fixed (2f2ce2b): through BetterQuesting's reader, the single file first.
+- Code 6, cost: the saved book is parsed whole to keep BeCom's 28 quests, and under BetterQuesting's default config,
+  with BeCom's quests not in the pack's, every start pays that and a parse of every progress file. Acceptable at a
+  start; a known issue.
+
 **Deviations and GTNH Voice.** DEVIATIONS.md X41 is 1.0's: three big quests offer their coins as a choice against a
 BeCom item. X14 now covers the guide as well as the quest text. The 16.2 GuideNH assumption is still untried, so no
 fallback was built. VOICE.md V6 is new: GTNH Voice shows a group's name as the server sends it, so an Italian player on
@@ -1427,8 +1451,11 @@ a dedicated server sees "Call".
   the other quests left alone, and, for a second player who wasn't on, the reset still there once BetterQuesting has
   saved and their file has been read back in as the next start would. It then puts an older copy without BeCom's task in
   the book as BetterQuesting's own reload would, and checks that a player who finished both tasks under the shipped
-  quest gets BeCom's task back from their file; and that the world's saved quests read as the book holds them when
-  nothing was reloaded (7 checks). A second start of the same world brought nothing up to date.
+  quest gets BeCom's task back from their file; that the world's saved quests read as the book holds them when nothing
+  was reloaded; and that quests a reload took out, added back by BeCom, take their progress from the files under the
+  saved definition, a task changed since starting over (8 checks). Another check, before the self-test saves anything,
+  finds BetterQuesting's own version in the book BeCom saved at this start. A second start of the same world brought
+  nothing up to date.
 - Group names are in the server's language (VOICE.md V6): "Call" on a dedicated server, whatever the client's language.
   "Radio 3" reads the same in both. On `voice-api`, each client translates them (GTNH Voice 0.11.0; LangTest), which
   needs an Italian client to see.
@@ -1460,6 +1487,17 @@ a dedicated server sees "Call".
   written. And a player whose file holds, for such a quest, only progress for tasks the saved definition doesn't have
   isn't marked, so their file keeps it, for a later task of that kind at that index to take back; reading every entry
   of the files, not just those that match, would cover that.
+- Found on `milestone/1.0-fixes`: when BetterQuesting's own reload at a start puts exactly the quest BeCom ships in
+  the book, BeCom sees nothing to refresh, so the progress BetterQuesting carried over from the world's older
+  definition stays, even for a task changed in place. Players keep progress; nobody loses any. Reading the world's
+  saved book at every start would cover it, at the cost of parsing it each time.
+- Found on `milestone/1.0-fixes`: when a player's progress file was last written under another definition than the
+  world's saved one (after an admin's in-game edit of a BeCom quest, a restored backup, or a deleted
+  QuestDatabase.json), the refresh or the re-add can mark them and write their file without progress for a task the
+  saved definition doesn't have.
+- Found on `milestone/1.0-fixes`: when a quest needs refreshing or adding back, BeCom parses the world's whole saved
+  book to keep its own 28 quests, and every player's progress file. Under BetterQuesting's default config, with
+  BeCom's quests not in the pack's book, that is every start. Filtering the book at the JSON level would cut the first.
 - From before `milestone/1.0-fixes`, found in its review: a Transceiver going offline works every keyed radio out at
   once (as one broken does now too), so many Transceivers on redstone timers could make that happen every tick. Any
   change to the antenna network rebuilds every dimension's mesh. A Transceiver's access to a team-locked antenna isn't
