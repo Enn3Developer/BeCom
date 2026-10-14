@@ -26,6 +26,7 @@ class QuestRefreshTest {
     private static final String ALICE = "a1a1a1a1-0000-4000-8000-000000000001";
     private static final String BOB = "b0b0b0b0-0000-4000-8000-000000000002";
     private static final String CAROL = "c0c0c0c0-0000-4000-8000-000000000003";
+    private static final String DAVE = "d0d0d0d0-0000-4000-8000-000000000004";
 
     /** Two Portal Relays to hold, then BeCom's own task. */
     private static NBTTagCompound portalQuest(int relays, String coinId) {
@@ -165,12 +166,30 @@ class QuestRefreshTest {
         NBTTagList users = new NBTTagList();
         users.appendTag(carol);
         counting.setTag("userProgress", users);
+        // Dave finished the quest under a definition before, and has nothing left in its tasks but a completion.
+        NBTTagCompound dave = new NBTTagCompound();
+        dave.setString("uuid", DAVE);
+        dave.setBoolean("claimed", false);
+        progress.getTagList("completed", Constants.NBT.TAG_COMPOUND)
+            .appendTag(dave);
         assertEquals(
-            Set.of(UUID.fromString(ALICE), UUID.fromString(BOB), UUID.fromString(CAROL)),
+            Set.of(UUID.fromString(ALICE), UUID.fromString(BOB), UUID.fromString(CAROL), UUID.fromString(DAVE)),
             QuestRefresh.toMark(
                 portalQuest(1, "dreamcraft:CoinTechnician"),
                 portalQuest(2, "dreamcraft:CoinTechnician"),
                 progress));
+    }
+
+    @Test
+    void aChangedNameOrPrerequisiteMarksNobody() {
+        NBTTagCompound renamed = portalQuest(2, "dreamcraft:CoinTechnician");
+        renamed.getCompoundTag("properties")
+            .getCompoundTag("betterquesting")
+            .setString("name", "Through the Portal, again");
+        NBTTagList before = new NBTTagList();
+        before.appendTag(new NBTTagString(BOB));
+        renamed.setTag("preRequisites", before);
+        assertEquals(Set.of(), QuestRefresh.toMark(portalQuest(2, "dreamcraft:CoinTechnician"), renamed, progress()));
     }
 
     @Test

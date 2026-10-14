@@ -1809,6 +1809,10 @@ public final class SelfTest {
     private boolean skyTick;
     private boolean skyWorked;
     private boolean skyOwnTick;
+    // Bob on a walkie elsewhere: the transmission before the Transceiver's tick, and whether that tick changed it.
+    private RadioSnapshot.Transmission skyBobSeen;
+    private boolean skyBobWorked;
+    private boolean skyBobOwnTick;
 
     /**
      * DESIGN.md 9.1, 6.4: a Transceiver's sky hop is worked out in its own tick of the second, and a speaker standing
@@ -1816,28 +1820,39 @@ public final class SelfTest {
      */
     private int startSky() {
         becom.radio.keyForSelfTest(dave.getUniqueID());
+        becom.radio.keyForSelfTest(bob.getUniqueID());
         becom.radio.publishForSelfTest();
         skySeen = becom.radio.published()
             .transmission(dave.getUniqueID());
+        skyBobSeen = becom.radio.published()
+            .transmission(bob.getUniqueID());
         skyTick = false;
         skyWorked = false;
         skyOwnTick = false;
+        skyBobWorked = false;
+        skyBobOwnTick = false;
         becom.space.set(world.provider.dimensionId, 100);
         return 1;
     }
 
     private int watchSky() {
         becom.radio.keyForSelfTest(dave.getUniqueID());
+        becom.radio.keyForSelfTest(bob.getUniqueID());
         RadioSnapshot.Transmission now = becom.radio.published()
             .transmission(dave.getUniqueID());
+        RadioSnapshot.Transmission bobNow = becom.radio.published()
+            .transmission(bob.getUniqueID());
         long tick = becom.radio.tickForSelfTest();
         if (!skyTick && Slots.due(transceiver.ref(), tick)) {
             skyTick = true;
             skyOwnTick = Slots.due(dave.getUniqueID(), tick);
             // A tick over 250 ms lets Dave go unkeyed, and the press after it works Dave out again: no evidence.
             skyWorked = now != null && skySeen != null && now != skySeen;
+            skyBobOwnTick = Slots.due(bob.getUniqueID(), tick);
+            skyBobWorked = bobNow == null || skyBobSeen == null || bobNow != skyBobSeen;
         }
         skySeen = now;
+        skyBobSeen = bobNow;
         return 1;
     }
 
@@ -1853,6 +1868,10 @@ public final class SelfTest {
             "...Dave's own tick isn't the Transceiver's, so the check tells the two apart",
             skyTick && !skyOwnTick,
             "move the Transceiver or Dave to a tick of their own");
+        check(
+            "...and a walkie speaker elsewhere isn't worked out in that tick, only the Transceiver's",
+            skyTick && !skyBobOwnTick && !skyBobWorked,
+            skyBobOwnTick ? "Bob's own tick is the Transceiver's: give Bob another" : "Bob was worked out too");
         return 1;
     }
 
