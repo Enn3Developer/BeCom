@@ -1586,10 +1586,10 @@ space-project teams GT keeps for wireless EU and `/sp`.
 
 **Built.**
 
-- `TeamRule` says who is in an owner's team: the owner, and the owner, moderators and members of the team the owner is
-  in. An ally of that team, a player with no team, and a player the team system doesn't know aren't. It asks the
-  owner's team about the player and never compares two players' teams, since every ServerUtilities player without one
-  is in the same "no team". It reads a small lookup and holds no Minecraft or ServerUtilities code.
+- `TeamRule` says who is in an owner's team: the owner themselves, and the team owner, moderators and members of the
+  team the owner is in. An ally of that team, a player with no team, and a player the team system doesn't know aren't.
+  It asks the owner's team about the player and never compares two players' teams, since every ServerUtilities player
+  without one is in the same "no team". It reads a small lookup and holds no Minecraft or ServerUtilities code.
 - `ServerUtilitiesTeams` answers that lookup from ServerUtilities' universe, through `ForgeTeam.isMember`,
   `isModerator`, `isOwner` and `isAlly`. It's the one class that touches ServerUtilities, and `Ownership` loads it by
   name only when `Loader.isModLoaded("serverutilities")`. Without ServerUtilities, before its universe has loaded, or
@@ -1601,29 +1601,60 @@ space-project teams GT keeps for wireless EU and `/sp`.
 - `OwnerRule` and the antenna lock ask with the owner first, as D59 words it. For real players either order gives the
   same answer.
 - `SpaceProjectManager` is gone from `src`.
+- On a dedicated server, ServerUtilities' "singleplayer" team counts as no team (X46). A world first played alone keeps
+  it, and ServerUtilities lets anyone join it.
 - The guide's antenna and wired pages, in English and Italian, say teams are ServerUtilities' teams, made with its My
-  Team button beside the inventory, and that a team's allies don't count. The lang files, tooltips and quest text only
-  ever said "team", which still holds.
+  Team button beside the inventory, and that a team's allies don't count. The antenna page says who can lock one: its
+  owner, their team or an operator (X45), and its screen's button reads "Serve only its owner's team". Otherwise the
+  lang files, tooltips and quest text only ever said "team", which still holds.
 
 **Tests.**
 
-- Unit tests: 481, all passing, 9 of them new in TeamRuleTest. The owner, a member and a moderator count; an ally, a
-  stranger in another team, two players with no team and an unknown player don't; without a team system only the owner
-  and operators manage; and through OwnerRule a member manages and an ally doesn't. A rule that compares teams fails
-  the teamless case, and one that counts allies fails the ally's. AntennaNetworkTest's lock test now has a teammate
-  whom only the owner's team counts, which fails the old argument order.
-- Self-test: 320 checks on a fresh world, all passing, 9 of them new in one step. The self-test's fake players never
+- Unit tests: 482, all passing, 10 of them new: 9 in TeamRuleTest and 1 in OwnerRuleTest. The owner, a member and a
+  moderator count; an ally, a stranger in another team, two players with no team and an unknown player don't; without a
+  team system only the owner and operators manage; and through OwnerRule a member manages and an ally doesn't. A rule
+  that compares teams fails the teamless case, and one that counts allies fails the ally's. AntennaNetworkTest's lock
+  test now has a teammate whom only the owner's team counts, which fails the old argument order, and OwnerRuleTest a
+  one-way team that does the same for OwnerRule.
+- Self-test: 322 checks on a fresh world, all passing, 11 of them new in one step. The self-test's fake players never
   log in, so ServerUtilities never learns them: the adapter makes them a team for the length of one call, and forgets
   them before anything can save it. In that team, the owner's ally and a player with no team can't unlink the owner's
   line and a member can; the owner's locked antenna serves the owner, a moderator and a member at the same level and
   refuses the ally and the teamless player; two teamless players aren't one team; and a member can take a player off
   the owner's Telephone's block list where the ally and the teamless player can't, and their screens don't offer it.
-  Afterwards the member manages nothing of the owner's.
+  The member can unlock and lock the owner's antenna from its screen, and the ally can't (X45). Then the owner and the
+  teamless player are put in a "singleplayer" team, as a player who joined it would be, and on the dedicated dev
+  server that player still can't unlink the owner's line (X46). Afterwards the member manages nothing of the owner's.
 
-**Review.** Pending.
+**Review.** A design reviewer and a code reviewer side by side on `master..4588709`, the whole change. Each finding
+was confirmed by the code, by ServerUtilities' own source, or by a self-test row that failed first, as each item says.
 
-**Deviations and GTNH Voice.** X44 is new: a locked antenna serves its owner's team, not operators, reading D59's
-"operators" as who may manage. X5 notes that D59 now names operators for a server without ServerUtilities. Nothing here
+- Code, major: on a dedicated server, anyone may join ServerUtilities' "singleplayer" team, with `/team join` or its
+  team screen, since ServerUtilities makes every player its moderator. A world first played alone and then hosted
+  keeps that team with its first players in it, so a stranger who joined could unlink their lines across land no
+  claim covers, change their phones' settings and use their locked antennas. Fixed (68a2133): on a dedicated server
+  it is no team to BeCom (X46). Its self-test row failed without the fix, the stranger's wrench unlinking the line
+  (321 passed, 1 failed), and passes with it.
+- Code, minor: by default ServerUtilities hands a player who logs in under a name it knows that name's old record,
+  team and all. That is ServerUtilities' doing, and BeCom can't tell the two players apart; a known issue below.
+- Code, minor: the guide said only the owner can lock an antenna, where the owner's team and operators can too, and the
+  button said "Serve only my team" to people outside the team. Fixed (ca6f756): the guide says who can lock, in both
+  languages, and the button reads "Serve only its owner's team".
+- Code, test gap: nothing pinned OwnerRule's owner-first order. Fixed (366978b): OwnerRuleTest's one-way team fails
+  the old order.
+- Design, minor: the owner checks needed four players at once. Fixed (ce73b8d): two players run them, the second
+  being a teammate, then an ally, then a stranger.
+- Design, minor: X5's remedy, removing operators, would break D59 on a server without ServerUtilities. Fixed (ce73b8d).
+- Design, minor: X44 gave as its reason that the lock shouldn't depend on ServerUtilities, which it already does for
+  teammates. Fixed (ce73b8d): X44 states the trade-off instead.
+- Design, minor: the README and the changelog read as if a locked antenna served operators on a server without
+  ServerUtilities. Fixed (ce73b8d).
+- Design, minor: D38 has the owner lock an antenna, and the screen lets the owner's team and operators lock it too, as
+  it did before this branch. Logged as X45 for the owner to decide (bef1633), with a self-test row that shows it.
+
+**Deviations and GTNH Voice.** Three new entries: X44, a locked antenna serves its owner's team and not operators;
+X45, an antenna's owner's team and operators may lock and unlock it; X46, ServerUtilities' "singleplayer" team is no
+team on a dedicated server. X5 notes that D59 now names operators for a server without ServerUtilities. Nothing here
 touches GTNH Voice, so VOICE.md has no new entry.
 
 **Known issues.**
