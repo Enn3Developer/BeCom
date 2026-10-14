@@ -2014,7 +2014,8 @@ public final class SelfTest {
                 teamMember.getGameProfile(),
                 teamAlly.getGameProfile(),
                 stranger.getGameProfile(),
-                this::checkInTeam);
+                this::checkInTeam,
+                this::checkInSinglePlayerTeam);
             stranger.setPosition(strangerAt[0], strangerAt[1], strangerAt[2]);
             check("the self-test made its ServerUtilities team: ServerUtilities' universe is loaded", ran, "");
             check(
@@ -2104,6 +2105,32 @@ public final class SelfTest {
             o.equals(record.owner()) && kept && othersSeeIt && !record.blocks(blocked),
             "kept " + kept + ", others manage " + !othersSeeIt + ", still blocked " + record.blocks(blocked));
         record.unblock(blocked);
+    }
+
+    /**
+     * Runs while the owner and the stranger are in ServerUtilities' "singleplayer" team, which a world first played
+     * alone keeps and which anyone may join: on a dedicated server, it makes nobody a team (X46).
+     */
+    private void checkInSinglePlayerTeam() {
+        String name = "a player who joins ServerUtilities' \"singleplayer\" team on a dedicated server, as anyone may, "
+            + "can't unlink its members' lines (X46)";
+        if (!MinecraftServer.getServer()
+            .isDedicatedServer()) {
+            log("NOT CHECKED " + name + ": this server isn't dedicated");
+            return;
+        }
+        NetworkModel model = becom.network.model(world);
+        LinkService.Outcome byJoiner = wrenchBoth(stranger, clearA, clearB);
+        check(
+            name,
+            !Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID())
+                && byJoiner == LinkService.Outcome.NOT_ALLOWED
+                && model.linked(pos(clearA), pos(clearB)),
+            byJoiner.name());
+        if (!model.linked(pos(clearA), pos(clearB))) {
+            model.link(pos(clearA), pos(clearB));
+            becom.network.recheckAll();
+        }
     }
 
     private LinkService.Outcome wrenchBoth(EntityPlayer player, MTEPylonHead a, MTEPylonHead b) {

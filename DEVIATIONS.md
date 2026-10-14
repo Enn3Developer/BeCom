@@ -732,3 +732,21 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   ServerUtilities would make what the lock does depend on whether it's installed.
 - **To match the design:** `AntennaNetwork.losses` would have to know whether a device's user is an operator. It has
   their id on the server thread, so it can ask the server's operator list.
+
+### X46: ServerUtilities' "singleplayer" team isn't a team on a dedicated server
+
+- **Where:** 1.0 teams, DESIGN.md 12.1, 12.2, D37, D59
+- **Design says:** teams are ServerUtilities' teams: the members of the owner's team count, its owner and moderators
+  included.
+- **Built:** on a dedicated server, BeCom doesn't count the "singleplayer" server team. Its members are only
+  themselves to BeCom: they manage nothing of each other's, and an antenna one of them locks serves them alone. On a
+  single-player or LAN world, where ServerUtilities puts every player in it, it counts as any team does.
+- **Why:** ServerUtilities makes every player a moderator of that team, so on a dedicated server anyone may join it,
+  with `/team join singleplayer` or from its team screen. A world first played alone or on LAN and then hosted keeps
+  it, with its first players in it. A stranger who joined could unlink their lines across land no claim covers, change
+  their phones' settings and use their locked antennas. ServerUtilities' own claims have the same hole, but BeCom's
+  unlink rule is all that protects a line outside a claim. The world's first players get their rights back by making a
+  team of their own in the team screen.
+- **To match the design:** drop the "singleplayer" check from `ServerUtilitiesTeams.isTeam`. A server's admin can then
+  close the hole with `/team delete singleplayer`, or with ServerUtilities' `serverutilities:disable_team_joining` game
+  rule.

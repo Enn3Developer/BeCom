@@ -19,6 +19,9 @@ import serverutils.lib.data.Universe;
  */
 public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
 
+    // The server team ServerUtilities puts single-player and LAN players in, by the id its own ForgeTeam checks.
+    private static final String SINGLE_PLAYER_TEAM = "singleplayer";
+
     @Override
     public ForgeTeam teamOf(UUID player) {
         ForgePlayer known = known(player);
@@ -27,8 +30,10 @@ public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
 
     @Override
     public boolean isTeam(ForgeTeam team) {
-        // False for the "no team" every player without one is in.
-        return team.isValid();
+        // Not the "no team" every player without one is in. Nor, on a dedicated server, the "singleplayer" team a world
+        // first played alone keeps: ServerUtilities makes every player its moderator, so anyone may join it (X46).
+        return team.isValid() && !(team.type == TeamType.SERVER && SINGLE_PLAYER_TEAM.equals(team.getId())
+            && !team.universe.server.isSinglePlayer());
     }
 
     @Override
@@ -47,13 +52,16 @@ public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
     }
 
     /**
-     * Self-test: runs {@code check} with a team that {@code owner} owns, {@code moderator} and {@code member} are in
-     * and {@code ally} is an ally of, while {@code stranger} has none. ServerUtilities never sees the self-test's fake
-     * players log in, so it learns them here, and forgets them again before returning: nothing is left for it to save.
-     * The team is never added to its list, so no other player can find it. False when its universe isn't loaded.
+     * Self-test: runs {@code inTeam} with a team that {@code owner} owns, {@code moderator} and {@code member} are in
+     * and {@code ally} is an ally of, while {@code stranger} has none. Then runs {@code inSinglePlayerTeam} with
+     * {@code owner} and {@code stranger} in a "singleplayer" team, as a world first played alone keeps it and anyone
+     * may join it. ServerUtilities never sees the self-test's fake players log in, so it learns them here, and forgets
+     * them again before returning: nothing is left for it to save. Neither team is added to its list, so no other
+     * player
+     * can find them. False when its universe isn't loaded.
      */
     public static boolean withTeamForSelfTest(GameProfile owner, GameProfile moderator, GameProfile member,
-        GameProfile ally, GameProfile stranger, Runnable check) {
+        GameProfile ally, GameProfile stranger, Runnable inTeam, Runnable inSinglePlayerTeam) {
         if (!Universe.loaded()) return false;
         Universe universe = Universe.get();
         Map<UUID, ForgePlayer> before = new HashMap<>();
@@ -77,7 +85,15 @@ public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
             // Straight into the team's map: setStatus would mark the universe for saving.
             team.players.put(made.get(moderator.getId()), EnumTeamStatus.MOD);
             team.players.put(made.get(ally.getId()), EnumTeamStatus.ALLY);
-            check.run();
+            inTeam.run();
+            ForgeTeam single = new ForgeTeam(
+                universe,
+                universe.generateTeamUID((short) 0),
+                SINGLE_PLAYER_TEAM,
+                TeamType.SERVER);
+            made.get(owner.getId()).team = single;
+            made.get(stranger.getId()).team = single;
+            inSinglePlayerTeam.run();
         } finally {
             for (Map.Entry<UUID, ForgePlayer> entry : before.entrySet()) {
                 if (entry.getValue() == null) universe.players.remove(entry.getKey());
