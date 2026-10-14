@@ -1342,6 +1342,15 @@ public final class SelfTest {
             "...and saves the reset for a player who isn't on, so the next start doesn't read their old progress back",
             Boolean.TRUE.equals(result.get("offlineResetSaved")),
             String.valueOf(result));
+        check(
+            "...and after BetterQuesting's own reload put an older copy in the book, gives back what a player earned"
+                + " under the quest BeCom ships, in the book and in their file",
+            Boolean.TRUE.equals(result.get("reloadKeepsEarned")),
+            String.valueOf(result));
+        check(
+            "the world's last saved quests read as the book holds them when BetterQuesting didn't reload it",
+            Boolean.TRUE.equals(result.get("savedMatchesBook")),
+            String.valueOf(result));
         return 1;
     }
 

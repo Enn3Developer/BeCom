@@ -60,7 +60,8 @@ import betterquesting.questing.QuestLineEntry;
  * <p>
  * Only ever touches BeCom's own questline and quests, found by their fixed UUIDs. BQ keeps progress inside each quest,
  * so whoever removes them (a DefaultQuests reload) takes the progress too; BeCom keeps a copy of its quests' progress
- * and gives it back when it re-adds them, and reads BQ's own progress files for anything it hasn't copied yet.
+ * and gives it back when it re-adds them, and reads BQ's own progress files for anything it hasn't copied yet, under
+ * the definitions the world last saved, which are the ones that progress was earned under.
  */
 public final class BqBackend implements BeComQuests.QuestBackend {
 
@@ -70,6 +71,12 @@ public final class BqBackend implements BeComQuests.QuestBackend {
 
     private Questline questline;
     private final Map<UUID, NBTTagCompound> progressCopy = new HashMap<>();
+    // What the world's own files held, read once when something needs them and forgotten after: BeCom's quests as it
+    // last saved them, and their entries in its players' progress files.
+    private Map<UUID, NBTTagCompound> savedQuests;
+    private Map<UUID, List<NBTTagCompound>> savedProgress;
+    // Whether this start changed the book, so it's saved before anyone joins.
+    private boolean changed;
     private long ticks;
 
     /** BeCom's questline as its files describe it. */
@@ -93,6 +100,8 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         ticks = 0;
         questline = null;
         progressCopy.clear();
+        forgetSaved();
+        changed = false;
         if (!enabled()) {
             BeCom.LOG.info("BeCom's questline is switched off in the config: the quest book is left alone");
             return;
@@ -108,7 +117,12 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         } catch (Throwable t) {
             BeCom.LOG.error("Couldn't add BeCom's questline; carrying on without it", t);
             questline = null;
+        } finally {
+            forgetSaved();
         }
+        // Writing every marked player's progress file takes the server thread a while: now, before anyone can join,
+        // rather than at the first autosave.
+        if (changed) SaveLoadHandler.INSTANCE.saveDatabases();
     }
 
     @Override
@@ -137,6 +151,8 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             ensure(false);
         } catch (Throwable t) {
             BeCom.LOG.error("Couldn't check BeCom's questline", t);
+        } finally {
+            forgetSaved();
         }
     }
 
@@ -144,6 +160,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     public void serverStopped() {
         questline = null;
         progressCopy.clear();
+        forgetSaved();
     }
 
     // region Adding the questline
@@ -178,6 +195,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         if (!added.isEmpty()) restoreProgress(added);
         copyProgress();
         if (added.isEmpty() && !lineAdded) return;
+        changed = true;
         BeCom.LOG.info(
             startup ? "Added BeCom's questline to the quest book ({} quests new)"
                 : "BeCom's questline was missing from the quest book; added it back ({} quests)",
@@ -211,10 +229,14 @@ public final class BqBackend implements BeComQuests.QuestBackend {
                 // A quest the book is missing is ensure()'s to add.
                 if (stored == null) continue;
                 IQuest fresh = shipped(entry.getValue());
-                NBTTagCompound was = stored.writeToNBT(new NBTTagCompound());
+                NBTTagCompound book = stored.writeToNBT(new NBTTagCompound());
                 NBTTagCompound now = fresh.writeToNBT(new NBTTagCompound());
-                if (!QuestRefresh.changed(was, now)) continue;
-                NBTTagCompound progress = stored.writeProgressToNBT(new NBTTagCompound(), null);
+                if (!QuestRefresh.changed(book, now)) continue;
+                // Its players' progress was earned under the definition the world last saved: the book's, unless
+                // BetterQuesting's own reload at this start put another copy in the book.
+                NBTTagCompound was = savedQuests().getOrDefault(entry.getKey(), book);
+                NBTTagCompound progress = was.equals(book) ? stored.writeProgressToNBT(new NBTTagCompound(), null)
+                    : earned(entry.getKey(), was, stored);
                 fresh.readProgressFromNBT(QuestRefresh.progressFor(was, now, progress), false);
                 QuestDatabase.INSTANCE.put(entry.getKey(), fresh);
                 players.addAll(QuestRefresh.toMark(was, now, progress));
@@ -236,7 +258,10 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             // Saved with the book's next save, even when a later quest failed: what changed stays changed. BQ writes a
             // player's progress file only once they're marked, and reads every file back at the next start, so the
             // players of a quest whose tasks changed are marked, or a task gets old progress back from their file.
-            if (quests > 0 || entries > 0) SaveLoadHandler.INSTANCE.markDirty();
+            if (quests > 0 || entries > 0) {
+                SaveLoadHandler.INSTANCE.markDirty();
+                changed = true;
+            }
             if (!players.isEmpty()) DirtyPlayerMarker.markDirty(players);
         }
         if (quests == 0 && entries == 0) return 0;
@@ -273,40 +298,112 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         }
     }
 
-    /** Gives re-added quests their progress back: from BeCom's copy, or from BQ's progress files on disk. */
+    /**
+     * Gives re-added quests their progress back: from BeCom's copy, or from BQ's progress files, read under the
+     * definition the world last saved and brought to the one BeCom ships as the refresh brings a quest the book still
+     * holds (X42). A quest the world never saved takes the files' progress as they read.
+     */
     private void restoreProgress(List<UUID> quests) {
-        List<UUID> fromDisk = new ArrayList<>();
-        for (UUID id : quests) {
-            NBTTagCompound copy = progressCopy.get(id);
-            IQuest quest = QuestDatabase.INSTANCE.get(id);
-            if (copy != null && quest != null) quest.readProgressFromNBT(copy, false);
-            else fromDisk.add(id);
+        Set<UUID> players = new HashSet<>();
+        try {
+            for (UUID id : quests) {
+                IQuest quest = QuestDatabase.INSTANCE.get(id);
+                if (quest == null) continue;
+                NBTTagCompound copy = progressCopy.get(id);
+                if (copy != null) {
+                    quest.readProgressFromNBT(copy, false);
+                    continue;
+                }
+                NBTTagCompound now = quest.writeToNBT(new NBTTagCompound());
+                NBTTagCompound was = savedQuests().getOrDefault(id, now);
+                NBTTagCompound progress = earned(id, was, null);
+                quest.readProgressFromNBT(QuestRefresh.progressFor(was, now, progress), false);
+                players.addAll(QuestRefresh.toMark(was, now, progress));
+            }
+        } finally {
+            if (!players.isEmpty()) DirtyPlayerMarker.markDirty(players);
         }
-        if (!fromDisk.isEmpty()) restoreFromDisk(fromDisk);
     }
 
-    private void restoreFromDisk(Collection<UUID> quests) {
+    /**
+     * What the players earned in one of BeCom's quests under {@code definition}, the one the world last saved: their
+     * progress files read as BQ reads them under it, with what the book holds for the quest now, if anything. After
+     * BQ's own reload at this start put another copy in the book, the book's progress, carried there by index and kind,
+     * misses every task that copy has no match for, and the files still hold it.
+     */
+    private NBTTagCompound earned(UUID id, NBTTagCompound definition, IQuest book) {
+        IQuest quest = new QuestInstance();
+        quest.readFromNBT(definition);
+        if (book != null) quest.readProgressFromNBT(book.writeProgressToNBT(new NBTTagCompound(), null), true);
+        for (NBTTagCompound entry : savedProgress().getOrDefault(id, List.of())) quest.readProgressFromNBT(entry, true);
+        return quest.writeProgressToNBT(new NBTTagCompound(), null);
+    }
+
+    /**
+     * BeCom's quests as the world last saved them, the definitions its players' progress files were last written under.
+     * At server start, BQ's own reload of a pack's quests has changed the book but written nothing. Read through BQ's
+     * code, as BQ reads the file and like the book's and the shipped ones.
+     */
+    private Map<UUID, NBTTagCompound> savedQuests() {
+        if (savedQuests != null) return savedQuests;
+        Map<UUID, NBTTagCompound> saved = new HashMap<>();
+        if (BQ_Settings.curWorldDir != null) {
+            NBTTagCompound file = NBTConverter.JSONtoNBT_Object(
+                JsonHelper.ReadFromFile(new File(BQ_Settings.curWorldDir, "QuestDatabase.json")),
+                new NBTTagCompound(),
+                true);
+            NBTTagList quests = file.getTagList("questDatabase", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < quests.tagCount(); i++) {
+                NBTTagCompound entry = quests.getCompoundTagAt(i);
+                NBTConverter.UuidValueType.QUEST.tryReadId(entry)
+                    .filter(
+                        questline.quests()
+                            .keySet()::contains)
+                    .ifPresent(id -> {
+                        IQuest quest = new QuestInstance();
+                        quest.readFromNBT(entry);
+                        saved.put(id, quest.writeToNBT(new NBTTagCompound()));
+                    });
+            }
+        }
+        savedQuests = saved;
+        return saved;
+    }
+
+    /** Each of BeCom's quests' entries in the players' progress files. */
+    private Map<UUID, List<NBTTagCompound>> savedProgress() {
+        if (savedProgress != null) return savedProgress;
+        Map<UUID, List<NBTTagCompound>> saved = new HashMap<>();
         File dir = BQ_Settings.curWorldDir == null ? null : new File(BQ_Settings.curWorldDir, "QuestProgress");
         File[] files = dir == null ? null : dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null) return;
-        for (File file : files) {
+        for (File file : files == null ? new File[0] : files) {
             try (Reader reader = new InputStreamReader(new java.io.FileInputStream(file), StandardCharsets.UTF_8)) {
                 JsonObject json = new JsonParser().parse(reader)
                     .getAsJsonObject();
                 NBTTagCompound nbt = NBTConverter.JSONtoNBT_Object(json, new NBTTagCompound(), true);
                 NBTTagList all = nbt.getTagList("questProgress", Constants.NBT.TAG_COMPOUND);
-                NBTTagList ours = new NBTTagList();
                 for (int i = 0; i < all.tagCount(); i++) {
                     NBTTagCompound entry = all.getCompoundTagAt(i);
                     NBTConverter.UuidValueType.QUEST.tryReadId(entry)
-                        .filter(quests::contains)
-                        .ifPresent(id -> ours.appendTag(entry));
+                        .filter(
+                            questline.quests()
+                                .keySet()::contains)
+                        .ifPresent(
+                            id -> saved.computeIfAbsent(id, k -> new ArrayList<>())
+                                .add(entry));
                 }
-                if (ours.tagCount() > 0) QuestDatabase.INSTANCE.readProgressFromNBT(ours, true);
             } catch (Exception e) {
                 BeCom.LOG.warn("Couldn't read quest progress from {}", file, e);
             }
         }
+        savedProgress = saved;
+        return saved;
+    }
+
+    /** The world's files change with every save: what was read of them is read again when next needed. */
+    private void forgetSaved() {
+        savedQuests = null;
+        savedProgress = null;
     }
 
     // endregion
@@ -447,6 +544,19 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         UUID id = questWith(QuestTask.PORTAL_RELAY_PAIR);
         UUID other = questWith(QuestTask.FIRST_CALL);
         if (id == null || other == null) return outcome;
+        // With nothing reloaded, the world's file reads as the book does: the refresh relies on that to tell a reload.
+        // BQ writes the book's file only when it's marked as changed.
+        SaveLoadHandler.INSTANCE.markDirty();
+        SaveLoadHandler.INSTANCE.saveDatabases();
+        forgetSaved();
+        boolean savedMatches = true;
+        for (UUID quest : questline.quests()
+            .keySet()) {
+            IQuest inBook = QuestDatabase.INSTANCE.get(quest);
+            if (inBook != null && !inBook.writeToNBT(new NBTTagCompound())
+                .equals(savedQuests().get(quest))) savedMatches = false;
+        }
+        outcome.put("savedMatchesBook", savedMatches);
         IQuest otherBefore = QuestDatabase.INSTANCE.get(other);
         NBTTagCompound older = QuestDatabase.INSTANCE.get(id)
             .writeToNBT(new NBTTagCompound());
@@ -483,10 +593,14 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         stored.setComplete(player, 1L);
         stored.setClaimed(player, 1L);
         QuestDatabase.INSTANCE.put(id, stored);
-        // The save before the update writes each player's file, and nobody is left to save after it.
+        // The save before the update writes the book with this definition and each player's file, and nobody is left
+        // to save after it.
+        SaveLoadHandler.INSTANCE.markDirty();
         SaveLoadHandler.INSTANCE.saveDatabases();
+        forgetSaved();
 
         int refreshed = refresh();
+        forgetSaved();
         // The save after the update; then the next start reads the offline player's file back in, as BQ's loader does.
         SaveLoadHandler.INSTANCE.saveDatabases();
         NBTTagCompound file = NBTConverter.JSONtoNBT_Object(
@@ -529,7 +643,73 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         outcome.put("unchangedTaskKept", unchangedKept);
         outcome.put("changedTaskReset", changedReset);
         outcome.put("othersLeftAlone", QuestDatabase.INSTANCE.get(other) == otherBefore);
+        outcome.put("reloadKeepsEarned", afterReload(id, player));
         return outcome;
+    }
+
+    /**
+     * BQ's own reload at a start puts a pack's older copy of a quest in the book, one without BeCom's task, and carries
+     * progress over to it by index and kind as BQ does. A player who finished both tasks under the quest BeCom ships
+     * keeps BeCom's task once the refresh puts that quest back, in the book and in their file.
+     */
+    private boolean afterReload(UUID id, UUID player) {
+        UUID earner = new UUID(player.getMostSignificantBits(), player.getLeastSignificantBits() + 0x200);
+        IQuest current = QuestDatabase.INSTANCE.get(id);
+        for (DBEntry<ITask> task : current.getTasks()
+            .getEntries()) {
+            task.getValue()
+                .setComplete(earner);
+        }
+        SaveLoadHandler.INSTANCE.saveDatabases();
+        forgetSaved();
+        NBTTagList carried = QuestDatabase.INSTANCE.writeProgressToNBT(new NBTTagList(), null);
+        NBTTagCompound older = current.writeToNBT(new NBTTagCompound());
+        NBTTagList tasks = older.getTagList("tasks", Constants.NBT.TAG_COMPOUND);
+        NBTTagList kept = new NBTTagList();
+        for (int i = 0; i < tasks.tagCount(); i++) {
+            if (!FactoryTaskBeCom.ID.toString()
+                .equals(
+                    tasks.getCompoundTagAt(i)
+                        .getString("taskID")))
+                kept.appendTag(tasks.getCompoundTagAt(i));
+        }
+        older.setTag("tasks", kept);
+        IQuest copy = new QuestInstance();
+        copy.readFromNBT(older);
+        QuestDatabase.INSTANCE.put(id, copy);
+        QuestDatabase.INSTANCE.readProgressFromNBT(carried, false);
+
+        refresh();
+        forgetSaved();
+        boolean inBook = becomTaskDone(QuestDatabase.INSTANCE.get(id), earner);
+        SaveLoadHandler.INSTANCE.saveDatabases();
+        // The next start: the book as saved, and the player's file read back in.
+        IQuest next = new QuestInstance();
+        next.readFromNBT(
+            QuestDatabase.INSTANCE.get(id)
+                .writeToNBT(new NBTTagCompound()));
+        NBTTagList file = NBTConverter
+            .JSONtoNBT_Object(
+                JsonHelper.ReadFromFile(new File(new File(BQ_Settings.curWorldDir, "QuestProgress"), earner + ".json")),
+                new NBTTagCompound(),
+                true)
+            .getTagList("questProgress", Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < file.tagCount(); i++) {
+            NBTTagCompound entry = file.getCompoundTagAt(i);
+            if (NBTConverter.UuidValueType.QUEST.tryReadId(entry)
+                .filter(id::equals)
+                .isPresent()) next.readProgressFromNBT(entry, true);
+        }
+        return inBook && becomTaskDone(next, earner);
+    }
+
+    private static boolean becomTaskDone(IQuest quest, UUID player) {
+        for (DBEntry<ITask> task : quest.getTasks()
+            .getEntries()) {
+            if (task.getValue() instanceof TaskBeCom && task.getValue()
+                .isComplete(player)) return true;
+        }
+        return false;
     }
 
     /** The UUID of BeCom's quest with a BeCom task of {@code kind}, or null. */
