@@ -762,15 +762,17 @@ gameplay, balance, saved data, config, commands or names. The owner decides on e
   nothing but BeCom's usual refusals tells them otherwise. On a single-player or LAN world, where ServerUtilities puts
   every player in it, it counts as any team does.
 - **Why:** ServerUtilities makes every player a moderator of that team, so on a dedicated server anyone may join it,
-  with `/team join singleplayer` or from its team screen. A world first played alone or on LAN and then hosted keeps
-  it, with its first players in it. A stranger who joined could unlink their lines across land no claim covers, change
-  their phones' settings and use their locked antennas. ServerUtilities' claims don't stop them either: a claim lets
-  the team's allies edit by default, and every player counts as one. BeCom's unlink rule is all that protects those
-  lines. The cost falls on those first players: to be a team for BeCom again, they leave "singleplayer", since
-  ServerUtilities won't let a team's member make another, make a team and invite each other again. Their claims stay
-  with "singleplayer", so they unclaim and claim them again.
+  with `/team join singleplayer` or from its team screen. A world first played alone or on LAN and then hosted keeps it,
+  with its first players in it. A stranger who joined could unlink their lines across land no claim covers, change their
+  phones' settings and use their locked antennas. ServerUtilities' claims don't stop them either: a claim lets the
+  team's allies edit by default, and every player counts as one. BeCom's unlink rule is all that protects those lines.
+  The cost falls on those first players. To be a team for BeCom again, they leave "singleplayer", since ServerUtilities
+  won't let a team's member make another, then make a team and invite each other again. They unclaim their land before
+  they leave, because once out only an operator may, and claim it again after.
 - **To match the design:** drop the "singleplayer" check from `ServerUtilitiesTeams.isTeam`. A server's admin can then
   close the hole with `/team delete singleplayer`, which also unclaims every chunk the team holds and leaves its
-  players without a team, or with ServerUtilities' `teams.disable_teams` config, which stops anyone joining or making
-  any team. Its `serverutilities:disable_team_joining` game rule would close it more narrowly, but ServerUtilities never
-  registers that rule, so 1.7.10's `/gamerule` refuses to set it.
+  players without a team. ServerUtilities' `teams.disable_teams` config and its `serverutilities:disable_team_joining`
+  game rule only stop joins from then on: whoever already joined stays in the team. The config also stops players
+  making teams, though every new player still gets a team of their own at first login. ServerUtilities never registers
+  the game rule, so 1.7.10's `/gamerule` refuses to set it, but an admin can add it to the world's level.dat with the
+  server stopped: 1.7.10 loads every rule it finds there, and `/gamerule` sets it from then on.
