@@ -2016,14 +2016,17 @@ public final class SelfTest {
                 stranger.getGameProfile(),
                 this::checkInTeam,
                 this::checkInSinglePlayerTeam,
+                this::checkInPlayerTeamCalledSinglePlayer,
                 this::checkInServerTeam);
             stranger.setPosition(strangerAt[0], strangerAt[1], strangerAt[2]);
             check("the self-test made its ServerUtilities team: ServerUtilities' universe is loaded", ran, "");
-            // Left behind, the moderator and the member would still be one team, whatever team the owner ended in.
+            // Left behind, the moderator and the member would still be one team, and so would the owner and the
+            // stranger, who end the helper in a server team.
             check(
-                "...and forgets the self-test's players after: the moderator and the member are no team, and the member "
-                    + "manages nothing of the owner's",
+                "...and forgets the self-test's players after: the moderator and the member are no team, nor the owner "
+                    + "and the stranger, and the member manages nothing of the owner's",
                 !Ownership.sameTeam(teamModerator.getUniqueID(), teamMember.getUniqueID())
+                    && !Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID())
                     && !Ownership.mayManage(teamMember, owner.getUniqueID()),
                 "");
         }
@@ -2126,34 +2129,62 @@ public final class SelfTest {
      * alone keeps and which anyone may join: on a dedicated server, it makes nobody a team (X46).
      */
     private void checkInSinglePlayerTeam() {
+        MinecraftServer server = MinecraftServer.getServer();
         String name = "a player who joins ServerUtilities' \"singleplayer\" team on a dedicated server, as anyone may, "
             + "can't unlink its members' lines (X46)";
         // The guard's own test: a server started for one player, LAN or not, keeps the team.
-        if (MinecraftServer.getServer()
-            .isSinglePlayer()) {
+        if (server.isSinglePlayer()) {
             log("NOT CHECKED " + name + ": this server is a single player's");
-            return;
+        } else {
+            NetworkModel model = becom.network.model(world);
+            LinkService.Outcome byJoiner = wrenchBoth(stranger, clearA, clearB);
+            check(
+                name,
+                !Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID())
+                    && byJoiner == LinkService.Outcome.NOT_ALLOWED
+                    && model.linked(pos(clearA), pos(clearB)),
+                byJoiner.name());
+            if (!model.linked(pos(clearA), pos(clearB))) {
+                model.link(pos(clearA), pos(clearB));
+                becom.network.recheckAll();
+            }
         }
-        NetworkModel model = becom.network.model(world);
-        LinkService.Outcome byJoiner = wrenchBoth(stranger, clearA, clearB);
+        // A server with an owner is a single player's: this one is, for this one question, and then it isn't again.
+        String before = server.getServerOwner();
+        boolean counts;
+        try {
+            if (before == null) server.setServerOwner(owner.getCommandSenderName());
+            counts = Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID());
+        } finally {
+            server.setServerOwner(before);
+        }
         check(
-            name,
-            !Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID())
-                && byJoiner == LinkService.Outcome.NOT_ALLOWED
-                && model.linked(pos(clearA), pos(clearB)),
-            byJoiner.name());
-        if (!model.linked(pos(clearA), pos(clearB))) {
-            model.link(pos(clearA), pos(clearB));
-            becom.network.recheckAll();
-        }
+            "...while on a single player's server, LAN or not, the team counts as any team does (X46)",
+            counts && java.util.Objects.equals(server.getServerOwner(), before),
+            "");
+    }
+
+    /**
+     * Runs while the owner's own team is called "singleplayer", with the stranger in it: it counts as any team does.
+     */
+    private void checkInPlayerTeamCalledSinglePlayer() {
+        unlinkAsTeammate(
+            "...while a player's own team that happens to be called \"singleplayer\" counts: a member of it "
+                + "may unlink a fellow member's line");
     }
 
     /** Runs while the owner and the stranger are in a server team an admin made, which counts as any team does. */
     private void checkInServerTeam() {
+        unlinkAsTeammate(
+            "...and so does a server team an admin made: a member of it may unlink a fellow member's line");
+    }
+
+    /** The stranger, in the owner's team, unlinks the owner's line, which is then put back. */
+    private void unlinkAsTeammate(String name) {
         NetworkModel model = becom.network.model(world);
         LinkService.Outcome byMember = wrenchBoth(stranger, clearA, clearB);
         check(
-            "...while a server team an admin made counts: a member of it may unlink a fellow member's line",
+            name,
             Ownership.sameTeam(owner.getUniqueID(), stranger.getUniqueID()) && byMember == LinkService.Outcome.UNLINKED
                 && !model.linked(pos(clearA), pos(clearB)),
             byMember.name());
