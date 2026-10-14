@@ -79,6 +79,8 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     // from FMLServerStartedEvent itself, BQ would take BeCom for the mod saving and write BeCom's version as its own.
     private boolean changed;
     private boolean saveOnFirstTick;
+    // Whether that save ran this start, for the self-test to know the file it reads was written by it.
+    private boolean savedAtStart;
     private long ticks;
 
     /** BeCom's questline as its files describe it. */
@@ -105,6 +107,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         forgetSaved();
         changed = false;
         saveOnFirstTick = false;
+        savedAtStart = false;
         if (!enabled()) {
             BeCom.LOG.info("BeCom's questline is switched off in the config: the quest book is left alone");
             return;
@@ -134,6 +137,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             saveOnFirstTick = false;
             try {
                 SaveLoadHandler.INSTANCE.saveDatabases();
+                savedAtStart = true;
             } catch (Throwable t) {
                 BeCom.LOG.error("Couldn't save the quest book BeCom brought up to date; the next save will", t);
             }
@@ -765,6 +769,11 @@ public final class BqBackend implements BeComQuests.QuestBackend {
             else if (done) return false;
         }
         return becom;
+    }
+
+    /** Whether BeCom saved the quest book at this start's first tick. */
+    public boolean savedAtStartForSelfTest() {
+        return savedAtStart;
     }
 
     /** BQ's version as this world's quest book file last names it, which BQ compares with its own at each start. */

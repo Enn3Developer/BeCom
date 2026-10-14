@@ -1319,15 +1319,18 @@ public final class SelfTest {
      */
     private int checkQuestBookBuild() {
         if (!cpw.mods.fml.common.Loader.isModLoaded(BeComQuests.BQ_MODID)) return 1;
+        String name = "the quest book saved at this start names BetterQuesting's version, not BeCom's";
+        // A world that already held BeCom's quests saved nothing at this start, and its file proves nothing.
+        if (!Boolean.TRUE.equals(invoke(BeComQuests.backend(), "savedAtStartForSelfTest"))) {
+            log("NOT CHECKED " + name + ": this start saved nothing, the world already holding BeCom's quests");
+            return 1;
+        }
         String build = String.valueOf(invoke(BeComQuests.backend(), "savedBuildForSelfTest"));
         String version = cpw.mods.fml.common.Loader.instance()
             .getIndexedModList()
             .get(BeComQuests.BQ_MODID)
             .getVersion();
-        check(
-            "the quest book saved at this start names BetterQuesting's version, not BeCom's",
-            version.equalsIgnoreCase(build),
-            build + " where BetterQuesting is " + version);
+        check(name, version.equalsIgnoreCase(build), build + " where BetterQuesting is " + version);
         return 1;
     }
 
