@@ -783,6 +783,9 @@ public final class SelfTest {
         boolean allTall = true;
         for (MTEPylonHead head : repeaterLine.heads) allTall &= head.height() == t.pylonMaxHeight();
         check("line pylons of " + t.pylonMaxHeight() + " frames form", allTall, "");
+        boolean noProblems = minPylon.getRepairStatus() == minPylon.getIdealStatus();
+        for (MTEPylonHead head : repeaterLine.heads) noProblems &= head.getRepairStatus() == head.getIdealStatus();
+        check("pylon and repeater heads have none of GT's maintenance problems for WAILA to show", noProblems, "");
 
         check(
             "a pylon forming with one pylon in range links to it on its own",
@@ -1580,6 +1583,10 @@ public final class SelfTest {
                 "antenna T" + antenna.tier() + " with a mast of " + t.antennaMastMin() + " forms and works",
                 antenna.mMachine && antenna.mast() == t.antennaMastMin() && antenna.isWorking(),
                 "formed " + antenna.mMachine + ", mast " + antenna.mast() + ", working " + antenna.isWorking());
+            check(
+                "antenna T" + antenna.tier() + " has none of GT's maintenance problems for WAILA to show",
+                antenna.getRepairStatus() == antenna.getIdealStatus(),
+                antenna.getRepairStatus() + " of " + antenna.getIdealStatus());
             AntennaNetwork.Antenna known = becom.antennas.antenna(antenna.ref());
             check(
                 "antenna T" + antenna.tier() + " has surveyed",

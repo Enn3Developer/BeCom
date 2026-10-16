@@ -192,6 +192,12 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     }
 
     @Override
+    public boolean getDefaultHasMaintenanceChecks() {
+        // No maintenance hatch to fix them at: left on, GT counts all six problems forever and shows HAS PROBLEMS.
+        return false;
+    }
+
+    @Override
     protected IAlignmentLimits getInitialAlignmentLimits() {
         // The mast always hangs straight down, so the head may only face sideways, unrotated.
         return (direction, rotation, flip) -> direction.offsetY == 0 && rotation == Rotation.NORMAL
@@ -453,7 +459,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     @Override
     public void getWailaBody(ItemStack stack, List<String> tip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
-        super.getWailaBody(stack, tip, accessor, config);
+        // Skips GT's multiblock lines: a recipe machine's efficiency and progress, always 0% and Idle on an antenna.
+        getMTEWailaBody(stack, tip, accessor, config);
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
