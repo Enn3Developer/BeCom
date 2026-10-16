@@ -60,6 +60,9 @@ dependencies {
     // dependency (DESIGN.md 9.4); both are in the dev server for the self-test to stand a relay by their portals.
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:twilightforest:2.7.44:dev") { transitive = false }
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:PersonalSpace:1.0.41:dev") { transitive = false }
+    // NEI's multiblock previews come from BlockRenderer6343, which GTNH ships: in the dev client so BeCom's multiblocks
+    // can be previewed there too. The version is the owner's GTNH install's.
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:BlockRenderer6343:1.4.24:dev") { transitive = false }
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
