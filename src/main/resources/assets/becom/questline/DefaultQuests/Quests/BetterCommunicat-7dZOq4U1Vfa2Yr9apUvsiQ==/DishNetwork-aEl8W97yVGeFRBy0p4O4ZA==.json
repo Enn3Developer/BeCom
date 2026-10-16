@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Satellite Dish joins its network to every other dish in the same dimension, through the satellites. It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an energy hatch and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line Terminal. Each maintenance problem costs it 2 dB. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every other dish in the same dimension, through the satellites overhead.%n%nIt's a 5x5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an Energy Hatch and a Maintenance Hatch, under open sky. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal. Keep up its maintenance: each problem costs it 2 dB.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Dish Network",
+      "name:8": "\u00a75\u00a7lDish Network",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

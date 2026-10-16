@@ -2,7 +2,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Everything starts with a wire. Phone Cable is red alloy wire in rubber, made in the assembler. It joins a Telephone to a Line Terminal, up to 32 blocks of it, and loses nothing on the way. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 32 blocks of it, and the signal loses nothing on the way. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -14,7 +14,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Wired for Sound",
+      "name:8": "\u00a72\u00a7lWired for Sound",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a hill in the way can cost more than the distance. More in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
+      "desc:8": "An Antenna T3 Head stands on HV Machine Casings with a mast of Stainless Steel Frame Boxes, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, and a hill in the way can cost you more than the distance does.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Across the Valley",
+      "name:8": "\u00a75\u00a7lAcross the Valley",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

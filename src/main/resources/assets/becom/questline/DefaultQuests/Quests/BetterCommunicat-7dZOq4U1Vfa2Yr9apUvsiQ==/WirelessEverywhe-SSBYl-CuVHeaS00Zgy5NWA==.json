@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An ME Phone is a Mobile Phone with an ME network's link. Link it at a Security Terminal, like a Wireless Terminal: it has service at Max wherever that network's wireless access points reach, boosters included, and charges in an ME charger. ME Phones on one ME network call each other with no antenna. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
+      "desc:8": "Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Wireless Everywhere",
+      "name:8": "\u00a78\u00a7lWireless Everywhere",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

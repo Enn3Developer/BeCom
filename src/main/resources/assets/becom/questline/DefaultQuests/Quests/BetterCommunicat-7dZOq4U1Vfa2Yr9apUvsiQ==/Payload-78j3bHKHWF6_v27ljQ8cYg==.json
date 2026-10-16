@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 rocket parts in the assembler to make a Satellite Rocket. It doesn't fly from Galacticraft's pads: it needs a Satellite Launch Pad. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 rocket parts in the Assembler, and you've got a Satellite Rocket.%n%nDon't bother with Galacticraft's launch pads: this rocket only flies from a Satellite Launch Pad.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Payload",
+      "name:8": "\u00a75\u00a7lPayload",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

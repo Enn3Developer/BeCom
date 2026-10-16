@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or Line Terminal within 16 blocks to carry that line over radio. More in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
+      "desc:8": "Time to cut the cord. An Antenna T1 Head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "On the Air",
+      "name:8": "\u00a72\u00a7lOn the Air",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

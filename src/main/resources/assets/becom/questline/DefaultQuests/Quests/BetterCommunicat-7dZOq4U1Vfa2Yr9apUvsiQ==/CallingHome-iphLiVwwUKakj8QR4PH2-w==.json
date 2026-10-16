@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Rocket Radio Receiver in the cargo of a rocket standing on a launch pad on a planet makes the rocket an antenna there, and the planet's link to the Overworld's satellites, at High. The rocket needs chests to have cargo. In the Overworld, phones under open sky and networks with a dish reach it. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Your rocket is parked on another planet. Why not make it useful? Put a Rocket Radio Receiver in its cargo while it stands on a launch pad, and the rocket becomes an antenna there, linked to the Overworld's satellites at High.%n%nThe rocket needs chests to have cargo. Back in the Overworld, phones under open sky and networks with a dish can reach it.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Calling Home",
+      "name:8": "\u00a75\u00a7lCalling Home",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

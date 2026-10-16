@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Mobile Phone gets its service from antennas, on the calls band: about 64 blocks from a T1 on open ground, twice that from a T2. It takes its number when you first use it, and works from your inventory or a bauble slot. Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call. The Phone key, N unless you changed it, answers, hangs up, or opens its screen. More in the guide: [guide page=becom:phones.md]Phones[/guide].",
+      "desc:8": "A phone that goes where you go. The Mobile Phone gets its service from antennas: about 64 blocks from a T1 on open ground, twice that from a T2.%n%nIt gets its number the first time you use it, and works from your inventory or a bauble slot. The Phone key (N, unless you changed it) answers, hangs up, or opens its screen.%n%nIts battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Phone in Your Pocket",
+      "name:8": "\u00a75\u00a7lPhone in Your Pocket",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

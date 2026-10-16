@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power. Wrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench it, go through the portal, and wrench a relay on the other side within 5 minutes: the pair joins the two networks at High. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench the relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair joins the two networks at High.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Through the Portal",
+      "name:8": "\u00a76\u00a7lThrough the Portal",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

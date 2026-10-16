@@ -31,11 +31,12 @@ LOOTBAG = "enhancedlootbags:lootbag"
 # the commonest ones in GTNH's own quests of each tier (GT-New-Horizons-Modpack 5c60ab9, DefaultQuests): LV 15
 # Technician (44 of 144 quests), MV 25 Technician (54 of 142), HV 5 Technician I (33 of 108; 1 Technician II is
 # commoner but D51 names Technician I for HV), EV 2 Technician II (24 of 85). Lootbags there are one per quest.
+# Names take the colour GTNH's own quests of the tier use.
 TIER = {
-    "LV": {"bag": 4, "coin": "dreamcraft:CoinTechnician", "coins": 15},
-    "MV": {"bag": 5, "coin": "dreamcraft:CoinTechnician", "coins": 25},
-    "HV": {"bag": 6, "coin": "dreamcraft:CoinTechnicianI", "coins": 5},
-    "EV": {"bag": 7, "coin": "dreamcraft:CoinTechnicianII", "coins": 2},
+    "LV": {"bag": 4, "coin": "dreamcraft:CoinTechnician", "coins": 15, "colour": "§2§l"},
+    "MV": {"bag": 5, "coin": "dreamcraft:CoinTechnician", "coins": 25, "colour": "§6§l"},
+    "HV": {"bag": 6, "coin": "dreamcraft:CoinTechnicianI", "coins": 5, "colour": "§5§l"},
+    "EV": {"bag": 7, "coin": "dreamcraft:CoinTechnicianII", "coins": 2, "colour": "§8§l"},
 }
 
 GT_MACHINE = "gregtech:gt.blockmachines"
@@ -95,7 +96,8 @@ GUIDE_PAGE = {
 
 def with_guide(key, desc, language):
     page = GUIDE_PAGE[key]
-    return desc + " " + GUIDE_LINK[language].format(page=page, title=GUIDE[page][language])
+    # Paragraphs are split with %n%n, as in GTNH's own quest language files: BetterQuesting formats them into breaks.
+    return desc + "%n%n" + GUIDE_LINK[language].format(page=page, title=GUIDE[page][language])
 
 LINE = {
     "key": "line",
@@ -111,8 +113,9 @@ QUESTS = [
         "key": "phone_cable",
         "tier": "LV",
         "name": "Wired for Sound",
-        "desc": "Everything starts with a wire. Phone Cable is red alloy wire in rubber, made in the assembler. "
-        "It joins a Telephone to a Line Terminal, up to 32 blocks of it, and loses nothing on the way.",
+        "desc": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you "
+        "make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 32 blocks of it, and the "
+        "signal loses nothing on the way. Make a couple to get started.",
         "icon": ("becom:phone_cable", 0),
         "pre": [],
         "tasks": [("item", "becom:phone_cable", 0, 2)],
@@ -123,8 +126,9 @@ QUESTS = [
         "key": "telephone",
         "tier": "LV",
         "name": "Ring, Ring",
-        "desc": "A Telephone: a circuit, a note block for the bell and a steel body, assembled with a cord of "
-        "Phone Cable. Right-click it to pick up the handset. It's yours, and its six-digit number is too.",
+        "desc": "A circuit, a note block for the bell and a steel body, put together in the Assembler with a cord "
+        "of Phone Cable: that's a Telephone.%n%nRight-click it to pick up the handset. It's yours, and so is its "
+        "six-digit number.",
         "icon": ("becom:telephone", 0),
         "pre": ["phone_cable"],
         "tasks": [("item", "becom:telephone", 0, 1)],
@@ -135,8 +139,9 @@ QUESTS = [
         "key": "line_terminal",
         "tier": "LV",
         "name": "End of the Line",
-        "desc": "Every line starts and ends at a Line Terminal. It runs on 4 EU/t of LV power, serves exactly one "
-        "phone on its cable, and links to one Pylon Head: wrench the terminal, then the head.",
+        "desc": "Every line starts and ends at a Line Terminal. Give it LV power, just 4 EU/t, and run Phone Cable "
+        "from it to a Telephone. A terminal serves exactly one phone.%n%nTo put it on a line, wrench the terminal, "
+        "then a Pylon Head.",
         "icon": (GT_MACHINE, 25003),
         "pre": ["phone_cable"],
         "tasks": [("item", GT_MACHINE, 25003, 1)],
@@ -147,10 +152,11 @@ QUESTS = [
         "key": "pylon",
         "tier": "LV",
         "name": "Up on the Pole",
-        "desc": "A Pylon Head on top of a column of 6 to 16 Steel Frame Boxes carries the line. Two pylons link "
-        "up to four times the shorter one's height apart, as long as nothing solid is in the way. Pylons need "
-        "no power and keep working unloaded. The line loses signal with every block: plan a repeater at least "
-        "every 225 blocks.",
+        "desc": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of 6 "
+        "to 16 Steel Frame Boxes.%n%nTaller is better. Two pylons link up to four times the shorter one's height "
+        "apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no "
+        "power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater "
+        "at least every 225 blocks.",
         "icon": (GT_MACHINE, 25000),
         "pre": ["line_terminal"],
         "tasks": [("item", GT_MACHINE, 25000, 2)],
@@ -161,10 +167,10 @@ QUESTS = [
         "key": "first_call",
         "tier": "LV",
         "name": "Hello? Can You Hear Me?",
-        "desc": "Two Telephones, each on its own Line Terminal, and pylons between them. Pick up the handset: "
-        "with only one other phone on the line it rings straight away, otherwise dial a number or pick a "
-        "contact. Make a call that connects. A Telephone call is narrow and gritty, but it carries your voice "
-        "as far as the line goes.",
+        "desc": "Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons "
+        "between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right "
+        "away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and "
+        "gritty. But it carries your voice as far as the line goes.",
         "icon": ("becom:telephone", 0),
         "pre": ["telephone", "pylon"],
         "tasks": [("becom", "FIRST_CALL")],
@@ -175,8 +181,9 @@ QUESTS = [
         "key": "repeater",
         "tier": "LV",
         "name": "Keeping the Signal Alive",
-        "desc": "A Repeater Head is a Pylon Head that regenerates the signal, so line loss starts over after it. "
-        "It takes 4 EU/t of LV power from a cable on any side, and works only while loaded and powered.",
+        "desc": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss "
+        "starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV from a cable on any side. It "
+        "only works while it's loaded and powered, so keep your repeaters chunkloaded.",
         "icon": (GT_MACHINE, 25001),
         "pre": ["pylon"],
         "tasks": [("item", GT_MACHINE, 25001, 1)],
@@ -187,9 +194,9 @@ QUESTS = [
         "key": "router",
         "tier": "LV",
         "name": "Switchboard",
-        "desc": "A plain line joins exactly two phones. A Router Head has 15 link slots and turns lines into a "
-        "network, where any phone can dial any other. It regenerates the signal like a repeater, and takes "
-        "16 EU/t of LV power from a cable.",
+        "desc": "A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your "
+        "lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and "
+        "takes 16 EU/t of LV power from a cable.",
         "icon": (GT_MACHINE, 25002),
         "pre": ["repeater"],
         "tasks": [("item", GT_MACHINE, 25002, 1)],
@@ -200,10 +207,10 @@ QUESTS = [
         "key": "antenna_t1",
         "tier": "LV",
         "name": "On the Air",
-        "desc": "An Antenna T1 head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine "
-        "Casings with an Energy Hatch, and uses 32 EU/t. It reaches about 64 blocks on open ground; height helps, "
-        "and hills and roofs cost signal. Antennas link to each other on their own. Wrench one to a Pylon Head or "
-        "Line Terminal within 16 blocks to carry that line over radio.",
+        "desc": "Time to cut the cord. An Antenna T1 Head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 "
+        "base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
+        "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and "
+        "wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.",
         "icon": (GT_MACHINE, 25004),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25004, 1)],
@@ -214,9 +221,9 @@ QUESTS = [
         "key": "transceiver",
         "tier": "MV",
         "name": "Base Station",
-        "desc": "A Transceiver is a radio on a block, at MV and 32 EU/t. Stand within 2 blocks of it and hold the "
-        "radio push-to-talk key, Caps Lock unless you changed it, to talk on its channel. Its loudspeaker plays the "
-        "channel to everyone within 16 blocks. On its own it reaches about 125 blocks on open ground.",
+        "desc": "A Transceiver is a radio in a block. It runs on MV, 32 EU/t, and reaches about 125 blocks on open "
+        "ground on its own.%n%nStand within 2 blocks of it and hold the radio push-to-talk key (Caps Lock, unless "
+        "you changed it) to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks.",
         "icon": (GT_MACHINE, 25007),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25007, 1)],
@@ -227,10 +234,10 @@ QUESTS = [
         "key": "signal_analyzer",
         "tier": "MV",
         "name": "Reading the Air",
-        "desc": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna "
-        "serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs "
-        "6 dB for Low and 12 for Medium. Below 4 it cuts out at once; between 4 and 6 it holds for 3 seconds, "
-        "then drops.",
+        "desc": "Radio is fussy, and the Signal Analyzer tells you why. Hold it to see your signal: its strength in "
+        "dB, its level, the antenna serving you, and what's costing you the most, be it distance, terrain, cover, "
+        "weather or noise.%n%nA link needs 6 dB for Low and 12 for Medium. Below 4 dB it cuts out at once; between "
+        "4 and 6 it holds for 3 seconds, then drops.",
         "icon": ("becom:signal_analyzer", 0),
         "pre": ["antenna_t1"],
         "tasks": [("item", "becom:signal_analyzer", 0, 1)],
@@ -241,10 +248,10 @@ QUESTS = [
         "key": "walkie_talkie",
         "tier": "MV",
         "name": "Pocket Radio",
-        "desc": "A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of "
-        "16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It "
-        "reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears "
-        "what it receives.",
+        "desc": "A radio you can carry. The Walkie-Talkie runs on its own MV battery; charge it like any GT "
+        "tool.%n%nRight-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. "
+        "Hold push-to-talk to transmit. It reaches about 80 blocks on its own, and much farther through "
+        "antennas.%n%nAnyone within 6 blocks hears what it receives, so it's no good for secrets.",
         "icon": ("becom:walkie_talkie", 0),
         "pre": ["transceiver"],
         "tasks": [("item", "becom:walkie_talkie", 0, 1)],
@@ -255,9 +262,10 @@ QUESTS = [
         "key": "radio_contact",
         "tier": "MV",
         "name": "Over and Out",
-        "desc": "Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the "
-        "antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener "
-        "hears the stronger one.",
+        "desc": "Now put it to use! Talk to someone over the radio, or hear them: on a walkie, through a "
+        "Transceiver, or through the antennas between you. It has to go over the radio: hearing them in person "
+        "doesn't count.%n%nRadio etiquette: channels are open to anyone tuned in, and when two people talk at once, "
+        "each listener only hears the stronger one. Say \"over\" when you're done.",
         "icon": ("becom:walkie_talkie", 0),
         "pre": ["walkie_talkie"],
         "tasks": [("becom", "RADIO_CONTACT")],
@@ -268,9 +276,10 @@ QUESTS = [
         "key": "antenna_t2",
         "tier": "MV",
         "name": "A Taller Mast",
-        "desc": "An Antenna T2 stands on MV Machine Casings with an Aluminium Frame Box mast and uses 128 EU/t. It "
-        "reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. "
-        "Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.",
+        "desc": "Same idea, more reach. An Antenna T2 Head stands on MV Machine Casings with a mast of Aluminium "
+        "Frame Boxes, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
+        "doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls "
+        "between the lines bridged onto them.",
         "icon": (GT_MACHINE, 25005),
         "pre": ["antenna_t1"],
         "tasks": [("item", GT_MACHINE, 25005, 1)],
@@ -281,9 +290,9 @@ QUESTS = [
         "key": "antenna_t3",
         "tier": "HV",
         "name": "Across the Valley",
-        "desc": "An Antenna T3 stands on HV Machine Casings with a Stainless Steel Frame Box mast and uses 512 "
-        "EU/t. It reaches about 256 blocks. Build it high: it surveys the land around it every five minutes, and a "
-        "hill in the way can cost more than the distance.",
+        "desc": "An Antenna T3 Head stands on HV Machine Casings with a mast of Stainless Steel Frame Boxes, uses "
+        "512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
+        "and a hill in the way can cost you more than the distance does.",
         "icon": (GT_MACHINE, 25006),
         "pre": ["antenna_t2"],
         "tasks": [("item", GT_MACHINE, 25006, 1)],
@@ -294,10 +303,10 @@ QUESTS = [
         "key": "videophone",
         "tier": "MV",
         "name": "Face to Face",
-        "desc": "A Videophone is a speakerphone with a screen, at MV and 32 EU/t. Give it Phone Cable to a Line "
-        "Terminal, like a Telephone. Right-click it to dial, answer or hang up. Everyone within 4 blocks is in its "
-        "call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds "
-        "after the last person walks away.",
+        "desc": "A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and connects "
+        "to a Line Terminal with Phone Cable, just like a Telephone.%n%nRight-click it to dial, answer or hang up. "
+        "Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It "
+        "hangs up by itself 30 seconds after the last person walks away.",
         "icon": (GT_MACHINE, 25009),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25009, 1)],
@@ -308,10 +317,10 @@ QUESTS = [
         "key": "video_call",
         "tier": "MV",
         "name": "Seeing Is Believing",
-        "desc": "See someone in a video call: on a Videophone, a Mobile Phone or an ME Phone, with their front "
-        "camera on. The front camera shows your character, and the rear camera what you see, in calls of two "
-        "people at High or better. Video needs Medium: at Low the picture freezes and the voice carries on. The "
-        "phone screen's Video tab shows the call full size and switches each camera.",
+        "desc": "See someone in a video call, on a Videophone, a Mobile Phone or an ME Phone, with their front "
+        "camera on.%n%nThe front camera shows your character; the rear camera shows what you see, in calls of two "
+        "at High or better. Video needs at least Medium: at Low the picture freezes, but the voice carries "
+        "on.%n%nThe phone screen's Video tab shows the call full size and switches each camera on or off.",
         "icon": (GT_MACHINE, 25009),
         "pre": ["videophone"],
         "tasks": [("becom", "VIDEO_CALL")],
@@ -322,11 +331,10 @@ QUESTS = [
         "key": "mobile_phone",
         "tier": "HV",
         "name": "Phone in Your Pocket",
-        "desc": "A Mobile Phone gets its service from antennas, on the calls band: about 64 blocks from a T1 on "
-        "open ground, twice that from a T2. It takes its number when you first use it, and works from your "
-        "inventory or a bauble slot. "
-        "Its battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call. The Phone key, N unless you "
-        "changed it, answers, hangs up, or opens its screen.",
+        "desc": "A phone that goes where you go. The Mobile Phone gets its service from antennas: about 64 blocks "
+        "from a T1 on open ground, twice that from a T2.%n%nIt gets its number the first time you use it, and works "
+        "from your inventory or a bauble slot. The Phone key (N, unless you changed it) answers, hangs up, or opens "
+        "its screen.%n%nIts battery holds 1,200,000 EU and drains 4 EU/t on standby, 16 in a call.",
         "icon": ("becom:mobile_phone", 0),
         "pre": ["antenna_t1"],
         "tasks": [("item", "becom:mobile_phone", 0, 1)],
@@ -337,9 +345,9 @@ QUESTS = [
         "key": "mobile_call",
         "tier": "HV",
         "name": "Can You Hear Me Now?",
-        "desc": "Make or take a call on a Mobile Phone. Its bars show your service while you hold it. Rain costs a "
-        "phone 3 dB of its service, a thunderstorm 6, and an antenna's screen maps where its signal reaches. In a "
-        "call, add more phones from the keypad: up to 8 people talk together.",
+        "desc": "Make or take a call on a Mobile Phone. Hold it to see your bars.%n%nBad weather hurts: rain costs "
+        "a phone 3 dB of service, a thunderstorm 6. Not sure where you have coverage? An antenna's screen maps "
+        "where its signal reaches.%n%nIn a call, add more phones from the keypad: up to 8 people can talk together.",
         "icon": ("becom:mobile_phone", 0),
         "pre": ["mobile_phone"],
         "tasks": [("becom", "MOBILE_CALL")],
@@ -350,9 +358,10 @@ QUESTS = [
         "key": "me_phone",
         "tier": "EV",
         "name": "Wireless Everywhere",
-        "desc": "An ME Phone is a Mobile Phone with an ME network's link. Link it at a Security Terminal, like a "
-        "Wireless Terminal: it has service at Max wherever that network's wireless access points reach, boosters "
-        "included, and charges in an ME charger. ME Phones on one ME network call each other with no antenna.",
+        "desc": "Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a "
+        "Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. "
+        "Wherever that network's access points reach, boosters included, it has service at Max. It charges in an "
+        "AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.",
         "icon": ("becom:me_phone", 0),
         "pre": ["mobile_call"],
         "tasks": [("item", "becom:me_phone", 0, 1)],
@@ -363,8 +372,8 @@ QUESTS = [
         "key": "me_bridge",
         "tier": "EV",
         "name": "Bridging the Networks",
-        "desc": "An ME Bridge joins an ME network to a BeCom network, so ME Phones can call any phone. Put it on ME "
-        "cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna "
+        "desc": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it "
+        "on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna "
         "within 16 blocks. It uses 512 EU/t.",
         "icon": (GT_MACHINE, 25008),
         "pre": ["me_phone"],
@@ -376,8 +385,8 @@ QUESTS = [
         "key": "me_bridge_call",
         "tier": "EV",
         "name": "Long Distance",
-        "desc": "Call a phone outside your ME network from an ME Phone, through an ME Bridge: a Telephone on a "
-        "line, a Mobile Phone, or a Videophone.",
+        "desc": "Your ME Phone can reach past your ME network. From an ME Phone, call a Telephone on a line, a "
+        "Mobile Phone or a Videophone, through an ME Bridge.",
         "icon": ("becom:me_phone", 0),
         "pre": ["me_bridge"],
         "tasks": [("becom", "ME_BRIDGE_CALL")],
@@ -388,10 +397,11 @@ QUESTS = [
         "key": "portal_relay",
         "tier": "MV",
         "name": "Through the Portal",
-        "desc": "A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or "
-        "a Personal Space portal, on 32 EU/t of MV power. Wrench-link it to an antenna, a Pylon Head or a Line "
-        "Terminal of your network. Then wrench it, go through the portal, and wrench a relay on the other side "
-        "within 5 minutes: the pair joins the two networks at High.",
+        "desc": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether "
+        "portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV "
+        "power.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench the "
+        "relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair joins the "
+        "two networks at High.",
         "icon": (GT_MACHINE, 25012),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25012, 2), ("becom", "PORTAL_RELAY_PAIR")],
@@ -403,8 +413,8 @@ QUESTS = [
         "tier": "HV",
         "name": "Payload",
         "desc": "A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 "
-        "rocket parts in the assembler to make a Satellite Rocket. It doesn't fly from Galacticraft's pads: it "
-        "needs a Satellite Launch Pad.",
+        "rocket parts in the Assembler, and you've got a Satellite Rocket.%n%nDon't bother with Galacticraft's "
+        "launch pads: this rocket only flies from a Satellite Launch Pad.",
         "icon": ("becom:satellite_rocket", 0),
         "pre": ["mobile_call"],
         "tasks": [("item", "becom:satellite_rocket", 0, 1)],
@@ -415,10 +425,10 @@ QUESTS = [
         "key": "first_satellite",
         "tier": "HV",
         "name": "Liftoff",
-        "desc": "The Satellite Launch Pad is a 5 by 5 floor of Clean Stainless Steel Machine Casings under open "
-        "sky, with an input bus for rockets, an input hatch for rocket fuel, an energy hatch and a maintenance "
-        "hatch. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over the "
-        "pad's dimension.",
+        "desc": "3, 2, 1... The Satellite Launch Pad is a 5x5 floor of Clean Stainless Steel Machine Casings under "
+        "open sky, with an Input Bus for rockets, an Input Hatch for rocket fuel, an Energy Hatch and a Maintenance "
+        "Hatch.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over "
+        "the pad's dimension. Build the pad and launch your first satellite.",
         "icon": (GT_MACHINE, 25010),
         "pre": ["satellite_rocket"],
         "tasks": [("item", GT_MACHINE, 25010, 1), ("becom", "FIRST_SATELLITE")],
@@ -429,9 +439,9 @@ QUESTS = [
         "key": "five_satellites",
         "tier": "HV",
         "name": "A Constellation",
-        "desc": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from "
-        "them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. "
-        "Satellites come down after about 100 days, so keep launching.",
+        "desc": "One satellite gets lonely. Put 5 over a dimension and every phone and radio under its open sky "
+        "gets a signal from them, at Low. 14 give Medium, 37 High and 100 Max.%n%nA roof weakens the signal, and "
+        "rain costs a few dB. Satellites come down after about 100 days, so keep launching.",
         "icon": ("becom:satellite", 0),
         "pre": ["first_satellite"],
         "tasks": [("becom", "FIVE_SATELLITES")],
@@ -442,10 +452,11 @@ QUESTS = [
         "key": "satellite_dish",
         "tier": "HV",
         "name": "Dish Network",
-        "desc": "A Satellite Dish joins its network to every other dish in the same dimension, through the "
-        "satellites. It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless "
-        "Steel Frame Boxes, with an energy hatch and a maintenance hatch, under open sky, on 512 EU/t. "
-        "Wrench-link it to an antenna, a Pylon Head or a Line Terminal. Each maintenance problem costs it 2 dB.",
+        "desc": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every "
+        "other dish in the same dimension, through the satellites overhead.%n%nIt's a 5x5 dish of Clean Stainless "
+        "Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an Energy Hatch and a "
+        "Maintenance Hatch, under open sky. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a "
+        "Line Terminal. Keep up its maintenance: each problem costs it 2 dB.",
         "icon": (GT_MACHINE, 25011),
         "pre": ["five_satellites"],
         "tasks": [("item", GT_MACHINE, 25011, 1)],
@@ -456,9 +467,10 @@ QUESTS = [
         "key": "rocket_receiver",
         "tier": "HV",
         "name": "Calling Home",
-        "desc": "A Rocket Radio Receiver in the cargo of a rocket standing on a launch pad on a planet makes the "
-        "rocket an antenna there, and the planet's link to the Overworld's satellites, at High. The rocket needs "
-        "chests to have cargo. In the Overworld, phones under open sky and networks with a dish reach it.",
+        "desc": "Your rocket is parked on another planet. Why not make it useful? Put a Rocket Radio Receiver in "
+        "its cargo while it stands on a launch pad, and the rocket becomes an antenna there, linked to the "
+        "Overworld's satellites at High.%n%nThe rocket needs chests to have cargo. Back in the Overworld, phones "
+        "under open sky and networks with a dish can reach it.",
         "icon": ("becom:rocket_radio_receiver", 0),
         "pre": ["five_satellites"],
         "tasks": [("item", "becom:rocket_radio_receiver", 0, 1)],
@@ -575,7 +587,7 @@ def quest_json(q, index):
         "isMain:1": 1 if q["big"] else 0,
         "isSilent:1": 0,
         "lockedProgress:1": 0,
-        "name:8": q["name"],
+        "name:8": tier["colour"] + q["name"],
         "partySingleReward:1": 0,
         "questLogic:8": q.get("logic", "AND"),
         "repeatTime:3": -1,
@@ -655,10 +667,11 @@ def main():
         paths.append(f"DefaultQuests/QuestLines/{line_dir_name}/{stem}.json")
         write_json(os.path.join(quest_dir, stem + ".json"), data)
         paths.append(f"DefaultQuests/Quests/{line_dir_name}/{stem}.json")
-        lang.append(f"betterquesting.quest.{key_part(u)}.name={q['name']}")
+        colour = TIER[q["tier"]]["colour"]
+        lang.append(f"betterquesting.quest.{key_part(u)}.name={colour}{q['name']}")
         lang.append(f"betterquesting.quest.{key_part(u)}.desc={with_guide(q['key'], q['desc'], 0)}")
         name_it, desc_it = QUESTS_IT[q["key"]]
-        lang_it.append(f"betterquesting.quest.{key_part(u)}.name={name_it}")
+        lang_it.append(f"betterquesting.quest.{key_part(u)}.name={colour}{name_it}")
         lang_it.append(f"betterquesting.quest.{key_part(u)}.desc={with_guide(q['key'], desc_it, 1)}")
     lang.append(LANG_END)
     lang_it.append(LANG_END)

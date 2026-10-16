@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Transceiver is a radio on a block, at MV and 32 EU/t. Stand within 2 blocks of it and hold the radio push-to-talk key, Caps Lock unless you changed it, to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks. On its own it reaches about 125 blocks on open ground. More in the guide: [guide page=becom:radios.md]Radios[/guide].",
+      "desc:8": "A Transceiver is a radio in a block. It runs on MV, 32 EU/t, and reaches about 125 blocks on open ground on its own.%n%nStand within 2 blocks of it and hold the radio push-to-talk key (Caps Lock, unless you changed it) to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Base Station",
+      "name:8": "\u00a76\u00a7lBase Station",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

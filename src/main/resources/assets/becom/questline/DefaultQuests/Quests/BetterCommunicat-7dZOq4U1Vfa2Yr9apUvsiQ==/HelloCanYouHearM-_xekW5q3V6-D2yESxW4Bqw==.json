@@ -12,7 +12,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Two Telephones, each on its own Line Terminal, and pylons between them. Pick up the handset: with only one other phone on the line it rings straight away, otherwise dial a number or pick a contact. Make a call that connects. A Telephone call is narrow and gritty, but it carries your voice as far as the line goes. More in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and gritty. But it carries your voice as far as the line goes.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -24,7 +24,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Hello? Can You Hear Me?",
+      "name:8": "\u00a72\u00a7lHello? Can You Hear Me?",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

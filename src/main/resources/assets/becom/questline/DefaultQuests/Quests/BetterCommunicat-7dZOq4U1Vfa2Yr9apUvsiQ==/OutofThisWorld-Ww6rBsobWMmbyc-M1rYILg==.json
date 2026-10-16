@@ -12,7 +12,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Call someone in another dimension: through a pair of Portal Relays to the Nether, the End, the Twilight Forest or a personal dimension, or through the Overworld's satellites to a planet with a Rocket Radio Receiver. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Call someone in another dimension: through a pair of Portal Relays to the Nether, the End, the Twilight Forest or a personal dimension, or through the Overworld's satellites to a planet with a Rocket Radio Receiver.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -24,7 +24,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Out of This World",
+      "name:8": "\u00a75\u00a7lOut of This World",
       "partySingleReward:1": 0,
       "questLogic:8": "OR",
       "repeatTime:3": -1,

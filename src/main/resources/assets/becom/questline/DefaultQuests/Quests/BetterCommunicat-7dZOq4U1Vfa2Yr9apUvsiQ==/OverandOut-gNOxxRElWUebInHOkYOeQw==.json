@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. Channels are open to anyone tuned in. When two people talk at once, each listener hears the stronger one. More in the guide: [guide page=becom:radios.md]Radios[/guide].",
+      "desc:8": "Now put it to use! Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. It has to go over the radio: hearing them in person doesn't count.%n%nRadio etiquette: channels are open to anyone tuned in, and when two people talk at once, each listener only hears the stronger one. Say \"over\" when you're done.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Over and Out",
+      "name:8": "\u00a76\u00a7lOver and Out",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "With 5 satellites over a dimension, every phone and radio under its open sky gets a signal from them, at Low; 14 give Medium, 37 High and 100 Max. A roof weakens it, and rain costs a few dB. Satellites come down after about 100 days, so keep launching. More in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "One satellite gets lonely. Put 5 over a dimension and every phone and radio under its open sky gets a signal from them, at Low. 14 give Medium, 37 High and 100 Max.%n%nA roof weakens the signal, and rain costs a few dB. Satellites come down after about 100 days, so keep launching.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "A Constellation",
+      "name:8": "\u00a75\u00a7lA Constellation",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

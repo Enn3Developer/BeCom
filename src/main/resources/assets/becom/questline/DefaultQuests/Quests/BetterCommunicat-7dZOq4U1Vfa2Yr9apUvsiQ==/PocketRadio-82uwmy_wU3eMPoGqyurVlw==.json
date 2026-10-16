@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A Walkie-Talkie runs on its own MV battery: charge it like any GT tool. Right-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It reaches about 80 blocks on its own and much further through antennas, and anyone within 6 blocks hears what it receives. More in the guide: [guide page=becom:radios.md]Radios[/guide].",
+      "desc:8": "A radio you can carry. The Walkie-Talkie runs on its own MV battery; charge it like any GT tool.%n%nRight-click to pick one of 16 channels or switch it off, or sneak and scroll to change channel. Hold push-to-talk to transmit. It reaches about 80 blocks on its own, and much farther through antennas.%n%nAnyone within 6 blocks hears what it receives, so it's no good for secrets.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Pocket Radio",
+      "name:8": "\u00a76\u00a7lPocket Radio",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,

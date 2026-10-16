@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Hold a Signal Analyzer to see your radio signal: its strength in dB, its level, the antenna serving you, and what costs the most, whether distance, terrain, cover, weather or noise. A link needs 6 dB for Low and 12 for Medium. Below 4 it cuts out at once; between 4 and 6 it holds for 3 seconds, then drops. More in the guide: [guide page=becom:analyzer.md]The Signal Analyzer[/guide].",
+      "desc:8": "Radio is fussy, and the Signal Analyzer tells you why. Hold it to see your signal: its strength in dB, its level, the antenna serving you, and what's costing you the most, be it distance, terrain, cover, weather or noise.%n%nA link needs 6 dB for Low and 12 for Medium. Below 4 dB it cuts out at once; between 4 and 6 it holds for 3 seconds, then drops.%n%nMore in the guide: [guide page=becom:analyzer.md]The Signal Analyzer[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "Reading the Air",
+      "name:8": "\u00a76\u00a7lReading the Air",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,
