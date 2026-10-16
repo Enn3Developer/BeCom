@@ -3,7 +3,9 @@
 repositories {
     maven {
         name = "JitPack"
-        url = uri("https://jitpack.io")
+        // www, not the bare host: jitpack.io's CDN still hands out a 404 for gtnh-voice v0.11.0's -dev jar, cached
+        // before JitPack had built it. www.jitpack.io is the same JitPack behind a separate cache.
+        url = uri("https://www.jitpack.io")
         // Only gtnh-voice: anything else resolved from JitPack comes with rewritten metadata.
         content { includeGroup("com.github.Enn3Developer") }
     }
