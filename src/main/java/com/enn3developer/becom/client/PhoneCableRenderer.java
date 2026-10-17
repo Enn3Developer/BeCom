@@ -12,7 +12,7 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
-/** Phone Cable (DESIGN.md 15.1): a thin core with an arm toward each neighbour it joins. */
+/** Phone Cable (DESIGN.md 15.1): a cord on the floor, with an arm toward each neighbour it joins. */
 public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
 
     private final int id;
@@ -48,24 +48,21 @@ public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
     @Override
     public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId,
         RenderBlocks renderer) {
-        float min = 0.5f - BlockPhoneCable.RADIUS, max = 0.5f + BlockPhoneCable.RADIUS;
         renderer.renderAllFaces = true;
-        renderer.setRenderBounds(min, min, min, max, max, max);
-        renderer.renderStandardBlock(block, x, y, z);
+        box(renderer, block, BlockPhoneCable.core(), x, y, z);
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-            if (!BlockPhoneCable.connects(world, x, y, z, side)) continue;
-            double x1 = side.offsetX < 0 ? 0 : side.offsetX > 0 ? max : min;
-            double x2 = side.offsetX < 0 ? min : side.offsetX > 0 ? 1 : max;
-            double y1 = side.offsetY < 0 ? 0 : side.offsetY > 0 ? max : min;
-            double y2 = side.offsetY < 0 ? min : side.offsetY > 0 ? 1 : max;
-            double z1 = side.offsetZ < 0 ? 0 : side.offsetZ > 0 ? max : min;
-            double z2 = side.offsetZ < 0 ? min : side.offsetZ > 0 ? 1 : max;
-            renderer.setRenderBounds(x1, y1, z1, x2, y2, z2);
-            renderer.renderStandardBlock(block, x, y, z);
+            double[] arm = BlockPhoneCable.connects(world, x, y, z, side) ? BlockPhoneCable.arm(side) : null;
+            if (arm != null) box(renderer, block, arm, x, y, z);
         }
         renderer.renderAllFaces = false;
         renderer.setRenderBounds(0, 0, 0, 1, 1, 1);
         return true;
+    }
+
+    /** Draws one box of cord, {x1, y1, z1, x2, y2, z2} in blocks; the Telephone draws its stub with it too. */
+    static void box(RenderBlocks renderer, Block block, double[] b, int x, int y, int z) {
+        renderer.setRenderBounds(b[0], b[1], b[2], b[3], b[4], b[5]);
+        renderer.renderStandardBlock(block, x, y, z);
     }
 
     @Override

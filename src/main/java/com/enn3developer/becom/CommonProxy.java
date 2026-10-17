@@ -11,6 +11,7 @@ import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
@@ -47,6 +48,7 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
+import cpw.mods.fml.common.registry.EntityRegistry;
 
 public class CommonProxy {
 
@@ -56,6 +58,8 @@ public class CommonProxy {
         BeComItems.register();
         BeComMachines.register();
         BeComPackets.register();
+        // Seen from far off, and flown by each client itself, so the server sends no velocity.
+        EntityRegistry.registerModEntity(EntityLaunchRocket.class, "launch_rocket", 0, BeCom.instance, 256, 20, false);
     }
 
     public void init(FMLInitializationEvent event) {

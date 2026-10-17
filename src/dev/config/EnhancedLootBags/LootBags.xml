@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- For the dev runs only: the groups BeCom's quests hand out (LV 4, MV 5, HV 6, EV 7) and the trash group, with GTNH's
+     group IDs but vanilla loot. Without them ELB's sample config has no group 4-7, and ELB's tooltip crashes on the
+     quest rewards. The names are GTNH's English ones written out: GTNH translates its dreamcraft.lootbag.group.* keys
+     in the pack's config/txloader, which the dev runs don't have. -->
+<LootGroups>
+    <LootGroup GroupMetaID="0" GroupName="Trash" Rarity="0" MinItems="1" MaxItems="1" CombineTrashGroup="false" TrashGroup="0">
+        <Loot Identifier="becom_dev_trash" ItemName="minecraft:coal:1" Amount="5" NBTTag="" Chance="100" LimitedDropCount="0" RandomAmount="true"/>
+    </LootGroup>
+    <LootGroup GroupMetaID="4" GroupName="Tier 1 LV" Rarity="1" MinItems="1" MaxItems="2" CombineTrashGroup="true" TrashGroup="0">
+        <Loot Identifier="becom_dev_lv" ItemName="minecraft:iron_ingot" Amount="4" NBTTag="" Chance="100" LimitedDropCount="0" RandomAmount="true"/>
+    </LootGroup>
+    <LootGroup GroupMetaID="5" GroupName="Tier 2 MV" Rarity="1" MinItems="1" MaxItems="2" CombineTrashGroup="true" TrashGroup="0">
+        <Loot Identifier="becom_dev_mv" ItemName="minecraft:gold_ingot" Amount="4" NBTTag="" Chance="100" LimitedDropCount="0" RandomAmount="true"/>
+    </LootGroup>
+    <LootGroup GroupMetaID="6" GroupName="Tier 3 HV" Rarity="2" MinItems="1" MaxItems="2" CombineTrashGroup="true" TrashGroup="0">
+        <Loot Identifier="becom_dev_hv" ItemName="minecraft:diamond" Amount="2" NBTTag="" Chance="100" LimitedDropCount="0" RandomAmount="true"/>
+    </LootGroup>
+    <LootGroup GroupMetaID="7" GroupName="Tier 4 EV" Rarity="2" MinItems="1" MaxItems="2" CombineTrashGroup="true" TrashGroup="0">
+        <Loot Identifier="becom_dev_ev" ItemName="minecraft:emerald" Amount="2" NBTTag="" Chance="100" LimitedDropCount="0" RandomAmount="true"/>
+    </LootGroup>
+</LootGroups>

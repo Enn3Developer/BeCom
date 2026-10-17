@@ -14,7 +14,6 @@ import com.enn3developer.becom.quest.QuestTask;
 import betterquesting.api.questing.IQuest;
 import betterquesting.api2.client.gui.misc.IGuiRect;
 import betterquesting.api2.client.gui.panels.IGuiPanel;
-import betterquesting.api2.client.gui.panels.content.PanelTextBox;
 import betterquesting.api2.utils.ParticipantInfo;
 import bq_standard.tasks.base.TaskBase;
 import cpw.mods.fml.relauncher.Side;
@@ -70,7 +69,7 @@ public class TaskBeCom extends TaskBase {
     @Override
     @SideOnly(Side.CLIENT)
     public IGuiPanel getTaskGui(IGuiRect rect, Map.Entry<UUID, IQuest> quest) {
-        return new PanelTextBox(rect, StatCollector.translateToLocal(descriptionKey()));
+        return new PanelTaskBeCom(rect, this, StatCollector.translateToLocal(descriptionKey()));
     }
 
     @Override

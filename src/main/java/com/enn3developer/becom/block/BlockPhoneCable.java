@@ -1,11 +1,8 @@
 package com.enn3developer.becom.block;
 
-import java.util.List;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
-import net.minecraft.entity.Entity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.IBlockAccess;
@@ -21,12 +18,18 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
  * Phone Cable (DESIGN.md 5.5): connects a Telephone to a Line Terminal, losslessly, over a limited length. It joins
- * other cable, Telephones and Line Terminals on any side.
+ * other cable, Telephones and Line Terminals on any side. It's a thin cord lying on the floor, climbing straight up the
+ * middle of its block where it joins something above; nothing bumps into it.
  */
 public class BlockPhoneCable extends Block {
 
-    /** Half the cable's thickness, from the block's centre. */
+    /** Half the cable's thickness in its item's picture, from the centre. */
     public static final float RADIUS = 2 / 16f;
+    // The cord: this far either side of the block's middle, this high off the floor.
+    private static final double CORD = 1 / 16.0;
+    private static final double CORD_HEIGHT = 2 / 16.0;
+    // What a player aims at: a little wider and taller than the cord, so it can be hit.
+    private static final double AIM = 3 / 16.0;
 
     public static int renderId = -1;
 
@@ -62,29 +65,46 @@ public class BlockPhoneCable extends Block {
         return renderId;
     }
 
+    /** The cord's knot in the middle of the floor, {x1, y1, z1, x2, y2, z2} in blocks. */
+    public static double[] core() {
+        return new double[] { 0.5 - CORD, 0, 0.5 - CORD, 0.5 + CORD, CORD_HEIGHT, 0.5 + CORD };
+    }
+
+    /**
+     * The cord from the middle of the floor to {@code side}: along the floor to a side's edge, or straight up to the
+     * top. Down needs none, the knot lying on whatever is below. A Telephone draws the same piece toward its cable.
+     */
+    public static double[] arm(ForgeDirection side) {
+        if (side == ForgeDirection.DOWN) return null;
+        if (side == ForgeDirection.UP) return new double[] { 0.5 - CORD, 0, 0.5 - CORD, 0.5 + CORD, 1, 0.5 + CORD };
+        double[] box = core();
+        if (side.offsetX < 0) box[0] = 0;
+        if (side.offsetX > 0) box[3] = 1;
+        if (side.offsetZ < 0) box[2] = 0;
+        if (side.offsetZ > 0) box[5] = 1;
+        return box;
+    }
+
     @Override
     public void setBlockBoundsBasedOnState(IBlockAccess world, int x, int y, int z) {
-        float min = 0.5f - RADIUS, max = 0.5f + RADIUS;
-        setBlockBounds(
-            connects(world, x, y, z, ForgeDirection.WEST) ? 0 : min,
-            connects(world, x, y, z, ForgeDirection.DOWN) ? 0 : min,
-            connects(world, x, y, z, ForgeDirection.NORTH) ? 0 : min,
-            connects(world, x, y, z, ForgeDirection.EAST) ? 1 : max,
-            connects(world, x, y, z, ForgeDirection.UP) ? 1 : max,
-            connects(world, x, y, z, ForgeDirection.SOUTH) ? 1 : max);
+        double[] aim = { 0.5 - AIM, 0, 0.5 - AIM, 0.5 + AIM, AIM, 0.5 + AIM };
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+            double[] arm = connects(world, x, y, z, side) ? arm(side) : null;
+            if (arm == null) continue;
+            for (int i = 0; i < 3; i++) aim[i] = Math.min(aim[i], arm[i]);
+            for (int i = 3; i < 6; i++) aim[i] = Math.max(aim[i], arm[i]);
+        }
+        setBlockBounds((float) aim[0], (float) aim[1], (float) aim[2], (float) aim[3], (float) aim[4], (float) aim[5]);
+    }
+
+    @Override
+    public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) {
+        return null;
     }
 
     @Override
     public void setBlockBoundsForItemRender() {
         setBlockBounds(0, 0.5f - RADIUS, 0.5f - RADIUS, 1, 0.5f + RADIUS, 0.5f + RADIUS);
-    }
-
-    @Override
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void addCollisionBoxesToList(World world, int x, int y, int z, AxisAlignedBB mask, List list,
-        Entity entity) {
-        setBlockBoundsBasedOnState(world, x, y, z);
-        super.addCollisionBoxesToList(world, x, y, z, mask, list, entity);
     }
 
     @Override

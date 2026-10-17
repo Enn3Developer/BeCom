@@ -51,7 +51,6 @@ import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
-import gregtech.api.metatileentity.implementations.MTEHatchEnergy;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrorRegistry;
@@ -61,9 +60,12 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * An antenna, T1 to T3 (DESIGN.md 7, 3.2): the head on top of a mast of frame boxes standing on a 3×3 base of machine
- * casings with an energy hatch. While formed and powered it reports to the antenna network every tick, which surveys
- * it and links it to other antennas; it also bridges wired lines it's wrench-linked to (X19).
+ * An antenna, T1 to T3 (DESIGN.md 7, 3.2): the head on top of a mast of frame boxes, built like a real radio mast. T1
+ * and T2 are guyed masts, held by three guys of frame boxes down to casing anchors; T3 is a self-supporting lattice
+ * tower. Dipoles or panel antennas hang under the head, and an equipment shelter in front of the mast's pad holds the
+ * Energy Hatch. None of it changes what the antenna reaches, which goes by the top of the head. While formed and
+ * powered it reports to the antenna network every tick, which surveys it and links it to other antennas; it also
+ * bridges wired lines it's wrench-linked to (X19).
  * <p>
  * Like the Pylon Head, it isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick,
  * and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
@@ -73,7 +75,44 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements ISurvivalConstructable, NodeHost {
 
     private static final String PIECE_MAST = "mast";
-    private static final String PIECE_BASE = "base";
+    private static final String PIECE_TOP = "top";
+    private static final String PIECE_FOOT = "foot";
+
+    // Each tier's top and foot, by tier (index 0 unused). Layers run top to bottom and rows from the head's front
+    // backwards. The top hangs right under the head; the foot stands on the ground, its top layer on the mast, so a
+    // taller mast only adds frames between the two. F is a frame box, C a casing, S a shelter casing an Energy Hatch
+    // may take the place of, and a space anything.
+    private static final String[][][] TOPS = { null,
+        // A dipole.
+        { { "FFF" } },
+        // Two dipoles, crossed.
+        { { "     ", "     ", "FFFFF", "     ", "     " }, { "     ", "     ", "  F  ", "     ", "     " },
+            { "  F  ", "  F  ", "  F  ", "  F  ", "  F  " } },
+        // A platform with a panel antenna hanging on each side.
+        { { "FFF", "FFF", "FFF" }, { " F ", "FFF", " F " }, { " F ", "FFF", " F " } } };
+    private static final String[][][] FEET = { null,
+        // Guys from the 3rd frame to anchors 3 out at the back, left and right; the pad; the shelter in front.
+        { { "       ", "       ", "       ", "   F   ", "       ", "       ", "       " },
+            { "       ", "       ", "       ", "  FFF  ", "   F   ", "       ", "       " },
+            { "  SSS  ", "  SSS  ", "       ", " F F F ", "       ", "   F   ", "       " },
+            { "  SSS  ", "  SSS  ", "  CCC  ", "C CCC C", "  CCC  ", "       ", "   C   " } },
+        // Guys from the 4th frame to anchors 4 out.
+        { { "         ", "         ", "         ", "    F    ", "         ", "         ", "         ", "         " },
+            { "         ", "         ", "         ", "   FFF   ", "    F    ", "         ", "         ", "         " },
+            { "         ", "         ", "         ", "  F F F  ", "         ", "    F    ", "         ", "         " },
+            { "   SSS   ", "   SSS   ", "         ", " F  F  F ", "         ", "         ", "    F    ", "         " },
+            { "   SSS   ", "   SSS   ", "   CCC   ", "C  CCC  C", "   CCC   ", "         ", "         ",
+                "    C    " } },
+        // Four legs splayed to the corners of a 5x5 pad, then a braced 3x3 lattice around the mast.
+        { { "     ", "     ", "     ", " FFF ", " FFF ", " FFF ", "     " },
+            { "     ", "     ", "     ", " F F ", "  F  ", " F F ", "     " },
+            { "     ", "     ", "     ", " FFF ", " FFF ", " FFF ", "     " },
+            { " SSS ", " SSS ", "F   F", "     ", "  F  ", "     ", "F   F" },
+            { " SSS ", " SSS ", "CCCCC", "CCCCC", "CCCCC", "CCCCC", "CCCCC" } } };
+    // Where the mast runs through each top and foot: its column and row.
+    private static final int[][] TOP_MAST = { null, { 1, 0 }, { 2, 2 }, { 1, 1 } };
+    private static final int[][] FOOT_MAST = { null, { 3, 3 }, { 4, 3 }, { 2, 4 } };
+
     private static final int TICKS_PER_SECOND = 20;
     private static final String[] VOLTAGE_NAMES = { "ULV", "LV", "MV", "HV" };
 
@@ -128,15 +167,28 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         Casings casing = casingOf(tier);
         return StructureDefinition.<MTEAntenna>builder()
             .addShape(PIECE_MAST, new String[][] { { "F" } })
-            .addShape(PIECE_BASE, transpose(new String[][] { { "CCC", "CCC", "CCC" } }))
+            .addShape(PIECE_TOP, transpose(TOPS[tier]))
+            .addShape(PIECE_FOOT, transpose(FEET[tier]))
             .addElement('F', ofFrame(frameOf(tier)))
+            .addElement('C', casing.asElement())
             .addElement(
-                'C',
+                'S',
                 buildHatchAdder(MTEAntenna.class).atLeast(Energy)
                     .casingIndex(casing.textureId)
                     .hint(1)
                     .buildAndChain(onElementPass(x -> {}, casing.asElement())))
             .build();
+    }
+
+    /** How many times {@code block} appears in a shape. */
+    private static int count(String[][] shape, char block) {
+        int n = 0;
+        for (String[] layer : shape) {
+            for (String row : layer) {
+                for (int i = 0; i < row.length(); i++) if (row.charAt(i) == block) n++;
+            }
+        }
+        return n;
     }
 
     @Override
@@ -208,29 +260,46 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         Tunables t = BeComConfig.get();
         int found = 0;
-        // Frames below the head sit at -1, -2, ...; the base comes right under the last one.
+        // Frames below the head sit at -1, -2, ...; the pad's casing under the mast ends the count.
         while (found < t.antennaMastMax() && checkPiece(PIECE_MAST, 0, -(found + 1), 0, null)) found++;
         mast = found;
-        if (found < t.antennaMastMin()) {
+        if (found < t.antennaMastMin(tier)) {
             errors.add(StructureErrorRegistry.TOO_SHORT_HEIGHT);
             return;
         }
-        if (!checkPiece(PIECE_BASE, 1, -(found + 1), 1, errors)) return;
+        if (!checkPiece(PIECE_TOP, TOP_MAST[tier][0], -1, TOP_MAST[tier][1], errors)) return;
+        if (!checkPiece(PIECE_FOOT, FOOT_MAST[tier][0], footOffset(found), FOOT_MAST[tier][1], errors)) return;
         checkHasEnergyHatch(errors);
     }
 
+    /** How many blocks in front of the mast the shelter's back row is, at the ground. */
+    public int shelterAhead() {
+        return FOOT_MAST[tier][1] - 1;
+    }
+
+    /** How many layers the foot has, the ground's included. */
+    public int footLayers() {
+        return FEET[tier].length;
+    }
+
+    /** Where the foot's top layer is, below the head: its bottom layer is the ground under the mast. */
+    private int footOffset(int mast) {
+        return -(mast + 2 - FEET[tier].length);
+    }
+
     /** The mast a hologram or the build tool makes: the shortest, plus one per extra item in the stack. */
-    private static int buildMast(ItemStack trigger) {
+    private int buildMast(ItemStack trigger) {
         Tunables t = BeComConfig.get();
         int extra = trigger == null ? 0 : Math.max(0, trigger.stackSize - 1);
-        return Math.min(t.antennaMastMax(), t.antennaMastMin() + extra);
+        return Math.min(t.antennaMastMax(), t.antennaMastMin(tier) + extra);
     }
 
     @Override
     public void construct(ItemStack trigger, boolean hintsOnly) {
         int target = buildMast(trigger);
         for (int i = 1; i <= target; i++) buildPiece(PIECE_MAST, trigger, hintsOnly, 0, -i, 0);
-        buildPiece(PIECE_BASE, trigger, hintsOnly, 1, -(target + 1), 1);
+        buildPiece(PIECE_TOP, trigger, hintsOnly, TOP_MAST[tier][0], -1, TOP_MAST[tier][1]);
+        buildPiece(PIECE_FOOT, trigger, hintsOnly, FOOT_MAST[tier][0], footOffset(target), FOOT_MAST[tier][1]);
     }
 
     @Override
@@ -244,11 +313,23 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         }
         if (built < elementBudget) {
             int placed = survivalBuildPiece(
-                PIECE_BASE,
+                PIECE_TOP,
                 trigger,
-                1,
-                -(target + 1),
-                1,
+                TOP_MAST[tier][0],
+                -1,
+                TOP_MAST[tier][1],
+                elementBudget - built,
+                env,
+                false);
+            if (placed > 0) built += placed;
+        }
+        if (built < elementBudget) {
+            int placed = survivalBuildPiece(
+                PIECE_FOOT,
+                trigger,
+                FOOT_MAST[tier][0],
+                footOffset(target),
+                FOOT_MAST[tier][1],
                 elementBudget - built,
                 env,
                 false,
@@ -319,15 +400,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     }
 
     private boolean drainPower() {
-        long power = BeComConfig.get()
-            .antennaPower(tier);
-        long stored = 0;
-        for (MTEHatchEnergy hatch : mEnergyHatches) {
-            if (hatch.isValid()) stored += hatch.getBaseMetaTileEntity()
-                .getStoredEU();
-        }
-        // GT's drain takes what it can even when that's not enough; check first so a short tick is offline, not free.
-        return stored >= power && drainEnergyInput(power);
+        return EnergyHatches.drain(
+            this,
+            BeComConfig.get()
+                .antennaPower(tier));
     }
 
     @Override
@@ -427,16 +503,38 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
             .addInfo(
                 StatCollector
                     .translateToLocalFormatted("becom.machine.power", t.antennaPower(tier), VOLTAGE_NAMES[tier]))
-            .beginVariableStructureBlock(3, 3, t.antennaMastMin() + 2, t.antennaMastMax() + 2, 3, 3, false)
+            .beginVariableStructureBlock(
+                FEET[tier][0][0].length(),
+                FEET[tier][0][0].length(),
+                t.antennaMastMin(tier) + 2,
+                t.antennaMastMax() + 2,
+                FEET[tier][0].length,
+                FEET[tier][0].length,
+                false)
             .addController(StatCollector.translateToLocal("becom.machine.antenna.controller"))
             .addCasingInfoRange(
                 StatCollector.translateToLocalFormatted(
                     "becom.machine.antenna.mast",
                     frameOf(tier).getLocalizedNameForItem("%material Frame Box")),
-                t.antennaMastMin(),
+                t.antennaMastMin(tier),
                 t.antennaMastMax(),
                 false)
-            .addCasingInfoMin(casingOf(tier).getLocalizedName(), 8, false)
+            .addCasingInfoExactly(
+                StatCollector.translateToLocalFormatted(
+                    "becom.machine.antenna.rigging." + tier,
+                    frameOf(tier).getLocalizedNameForItem("%material Frame Box")),
+                // The mast's own frames run through the top and every layer of the foot above the ground.
+                count(TOPS[tier], 'F') - TOPS[tier].length + count(FEET[tier], 'F') - (FEET[tier].length - 1),
+                false)
+            .addCasingInfoExactly(
+                StatCollector.translateToLocalFormatted("becom.machine.antenna.pad", casingOf(tier).getLocalizedName()),
+                count(FEET[tier], 'C'),
+                false)
+            .addCasingInfoExactly(
+                StatCollector
+                    .translateToLocalFormatted("becom.machine.antenna.shelter", casingOf(tier).getLocalizedName()),
+                count(FEET[tier], 'S') - 1,
+                false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.antenna.hatch"), 1)
             .toolTipFinisher();
         return tt;

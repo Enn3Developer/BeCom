@@ -23,13 +23,15 @@ Legge due bande:
 
 ## Leggere una banda
 
-Ogni banda mostra il suo SNR e il livello, poi chi ti serve meglio: un'antenna, con il suo livello e la sua posizione, o
-i satelliti sopra la tua dimensione. "nessuna antenna o satellite a portata", dopo il nome di una banda, vuol dire che
-qui un telefono non ha servizio. Un walkie raggiunge comunque le altre radio dritto, per circa 80 blocchi, e
-l'analizzatore non lo mostra.
+A colpo d'occhio è una riga per banda: quattro tacche di segnale e l'SNR, colorati secondo il livello, poi la **perdita
+maggiore**, la prima da sistemare, con la sua icona. Se non c'è niente in mezzo dice invece chi ti serve: un'antenna T1,
+T2 o T3, o i satelliti. "Nessun servizio" vuol dire che qui un telefono non ha servizio. Un walkie raggiunge comunque le
+altre radio dritto, per circa 80 blocchi, e l'analizzatore non lo mostra.
 
-La riga successiva nomina la **perdita maggiore**, la prima da sistemare, e l'ultima elenca ogni termine del
-collegamento ([Come funziona il segnale](signal.md)):
+**Accovacciati** per vedere ogni termine. Ogni banda dice chi la serve (un'antenna, con quanto è lontana e una freccia
+che la indica, o i satelliti in cielo), poi disegna una barra per quello con cui parte il collegamento, una per ogni
+perdita che ne toglie qualcosa, dalla maggiore, e quello che resta al livello che ne esce. L'ultima riga dice quanti dB
+mancano al livello successivo ([Come funziona il segnale](signal.md)):
 
 - **Bilancio:** quello da cui parte l'antenna: 42 dB per una T1, 48 per una T2, 54 per una T3.
 - **Distanza:** cresce di 6 dB ogni volta che la distanza raddoppia. Avvicinati, o usa un'antenna più forte.
@@ -40,7 +42,7 @@ collegamento ([Come funziona il segnale](signal.md)):
   Passa.
 - **Rumore:** 10 dB in una dimensione senza cielo.
 
-Dai satelliti, la riga mostra quanto danno, secondo quanti sono in orbita, e quanto ne tolgono copertura e meteo.
+Dai satelliti, la prima barra è quanto danno, secondo quanti sono in orbita, e quanto ne tolgono copertura e meteo.
 
 ## Leggerlo in pratica
 

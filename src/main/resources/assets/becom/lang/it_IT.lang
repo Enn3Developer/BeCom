@@ -26,13 +26,16 @@ item.becom.rocket_radio_receiver.name=Ricevitore radio per razzi
 becom.machine.pylon.type=Traliccio
 becom.machine.pylon.info=Porta una linea telefonica tra due Terminali di linea. Funziona senza corrente, anche nei chunk scaricati.
 becom.machine.repeater.type=Traliccio, ripetitore
-becom.machine.repeater.info=Rigenera il segnale della linea, così la perdita di linea riparte da zero. Prende corrente da un cavo su qualsiasi lato.
+becom.machine.repeater.info=Rigenera il segnale della linea, così la perdita di linea riparte da zero. Prende corrente da un Energy Hatch nell'armadio alla sua base.
 becom.machine.router.type=Traliccio, router
-becom.machine.router.info=Unisce le linee in una rete, dove ogni telefono può chiamare qualsiasi altro. Prende corrente da un cavo su qualsiasi lato.
+becom.machine.router.info=Unisce le linee in una rete, dove ogni telefono può chiamare qualsiasi altro. Prende corrente da un Energy Hatch nell'armadio di centrale alla sua base.
 becom.machine.pylon.span=Si collega a tralicci distanti fino a %s volte l'altezza del più basso, al massimo %s collegamenti
 becom.machine.pylon.wrench=Usa la chiave su un nodo e poi su un altro per collegarli; di nuovo per scollegarli. Accovacciati per ruotarlo.
 becom.machine.pylon.controller=In cima alla colonna
-becom.machine.pylon.frames=Steel Frame Box, in colonna sotto la testa
+becom.machine.pylon.frames=Wood Frame Box, in un palo sotto la testa
+becom.machine.pylon.hatch=Qualsiasi blocco dell'armadio, davanti alla base del palo
+becom.machine.pylon.arm=Wood Frame Box, una traversa subito sotto la testa
+becom.machine.pylon.arms=Wood Frame Box, una traversa subito sotto la testa e un'altra due più in basso
 becom.machine.power=Consuma %s EU/t a %s mentre lavora
 becom.machine.terminal.info=Dove una linea telefonica inizia o finisce. Si collega a una Testa di traliccio e serve un solo telefono.
 becom.machine.terminal.cable=Raggiunge il suo telefono con fino a %s blocchi di Cavo telefonico
@@ -42,19 +45,29 @@ becom.machine.antenna.range=Arriva a circa %s blocchi al livello Basso in campo 
 becom.machine.antenna.bridge=Usa la chiave sull'antenna e su una Testa di traliccio o un Terminale di linea entro %s blocchi per agganciare quella linea, al massimo %s agganci
 becom.machine.antenna.controller=In cima all'albero
 becom.machine.antenna.mast=%s, nell'albero sotto la testa
-becom.machine.antenna.hatch=Qualsiasi involucro della base
+becom.machine.antenna.rigging.1=%s, per il dipolo sotto la testa e tre stralli
+becom.machine.antenna.rigging.2=%s, per due dipoli incrociati sotto la testa e tre stralli
+becom.machine.antenna.rigging.3=%s, per la piattaforma d'antenna sotto la testa e il traliccio alla base
+becom.machine.antenna.pad=%s, la platea sotto l'albero e gli ancoraggi degli stralli
+becom.machine.antenna.shelter=%s, lo shelter degli apparati davanti alla platea
+becom.machine.antenna.hatch=Qualsiasi blocco dello shelter
 becom.machine.launch_pad.type=Rampa di lancio per satelliti
 becom.machine.launch_pad.info=Lancia i Razzi per satelliti dal suo bus d'ingresso: ognuno mette un satellite in orbita sopra questa dimensione.
 becom.machine.launch_pad.launch=Un lancio dura %s s a %s EU/t e prende %s L di carburante per razzi dal suo portello d'ingresso. I problemi di manutenzione lo rallentano.
-becom.machine.launch_pad.sky=Ha bisogno di cielo aperto sopra tutta la rampa.
-becom.machine.launch_pad.controller=Al centro di un lato della rampa
-becom.machine.launch_pad.hatch=Qualsiasi involucro della rampa
+becom.machine.launch_pad.sky=Ha bisogno di cielo aperto sopra la fossa di scarico. Il razzo sta nella fossa durante il conto alla rovescia e decolla quando finisce.
+becom.machine.launch_pad.controller=Al centro del bordo anteriore della rampa
+becom.machine.launch_pad.bus=Base della torre di servizio, dietro la rampa
+becom.machine.launch_pad.tank=Serbatoio del propellente, accanto alla rampa
+becom.machine.launch_pad.front=Bordo anteriore della rampa, accanto al controller
 becom.machine.satellite_dish.type=Parabola satellitare
 becom.machine.satellite_dish.info=Collega la sua rete ai satelliti sopra questa dimensione: a ogni altra parabola qui e, nell'Overworld, a ogni pianeta con un Ricevitore radio per razzi.
-becom.machine.satellite_dish.link=Collegala con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea entro %s blocchi. Servono almeno %s satelliti sopra questa dimensione e cielo aperto sopra tutta la parabola; la pioggia la indebolisce.
+becom.machine.satellite_dish.link=Collegala con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea entro %s blocchi. Servono almeno %s satelliti sopra questa dimensione e cielo aperto sopra tutta la parabola, che guarda dritta in alto; la pioggia la indebolisce.
 becom.machine.satellite_dish.maintenance=Ogni problema di manutenzione toglie %s dB al suo collegamento.
-becom.machine.satellite_dish.controller=Al centro di un lato della parabola
-becom.machine.satellite_dish.hatch=Qualsiasi involucro della parabola
+becom.machine.satellite_dish.controller=Davanti al basamento, ai piedi della parabola
+becom.machine.satellite_dish.hatch=Qualsiasi involucro del basamento
+becom.machine.satellite_dish.bowl=%s, per la parabola e l'illuminatore
+becom.machine.satellite_dish.plinth=%s, per il basamento
+becom.machine.satellite_dish.frames=%s, per il piedistallo e i sostegni dell'illuminatore
 becom.machine.portal_relay.info=Collega la sua rete a quella dall'altra parte di un portale, attraverso un ripetitore di là.
 becom.machine.portal_relay.portal=Funziona entro %s blocchi da un portale del Nether, un portale dell'End, un portale del Twilight Forest o un portale di Personal Space.
 becom.machine.portal_relay.pair=Per accoppiarlo: usa la chiave su questo ripetitore, attraversa il portale e usa la chiave su quello dall'altra parte entro %s minuti.
@@ -250,6 +263,19 @@ becom.analyzer.biggest=Perdita maggiore: %s
 becom.analyzer.biggest_none=Niente in mezzo
 becom.analyzer.terms=Bilancio %s dB, distanza -%s, terreno -%s, copertura -%s, meteo -%s, rumore -%s
 becom.analyzer.sky_terms=Satelliti %s dB, copertura -%s, meteo -%s
+becom.analyzer.sneak=Accovacciati tenendolo in mano per vedere ogni perdita.
+becom.analyzer.radios_name=Radio
+becom.analyzer.phones_name=Telefoni
+becom.analyzer.no_service_short=nessun servizio
+becom.analyzer.source_sky=satelliti
+becom.analyzer.source_antenna=antenna T%s
+becom.analyzer.away=a %s blocchi %s
+becom.analyzer.budget_label=Bilancio
+becom.analyzer.sky_label=Satelliti
+becom.analyzer.overhead=%s satelliti in cielo
+becom.analyzer.short=%s a %s dB: mancano %s dB
+becom.analyzer.no_service=nessuna antenna o satellite a portata
+becom.analyzer.snr=%s dB
 becom.loss.distance=distanza
 becom.loss.terrain=terreno
 becom.loss.cover=copertura
@@ -285,15 +311,15 @@ betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.desc=Un circuito, un note block per 
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.name=§2§lCapolinea
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=Ogni linea inizia e finisce in un Terminale di linea. Dagli corrente LV, bastano 4 EU/t, e collegalo con il Cavo telefonico a un Telefono. Un terminale serve un solo telefono.%n%nPer metterlo su una linea, usa la chiave sul terminale, poi su una Testa di traliccio.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest._OpArmItVHW8jB5_z18yig.name=§2§lSul palo
-betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Il Cavo telefonico arriva solo a 32 blocchi. Per andare più lontano servono i tralicci: una Testa di traliccio in cima a 6-16 Steel Frame Box.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Usa la chiave su una testa, poi sull'altra, per collegarli.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk scaricati. Il segnale però cala con la distanza, quindi ti serve un ripetitore almeno ogni 225 blocchi.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Il Cavo telefonico arriva solo a 32 blocchi. Per andare più lontano servono i tralicci: una Testa di traliccio in cima a un palo di 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la testa.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Usa la chiave su una testa, poi sull'altra, per collegarli.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk scaricati. Il segnale però cala con la distanza, quindi ti serve un ripetitore almeno ogni 225 blocchi.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.name=§2§lPronto? Mi senti?
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=È ora della prima chiamata! Ti servono due Telefoni, ognuno sul suo Terminale di linea, con i tralicci tra i terminali.%n%nAlza la cornetta. Se sulla linea c'è un solo altro telefono, squilla subito. Altrimenti componi il suo numero o scegli un contatto.%n%nNon aspettarti l'alta fedeltà: al Telefono la voce è stretta e ruvida. Però arriva fin dove arriva la linea.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.name=§2§lTenere vivo il segnale
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Le linee lunghe si fanno silenziose. Una Testa ripetitore è una Testa di traliccio che ripulisce il segnale, così la perdita di linea riparte da zero dopo di lei.%n%nA differenza di un traliccio semplice vuole corrente: 4 EU/t di LV da un cavo su qualsiasi lato. Funziona solo se è caricata e alimentata, quindi tieni caricati i chunk dei ripetitori.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Le linee lunghe si fanno silenziose. Una Testa ripetitore è una Testa di traliccio che ripulisce il segnale, così la perdita di linea riparte da zero dopo di lei.%n%nA differenza di un traliccio semplice vuole corrente: 4 EU/t di LV, da un Energy Hatch in un armadio alla base del palo. Funziona solo se è caricata e alimentata, quindi tieni caricati i chunk dei ripetitori.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.name=§2§lCentralino
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=Una linea semplice unisce esattamente due telefoni. Ne vuoi di più? Una Testa router ha 15 collegamenti e trasforma le tue linee in una rete, dove ogni telefono può chiamare qualsiasi altro.%n%nRipulisce il segnale come un ripetitore e prende 16 EU/t di corrente LV da un cavo.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=Una linea semplice unisce esattamente due telefoni. Ne vuoi di più? Una Testa router ha 15 collegamenti e trasforma le tue linee in una rete, dove ogni telefono può chiamare qualsiasi altro.%n%nRipulisce il segnale come un ripetitore e prende 16 EU/t di corrente LV da un Energy Hatch nell'armadio di centrale alla base del palo: tre blocchi di larghezza, due di altezza, con una seconda traversa in cima per tutte quelle linee.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lIn onda
-betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=È ora di tagliare il filo. Una Testa d'antenna T1 sta su un albero di 4-32 Steel Frame Box, sopra una base 3x3 di LV Machine Casing con un Energy Hatch, e usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, e collegandone una con la chiave a una Testa di traliccio o a un Terminale di linea entro 16 blocchi porti quella linea via radio.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, e collegandone una con la chiave a una Testa di traliccio o a un Terminale di linea entro 16 blocchi porti quella linea via radio.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lStazione base
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.desc=Un Ricetrasmettitore è una radio in un blocco. Va a MV, 32 EU/t, e da solo arriva a circa 125 blocchi in campo aperto.%n%nStagli entro 2 blocchi e tieni premuto il tasto per parlare della radio (Bloc Maiusc, se non l'hai cambiato) per parlare sul suo canale. Il suo altoparlante riproduce il canale a chiunque sia entro 16 blocchi.%n%nAltro nella guida: [guide page=becom:radios.md]Radio[/guide].
 betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.name=§6§lLeggere l'aria
@@ -303,9 +329,9 @@ betterquesting.quest.82uwmy_wU3eMPoGqyurVlw.desc=Una radio da portare in giro. I
 betterquesting.quest.gNOxxRElWUebInHOkYOeQw.name=§6§lPasso e chiudo
 betterquesting.quest.gNOxxRElWUebInHOkYOeQw.desc=Ora mettila alla prova! Parla con qualcuno via radio, o sentilo: con un walkie, con un Ricetrasmettitore o attraverso le antenne tra voi. Deve passare per la radio: sentirlo di persona non conta.%n%nGalateo radio: i canali sono aperti a chiunque sia sintonizzato, e se due parlano insieme ognuno sente solo il più forte. Di' "passo" quando hai finito.%n%nAltro nella guida: [guide page=becom:radios.md]Radio[/guide].
 betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.name=§6§lUn albero più alto
-betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=Stessa idea, più portata. Una Testa d'antenna T2 sta su MV Machine Casing con un albero di Aluminium Frame Box, e usa 128 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di collegamento raddoppiano la portata in campo aperto. Le antenne ripetono tra loro tutti i 16 canali radio e portano le chiamate tra le linee agganciate a loro.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
+betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=Stessa idea, più portata. Una Testa d'antenna T2 sta in cima a un albero strallato più alto di Aluminium Frame Box, da 8 a 32, con due dipoli incrociati e MV Machine Casing, e usa 128 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di collegamento raddoppiano la portata in campo aperto. Le antenne ripetono tra loro tutti i 16 canali radio e portano le chiamate tra le linee agganciate a loro.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
 betterquesting.quest.fia8emGdXIqzunSxVhLBng.name=§5§lOltre la valle
-betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=Una Testa d'antenna T3 sta su HV Machine Casing con un albero di Stainless Steel Frame Box, usa 512 EU/t e arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una collina in mezzo può costarti più della distanza.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
+betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=Una Testa d'antenna T3 sta in cima a un traliccio autoportante di Stainless Steel Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 512 EU/t e arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una collina in mezzo può costarti più della distanza.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
 betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.name=§6§lFaccia a faccia
 betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.desc=Un vivavoce con uno schermo, per tutta la squadra. Il Videotelefono va a MV, 32 EU/t, e si collega a un Terminale di linea con il Cavo telefonico, proprio come un Telefono.%n%nClic destro per comporre, rispondere o riagganciare. Chiunque sia entro 4 blocchi è nella chiamata e sullo schermo, e il suo altoparlante porta la chiamata a 16 blocchi. Riaggancia da solo 30 secondi dopo che l'ultima persona se ne va.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.1e_b8ZF0VRq1STROZstNIg.name=§6§lVedere per credere
@@ -325,11 +351,11 @@ betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=La radio da sola non passa da u
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.name=§5§lCarico utile
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.desc=Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di Galacticraft: questo razzo parte solo da una Rampa di lancio per satelliti.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.name=§5§lDecollo
-betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.desc=3, 2, 1... La Rampa di lancio per satelliti è un pavimento 5x5 di Clean Stainless Steel Machine Casing a cielo aperto, con un Input Bus per i razzi, un Input Hatch per il carburante, un Energy Hatch e un Maintenance Hatch.%n%nUn lancio dura 30 secondi a 480 EU/t con 1.000 L di carburante, e mette un satellite in orbita sopra la dimensione della rampa. Costruisci la rampa e lancia il tuo primo satellite.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
+betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.desc=3, 2, 1... La Rampa di lancio per satelliti è un intero complesso di lancio: una rampa di Clean Stainless Steel Machine Casing intorno a una fossa di scarico, una torre di servizio dietro con un Input Bus per i razzi alla base, un serbatoio del propellente con un Input Hatch per il carburante, i parafulmini, e un Energy Hatch e un Maintenance Hatch sul bordo anteriore. Tieni il cielo aperto sopra la fossa.%n%nUn lancio dura 30 secondi a 480 EU/t con 1.000 L di carburante, e mette un satellite in orbita sopra la dimensione della rampa. Costruisci la rampa e guarda partire il tuo primo satellite.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.J3UFmY7aUkyD5jAJI7lDBw.name=§5§lUna costellazione
 betterquesting.quest.J3UFmY7aUkyD5jAJI7lDBw.desc=Un satellite da solo si annoia. Mettine 5 sopra una dimensione e ogni telefono e radio sotto il suo cielo aperto ne riceve il segnale, al livello Basso. 14 danno il Medio, 37 l'Alto e 100 il Massimo.%n%nUn tetto indebolisce il segnale, e la pioggia costa qualche dB. I satelliti scendono dopo circa 100 giorni: continua a lanciarne.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.name=§5§lRete parabolica
-betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.desc=Perché tirare linee quando puoi rimbalzare su un satellite? Una Parabola satellitare collega la sua rete a ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola 5x5 di Clean Stainless Steel Machine Casing su un supporto di tre Stainless Steel Frame Box, con un Energy Hatch e un Maintenance Hatch, a cielo aperto. Usa 512 EU/t.%n%nCollegala con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea. Tienila in ordine: ogni problema di manutenzione le costa 2 dB.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
+betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.desc=Perché tirare linee quando puoi rimbalzare su un satellite? Una Parabola satellitare collega la sua rete a ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola di Clean Stainless Steel Machine Casing rivolta al cielo, con un illuminatore su quattro sostegni sopra di lei, su un piedistallo di Stainless Steel Frame Box; l'Energy Hatch e il Maintenance Hatch vanno nel basamento ai suoi piedi, accanto al controller. Usa 512 EU/t.%n%nCollegala con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea. Tienila in ordine: ogni problema di manutenzione le costa 2 dB.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.iphLiVwwUKakj8QR4PH2-w.name=§5§lChiamare casa
 betterquesting.quest.iphLiVwwUKakj8QR4PH2-w.desc=Il tuo razzo è parcheggiato su un altro pianeta: perché non renderlo utile? Metti un Ricevitore radio per razzi nella sua stiva mentre è fermo su una piattaforma di lancio, e il razzo diventa un'antenna lì, collegata ai satelliti dell'Overworld al livello Alto.%n%nIl razzo ha una stiva solo se è costruito con dei bauli. Nell'Overworld lo raggiungono i telefoni a cielo aperto e le reti con una parabola.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.Ww6rBsobWMmbyc-M1rYILg.name=§5§lFuori da questo mondo

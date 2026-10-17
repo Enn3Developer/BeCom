@@ -89,6 +89,19 @@ tasks.matching { it.name ==~ /runClient\d*/ }.configureEach {
     classpath(configurations.devClientOnly)
 }
 
+// ELB writes a sample LootBags.xml with groups 0 and 1 only, and its tooltip crashes on the quests' tier bags (4-7):
+// the dev runs get one that has them, overwriting whatever's there.
+tasks.matching { it.name ==~ /run(Client|Server)\d*/ }.configureEach { task ->
+    def from = file("src/dev/config/EnhancedLootBags/LootBags.xml").toPath()
+    task.inputs.file(from)
+    // The working directory is read when the task runs: the modern-Java runs get theirs after this.
+    task.doFirst { t ->
+        def to = new File(t.workingDir, "config/EnhancedLootBags/LootBags.xml").toPath()
+        java.nio.file.Files.createDirectories(to.parent)
+        java.nio.file.Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
 // The modern-Java dev runs launch through the lwjgl3ify the GTNH buildscript pins, older than the owner's GTNH
 // install's: Angelica's launch plugin needs the newer one's RetroFuturaBootstrap.
 configurations.configureEach {

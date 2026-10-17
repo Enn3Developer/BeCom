@@ -29,5 +29,6 @@ public class ItemSignalAnalyzer extends Item {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
         lines.add(StatCollector.translateToLocal("becom.analyzer.help"));
+        lines.add(StatCollector.translateToLocal("becom.analyzer.sneak"));
     }
 }

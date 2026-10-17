@@ -23,7 +23,8 @@ public record Tunables(
     double surveyBudgetMillis,
     // Antennas (DESIGN.md 7)
     double antennaBudgetT1, double antennaBudgetT2, double antennaBudgetT3, int antennaPowerT1, int antennaPowerT2,
-    int antennaPowerT3, int antennaMastMin, int antennaMastMax, double wrenchLinkDistance,
+    int antennaPowerT3, int antennaMastMinT1, int antennaMastMinT2, int antennaMastMinT3, int antennaMastMax,
+    double wrenchLinkDistance,
     // Radios (DESIGN.md 8, 11.3, 11.4)
     double transceiverBudget, double walkieBudget, int transceiverPower, double loudspeakerRange, double talkRange,
     double walkieSpeakerRange, int captureHoldMillis, double captureMargin, int walkieBattery, int walkieStandbyDrain,
@@ -64,6 +65,12 @@ public record Tunables(
     public static final int MAX_POSE_RATE = 20;
     // A Portal Relay looks for its portal in a cube this many blocks out each way.
     public static final int MAX_PORTAL_DISTANCE = 8;
+
+    /**
+     * The shortest mast each antenna tier's shape has room on, by tier (index 0 unused): below it, the guys or the
+     * lattice at its foot run into the antennas at its top.
+     */
+    public static final int[] ANTENNA_SHORTEST_MAST = { 0, 4, 6, 7 };
 
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;
@@ -116,7 +123,9 @@ public record Tunables(
         d.put("antennaPowerT1", 32);
         d.put("antennaPowerT2", 128);
         d.put("antennaPowerT3", 512);
-        d.put("antennaMastMin", 4);
+        d.put("antennaMastMinT1", 6);
+        d.put("antennaMastMinT2", 8);
+        d.put("antennaMastMinT3", 10);
         d.put("antennaMastMax", 32);
         d.put("wrenchLinkDistance", 16.0);
         d.put("transceiverBudget", 48.0);
@@ -253,8 +262,13 @@ public record Tunables(
         checkRange("antennaBudgetT3", antennaBudgetT3);
         checkRange("transceiverBudget", transceiverBudget);
         checkRange("walkieBudget", walkieBudget);
-        if (antennaMastMin < 1) throw invalid("antennaMastMin", antennaMastMin, "at least 1");
-        if (antennaMastMax < antennaMastMin) throw invalid("antennaMastMax", antennaMastMax, "at least antennaMastMin");
+        for (int tier = 1; tier <= 3; tier++) {
+            String key = "antennaMastMinT" + tier;
+            int shortest = ANTENNA_SHORTEST_MAST[tier];
+            if (antennaMastMin(tier) < shortest) throw invalid(key, antennaMastMin(tier), "at least " + shortest);
+            if (antennaMastMax < antennaMastMin(tier))
+                throw invalid("antennaMastMax", antennaMastMax, "at least " + key);
+        }
         if (antennaMastMax > MAX_COLUMN) throw invalid("antennaMastMax", antennaMastMax, "at most " + MAX_COLUMN);
         if (wrenchLinkDistance < 0) throw invalid("wrenchLinkDistance", wrenchLinkDistance, "0 or more");
         if (loudspeakerRange < 0) throw invalid("loudspeakerRange", loudspeakerRange, "0 or more");
@@ -439,6 +453,15 @@ public record Tunables(
             case 1 -> antennaBudgetT1;
             case 2 -> antennaBudgetT2;
             default -> antennaBudgetT3;
+        };
+    }
+
+    /** An antenna's shortest mast in frame boxes, by tier 1 to 3. */
+    public int antennaMastMin(int tier) {
+        return switch (tier) {
+            case 1 -> antennaMastMinT1;
+            case 2 -> antennaMastMinT2;
+            default -> antennaMastMinT3;
         };
     }
 

@@ -53,7 +53,6 @@ import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
-import gregtech.api.metatileentity.implementations.MTEHatchEnergy;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
@@ -63,8 +62,10 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Satellite Dish (DESIGN.md 9.2, 3.2, D40): a late-HV dish of 5 by 5 clean stainless steel casings on a stand of
- * stainless steel frame boxes, under open sky, with an energy hatch and a maintenance hatch. Wrench-linked to an
+ * The Satellite Dish (DESIGN.md 9.2, 3.2, D40): a late-HV ground station under open sky. A stepped bowl of clean
+ * stainless steel casings faces straight up, with a feed horn held over it by four struts of stainless steel frame
+ * boxes, on a pedestal; the controller stands in a plinth at the foot with its energy hatch and maintenance hatch.
+ * Wrench-linked to an
  * antenna, a Pylon Head or a Line Terminal within 16 blocks, it joins that network to the satellites over its
  * dimension: to every other dish there and, in the Overworld, to every planet's uplink. Rain at the dish weakens that
  * hop, and so does each maintenance problem, since it has no process to slow down.
@@ -79,29 +80,52 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     private static final String PIECE_DISH = "dish";
     private static final int TICKS_PER_SECOND = 20;
-    private static final int SIDE = 5;
-    private static final int STAND = 3;
+    // The bowl's rim is this wide; the whole dish stands this high, plinth to feed horn.
+    private static final int SIDE = 7;
+    private static final int HEIGHT = 9;
+    // The controller stands at the front of the plinth, one block in front of the dish's centre, at the bottom.
+    private static final int CONTROLLER_ROW = 2;
     private static final Casings CASING = Casings.CleanStainlessSteelMachineCasing;
     private static final Materials FRAME = Materials.StainlessSteel;
 
     public static final int FORMAT = 1;
 
+    // Layers run top to bottom and rows from the controller's front backwards. C is a casing, F a frame box, H a plinth
+    // casing an energy or maintenance hatch may take the place of, and a space anything.
+    private static final String[][] SHAPE = {
+        { "       ", "       ", "       ", "   C   ", "       ", "       ", "       " },
+        { "       ", "       ", "   F   ", "  F F  ", "   F   ", "       ", "       " },
+        { "       ", "   F   ", "       ", " F   F ", "       ", "   F   ", "       " },
+        { " CCCCC ", "C     C", "C     C", "C     C", "C     C", "C     C", " CCCCC " },
+        { "       ", " CCCCC ", " C   C ", " C   C ", " C   C ", " CCCCC ", "       " },
+        { "       ", "       ", "  CCC  ", "  CCC  ", "  CCC  ", "       ", "       " },
+        { "       ", "       ", "       ", "   F   ", "       ", "       ", "       " },
+        { "       ", "       ", "       ", "   F   ", "       ", "       ", "       " },
+        { "       ", "       ", "  H~H  ", "  HHH  ", "  HHH  ", "       ", "       " } };
+
     private static final IStructureDefinition<MTESatelliteDish> STRUCTURE = StructureDefinition
         .<MTESatelliteDish>builder()
-        .addShape(
-            PIECE_DISH,
-            transpose(
-                new String[][] { { "CC~CC", "CCCCC", "CCCCC", "CCCCC", "CCCCC" },
-                    { "     ", "     ", "  F  ", "     ", "     " }, { "     ", "     ", "  F  ", "     ", "     " },
-                    { "     ", "     ", "  F  ", "     ", "     " } }))
+        .addShape(PIECE_DISH, transpose(SHAPE))
+        .addElement('C', CASING.asElement())
         .addElement(
-            'C',
+            'H',
             buildHatchAdder(MTESatelliteDish.class).atLeast(Energy, Maintenance)
                 .casingIndex(CASING.getTextureId())
                 .hint(1)
                 .buildAndChain(onElementPass(x -> {}, CASING.asElement())))
         .addElement('F', ofFrame(FRAME))
         .build();
+
+    /** How many times {@code block} appears in the dish. */
+    private static int count(char block) {
+        int n = 0;
+        for (String[] layer : SHAPE) {
+            for (String row : layer) {
+                for (int i = 0; i < row.length(); i++) if (row.charAt(i) == block) n++;
+            }
+        }
+        return n;
+    }
 
     // BeCom's keys from a newer BeCom: kept as they were, and the dish left alone (X16).
     private NBTTagCompound tooNew;
@@ -151,30 +175,39 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     @Override
     protected IAlignmentLimits getInitialAlignmentLimits() {
-        // The dish faces the sky: the controller faces sideways from its edge, never turned on its side.
+        // The dish faces the sky: the controller faces sideways from the plinth, never turned on its side.
         return (direction, rotation, flip) -> direction.offsetY == 0 && rotation == Rotation.NORMAL
             && flip == Flip.NONE;
     }
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        if (!checkPiece(PIECE_DISH, SIDE / 2, 0, 0, errors)) return;
+        if (!checkPiece(PIECE_DISH, SIDE / 2, HEIGHT - 1, CONTROLLER_ROW, errors)) return;
         if (mMaintenanceHatches.size() != 1) errors.add(StructureErrors.missingHatch(Maintenance));
         checkHasEnergyHatch(errors);
     }
 
     @Override
     public void construct(ItemStack trigger, boolean hintsOnly) {
-        buildPiece(PIECE_DISH, trigger, hintsOnly, SIDE / 2, 0, 0);
+        buildPiece(PIECE_DISH, trigger, hintsOnly, SIDE / 2, HEIGHT - 1, CONTROLLER_ROW);
     }
 
     @Override
     public int survivalConstruct(ItemStack trigger, int elementBudget, ISurvivalBuildEnvironment env) {
         if (mMachine) return -1;
-        return survivalBuildPiece(PIECE_DISH, trigger, SIDE / 2, 0, 0, elementBudget, env, false, true);
+        return survivalBuildPiece(
+            PIECE_DISH,
+            trigger,
+            SIDE / 2,
+            HEIGHT - 1,
+            CONTROLLER_ROW,
+            elementBudget,
+            env,
+            false,
+            true);
     }
 
-    /** Whether every block of the dish sees the sky, in a dimension that has one (DESIGN.md 9.2). */
+    /** Whether the whole dish sees the sky over its feed horn, in a dimension that has one (DESIGN.md 9.2). */
     public boolean openSky() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         World world = tile.getWorld();
@@ -182,11 +215,13 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         ForgeDirection back = getExtendedFacing().getDirection()
             .getOpposite();
         ForgeDirection left = back.getRotation(ForgeDirection.UP);
-        for (int depth = 0; depth < SIDE; depth++) {
+        int above = tile.getYCoord() + HEIGHT;
+        // The rim's rows run from its front edge, in front of the controller, to its back edge.
+        for (int depth = -CONTROLLER_ROW; depth < SIDE - CONTROLLER_ROW; depth++) {
             for (int across = -SIDE / 2; across <= SIDE / 2; across++) {
                 int x = tile.getXCoord() + back.offsetX * depth + left.offsetX * across;
                 int z = tile.getZCoord() + back.offsetZ * depth + left.offsetZ * across;
-                if (!world.canBlockSeeTheSky(x, tile.getYCoord() + 1, z)) return false;
+                if (!world.canBlockSeeTheSky(x, above, z)) return false;
             }
         }
         return true;
@@ -259,15 +294,10 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     }
 
     private boolean drainPower() {
-        long power = BeComConfig.get()
-            .dishPower();
-        long stored = 0;
-        for (MTEHatchEnergy hatch : mEnergyHatches) {
-            if (hatch.isValid()) stored += hatch.getBaseMetaTileEntity()
-                .getStoredEU();
-        }
-        // GT's drain takes what it can even when that's not enough; check first so a short tick is offline, not free.
-        return stored >= power && drainEnergyInput(power);
+        return EnergyHatches.drain(
+            this,
+            BeComConfig.get()
+                .dishPower());
     }
 
     @Override
@@ -423,10 +453,23 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
                     "becom.machine.satellite_dish.maintenance",
                     String.format(Locale.ROOT, "%.0f", t.dishMaintenanceLoss())))
             .addInfo(StatCollector.translateToLocalFormatted("becom.machine.power", t.dishPower(), "HV"))
-            .beginStructureBlock(SIDE, STAND + 1, SIDE, false)
+            .beginStructureBlock(SIDE, HEIGHT, SIDE, false)
             .addController(StatCollector.translateToLocal("becom.machine.satellite_dish.controller"))
-            .addCasingInfoMin(CASING.getLocalizedName(), SIDE * SIDE - 3, false)
-            .addCasingInfoExactly(FRAME.getLocalizedNameForItem("%material Frame Box"), STAND, false)
+            .addCasingInfoExactly(
+                StatCollector.translateToLocalFormatted("becom.machine.satellite_dish.bowl", CASING.getLocalizedName()),
+                count('C'),
+                false)
+            .addCasingInfoMin(
+                StatCollector
+                    .translateToLocalFormatted("becom.machine.satellite_dish.plinth", CASING.getLocalizedName()),
+                count('H') - 2,
+                false)
+            .addCasingInfoExactly(
+                StatCollector.translateToLocalFormatted(
+                    "becom.machine.satellite_dish.frames",
+                    FRAME.getLocalizedNameForItem("%material Frame Box")),
+                count('F'),
+                false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.satellite_dish.hatch"), 1)
             .addMaintenanceHatch(StatCollector.translateToLocal("becom.machine.satellite_dish.hatch"), 1)
             .toolTipFinisher();

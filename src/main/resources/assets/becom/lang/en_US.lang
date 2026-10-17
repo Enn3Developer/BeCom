@@ -26,13 +26,16 @@ item.becom.rocket_radio_receiver.name=Rocket Radio Receiver
 becom.machine.pylon.type=Pylon
 becom.machine.pylon.info=Carries a telephone line between Line Terminals. Works without power, even unloaded.
 becom.machine.repeater.type=Pylon, Repeater
-becom.machine.repeater.info=Regenerates the line signal, so line loss starts over. Takes power from a cable on any side.
+becom.machine.repeater.info=Regenerates the line signal, so line loss starts over. Takes power from an Energy Hatch in the cabinet at its foot.
 becom.machine.router.type=Pylon, Router
-becom.machine.router.info=Joins lines into a network, so any phone on it can dial any other. Takes power from a cable on any side.
+becom.machine.router.info=Joins lines into a network, so any phone on it can dial any other. Takes power from an Energy Hatch in the exchange cabinet at its foot.
 becom.machine.pylon.span=Links to pylons up to %s times the shorter one's height away, %s links at most
 becom.machine.pylon.wrench=Wrench a node, then another, to link them; again to unlink. Sneak to turn it.
 becom.machine.pylon.controller=Top of the column
-becom.machine.pylon.frames=Steel Frame Box, in a column below the head
+becom.machine.pylon.frames=Wood Frame Box, in a pole below the head
+becom.machine.pylon.hatch=Any cabinet block, in front of the pole's foot
+becom.machine.pylon.arm=Wood Frame Box, a crossarm right under the head
+becom.machine.pylon.arms=Wood Frame Box, a crossarm right under the head and another two below it
 becom.machine.power=Uses %s EU/t at %s while working
 becom.machine.terminal.info=Where a telephone line starts or ends. Links to one Pylon Head and serves exactly one phone.
 becom.machine.terminal.cable=Reaches its phone through up to %s blocks of Phone Cable
@@ -42,19 +45,29 @@ becom.machine.antenna.range=Reaches about %s blocks to Low on open ground (%s dB
 becom.machine.antenna.bridge=Wrench it to a Pylon Head or Line Terminal within %s blocks to bridge that line, %s bridges at most
 becom.machine.antenna.controller=Top of the mast
 becom.machine.antenna.mast=%s, in a mast below the head
-becom.machine.antenna.hatch=Any base casing
+becom.machine.antenna.rigging.1=%s, for the dipole under the head and three guys
+becom.machine.antenna.rigging.2=%s, for two crossed dipoles under the head and three guys
+becom.machine.antenna.rigging.3=%s, for the antenna platform under the head and the lattice at the foot
+becom.machine.antenna.pad=%s, the pad under the mast and the guys' anchors
+becom.machine.antenna.shelter=%s, the equipment shelter in front of the pad
+becom.machine.antenna.hatch=Any shelter block
 becom.machine.launch_pad.type=Satellite Launch Pad
 becom.machine.launch_pad.info=Launches Satellite Rockets from its input bus, each putting one satellite into orbit over this dimension.
 becom.machine.launch_pad.launch=A launch takes %s s at %s EU/t, and %s L of rocket fuel from its input hatch. Maintenance problems slow it down.
-becom.machine.launch_pad.sky=Needs open sky above the whole pad.
-becom.machine.launch_pad.controller=Middle of one edge of the pad
-becom.machine.launch_pad.hatch=Any pad casing
+becom.machine.launch_pad.sky=Needs open sky over its flame pit. The rocket stands in the pit while a launch counts down, and lifts off when it ends.
+becom.machine.launch_pad.controller=Middle of the pad's front edge
+becom.machine.launch_pad.bus=Base of the service tower, behind the pad
+becom.machine.launch_pad.tank=Propellant tank, beside the pad
+becom.machine.launch_pad.front=Pad's front edge, beside the controller
 becom.machine.satellite_dish.type=Satellite Dish
 becom.machine.satellite_dish.info=Joins its network to the satellites over this dimension: to every other dish here and, in the Overworld, to every planet with a Rocket Radio Receiver.
-becom.machine.satellite_dish.link=Wrench-link it to an antenna, a Pylon Head or a Line Terminal within %s blocks. Needs at least %s satellites over this dimension, and open sky above the whole dish; rain weakens it.
+becom.machine.satellite_dish.link=Wrench-link it to an antenna, a Pylon Head or a Line Terminal within %s blocks. Needs at least %s satellites over this dimension, and open sky above the whole dish, which faces straight up; rain weakens it.
 becom.machine.satellite_dish.maintenance=Each maintenance problem costs its hop %s dB.
-becom.machine.satellite_dish.controller=Middle of one edge of the dish
-becom.machine.satellite_dish.hatch=Any dish casing
+becom.machine.satellite_dish.controller=Front of the plinth at the foot
+becom.machine.satellite_dish.hatch=Any plinth casing
+becom.machine.satellite_dish.bowl=%s, for the bowl and the feed horn
+becom.machine.satellite_dish.plinth=%s, for the plinth
+becom.machine.satellite_dish.frames=%s, for the pedestal and the feed horn's struts
 becom.machine.portal_relay.info=Joins its network to the one on the far side of a portal, through a relay there.
 becom.machine.portal_relay.portal=Works within %s blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal.
 becom.machine.portal_relay.pair=To pair: wrench it, go through the portal, and wrench the relay on the far side within %s minutes.
@@ -250,6 +263,19 @@ becom.analyzer.biggest=Biggest loss: %s
 becom.analyzer.biggest_none=Nothing in the way
 becom.analyzer.terms=Budget %s dB, distance -%s, terrain -%s, cover -%s, weather -%s, noise -%s
 becom.analyzer.sky_terms=Satellites %s dB, cover -%s, weather -%s
+becom.analyzer.sneak=Sneak while holding it to see every loss.
+becom.analyzer.radios_name=Radios
+becom.analyzer.phones_name=Phones
+becom.analyzer.no_service_short=no service
+becom.analyzer.source_sky=satellites
+becom.analyzer.source_antenna=T%s antenna
+becom.analyzer.away=%s blocks %s
+becom.analyzer.budget_label=Budget
+becom.analyzer.sky_label=Satellites
+becom.analyzer.overhead=%s satellites overhead
+becom.analyzer.short=%s at %s dB: %s dB short
+becom.analyzer.no_service=no antenna or satellites in reach
+becom.analyzer.snr=%s dB
 becom.loss.distance=distance
 becom.loss.terrain=terrain
 becom.loss.cover=cover
@@ -285,15 +311,15 @@ betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.desc=A circuit, a note block for the
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.name=§2§lEnd of the Line
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=Every line starts and ends at a Line Terminal. Give it LV power, just 4 EU/t, and run Phone Cable from it to a Telephone. A terminal serves exactly one phone.%n%nTo put it on a line, wrench the terminal, then a Pylon Head.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest._OpArmItVHW8jB5_z18yig.name=§2§lUp on the Pole
-betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of 6 to 16 Steel Frame Boxes.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater at least every 225 blocks.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater at least every 225 blocks.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.name=§2§lHello? Can You Hear Me?
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and gritty. But it carries your voice as far as the line goes.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.name=§2§lKeeping the Signal Alive
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV from a cable on any side. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.name=§2§lSwitchboard
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and takes 16 EU/t of LV power from a cable.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and takes 16 EU/t of LV power through an Energy Hatch in the exchange cabinet at the pole's foot: three across, two high, with a second crossarm up top for all those lines.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lOn the Air
-betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=Time to cut the cord. An Antenna T1 Head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lBase Station
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.desc=A Transceiver is a radio in a block. It runs on MV, 32 EU/t, and reaches about 125 blocks on open ground on its own.%n%nStand within 2 blocks of it and hold the radio push-to-talk key (Caps Lock, unless you changed it) to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].
 betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.name=§6§lReading the Air
@@ -303,9 +329,9 @@ betterquesting.quest.82uwmy_wU3eMPoGqyurVlw.desc=A radio you can carry. The Walk
 betterquesting.quest.gNOxxRElWUebInHOkYOeQw.name=§6§lOver and Out
 betterquesting.quest.gNOxxRElWUebInHOkYOeQw.desc=Now put it to use! Talk to someone over the radio, or hear them: on a walkie, through a Transceiver, or through the antennas between you. It has to go over the radio: hearing them in person doesn't count.%n%nRadio etiquette: channels are open to anyone tuned in, and when two people talk at once, each listener only hears the stronger one. Say "over" when you're done.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].
 betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.name=§6§lA Taller Mast
-betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=Same idea, more reach. An Antenna T2 Head stands on MV Machine Casings with a mast of Aluminium Frame Boxes, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
+betterquesting.quest.BRsUHvwqVhSei0mx4y1eWg.desc=Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
 betterquesting.quest.fia8emGdXIqzunSxVhLBng.name=§5§lAcross the Valley
-betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=An Antenna T3 Head stands on HV Machine Casings with a mast of Stainless Steel Frame Boxes, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, and a hill in the way can cost you more than the distance does.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
+betterquesting.quest.fia8emGdXIqzunSxVhLBng.desc=An Antenna T3 Head tops a self-supporting lattice tower of Stainless Steel Frame Boxes on HV Machine Casings, panel antennas round its top, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, and a hill in the way can cost you more than the distance does.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
 betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.name=§6§lFace to Face
 betterquesting.quest.Cs4eUVpnUBeevZzOvcInrw.desc=A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and connects to a Line Terminal with Phone Cable, just like a Telephone.%n%nRight-click it to dial, answer or hang up. Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.1e_b8ZF0VRq1STROZstNIg.name=§6§lSeeing Is Believing
@@ -325,11 +351,11 @@ betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=Radio doesn't cross dimensions 
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.name=§5§lPayload
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.desc=A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 rocket parts in the Assembler, and you've got a Satellite Rocket.%n%nDon't bother with Galacticraft's launch pads: this rocket only flies from a Satellite Launch Pad.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.name=§5§lLiftoff
-betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.desc=3, 2, 1... The Satellite Launch Pad is a 5x5 floor of Clean Stainless Steel Machine Casings under open sky, with an Input Bus for rockets, an Input Hatch for rocket fuel, an Energy Hatch and a Maintenance Hatch.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over the pad's dimension. Build the pad and launch your first satellite.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
+betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.desc=3, 2, 1... The Satellite Launch Pad is a whole launch complex: a pad of Clean Stainless Steel Machine Casings round a flame pit, a service tower behind it with an Input Bus for rockets in its base, a propellant tank with an Input Hatch for rocket fuel, lightning masts, and an Energy Hatch and a Maintenance Hatch on the pad's front edge. Keep the sky open over the pit.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over the pad's dimension. Build the pad and watch your first satellite go up.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.J3UFmY7aUkyD5jAJI7lDBw.name=§5§lA Constellation
 betterquesting.quest.J3UFmY7aUkyD5jAJI7lDBw.desc=One satellite gets lonely. Put 5 over a dimension and every phone and radio under its open sky gets a signal from them, at Low. 14 give Medium, 37 High and 100 Max.%n%nA roof weakens the signal, and rain costs a few dB. Satellites come down after about 100 days, so keep launching.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.name=§5§lDish Network
-betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.desc=Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every other dish in the same dimension, through the satellites overhead.%n%nIt's a 5x5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an Energy Hatch and a Maintenance Hatch, under open sky. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal. Keep up its maintenance: each problem costs it 2 dB.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
+betterquesting.quest.aEl8W97yVGeFRBy0p4O4ZA.desc=Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal. Keep up its maintenance: each problem costs it 2 dB.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.iphLiVwwUKakj8QR4PH2-w.name=§5§lCalling Home
 betterquesting.quest.iphLiVwwUKakj8QR4PH2-w.desc=Your rocket is parked on another planet. Why not make it useful? Put a Rocket Radio Receiver in its cargo while it stands on a launch pad, and the rocket becomes an antenna there, linked to the Overworld's satellites at High.%n%nThe rocket needs chests to have cargo. Back in the Overworld, phones under open sky and networks with a dish can reach it.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.Ww6rBsobWMmbyc-M1rYILg.name=§5§lOut of This World

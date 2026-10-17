@@ -48,10 +48,11 @@ terminale a ogni capo.
 
 ## Tralicci
 
-Una <ItemLink id="gregtech:gt.blockmachines:25000" showIcon="left">Testa di traliccio</ItemLink> sta su una colonna di
-6-16 Steel Frame Box e prende 2 collegamenti. Due tralicci si collegano fino a quattro volte l'altezza del più basso, da
-24 a 64 blocchi, se non c'è niente di solido in mezzo. Ogni minuto ogni collegamento viene ricontrollato, e uno ostruito
-cade finché non si libera. I tralicci semplici non vogliono corrente e portano la linea anche nei chunk scaricati.
+Una <ItemLink id="gregtech:gt.blockmachines:25000" showIcon="left">Testa di traliccio</ItemLink> sta in cima a un palo
+del telefono: 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la testa. Prende 2 collegamenti. Due
+tralicci si collegano fino a quattro volte l'altezza del più basso, da 24 a 64 blocchi, se non c'è niente di solido in
+mezzo. Ogni minuto ogni collegamento viene ricontrollato, e uno ostruito cade finché non si libera. I tralicci semplici
+non vogliono corrente e portano la linea anche nei chunk scaricati.
 
 Quando una Testa di traliccio si forma, si collega da sola se a portata c'è esattamente un'altra Testa di traliccio
 formata con un posto libero e la linea sgombra. Altrimenti collegale a mano: usa la chiave su una testa, poi sull'altra.
@@ -67,9 +68,11 @@ proprietario e gli operatori.
 Una linea perde 0,08 dB per blocco: si disturba oltre 225 blocchi dal suo ultimo nodo alimentato e cade a 300.
 
 - Una <ItemLink id="gregtech:gt.blockmachines:25001" showIcon="left">Testa ripetitore</ItemLink> è una Testa di
-  traliccio che fa ripartire il conto. Prende 4 EU/t di corrente LV da un cavo su qualsiasi lato.
+  traliccio che fa ripartire il conto. Prende 4 EU/t di corrente LV da un Energy Hatch in un
+  armadio alla base del palo, davanti: un LV Machine Casing sopra l'altro.
 - Una <ItemLink id="gregtech:gt.blockmachines:25002" showIcon="left">Testa router</ItemLink> ha anche 15 collegamenti e
-  trasforma le linee in una rete, dove ogni telefono può chiamare qualsiasi altro. Prende 16 EU/t.
+  trasforma le linee in una rete, dove ogni telefono può chiamare qualsiasi altro. Ha una seconda traversa due blocchi
+  sotto la prima, e il suo armadio è una centrale larga tre blocchi. Prende 16 EU/t.
 
 A differenza di un traliccio semplice, un ripetitore o un router funziona solo se caricato e alimentato, e uno che non
 lo è taglia la linea in quel punto.

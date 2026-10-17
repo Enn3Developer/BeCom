@@ -1,6 +1,9 @@
 package com.enn3developer.becom.machine;
 
-import static gregtech.api.enums.GTValues.V;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
+import static gregtech.api.enums.HatchElement.Energy;
+import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
 import java.util.List;
@@ -46,9 +49,11 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * A Pylon Head and its powered variants (DESIGN.md 5.1, 5.3, 5.4): the controller on top of a column of steel frame
- * boxes. A plain head is passive and keeps working unloaded; Repeater and Router heads take LV power straight from a
- * cable on any side (D29, DESIGN.md 16.2) and work only while loaded and powered (D11).
+ * A Pylon Head and its powered variants (DESIGN.md 5.1, 5.3, 5.4): the controller on top of a telephone pole, a column
+ * of wood frame boxes with a crossarm across it right under the head. A plain head is passive and keeps working
+ * unloaded. A Repeater stands a cabinet at the pole's foot, and a Router a wider one and a second crossarm; they take
+ * LV power through an Energy Hatch in the cabinet, the way every GT multiblock takes it, and work only while loaded and
+ * powered (D11).
  * <p>
  * It isn't a recipe machine, so it skips GT's processing loop: it checks its structure on GT's schedule, drains its
  * power each tick, and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
@@ -58,15 +63,32 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implements ISurvivalConstructable, NodeHost {
 
     private static final String PIECE_FRAME = "frame";
+    private static final String PIECE_ARM = "arm";
+    private static final String PIECE_CABINET = "cabinet";
+    private static final String PIECE_EXCHANGE = "exchange";
     // LV, as D29 has it: an LV machine drawing a few EU/t, not a ULV one.
     private static final int VOLTAGE_TIER = 1;
-    // Like GT's own hulls: room for a couple of seconds of input.
-    private static final long EU_BUFFER = 512 + V[VOLTAGE_TIER] * 50L;
     private static final int TICKS_PER_SECOND = 20;
+    // Each crossarm reaches this far out on either side of the pole.
+    private static final int ARM_REACH = 2;
+    // The Router's second crossarm hangs this far under the head; the first is right under it.
+    private static final int SECOND_ARM = 3;
+    private static final Casings CABINET_CASING = Casings.LVMachineCasing;
 
+    // Layers run top to bottom and rows from the head's front backwards. A cabinet stands in front of the pole's two
+    // lowest frames: one block for a Repeater, three across for a Router's exchange.
     private static final IStructureDefinition<MTEPylonHead> STRUCTURE = StructureDefinition.<MTEPylonHead>builder()
         .addShape(PIECE_FRAME, new String[][] { { "F" } })
-        .addElement('F', ofFrame(Materials.Steel))
+        .addShape(PIECE_ARM, transpose(new String[][] { { "FFFFF" } }))
+        .addShape(PIECE_CABINET, transpose(new String[][] { { "E" }, { "E" } }))
+        .addShape(PIECE_EXCHANGE, transpose(new String[][] { { "EEE" }, { "EEE" } }))
+        .addElement('F', ofFrame(Materials.Wood))
+        .addElement(
+            'E',
+            buildHatchAdder(MTEPylonHead.class).atLeast(Energy)
+                .casingIndex(CABINET_CASING.getTextureId())
+                .hint(1)
+                .buildAndChain(onElementPass(x -> {}, CABINET_CASING.asElement())))
         .build();
 
     private final NodeKind kind;
@@ -130,7 +152,29 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         // B counts blocks above the controller, so the frames below it sit at -1, -2, ...
         while (found < t.pylonMaxHeight() && checkPiece(PIECE_FRAME, 0, -(found + 1), 0, null)) found++;
         height = found;
-        if (found < t.pylonMinHeight()) errors.add(StructureErrorRegistry.TOO_SHORT_HEIGHT);
+        if (found < t.pylonMinHeight()) {
+            errors.add(StructureErrorRegistry.TOO_SHORT_HEIGHT);
+            return;
+        }
+        if (!checkPiece(PIECE_ARM, ARM_REACH, -1, 0, errors)) return;
+        if (kind == NodeKind.ROUTER && !checkPiece(PIECE_ARM, ARM_REACH, -SECOND_ARM, 0, errors)) return;
+        if (!kind.powered()) return;
+        if (!checkCabinet(found, errors)) return;
+        checkHasEnergyHatch(errors);
+    }
+
+    /** The cabinet's top block sits in front of the pole's second-lowest frame. */
+    private boolean checkCabinet(int poleHeight, List<StructureError> errors) {
+        return kind == NodeKind.ROUTER ? checkPiece(PIECE_EXCHANGE, 1, -(poleHeight - 1), 1, errors)
+            : checkPiece(PIECE_CABINET, 0, -(poleHeight - 1), 1, errors);
+    }
+
+    private String cabinetPiece() {
+        return kind == NodeKind.ROUTER ? PIECE_EXCHANGE : PIECE_CABINET;
+    }
+
+    private int cabinetOffset() {
+        return kind == NodeKind.ROUTER ? 1 : 0;
     }
 
     /** The height a hologram or the build tool makes: the shortest pylon, plus one per extra item in the stack. */
@@ -144,6 +188,9 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
     public void construct(ItemStack trigger, boolean hintsOnly) {
         int target = buildHeight(trigger);
         for (int i = 1; i <= target; i++) buildPiece(PIECE_FRAME, trigger, hintsOnly, 0, -i, 0);
+        buildPiece(PIECE_ARM, trigger, hintsOnly, ARM_REACH, -1, 0);
+        if (kind == NodeKind.ROUTER) buildPiece(PIECE_ARM, trigger, hintsOnly, ARM_REACH, -SECOND_ARM, 0);
+        if (kind.powered()) buildPiece(cabinetPiece(), trigger, hintsOnly, cabinetOffset(), -(target - 1), 1);
     }
 
     @Override
@@ -154,7 +201,34 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         for (int i = 1; i <= target; i++) {
             int placed = survivalBuildPiece(PIECE_FRAME, trigger, 0, -i, 0, elementBudget - built, env, false);
             if (placed > 0) built += placed;
-            if (built >= elementBudget) break;
+            if (built >= elementBudget) return built;
+        }
+        int placed = survivalBuildPiece(PIECE_ARM, trigger, ARM_REACH, -1, 0, elementBudget - built, env, false);
+        if (placed > 0) built += placed;
+        if (kind == NodeKind.ROUTER && built < elementBudget) {
+            placed = survivalBuildPiece(
+                PIECE_ARM,
+                trigger,
+                ARM_REACH,
+                -SECOND_ARM,
+                0,
+                elementBudget - built,
+                env,
+                false);
+            if (placed > 0) built += placed;
+        }
+        if (kind.powered() && built < elementBudget) {
+            placed = survivalBuildPiece(
+                cabinetPiece(),
+                trigger,
+                cabinetOffset(),
+                -(target - 1),
+                1,
+                elementBudget - built,
+                env,
+                false,
+                true);
+            if (placed > 0) built += placed;
         }
         return built > 0 ? built : -1;
     }
@@ -180,7 +254,7 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
             mUpdated = false;
         }
         if (--mUpdate == 0 || --mStartUpCheck == 0 || tick % (TICKS_PER_SECOND * 5) == 0) refreshStructure();
-        working = mMachine && (!kind.powered() || tile.isAllowedToWork() && drainPower(tile));
+        working = mMachine && (!kind.powered() || tile.isAllowedToWork() && drainPower());
         if (working && kind.powered()) becom.network.heartbeat(world, pos);
         tile.setActive(working && kind.powered());
     }
@@ -199,9 +273,8 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         return mMachine;
     }
 
-    private boolean drainPower(IGregTechTileEntity tile) {
-        long power = power();
-        return tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
+    private boolean drainPower() {
+        return EnergyHatches.drain(this, power());
     }
 
     private long power() {
@@ -231,46 +304,6 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         becom.links
             .wrench(player, tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         return true;
-    }
-
-    // endregion
-
-    // region Power
-
-    @Override
-    public boolean isElectric() {
-        return kind.powered();
-    }
-
-    @Override
-    public boolean isEnetInput() {
-        return kind.powered();
-    }
-
-    @Override
-    public boolean isInputFacing(ForgeDirection side) {
-        // DESIGN.md 5.3: a cable on any side, the front included, since the head has no hatches.
-        return kind.powered();
-    }
-
-    @Override
-    public long maxEUInput() {
-        return kind.powered() ? V[VOLTAGE_TIER] : 0;
-    }
-
-    @Override
-    public long maxAmperesIn() {
-        return kind.powered() ? 1 : 0;
-    }
-
-    @Override
-    public long maxEUStore() {
-        return kind.powered() ? EU_BUFFER : 0;
-    }
-
-    @Override
-    public long getMinimumStoredEU() {
-        return 0;
     }
 
     // endregion
@@ -323,14 +356,34 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         if (kind.powered()) {
             tt.addInfo(StatCollector.translateToLocalFormatted("becom.machine.power", power(), "LV"));
         }
-        tt.beginVariableStructureBlock(1, 1, t.pylonMinHeight() + 1, t.pylonMaxHeight() + 1, 1, 1, false)
+        int width = 2 * ARM_REACH + 1;
+        int depth = kind.powered() ? 2 : 1;
+        int arms = kind == NodeKind.ROUTER ? 2 : 1;
+        tt.beginVariableStructureBlock(
+            width,
+            width,
+            t.pylonMinHeight() + 1,
+            t.pylonMaxHeight() + 1,
+            depth,
+            depth,
+            false)
             .addController(StatCollector.translateToLocal("becom.machine.pylon.controller"))
             .addCasingInfoRange(
                 StatCollector.translateToLocal("becom.machine.pylon.frames"),
                 t.pylonMinHeight(),
                 t.pylonMaxHeight(),
                 false)
-            .toolTipFinisher();
+            .addCasingInfoExactly(
+                StatCollector.translateToLocal(arms == 1 ? "becom.machine.pylon.arm" : "becom.machine.pylon.arms"),
+                arms * 2 * ARM_REACH,
+                false);
+        if (kind.powered()) {
+            // A one-block cabinet, or a three-wide exchange, two high: all casings but the hatch.
+            int cabinet = (kind == NodeKind.ROUTER ? 3 : 1) * 2;
+            tt.addCasingInfoExactly(CABINET_CASING.getLocalizedName(), cabinet - 1, false)
+                .addEnergyHatch(StatCollector.translateToLocal("becom.machine.pylon.hatch"), 1);
+        }
+        tt.toolTipFinisher();
         return tt;
     }
 

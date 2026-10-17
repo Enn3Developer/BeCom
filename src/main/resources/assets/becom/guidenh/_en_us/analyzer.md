@@ -22,12 +22,15 @@ It reads two bands:
 
 ## Reading a band
 
-Each band shows its SNR and level, then what serves you best: an antenna, with its tier and position, or the satellites
-over your dimension. "No antenna or satellites in reach", after a band's name, means a phone here has no service. A
-walkie still reaches other radios straight, about 80 blocks, which the analyzer doesn't show.
+At a glance it's a line a band: four signal bars and the SNR, coloured by level, then the **biggest loss**, the one to
+fix first, with its icon. With nothing in the way it names what serves you instead: a T1, T2 or T3 antenna, or the
+satellites. "No service" means a phone here has none. A walkie still reaches other radios straight, about 80 blocks,
+which the analyzer doesn't show.
 
-The next line names the **biggest loss**, the one to fix first, and the last line lists every term of the link
-([How signal works](signal.md)):
+**Sneak** to see every term. Each band names what serves it (an antenna, with how far it is and an arrow pointing to it,
+or the satellites overhead), then draws a bar for what the link starts with, a bar for each loss that takes something
+off it, biggest first, and what's left at the level it makes. The last line says how many dB short of the next level
+you are ([How signal works](signal.md)):
 
 - **Budget:** what the antenna starts with: 42 dB for a T1, 48 for a T2, 54 for a T3.
 - **Distance:** grows by 6 dB each time the distance doubles. Move closer, or use a stronger antenna.
@@ -38,7 +41,7 @@ The next line names the **biggest loss**, the one to fix first, and the last lin
   satellites. It passes.
 - **Noise:** 10 dB in a dimension without a sky.
 
-From the satellites, the line shows what they give, from the number in orbit, and what cover and the weather take
+From the satellites, the first bar is what they give, from the number in orbit, and what cover and the weather take
 off it.
 
 ## Reading it in practice

@@ -27,11 +27,14 @@ quest_ids:
 
 Un <ItemLink id="becom:satellite" showIcon="left">Satellite</ItemLink> va in orbita su un
 <ItemLink id="becom:satellite_rocket" showIcon="left">Razzo per satelliti</ItemLink>, da una
-<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Rampa di lancio per satelliti</ItemLink>: un pavimento 5
-per 5 di Clean Stainless Steel Machine Casing a cielo aperto, con un bus d'ingresso per i razzi, un portello d'ingresso
-per il carburante, un energy hatch e un maintenance hatch. Un lancio dura 30 s a 480 EU/t con 1.000 L di carburante, e
-mette un satellite sopra la dimensione della rampa. I problemi di manutenzione lo allungano, e qualsiasi blocco che
-ferma la luce sopra la rampa mette il lancio in pausa finché non si libera; il vetro no.
+<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Rampa di lancio per satelliti</ItemLink>: un complesso di
+lancio di Clean Stainless Steel Machine Casing e Stainless Steel Frame Box. Una rampa 7 per 7 intorno a una fossa di
+scarico, con il controller sul bordo anteriore e accanto l'energy hatch e il maintenance hatch; una torre di servizio
+dietro la rampa, con un bus d'ingresso per i razzi alla base e due bracci mobili che sporgono sulla rampa; un serbatoio
+del propellente accanto, con un portello d'ingresso per il carburante; e i parafulmini sugli angoli anteriori. Un lancio
+dura 30 s a 480 EU/t con 1.000 L di carburante, e mette un satellite sopra la dimensione della rampa. Il razzo sta nella
+fossa durante il conto alla rovescia e decolla quando finisce. I problemi di manutenzione lo allungano, e qualsiasi
+blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no.
 
 I satelliti scendono dopo circa 100 giorni di Minecraft, un quinto in più o in meno: circa 33 ore di server acceso.
 Dormire la notte non li fa scendere prima. Continua a lanciarne. Lo schermo della rampa mostra i satelliti di ogni
@@ -58,8 +61,10 @@ qualsiasi distanza. Le dimensioni senza cielo, come il Nether, non ne hanno.
 
 Una <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Parabola satellitare</ItemLink> collega la sua rete a
 ogni altra parabola della sua dimensione, attraverso i satelliti, e nell'Overworld a ogni pianeta con un Ricevitore
-radio per razzi. È una parabola 5 per 5 di Clean Stainless Steel Machine Casing su un supporto di tre Stainless Steel
-Frame Box, con un energy hatch e un maintenance hatch, a cielo aperto, a 512 EU/t. Collegala con la chiave a un'antenna,
+radio per razzi. È una stazione di terra a 512 EU/t: una parabola di Clean Stainless Steel Machine Casing rivolta dritta in
+alto, larga 7 al bordo, con un illuminatore tenuto sopra di lei da quattro sostegni di Stainless Steel Frame Box, su un
+piedistallo. Il controller sta in un basamento ai suoi piedi, con accanto l'energy hatch e il maintenance hatch. Vuole
+cielo aperto sopra tutta la parabola. Collegala con la chiave a un'antenna,
 una Testa di traliccio o un Terminale di linea. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 

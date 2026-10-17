@@ -17,7 +17,8 @@ QUESTS_IT = {
         "la chiave sul terminale, poi su una Testa di traliccio."),
     "pylon": ("Sul palo",
         "Il Cavo telefonico arriva solo a 32 blocchi. Per andare più lontano servono i tralicci: una Testa di "
-        "traliccio in cima a 6-16 Steel Frame Box.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a "
+        "traliccio in cima a un palo di 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la "
+        "testa.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a "
         "quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Usa la chiave su una testa, "
         "poi sull'altra, per collegarli.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk "
         "scaricati. Il segnale però cala con la distanza, quindi ti serve un ripetitore almeno ogni 225 blocchi."),
@@ -29,15 +30,17 @@ QUESTS_IT = {
     "repeater": ("Tenere vivo il segnale",
         "Le linee lunghe si fanno silenziose. Una Testa ripetitore è una Testa di traliccio che ripulisce il "
         "segnale, così la perdita di linea riparte da zero dopo di lei.%n%nA differenza di un traliccio semplice "
-        "vuole corrente: 4 EU/t di LV da un cavo su qualsiasi lato. Funziona solo se è caricata e alimentata, "
+        "vuole corrente: 4 EU/t di LV, da un Energy Hatch in un armadio alla base del palo. Funziona solo se è caricata e alimentata, "
         "quindi tieni caricati i chunk dei ripetitori."),
     "router": ("Centralino",
         "Una linea semplice unisce esattamente due telefoni. Ne vuoi di più? Una Testa router ha 15 collegamenti e "
         "trasforma le tue linee in una rete, dove ogni telefono può chiamare qualsiasi altro.%n%nRipulisce il "
-        "segnale come un ripetitore e prende 16 EU/t di corrente LV da un cavo."),
+        "segnale come un ripetitore e prende 16 EU/t di corrente LV da un Energy Hatch nell'armadio di centrale alla base del palo: "
+        "tre blocchi di larghezza, due di altezza, con una seconda traversa in cima per tutte quelle linee."),
     "antenna_t1": ("In onda",
-        "È ora di tagliare il filo. Una Testa d'antenna T1 sta su un albero di 4-32 Steel Frame Box, sopra una base "
-        "3x3 di LV Machine Casing con un Energy Hatch, e usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. "
+        "È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame "
+        "Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va "
+        "nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. "
         "L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, e collegandone una con "
         "la chiave a una Testa di traliccio o a un Terminale di linea entro 16 blocchi porti quella linea via radio."),
     "transceiver": ("Stazione base",
@@ -62,12 +65,13 @@ QUESTS_IT = {
         "i canali sono aperti a chiunque sia sintonizzato, e se due parlano insieme ognuno sente solo il più forte. "
         "Di' \"passo\" quando hai finito."),
     "antenna_t2": ("Un albero più alto",
-        "Stessa idea, più portata. Una Testa d'antenna T2 sta su MV Machine Casing con un albero di Aluminium Frame "
-        "Box, e usa 128 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di "
+        "Stessa idea, più portata. Una Testa d'antenna T2 sta in cima a un albero strallato più alto di "
+        "Aluminium Frame Box, da 8 a 32, con due dipoli incrociati e MV Machine Casing, e usa 128 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di "
         "collegamento raddoppiano la portata in campo aperto. Le antenne ripetono tra loro tutti i 16 canali radio "
         "e portano le chiamate tra le linee agganciate a loro."),
     "antenna_t3": ("Oltre la valle",
-        "Una Testa d'antenna T3 sta su HV Machine Casing con un albero di Stainless Steel Frame Box, usa 512 EU/t e "
+        "Una Testa d'antenna T3 sta in cima a un traliccio autoportante di Stainless Steel "
+        "Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 512 EU/t e "
         "arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una "
         "collina in mezzo può costarti più della distanza."),
     "videophone": ("Faccia a faccia",
@@ -116,10 +120,12 @@ QUESTS_IT = {
         "di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di "
         "Galacticraft: questo razzo parte solo da una Rampa di lancio per satelliti."),
     "first_satellite": ("Decollo",
-        "3, 2, 1... La Rampa di lancio per satelliti è un pavimento 5x5 di Clean Stainless Steel Machine Casing a "
-        "cielo aperto, con un Input Bus per i razzi, un Input Hatch per il carburante, un Energy Hatch e un "
-        "Maintenance Hatch.%n%nUn lancio dura 30 secondi a 480 EU/t con 1.000 L di carburante, e mette un satellite "
-        "in orbita sopra la dimensione della rampa. Costruisci la rampa e lancia il tuo primo satellite."),
+        "3, 2, 1... La Rampa di lancio per satelliti è un intero complesso di lancio: una rampa "
+        "di Clean Stainless Steel Machine Casing intorno a una fossa di scarico, una torre di servizio dietro con un "
+        "Input Bus per i razzi alla base, un serbatoio del propellente con un Input Hatch per il carburante, i "
+        "parafulmini, e un Energy Hatch e un Maintenance Hatch sul bordo anteriore. Tieni il cielo aperto sopra la "
+        "fossa.%n%nUn lancio dura 30 secondi a 480 EU/t con 1.000 L di carburante, e mette un satellite "
+        "in orbita sopra la dimensione della rampa. Costruisci la rampa e guarda partire il tuo primo satellite."),
     "five_satellites": ("Una costellazione",
         "Un satellite da solo si annoia. Mettine 5 sopra una dimensione e ogni telefono e radio sotto il suo cielo "
         "aperto ne riceve il segnale, al livello Basso. 14 danno il Medio, 37 l'Alto e 100 il Massimo.%n%nUn tetto "
@@ -127,9 +133,10 @@ QUESTS_IT = {
         "continua a lanciarne."),
     "satellite_dish": ("Rete parabolica",
         "Perché tirare linee quando puoi rimbalzare su un satellite? Una Parabola satellitare collega la sua rete a "
-        "ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola 5x5 di "
-        "Clean Stainless Steel Machine Casing su un supporto di tre Stainless Steel Frame Box, con un Energy Hatch "
-        "e un Maintenance Hatch, a cielo aperto. Usa 512 EU/t.%n%nCollegala con la chiave a un'antenna, una Testa "
+        "ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola di Clean "
+        "Stainless Steel Machine Casing rivolta al cielo, con un illuminatore su quattro sostegni sopra di lei, su un "
+        "piedistallo di Stainless Steel Frame Box; l'Energy Hatch e il Maintenance Hatch vanno nel basamento ai suoi "
+        "piedi, accanto al controller. Usa 512 EU/t.%n%nCollegala con la chiave a un'antenna, una Testa "
         "di traliccio o un Terminale di linea. Tienila in ordine: ogni problema di manutenzione le costa 2 dB."),
     "rocket_receiver": ("Chiamare casa",
         "Il tuo razzo è parcheggiato su un altro pianeta: perché non renderlo utile? Metti un Ricevitore radio per "

@@ -152,8 +152,8 @@ QUESTS = [
         "key": "pylon",
         "tier": "LV",
         "name": "Up on the Pole",
-        "desc": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of 6 "
-        "to 16 Steel Frame Boxes.%n%nTaller is better. Two pylons link up to four times the shorter one's height "
+        "desc": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of a "
+        "pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height "
         "apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no "
         "power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater "
         "at least every 225 blocks.",
@@ -182,7 +182,7 @@ QUESTS = [
         "tier": "LV",
         "name": "Keeping the Signal Alive",
         "desc": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss "
-        "starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV from a cable on any side. It "
+        "starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It "
         "only works while it's loaded and powered, so keep your repeaters chunkloaded.",
         "icon": (GT_MACHINE, 25001),
         "pre": ["pylon"],
@@ -196,7 +196,8 @@ QUESTS = [
         "name": "Switchboard",
         "desc": "A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your "
         "lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and "
-        "takes 16 EU/t of LV power from a cable.",
+        "takes 16 EU/t of LV power through an Energy Hatch in the exchange cabinet at the pole's foot: three "
+        "across, two high, with a second crossarm up top for all those lines.",
         "icon": (GT_MACHINE, 25002),
         "pre": ["repeater"],
         "tasks": [("item", GT_MACHINE, 25002, 1)],
@@ -207,8 +208,9 @@ QUESTS = [
         "key": "antenna_t1",
         "tier": "LV",
         "name": "On the Air",
-        "desc": "Time to cut the cord. An Antenna T1 Head sits on a mast of 4 to 32 Steel Frame Boxes, over a 3x3 "
-        "base of LV Machine Casings with an Energy Hatch, and uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
+        "desc": "Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole "
+        "under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment "
+        "shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
         "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and "
         "wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.",
         "icon": (GT_MACHINE, 25004),
@@ -276,8 +278,8 @@ QUESTS = [
         "key": "antenna_t2",
         "tier": "MV",
         "name": "A Taller Mast",
-        "desc": "Same idea, more reach. An Antenna T2 Head stands on MV Machine Casings with a mast of Aluminium "
-        "Frame Boxes, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
+        "desc": "Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame "
+        "Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
         "doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls "
         "between the lines bridged onto them.",
         "icon": (GT_MACHINE, 25005),
@@ -290,8 +292,8 @@ QUESTS = [
         "key": "antenna_t3",
         "tier": "HV",
         "name": "Across the Valley",
-        "desc": "An Antenna T3 Head stands on HV Machine Casings with a mast of Stainless Steel Frame Boxes, uses "
-        "512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
+        "desc": "An Antenna T3 Head tops a self-supporting lattice tower of Stainless Steel Frame Boxes on HV "
+        "Machine Casings, panel antennas round its top, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
         "and a hill in the way can cost you more than the distance does.",
         "icon": (GT_MACHINE, 25006),
         "pre": ["antenna_t2"],
@@ -425,10 +427,11 @@ QUESTS = [
         "key": "first_satellite",
         "tier": "HV",
         "name": "Liftoff",
-        "desc": "3, 2, 1... The Satellite Launch Pad is a 5x5 floor of Clean Stainless Steel Machine Casings under "
-        "open sky, with an Input Bus for rockets, an Input Hatch for rocket fuel, an Energy Hatch and a Maintenance "
-        "Hatch.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over "
-        "the pad's dimension. Build the pad and launch your first satellite.",
+        "desc": "3, 2, 1... The Satellite Launch Pad is a whole launch complex: a pad of Clean Stainless "
+        "Steel Machine Casings round a flame pit, a service tower behind it with an Input Bus for rockets in its base, "
+        "a propellant tank with an Input Hatch for rocket fuel, lightning masts, and an Energy Hatch and a "
+        "Maintenance Hatch on the pad's front edge. Keep the sky open over the pit.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over "
+        "the pad's dimension. Build the pad and watch your first satellite go up.",
         "icon": (GT_MACHINE, 25010),
         "pre": ["satellite_rocket"],
         "tasks": [("item", GT_MACHINE, 25010, 1), ("becom", "FIRST_SATELLITE")],
@@ -453,9 +456,9 @@ QUESTS = [
         "tier": "HV",
         "name": "Dish Network",
         "desc": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every "
-        "other dish in the same dimension, through the satellites overhead.%n%nIt's a 5x5 dish of Clean Stainless "
-        "Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an Energy Hatch and a "
-        "Maintenance Hatch, under open sky. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a "
+        "other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel "
+        "Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame "
+        "Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a "
         "Line Terminal. Keep up its maintenance: each problem costs it 2 dB.",
         "icon": (GT_MACHINE, 25011),
         "pre": ["five_satellites"],

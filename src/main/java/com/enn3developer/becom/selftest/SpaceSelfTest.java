@@ -30,6 +30,7 @@ import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.NetworkSavedData;
+import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
@@ -90,6 +91,11 @@ final class SpaceSelfTest {
     private static final int DISH_X = SX + 100;
     private static final int DISH_GAP = 300;
     private static final int RELAY_Z = SZ + 100;
+    // Behind a Launch Pad's controller: the flame pit's centre, the service tower's base, and how far beside the pit
+    // the propellant tank stands.
+    private static final int PAD_PIT = 3;
+    private static final int PAD_TOWER = 8;
+    private static final int PAD_TANK = 6;
     private static final int SKY_Z = SZ + 50;
     private static final int RADIO_Z = SZ + 300;
     // Far from where anyone lands on the Moon or walks the Nether, in the air.
@@ -225,14 +231,15 @@ final class SpaceSelfTest {
         for (int cx = (SX - 32) >> 4; cx <= (DISH_X + DISH_GAP + 32) >> 4; cx++) {
             for (int cz = (SZ - 32) >> 4; cz <= (RELAY_Z + 32) >> 4; cz++) t.keepLoaded(overworld, cx, cz);
         }
-        clear(overworld, SX - 8, Y - 6, SZ - 16, DISH_X + DISH_GAP + 8, Y + 8, RELAY_Z + 24);
+        clear(overworld, SX - 8, Y - 6, SZ - 16, DISH_X + DISH_GAP + 8, Y + 12, RELAY_Z + 24);
         forgetNodes(overworld, SX - 8, SZ - 16, DISH_X + DISH_GAP + 8, RELAY_Z + 24);
-        // The Launch Pad, its four hatches on its far edge.
+        // The Launch Pad: its input bus in the service tower's base, its input hatch in the propellant tank, its energy
+        // and maintenance hatches on the pad's front edge beside the controller.
         pad = multiblock(overworld, BeComMachines.launchPad, SX, Y, SZ);
-        padBus = hatch(overworld, pad, 4, -2, ItemList.Hatch_Input_Bus_HV).getBaseMetaTileEntity();
-        padHatch = (MTEHatchInput) hatch(overworld, pad, 4, -1, ItemList.Hatch_Input_HV);
-        t.power(hatch(overworld, pad, 4, 1, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
-        hatch(overworld, pad, 4, 2, ItemList.Hatch_Maintenance);
+        padBus = hatch(overworld, pad, PAD_TOWER, 0, ItemList.Hatch_Input_Bus_HV).getBaseMetaTileEntity();
+        padHatch = (MTEHatchInput) hatch(overworld, pad, PAD_PIT, tankAcross(), ItemList.Hatch_Input_HV);
+        t.power(hatch(overworld, pad, 0, 1, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
+        hatch(overworld, pad, 0, -1, ItemList.Hatch_Maintenance);
         // Two dishes 300 blocks apart, each with a Line Terminal and a Telephone in front.
         dishA = dish(DISH_X);
         dishB = dish(DISH_X + DISH_GAP);
@@ -254,10 +261,26 @@ final class SpaceSelfTest {
         return 1;
     }
 
+    /**
+     * The propellant tank's column beside the pad: the self-test asks the built pad where it stands, since which side
+     * a shape's columns run to is StructureLib's, and both are checked to hold the tank on one side only.
+     */
+    private int tankAcross() {
+        IGregTechTileEntity tile = pad.getBaseMetaTileEntity();
+        ForgeDirection back = pad.getExtendedFacing()
+            .getDirection()
+            .getOpposite();
+        ForgeDirection left = back.getRotation(ForgeDirection.UP);
+        int x = tile.getXCoord() + back.offsetX * PAD_PIT + left.offsetX * PAD_TANK;
+        int z = tile.getZCoord() + back.offsetZ * PAD_PIT + left.offsetZ * PAD_TANK;
+        return overworld.isAirBlock(x, tile.getYCoord() + 2, z) ? -PAD_TANK : PAD_TANK;
+    }
+
+    /** A dish, its energy and maintenance hatches in the plinth beside the controller. */
     private MTESatelliteDish dish(int x) {
         MTESatelliteDish dish = multiblock(overworld, BeComMachines.satelliteDish, x, Y, SZ);
-        t.power(hatch(overworld, dish, 4, -2, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
-        hatch(overworld, dish, 4, 2, ItemList.Hatch_Maintenance);
+        t.power(hatch(overworld, dish, 1, -1, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
+        hatch(overworld, dish, 1, 1, ItemList.Hatch_Maintenance);
         return dish;
     }
 
@@ -460,9 +483,11 @@ final class SpaceSelfTest {
     /** DESIGN.md 9.1, 3.2, 11.4: the pad forms, takes a rocket and fuel, and the screen counts the queue. */
     private int startLaunch() {
         t.check(
-            "the Satellite Launch Pad forms: 5 by 5 clean stainless steel casings with its four hatches (DESIGN.md 3.2)",
+            "the Satellite Launch Pad forms: pad, flame pit, service tower, lightning masts and propellant tank, with its "
+                + "four hatches (DESIGN.md 3.2)",
             pad.mMachine,
             "");
+        checkPadStandsRight();
         becom.space.set(0, 4);
         // Renamed in an anvil, as players do: its tag mustn't keep it on the pad.
         padBus
@@ -479,18 +504,68 @@ final class SpaceSelfTest {
 
     private int launchHeldAt;
 
-    /** DESIGN.md 9.1: a block over the pad during a launch holds it. */
+    /**
+     * The self-test builds and checks the pad from the same definition, so one built back to front or upside down
+     * would still form: the service tower stands behind the pad, the flame pit is open with its floor under it, and
+     * the propellant tank stands on one side only.
+     */
+    private void checkPadStandsRight() {
+        IGregTechTileEntity tile = pad.getBaseMetaTileEntity();
+        ForgeDirection back = pad.getExtendedFacing()
+            .getDirection()
+            .getOpposite();
+        ForgeDirection left = back.getRotation(ForgeDirection.UP);
+        int x = tile.getXCoord();
+        int y = tile.getYCoord();
+        int z = tile.getZCoord();
+        int across = tankAcross();
+        boolean tank = !overworld.isAirBlock(
+            x + back.offsetX * PAD_PIT + left.offsetX * across,
+            y + 2,
+            z + back.offsetZ * PAD_PIT + left.offsetZ * across)
+            && overworld.isAirBlock(
+                x + back.offsetX * PAD_PIT - left.offsetX * across,
+                y + 2,
+                z + back.offsetZ * PAD_PIT - left.offsetZ * across);
+        t.check(
+            "the pad stands with its tower behind, its flame pit open over its floor and its tank on one side",
+            !overworld.isAirBlock(x + back.offsetX * (PAD_TOWER - 1), y + 9, z + back.offsetZ * (PAD_TOWER - 1))
+                && overworld.isAirBlock(x + back.offsetX * PAD_PIT, y, z + back.offsetZ * PAD_PIT)
+                && !overworld.isAirBlock(x + back.offsetX * PAD_PIT, y - 1, z + back.offsetZ * PAD_PIT)
+                && tank,
+            "facing " + back.getOpposite());
+    }
+
+    /**
+     * A rocket standing in the pad's flame pit, found among the world's entities; null when there's none.
+     */
+    private EntityLaunchRocket rocketInPit() {
+        for (Object o : overworld.loadedEntityList) {
+            if (o instanceof EntityLaunchRocket rocket && !rocket.flying()
+                && Math.abs(rocket.posX - (SX + 0.5)) < 0.01
+                && Math.abs(rocket.posZ - (SZ + PAD_PIT + 0.5)) < 0.01
+                && !rocket.isDead) return rocket;
+        }
+        return null;
+    }
+
+    /** DESIGN.md 9.1: a block over the flame pit during a launch holds it. */
     private int coverLaunch() {
         t.check("the launch starts", pad.mMaxProgresstime > 0, "progress " + pad.mProgresstime);
+        EntityLaunchRocket standing = rocketInPit();
+        t.check(
+            "...and a rocket stands in the flame pit while it counts down",
+            standing != null && standing == pad.standingRocket() && Math.abs(standing.posY - Y) < 0.01,
+            standing == null ? "none" : "at y " + standing.posY);
         launchHeldAt = pad.mProgresstime;
-        overworld.setBlock(SX + 2, Y + 3, SZ + 1, Blocks.stone);
+        overworld.setBlock(SX + 1, Y + 3, SZ + PAD_PIT, Blocks.stone);
         return 3 * SelfTest.TICKS_PER_SECOND;
     }
 
     private int checkLaunchHeld() {
         // The pad looks at the sky once a second, so it may run on for up to a second first.
         t.check(
-            "a block over the pad during a launch holds it, and nothing launches",
+            "a block over the flame pit during a launch holds it, and nothing launches",
             pad.mMaxProgresstime > 0 && pad.mProgresstime - launchHeldAt <= SelfTest.TICKS_PER_SECOND
                 && becom.space.count(0) == 4,
             "progress " + launchHeldAt + " then " + pad.mProgresstime);
@@ -504,7 +579,8 @@ final class SpaceSelfTest {
                 + ", lit "
                 + pad.getBaseMetaTileEntity()
                     .isActive());
-        overworld.setBlockToAir(SX + 2, Y + 3, SZ + 1);
+        t.check("...its rocket still standing in the pit", rocketInPit() != null, "");
+        overworld.setBlockToAir(SX + 1, Y + 3, SZ + PAD_PIT);
         // Cleared, the launch goes on for what's left of its 30 s.
         return BeComConfig.get()
             .launchSeconds() * SelfTest.TICKS_PER_SECOND + 2 * SelfTest.TICKS_PER_SECOND;
@@ -533,19 +609,25 @@ final class SpaceSelfTest {
             "...and Five satellites, now that its dimension has 5",
             padOwner != null && BeComQuests.reportedForSelfTest(QuestTask.FIVE_SATELLITES, padOwner),
             "");
-        // A roof over one corner of the pad, and another rocket: it waits (DESIGN.md 9.1: open sky).
-        overworld.setBlock(SX - 2, Y + 3, SZ + 4, Blocks.stone);
+        // It may be out of sight already, gone once it climbed high enough: then it's dead, where it got to.
+        EntityLaunchRocket flying = pad.launchedRocket();
+        t.check(
+            "...and its rocket lifts off out of the pit and climbs",
+            flying != null && flying.flying() && flying.posY > Y + 4 && pad.standingRocket() == null,
+            flying == null ? "none lifted off" : "at y " + flying.posY + (flying.isDead ? ", out of sight" : ""));
+        // A roof over one corner of the pit, and another rocket: it waits (DESIGN.md 9.1: open sky).
+        overworld.setBlock(SX - 1, Y + 3, SZ + PAD_PIT + 1, Blocks.stone);
         padBus.setInventorySlotContents(0, new ItemStack(BeComItems.satelliteRocket, 1));
         return 8 * SelfTest.TICKS_PER_SECOND;
     }
 
     private int checkNoSkyNoLaunch() {
         t.check(
-            "without open sky over the whole pad, nothing launches",
+            "without open sky over the whole flame pit, nothing launches",
             !pad.openSky() && becom.space.count(0) == 5 && pad.rocketsWaiting() == 1 && pad.mMaxProgresstime == 0,
             "open sky " + pad.openSky() + ", satellites " + becom.space.count(0) + ", running " + pad.mMaxProgresstime);
         padBus.setInventorySlotContents(0, null);
-        overworld.setBlockToAir(SX - 2, Y + 3, SZ + 4);
+        overworld.setBlockToAir(SX - 1, Y + 3, SZ + PAD_PIT + 1);
         return 1;
     }
 
@@ -681,8 +763,25 @@ final class SpaceSelfTest {
     /** DESIGN.md 9.2: two networks far apart, each with a dish, become one. */
     private int checkDishes() {
         Tunables cfg = BeComConfig.get();
+        IGregTechTileEntity tile = dishA.getBaseMetaTileEntity();
+        ForgeDirection back = dishA.getExtendedFacing()
+            .getDirection()
+            .getOpposite();
+        // Built and checked from the same definition: the feed horn must hang over the bowl's centre, one block behind
+        // the controller, and the bowl's front rim reach out over it, or the dish was built upside down or backwards.
         t.check(
-            "the Satellite Dish forms: a 5 by 5 dish on a stand of three frame boxes (DESIGN.md 3.2)",
+            "a dish stands with its feed horn over the bowl and its rim reaching out over the controller",
+            !overworld
+                .isAirBlock(tile.getXCoord() + back.offsetX, tile.getYCoord() + 8, tile.getZCoord() + back.offsetZ)
+                && !overworld.isAirBlock(
+                    tile.getXCoord() - back.offsetX * 2,
+                    tile.getYCoord() + 5,
+                    tile.getZCoord() - back.offsetZ * 2)
+                && overworld.isAirBlock(tile.getXCoord(), tile.getYCoord() + 1, tile.getZCoord()),
+            "facing " + back.getOpposite());
+        t.check(
+            "the Satellite Dish forms: a bowl facing the sky, a feed horn on struts, a pedestal and a plinth "
+                + "(DESIGN.md 3.2)",
             dishA.mMachine && dishB.mMachine && dishA.isWorking() && dishB.isWorking(),
             "formed " + dishA.mMachine
                 + "/"
@@ -715,8 +814,8 @@ final class SpaceSelfTest {
             cfg.levelMax() - cfg.dishMaintenanceLoss(),
             becom.calls.width(dishPhoneA.number(), dishPhoneB.number()));
         dishA.fixAllIssues();
-        // A block over one corner of dish B.
-        overworld.setBlock(DISH_X + DISH_GAP - 2, Y + 3, SZ + 4, Blocks.stone);
+        // A block high over one corner of dish B's bowl.
+        overworld.setBlock(DISH_X + DISH_GAP - 2, Y + 12, SZ + 3, Blocks.stone);
         return 2 * SelfTest.TICKS_PER_SECOND;
     }
 
@@ -726,7 +825,7 @@ final class SpaceSelfTest {
             !dishB.isWorking() && becom.calls.width(dishPhoneA.number(), dishPhoneB.number()) < BeComConfig.get()
                 .levelLow(),
             "working " + dishB.isWorking());
-        overworld.setBlockToAir(DISH_X + DISH_GAP - 2, Y + 3, SZ + 4);
+        overworld.setBlockToAir(DISH_X + DISH_GAP - 2, Y + 12, SZ + 3);
         becom.space.set(
             0,
             BeComConfig.get()

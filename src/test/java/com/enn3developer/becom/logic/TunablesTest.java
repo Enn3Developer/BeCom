@@ -165,8 +165,12 @@ class TunablesTest {
 
     @Test
     void antennaMastsMustMakeSense() throws Exception {
-        refused("antennaMastMin", 0);
-        refused("antennaMastMax", 3);
+        // Shorter than its shape has room for: the guys or the lattice at the foot would run into the top.
+        refused("antennaMastMinT1", 3);
+        refused("antennaMastMinT2", 5);
+        refused("antennaMastMinT3", 6);
+        assertDoesNotThrow(with("antennaMastMinT3", 7)::validate);
+        refused("antennaMastMax", 9);
         refused("antennaMastMax", Tunables.MAX_COLUMN + 1);
     }
 

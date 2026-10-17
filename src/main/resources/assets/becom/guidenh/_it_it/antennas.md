@@ -21,15 +21,17 @@ collega alle altre antenne e porta le linee agganciate a lei.
 
 ## Costruirne una
 
-La testa d'antenna sta su un albero di 4-32 frame box, sopra una base 3 per 3 di machine casing con dentro un energy
-hatch. Più è alta la testa, più lontano vede: un albero alto su una collina copre molto più della stessa antenna in una
-valle.
+Un'antenna si costruisce come un vero albero radio. La testa sta in cima a un albero di frame box piantato su una platea
+di machine casing, con le antenne appese sotto la testa e uno shelter degli apparati davanti alla platea, dove va
+l'energy hatch. T1 e T2 sono alberi strallati, tenuti su da tre stralli di frame box che scendono ad ancoraggi di casing
+dietro e ai lati; T3 è un traliccio autoportante. Più è alta la testa, più lontano vede: un albero alto su una collina
+copre molto più della stessa antenna in una valle. L'anteprima di NEI le mostra blocco per blocco.
 
-| Antenna | Testa | Base | Albero | Corrente | Portata in campo aperto |
-| --- | --- | --- | --- | --- | --- |
-| T1 (fine LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Testa d'antenna T1</ItemImage> | LV Machine Casing | Steel Frame Box | 32 EU/t | circa 64 blocchi |
-| T2 (metà MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Testa d'antenna T2</ItemImage> | MV Machine Casing | Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
-| T3 (metà HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Testa d'antenna T3</ItemImage> | HV Machine Casing | Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
+| Antenna | Testa | Struttura | Casing | Albero | Corrente | Portata in campo aperto |
+| --- | --- | --- | --- | --- | --- | --- |
+| T1 (fine LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Testa d'antenna T1</ItemImage> | Albero strallato, un dipolo | LV Machine Casing | 6-32 Steel Frame Box | 32 EU/t | circa 64 blocchi |
+| T2 (metà MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
+| T3 (metà HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
 
 Un'antenna funziona solo se caricata e alimentata.
 

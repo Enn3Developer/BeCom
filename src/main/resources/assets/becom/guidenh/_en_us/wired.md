@@ -46,10 +46,11 @@ relay or an ME Bridge bridged onto it. A line needs a terminal at each end.
 
 ## Pylons
 
-A <ItemLink id="gregtech:gt.blockmachines:25000" showIcon="left">Pylon Head</ItemLink> sits on a column of 6 to 16 Steel
-Frame Boxes and takes 2 links. Two pylons link up to 4 times the shorter one's height apart, 24 to 64 blocks, as long as
-nothing solid is in the way. Every minute each link is looked at again, and one that something blocks goes down until
-it's clear. Plain pylons need no power and carry the line through unloaded chunks.
+A <ItemLink id="gregtech:gt.blockmachines:25000" showIcon="left">Pylon Head</ItemLink> tops a telephone pole: 6 to 16
+Wood Frame Boxes, with a crossarm of 4 more right under the head. It takes 2 links. Two pylons link up to 4 times the
+shorter one's height apart, 24 to 64 blocks, as long as nothing solid is in the way. Every minute each link is looked at
+again, and one that something blocks goes down until it's clear. Plain pylons need no power and carry the line through
+unloaded chunks.
 
 When a Pylon Head forms, it links by itself if exactly one other formed Pylon Head in range has a free slot and a clear
 line to it. Otherwise, link by hand: wrench one head, then the other. Wrench a linked pair again to unlink it. Anyone
@@ -63,9 +64,11 @@ since anyone there may join it. Without ServerUtilities, only the owner and oper
 A line loses 0.08 dB a block: it breaks up past 225 blocks from its last powered node and drops at 300.
 
 - A <ItemLink id="gregtech:gt.blockmachines:25001" showIcon="left">Repeater Head</ItemLink> is a Pylon Head that starts
-  the count again. It takes 4 EU/t of LV power from a cable on any side.
+  the count again. It takes 4 EU/t of LV power through an Energy Hatch in a
+  cabinet at the pole's foot, in front of it: one LV Machine Casing on top of the other.
 - A <ItemLink id="gregtech:gt.blockmachines:25002" showIcon="left">Router Head</ItemLink> also has 15 link slots and
-  turns lines into a network, where any phone can dial any other. It takes 16 EU/t.
+  turns lines into a network, where any phone can dial any other. It has a second crossarm two blocks below the
+  first, and its cabinet is an exchange three across. It takes 16 EU/t.
 
 Unlike a plain pylon, a Repeater or a Router works only while it's loaded and powered, and one that isn't cuts the line
 there.

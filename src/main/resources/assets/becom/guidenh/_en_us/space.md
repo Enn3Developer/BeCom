@@ -27,11 +27,14 @@ quest_ids:
 
 A <ItemLink id="becom:satellite" showIcon="left">Satellite</ItemLink> goes up on a
 <ItemLink id="becom:satellite_rocket" showIcon="left">Satellite Rocket</ItemLink>, from a
-<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Satellite Launch Pad</ItemLink>: a 5 by 5 floor of Clean
-Stainless Steel Machine Casings under open sky, with an input bus for rockets, an input hatch for rocket fuel, an energy
-hatch and a maintenance hatch. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and puts one satellite over the
-pad's dimension. Maintenance problems make it take longer, and any light-blocking block over the pad holds the launch
-until it's clear; glass doesn't.
+<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Satellite Launch Pad</ItemLink>: a launch complex of Clean
+Stainless Steel Machine Casings and Stainless Steel Frame Boxes. A 7 by 7 pad round a flame pit, the controller on its
+front edge with the energy hatch and maintenance hatch beside it; a service tower behind the pad with an input bus for
+rockets in its base and two swing arms reaching over the pad; a propellant tank beside it with an input hatch for
+rocket fuel; and lightning masts on the pad's front corners. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and
+puts one satellite over the pad's dimension. The rocket stands in the pit while the launch counts down, and lifts off
+when it ends. Maintenance problems make it take longer, and any light-blocking block over the pit holds the launch until
+it's clear; glass doesn't.
 
 Satellites come down after about 100 Minecraft days, give or take a fifth: about 33 hours of the server running.
 Sleeping through the night doesn't bring them down sooner. Keep launching. The pad's screen shows each dimension's
@@ -58,8 +61,9 @@ Nether, have none.
 
 A <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
 other dish in its dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver.
-It's a 5 by 5 dish of Clean Stainless Steel Machine Casings on a stand of three Stainless Steel Frame Boxes, with an
-energy hatch and a maintenance hatch, under open sky, on 512 EU/t. Wrench-link it to an antenna, a Pylon Head or a Line
+It's a ground station on 512 EU/t: a bowl of Clean Stainless Steel Machine Casings facing straight up, 7 across at the
+rim, with a feed horn held over it by four struts of Stainless Steel Frame Boxes, on a pedestal. The controller stands
+in a plinth at its foot, with the energy hatch and maintenance hatch beside it. It needs open sky over the whole dish. Wrench-link it to an antenna, a Pylon Head or a Line
 Terminal. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
 ## Rocket Radio Receiver

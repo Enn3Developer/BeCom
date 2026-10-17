@@ -5,9 +5,12 @@ import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import org.lwjgl.opengl.GL11;
 
+import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -27,6 +30,8 @@ public final class TelephoneRenderer implements ISimpleBlockRenderingHandler {
     /** Boxes in sixteenths, for a phone facing south: {x1, y1, z1, x2, y2, z2}. */
     private static final float[][] BODY = { { 2, 0, 3, 14, 3, 13 }, { 3, 3, 4, 13, 5, 12 } };
     private static final float[][] DIAL = { { 6, 5, 7, 10, 5.5f, 11 } };
+    private static final ForgeDirection[] HORIZONTAL = { ForgeDirection.NORTH, ForgeDirection.SOUTH,
+        ForgeDirection.WEST, ForgeDirection.EAST };
     private static final float[][] HANDSET = { { 2.5f, 5, 4.5f, 4.5f, 7, 6.5f }, { 11.5f, 5, 4.5f, 13.5f, 7, 6.5f },
         { 2.5f, 6.5f, 5, 13.5f, 7.5f, 6 } };
 
@@ -53,8 +58,14 @@ public final class TelephoneRenderer implements ISimpleBlockRenderingHandler {
         if (!BlockTelephone.isOffHook(meta)) {
             for (float[] box : HANDSET) world(renderer, phone, box, phone.handsetIcon(), facing, x, y, z);
         }
-        renderer.renderAllFaces = false;
         renderer.clearOverrideBlockTexture();
+        // Its cord: from under the body out to each Phone Cable beside it, the way the cable's own arms run.
+        for (ForgeDirection side : HORIZONTAL) {
+            if (world.getBlock(x + side.offsetX, y, z + side.offsetZ) instanceof BlockPhoneCable) {
+                PhoneCableRenderer.box(renderer, BeComBlocks.phoneCable, BlockPhoneCable.arm(side), x, y, z);
+            }
+        }
+        renderer.renderAllFaces = false;
         renderer.setRenderBounds(0, 0, 0, 1, 1, 1);
         return true;
     }

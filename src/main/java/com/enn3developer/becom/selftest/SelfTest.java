@@ -175,7 +175,6 @@ public final class SelfTest {
     private MTEPylonHead autoA;
     private MTEPylonHead autoB;
     private UUID questProbe;
-    private final Map<String, Integer> sidesAccepted = new java.util.HashMap<>();
 
     // 0.2's radio checks, in their own areas: two T1 antennas with a line bridged onto each, and the walkies that talk
     // through them; walkies and a Transceiver out of every antenna's reach; and T2, T3 and a short mast out of
@@ -254,8 +253,8 @@ public final class SelfTest {
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::formAndLink);
-        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) steps.add(() -> powerFrom(side));
-        steps.add(this::checkPower);
+        steps.add(this::checkHatchPower);
+        steps.add(this::checkRouterWithHatch);
         steps.add(this::checkStructuresAndLines);
         steps.add(this::checkWaila);
         steps.add(this::checkCall);
@@ -640,8 +639,14 @@ public final class SelfTest {
         buildLine(passive310, z, new int[] { 30, 90, 150, 210, 270 }, 310, -1);
         z += GROUP_GAP;
 
-        powerRepeater = head(BeComMachines.repeaterHead, X0, Y, z, 0);
-        powerRouter = head(BeComMachines.routerHead, X0 + 4, Y, z, 0);
+        powerRepeater = head(BeComMachines.repeaterHead, X0, Y, z, 1);
+        // Built with casings only; checkHatchPower puts a hatch in once it has seen the head refuse to form.
+        powerRouter = place(BeComMachines.routerHead, X0 + 8, Y, z);
+        // A hatch an earlier run put in its cabinet would form it before checkHatchPower looks.
+        ForgeDirection routerFront = powerRouter.getBaseMetaTileEntity()
+            .getFrontFacing();
+        world.setBlockToAir(X0 + 8 + routerFront.offsetX, Y - poleHeight(1), z + routerFront.offsetZ);
+        ((IConstructable) powerRouter).construct(BeComMachines.routerHead.getStackForm(1), false);
         z += GROUP_GAP;
 
         minPylon = head(BeComMachines.pylonHead, X0, Y, z, 1);
@@ -692,9 +697,7 @@ public final class SelfTest {
         powered.add(line.end.getBaseMetaTileEntity());
         for (int i = 0; i < heads.length; i++) {
             MTEPylonHead kind = i == repeaterAt ? BeComMachines.repeaterHead : BeComMachines.pylonHead;
-            MTEPylonHead head = head(kind, X0 + heads[i], Y, z, TALLEST_STACK);
-            line.heads.add(head);
-            if (i == repeaterAt) powered.add(head.getBaseMetaTileEntity());
+            line.heads.add(head(kind, X0 + heads[i], Y, z, TALLEST_STACK));
         }
         line.phoneStart = telephone(X0, Y, z + 2);
         world.setBlock(X0, Y, z + 1, BeComBlocks.phoneCable);
@@ -719,14 +722,38 @@ public final class SelfTest {
         return (T) ((IGregTechTileEntity) tile).getMetaTileEntity();
     }
 
-    /** Places a head and builds its frame column the way the hologram projector does. */
+    /**
+     * Places a head and builds its pole the way the hologram projector does; a Repeater or Router also gets an LV
+     * Energy Hatch in its cabinet, which the test power supply keeps full.
+     */
     private MTEPylonHead head(MTEPylonHead machine, int x, int y, int z, int stackSize) {
         MTEPylonHead head = place(machine, x, y, z);
         if (stackSize > 0) {
             ItemStack trigger = machine.getStackForm(stackSize);
             ((IConstructable) head).construct(trigger, false);
+            if (machine.nodeKind()
+                .powered()) cabinetHatch(head, poleHeight(stackSize));
         }
         return head;
+    }
+
+    /** The pole a stack of {@code stackSize} heads builds, in frames. */
+    private static int poleHeight(int stackSize) {
+        Tunables t = BeComConfig.get();
+        return Math.min(t.pylonMaxHeight(), t.pylonMinHeight() + stackSize - 1);
+    }
+
+    /** Puts an energy hatch in the cabinet's lower block in front of the pole's foot, in place of its casing. */
+    private void cabinetHatch(MTEPylonHead head, int poleHeight) {
+        IGregTechTileEntity tile = head.getBaseMetaTileEntity();
+        ForgeDirection front = tile.getFrontFacing();
+        int x = tile.getXCoord() + front.offsetX;
+        int y = tile.getYCoord() - poleHeight;
+        int z = tile.getZCoord() + front.offsetZ;
+        world.setBlockToAir(x, y, z);
+        IMetaTileEntity hatch = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
+            .getItemDamage()];
+        powered.add(place(hatch, x, y, z).getBaseMetaTileEntity());
     }
 
     private TileTelephone telephone(int x, int y, int z) {
@@ -875,27 +902,40 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 16.2: Repeater and Router heads take power straight from a cable. A GT cable hands power over with
-     * IEnergyConnected.injectEnergyUnits on the receiving machine, once a tick, and the head takes 1 A a tick in all;
-     * so this feeds one side per tick, the same call a cable makes, and counts the sides that took it.
+     * Repeater and Router heads take power through an Energy Hatch in the cabinet at their pole's foot, like any GT
+     * multiblock: the repeater has one and runs on it, the router has none and must not form until it gets one. Both
+     * must stand the way the plans have them, since the self-test builds and checks them from the same definition:
+     * the cabinet in front of the pole's foot and nothing behind it, the crossarm across the pole under the head.
      */
-    private int powerFrom(ForgeDirection side) {
-        for (MTEPylonHead head : List.of(powerRepeater, powerRouter)) {
-            IGregTechTileEntity tile = head.getBaseMetaTileEntity();
-            tile.decreaseStoredEnergyUnits(tile.getStoredEU(), true);
-            long before = tile.getStoredEU();
-            if (tile.injectEnergyUnits(side, gregtech.api.enums.GTValues.V[1], 1) > 0 && tile.getStoredEU() > before) {
-                sidesAccepted.merge(head.getMetaName(), 1, Integer::sum);
-            }
-        }
-        return 1;
+    private int checkHatchPower() {
+        IGregTechTileEntity tile = powerRepeater.getBaseMetaTileEntity();
+        ForgeDirection front = tile.getFrontFacing();
+        ForgeDirection side = front.getRotation(ForgeDirection.UP);
+        int x = tile.getXCoord();
+        int z = tile.getZCoord();
+        int foot = tile.getYCoord() - poleHeight(1);
+        check(
+            "a Repeater's cabinet stands in front of its pole's foot, and its crossarm across the pole under the head",
+            !world.isAirBlock(x + front.offsetX, foot + 1, z + front.offsetZ)
+                && world.isAirBlock(x - front.offsetX, foot, z - front.offsetZ)
+                && !world.isAirBlock(x + side.offsetX * 2, tile.getYCoord() - 1, z + side.offsetZ * 2)
+                && !world.isAirBlock(x - side.offsetX * 2, tile.getYCoord() - 1, z - side.offsetZ * 2),
+            "facing " + front);
+        check(
+            "a Repeater Head with an Energy Hatch in its cabinet forms and runs on it",
+            powerRepeater.mMachine && powerRepeater.isWorking(),
+            "formed " + powerRepeater.mMachine + ", working " + powerRepeater.isWorking());
+        check("a Router Head without an Energy Hatch doesn't form", !powerRouter.mMachine, "");
+        cabinetHatch(powerRouter, poleHeight(1));
+        powerRouter.refreshStructure();
+        return 2;
     }
 
-    private int checkPower() {
-        for (MTEPylonHead head : List.of(powerRepeater, powerRouter)) {
-            int accepted = sidesAccepted.getOrDefault(head.getMetaName(), 0);
-            check(head.getMetaName() + " takes LV power from a cable on every side", accepted == 6, accepted + " of 6");
-        }
+    private int checkRouterWithHatch() {
+        check(
+            "a Router Head forms once an Energy Hatch is in its cabinet, and runs on it",
+            powerRouter.mMachine && powerRouter.isWorking(),
+            "formed " + powerRouter.mMachine + ", working " + powerRouter.isWorking());
         return 1;
     }
 
@@ -1499,23 +1539,31 @@ public final class SelfTest {
             gregtech.api.enums.ItemList.Hatch_Energy_LV);
         antennaT2 = antenna(BeComMachines.antennaT2, X0, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_MV);
         antennaT3 = antenna(BeComMachines.antennaT3, X0 + 40, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_HV);
-        antennaShort = antenna(BeComMachines.antennaT1, X0 + 80, FORM_Z, gregtech.api.enums.ItemList.Hatch_Energy_LV);
-        // One frame short: the base moves up into the bottom frame's place.
+        antennaShort = antenna(BeComMachines.antennaT1, X0 + 80, FORM_Z, null);
+        // One frame short: the whole foot moves up into the bottom frame's place, and its hatch with it.
         int mast = BeComConfig.get()
-            .antennaMastMin();
+            .antennaMastMin(1);
         int sx = X0 + 80;
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                Block block = world.getBlock(sx + dx, Y - mast - 1, FORM_Z + dz);
-                int meta = world.getBlockMetadata(sx + dx, Y - mast - 1, FORM_Z + dz);
-                if (world.getTileEntity(sx + dx, Y - mast - 1, FORM_Z + dz) == null) {
-                    world.setBlock(sx + dx, Y - mast, FORM_Z + dz, block, meta, 3);
-                } else {
-                    world.setBlockToAir(sx + dx, Y - mast, FORM_Z + dz);
+        int ground = Y - mast - 1;
+        for (int y = ground + antennaShort.footLayers() - 1; y >= ground; y--) {
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    if (world.getTileEntity(sx + dx, y, FORM_Z + dz) != null) {
+                        world.setBlockToAir(sx + dx, y + 1, FORM_Z + dz);
+                    } else {
+                        world.setBlock(
+                            sx + dx,
+                            y + 1,
+                            FORM_Z + dz,
+                            world.getBlock(sx + dx, y, FORM_Z + dz),
+                            world.getBlockMetadata(sx + dx, y, FORM_Z + dz),
+                            3);
+                    }
+                    world.setBlockToAir(sx + dx, y, FORM_Z + dz);
                 }
-                world.setBlockToAir(sx + dx, Y - mast - 1, FORM_Z + dz);
             }
         }
+        shelterHatch(antennaShort, ground + 1, gregtech.api.enums.ItemList.Hatch_Energy_LV);
         bridgeTerminalA = place(BeComMachines.lineTerminal, X0, Y, RADIO_Z + 5);
         bridgeTerminalB = place(BeComMachines.lineTerminal, X0 + ANTENNA_GAP, Y, RADIO_Z + 5);
         powered.add(bridgeTerminalA.getBaseMetaTileEntity());
@@ -1552,18 +1600,30 @@ public final class SelfTest {
         }
     }
 
-    /** Places an antenna head, builds its shortest mast and base, and puts an energy hatch in a corner of the base. */
+    /**
+     * Places an antenna head, builds its shortest mast, its top and its foot, and puts an energy hatch in its shelter.
+     */
     private MTEAntenna antenna(MTEAntenna machine, int x, int z, gregtech.api.enums.ItemList hatch) {
         MTEAntenna head = place(machine, x, Y, z);
         ((IConstructable) head).construct(machine.getStackForm(1), false);
-        int base = Y - BeComConfig.get()
-            .antennaMastMin() - 1;
-        world.setBlockToAir(x + 1, base, z + 1);
+        if (hatch != null) shelterHatch(
+            head,
+            Y - BeComConfig.get()
+                .antennaMastMin(head.tier()) - 1,
+            hatch);
+        return head;
+    }
+
+    /** Puts an energy hatch in an antenna's shelter, at {@code ground}, in front of the mast. */
+    private void shelterHatch(MTEAntenna head, int ground, gregtech.api.enums.ItemList hatch) {
+        IGregTechTileEntity tile = head.getBaseMetaTileEntity();
+        ForgeDirection front = tile.getFrontFacing();
+        int x = tile.getXCoord() + front.offsetX * head.shelterAhead();
+        int z = tile.getZCoord() + front.offsetZ * head.shelterAhead();
+        world.setBlockToAir(x, ground, z);
         IMetaTileEntity hatchMte = GregTechAPI.METATILEENTITIES[hatch.get(1)
             .getItemDamage()];
-        IMetaTileEntity placed = place(hatchMte, x + 1, base, z + 1);
-        powered.add(placed.getBaseMetaTileEntity());
-        return head;
+        powered.add(place(hatchMte, x, ground, z).getBaseMetaTileEntity());
     }
 
     private int formRadio() {
@@ -1585,12 +1645,34 @@ public final class SelfTest {
         return SETTLE_TICKS;
     }
 
+    /**
+     * The self-test builds and checks a shape from the same definition, so one built back to front or upside down
+     * would still form: what it built must stand the way the plans have it. The shelter, two high, stands in front of
+     * the mast; the back guy's anchor, one high, three blocks behind it; the pad on the ground under the mast.
+     */
+    private void checkAntennaFacesTheRightWay(MTEAntenna antenna, int mast) {
+        IGregTechTileEntity tile = antenna.getBaseMetaTileEntity();
+        ForgeDirection front = tile.getFrontFacing();
+        int x = tile.getXCoord();
+        int z = tile.getZCoord();
+        int ground = tile.getYCoord() - mast - 1;
+        int ahead = antenna.shelterAhead() + 1;
+        check(
+            "an antenna stands with its shelter in front, its back anchor behind and its pad on the ground",
+            !world.isAirBlock(x, ground, z)
+                && !world.isAirBlock(x + front.offsetX * ahead, ground + 1, z + front.offsetZ * ahead)
+                && !world.isAirBlock(x - front.offsetX * 3, ground, z - front.offsetZ * 3)
+                && world.isAirBlock(x - front.offsetX * 3, ground + 1, z - front.offsetZ * 3),
+            "facing " + front);
+    }
+
     private int checkAntennas() {
         Tunables t = BeComConfig.get();
         for (MTEAntenna antenna : List.of(antennaA, antennaB, antennaT2, antennaT3)) {
+            int shortest = t.antennaMastMin(antenna.tier());
             check(
-                "antenna T" + antenna.tier() + " with a mast of " + t.antennaMastMin() + " forms and works",
-                antenna.mMachine && antenna.mast() == t.antennaMastMin() && antenna.isWorking(),
+                "antenna T" + antenna.tier() + " with a mast of " + shortest + " forms and works",
+                antenna.mMachine && antenna.mast() == shortest && antenna.isWorking(),
                 "formed " + antenna.mMachine + ", mast " + antenna.mast() + ", working " + antenna.isWorking());
             check(
                 "antenna T" + antenna.tier() + " has none of GT's maintenance problems for WAILA to show",
@@ -1602,10 +1684,11 @@ public final class SelfTest {
                 known != null && known.survey() != null,
                 known == null ? "unknown to the network" : "no survey yet");
         }
+        checkAntennaFacesTheRightWay(antennaA, t.antennaMastMin(1));
         antennaShort.refreshStructure();
         check(
             "an antenna one frame short of the shortest mast doesn't form",
-            !antennaShort.mMachine && antennaShort.mast() == t.antennaMastMin() - 1,
+            !antennaShort.mMachine && antennaShort.mast() == t.antennaMastMin(1) - 1,
             "formed " + antennaShort.mMachine + ", mast " + antennaShort.mast());
 
         AntennaNetwork.Link link = becom.antennas.links(0)

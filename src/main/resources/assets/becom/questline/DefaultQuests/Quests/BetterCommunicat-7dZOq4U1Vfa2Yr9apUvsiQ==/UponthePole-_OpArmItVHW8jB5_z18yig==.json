@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of 6 to 16 Steel Frame Boxes.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater at least every 225 blocks.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater at least every 225 blocks.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

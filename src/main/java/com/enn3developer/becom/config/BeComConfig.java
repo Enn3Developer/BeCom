@@ -145,7 +145,9 @@ public final class BeComConfig {
         integer(config, v, ANTENNAS, "antennaPowerT1", "EU/t an Antenna T1 draws.");
         integer(config, v, ANTENNAS, "antennaPowerT2", "EU/t an Antenna T2 draws.");
         integer(config, v, ANTENNAS, "antennaPowerT3", "EU/t an Antenna T3 draws.");
-        integer(config, v, ANTENNAS, "antennaMastMin", "Shortest antenna mast, in frame boxes.");
+        integer(config, v, ANTENNAS, "antennaMastMinT1", "Shortest Antenna T1 mast, in frame boxes.");
+        integer(config, v, ANTENNAS, "antennaMastMinT2", "Shortest Antenna T2 mast, in frame boxes.");
+        integer(config, v, ANTENNAS, "antennaMastMinT3", "Shortest Antenna T3 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMax", 1, Tunables.MAX_COLUMN, "Tallest antenna mast, in frame boxes.");
         dbl(
             config,
@@ -282,7 +284,9 @@ public final class BeComConfig {
         Map.entry("questlineRecheckSeconds", 1),
         Map.entry("surveyStep", 1),
         Map.entry("surveySeconds", 1),
-        Map.entry("antennaMastMin", 1),
+        Map.entry("antennaMastMinT1", Tunables.ANTENNA_SHORTEST_MAST[1]),
+        Map.entry("antennaMastMinT2", Tunables.ANTENNA_SHORTEST_MAST[2]),
+        Map.entry("antennaMastMinT3", Tunables.ANTENNA_SHORTEST_MAST[3]),
         Map.entry("walkieBattery", 1),
         Map.entry("analyzerRefreshSeconds", 1),
         Map.entry("phoneBattery", 1),

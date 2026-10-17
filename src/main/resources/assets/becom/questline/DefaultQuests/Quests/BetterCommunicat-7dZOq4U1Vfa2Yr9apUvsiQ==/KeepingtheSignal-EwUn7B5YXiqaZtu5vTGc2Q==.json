@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV from a cable on any side. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

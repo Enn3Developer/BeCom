@@ -21,14 +21,17 @@ antennas, and carries the lines bridged onto it.
 
 ## Building one
 
-An antenna head sits on a mast of 4 to 32 frame boxes, over a 3 by 3 base of machine casings with an energy hatch in
-it. The higher the head, the further it sees: a tall mast on a hill covers far more than the same antenna in a valley.
+An antenna is built like a real radio mast. The head tops a mast of frame boxes standing on a pad of machine casings,
+with antennas hanging under the head and an equipment shelter in front of the pad, where the energy hatch goes. T1 and
+T2 are guyed masts, held up by three guys of frame boxes running down to casing anchors at the back and sides; T3 is a
+self-supporting lattice tower. The higher the head, the further it sees: a tall mast on a hill covers far more than the
+same antenna in a valley. NEI's preview shows each one block by block.
 
-| Antenna | Head | Base | Mast | Power | Reach on open ground |
-| --- | --- | --- | --- | --- | --- |
-| T1 (late LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Antenna T1 Head</ItemImage> | LV Machine Casings | Steel Frame Boxes | 32 EU/t | about 64 blocks |
-| T2 (mid MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Antenna T2 Head</ItemImage> | MV Machine Casings | Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
-| T3 (mid HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Antenna T3 Head</ItemImage> | HV Machine Casings | Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
+| Antenna | Head | Build | Casings | Mast | Power | Reach on open ground |
+| --- | --- | --- | --- | --- | --- | --- |
+| T1 (late LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Antenna T1 Head</ItemImage> | Guyed mast, one dipole | LV Machine Casings | 6 to 32 Steel Frame Boxes | 32 EU/t | about 64 blocks |
+| T2 (mid MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
+| T3 (mid HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
 
 An antenna works only while it's loaded and powered.
 

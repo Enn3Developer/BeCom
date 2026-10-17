@@ -25,6 +25,9 @@ public class BeCom {
     public static final String MODID = "becom";
     public static final Logger LOG = LogManager.getLogger(MODID);
 
+    @Mod.Instance(MODID)
+    public static BeCom instance;
+
     @SidedProxy(clientSide = "com.enn3developer.becom.ClientProxy", serverSide = "com.enn3developer.becom.CommonProxy")
     public static CommonProxy proxy;
 

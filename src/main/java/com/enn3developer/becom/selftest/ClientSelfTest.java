@@ -16,13 +16,16 @@ import javax.imageio.ImageIO;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ScreenShotHelper;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraftforge.common.MinecraftForge;
@@ -34,14 +37,19 @@ import org.lwjgl.opengl.GL12;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.ClientVideo;
 import com.enn3developer.becom.client.RearJpeg;
 import com.enn3developer.becom.client.VideoRenderer;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.radio.RadioModel;
+import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.RearFramePacket;
 import com.enn3developer.becom.packet.VideoEquipmentPacket;
 import com.enn3developer.becom.packet.VideoPosePacket;
@@ -145,7 +153,23 @@ public final class ClientSelfTest {
         if (ticks == SETTLE_TICKS + 190) afterFrame.add(() -> screenshot("phone-video-page"));
         if (ticks == SETTLE_TICKS + 195) mc.displayGuiScreen(null);
         if (ticks == SETTLE_TICKS + 220) afterFrame.add(() -> screenshot("videophone-screen"));
-        if (ticks == SETTLE_TICKS + 240) finish(mc);
+        if (ticks == SETTLE_TICKS + 230) standRocket(mc);
+        if (ticks == SETTLE_TICKS + 270) afterFrame.add(this::checkRocketStands);
+        if (ticks == SETTLE_TICKS + 275) onServer(mc, player -> { if (serverRocket != null) serverRocket.liftOff(); });
+        if (ticks == SETTLE_TICKS + 305) afterFrame.add(this::checkRocketFlies);
+        if (ticks == SETTLE_TICKS + 315) layPhoneCord(mc);
+        if (ticks == SETTLE_TICKS + 340) afterFrame.add(() -> screenshot("phone-cord"));
+        if (ticks == SETTLE_TICKS + 345) onServer(
+            mc,
+            player -> player.inventory.mainInventory[player.inventory.currentItem] = new ItemStack(
+                BeComItems.signalAnalyzer));
+        if (ticks > SETTLE_TICKS + 350 && ticks <= SETTLE_TICKS + 390) showAnalyzerReading();
+        if (ticks == SETTLE_TICKS + 370) afterFrame.add(() -> screenshot("signal-analyzer"));
+        // Sneaking spells every loss out.
+        if (ticks == SETTLE_TICKS + 372) KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), true);
+        if (ticks == SETTLE_TICKS + 385) afterFrame.add(() -> screenshot("signal-analyzer-sneaking"));
+        if (ticks == SETTLE_TICKS + 388) KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), false);
+        if (ticks == SETTLE_TICKS + 395) finish(mc);
     }
 
     @SubscribeEvent
@@ -348,6 +372,94 @@ public final class ClientSelfTest {
             mc,
             player -> GuiFactories.playerInventory()
                 .openFromMainHand(player));
+    }
+
+    // The Launch Pad's rocket the server stood for the test, and where the client first saw it.
+    private EntityLaunchRocket serverRocket;
+    private double rocketStartY = Double.NaN;
+
+    /**
+     * A Launch Pad's rocket, stood by the server ten blocks in front of the player, who turns away from the Videophone
+     * to look at it: the entity goes through its real registration, tracking and drawing.
+     */
+    private void standRocket(Minecraft mc) {
+        log("standing a launch rocket");
+        mc.thePlayer.rotationYaw += 180;
+        mc.thePlayer.rotationPitch = -20;
+        double yaw = Math.toRadians(mc.thePlayer.rotationYaw);
+        double x = mc.thePlayer.posX - Math.sin(yaw) * 10;
+        double z = mc.thePlayer.posZ + Math.cos(yaw) * 10;
+        double y = Math.floor(mc.thePlayer.boundingBox.minY);
+        onServer(mc, player -> {
+            serverRocket = new EntityLaunchRocket(player.worldObj, x, y, z);
+            player.worldObj.spawnEntityInWorld(serverRocket);
+        });
+    }
+
+    private EntityLaunchRocket clientRocket() {
+        for (Object o : Minecraft.getMinecraft().theWorld.loadedEntityList) {
+            if (o instanceof EntityLaunchRocket rocket) return rocket;
+        }
+        return null;
+    }
+
+    private void checkRocketStands() {
+        EntityLaunchRocket rocket = clientRocket();
+        check(
+            "a Launch Pad's rocket the server stands reaches the client, standing",
+            rocket != null && !rocket.flying(),
+            rocket == null ? "none" : "flying");
+        if (rocket != null) rocketStartY = rocket.posY;
+        screenshot("rocket-standing");
+    }
+
+    private void checkRocketFlies() {
+        EntityLaunchRocket rocket = clientRocket();
+        check(
+            "...and once it lifts off the client flies it up",
+            rocket != null && rocket.flying() && rocket.posY > rocketStartY + 4,
+            rocket == null ? "none" : "at y " + rocket.posY + " from " + rocketStartY);
+        screenshot("rocket-liftoff");
+    }
+
+    /**
+     * A Telephone three blocks in front of the player, facing them, with its cord off to one side along the floor,
+     * then up the middle of a block onto a step: the cord has to meet the phone, and climb where it's joined above.
+     */
+    private void layPhoneCord(Minecraft mc) {
+        log("laying a phone cord");
+        mc.thePlayer.rotationYaw += 180;
+        mc.thePlayer.rotationPitch = 45;
+        int quarter = MathHelper.floor_double(mc.thePlayer.rotationYaw * 4.0 / 360.0 + 0.5) & 3;
+        int[][] forward = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
+        int fx = forward[quarter][0], fz = forward[quarter][1], rx = -fz, rz = fx;
+        int x = (int) Math.floor(mc.thePlayer.posX) + 3 * fx;
+        int y = (int) Math.floor(mc.thePlayer.boundingBox.minY);
+        int z = (int) Math.floor(mc.thePlayer.posZ) + 3 * fz;
+        onServer(mc, player -> {
+            World world = player.worldObj;
+            for (int i = -1; i <= 4; i++) {
+                for (int j = 0; j < 3; j++) world.setBlockToAir(x + i * rx, y + j, z + i * rz);
+            }
+            world.setBlock(x, y, z, BeComBlocks.telephone, (quarter + 2) & 3, 3);
+            world.setBlock(x + rx, y, z + rz, BeComBlocks.phoneCable);
+            world.setBlock(x + 2 * rx, y, z + 2 * rz, BeComBlocks.phoneCable);
+            world.setBlock(x + 2 * rx, y + 1, z + 2 * rz, BeComBlocks.phoneCable);
+            world.setBlock(x + 3 * rx, y, z + 3 * rz, Blocks.stone);
+            world.setBlock(x + 3 * rx, y + 1, z + 3 * rz, BeComBlocks.phoneCable);
+        });
+    }
+
+    /**
+     * A made-up Signal Analyzer reading, given every tick so the server's own reading of the flat world doesn't replace
+     * it: radios from a T1 losing to distance, terrain and cover, phones from the satellites with nothing in the way.
+     */
+    private static void showAnalyzerReading() {
+        AnalyzerOverlay.set(
+            new AnalyzerPacket(
+                AnalyzerPacket.Reading
+                    .of(231, 74, 262, 1, new RadioModel.Losses(42, 22, 6.4, 3.5, 0, 0, 0), SignalLevel.LOW),
+                AnalyzerPacket.Reading.sky(12, new RadioModel.Losses(30, 0, 0, 0, 0, 0, 0), SignalLevel.MAX)));
     }
 
     private static void onServer(Minecraft mc, Consumer<EntityPlayerMP> task) {

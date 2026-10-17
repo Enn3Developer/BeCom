@@ -26,12 +26,14 @@ import com.enn3developer.becom.client.CoverageMapDrawer;
 import com.enn3developer.becom.client.DistanceFade;
 import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
+import com.enn3developer.becom.client.RenderLaunchRocket;
 import com.enn3developer.becom.client.SignalBars;
 import com.enn3developer.becom.client.TelephoneRenderer;
 import com.enn3developer.becom.client.ToneSounds;
 import com.enn3developer.becom.client.VideoRenderer;
 import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.CallBarsPacket;
@@ -74,6 +76,7 @@ public class ClientProxy extends CommonProxy {
         BlockPhoneCable.renderId = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new TelephoneRenderer(BlockTelephone.renderId));
         RenderingRegistry.registerBlockHandler(new PhoneCableRenderer(BlockPhoneCable.renderId));
+        RenderingRegistry.registerEntityRenderingHandler(EntityLaunchRocket.class, new RenderLaunchRocket());
     }
 
     @Override
