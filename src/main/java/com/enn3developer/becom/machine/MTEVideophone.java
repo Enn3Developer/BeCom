@@ -42,10 +42,10 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Videophone (DESIGN.md 10.2, D42): an MV phone for wired networks, on a Line Terminal's Phone Cable like a
- * Telephone and counting as its one phone (D19). It's a speakerphone: everyone within its room range is in its call,
+ * The Videophone: an MV phone for wired networks, on a Line Terminal's Phone Cable like a
+ * Telephone and counting as its one phone. It's a speakerphone: everyone within its room range is in its call,
  * which plays from its loudspeaker, and its screen shows the other side to the room. Works only while loaded and
- * powered (D11): otherwise it can't be called and leaves its call.
+ * powered: otherwise it can't be called and leaves its call.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -55,7 +55,7 @@ public class MTEVideophone extends MTETieredMachineBlock {
     public static final int FORMAT = 1;
     private static final String NUMBER = "becomNumber";
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the Videophone left alone (X16).
+    // BeCom's keys from a newer BeCom: kept as they were, and the Videophone left alone.
     private NBTTagCompound tooNew;
     private int number = -1;
     private boolean working;
@@ -120,7 +120,7 @@ public class MTEVideophone extends MTETieredMachineBlock {
             z,
             tile.getFrontFacing()
                 .ordinal());
-        // It rings at the block, like a Telephone (DESIGN.md 11.2).
+        // It rings at the block, like a Telephone.
         if (!becom.calls.isRinging(number)) {
             ringTicks = 0;
         } else if (ringTicks++ % TileTelephone.RING_PERIOD_TICKS == 0) {
@@ -130,7 +130,7 @@ public class MTEVideophone extends MTETieredMachineBlock {
 
     /**
      * Claims its number again where it stands now, or takes a number of its own: on its first tick after being placed,
-     * when it lost its number, or as a copy of another Videophone (X17). The self-test calls this directly.
+     * when it lost its number, or as a copy of another Videophone. The self-test calls this directly.
      */
     public void settle() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
@@ -145,8 +145,8 @@ public class MTEVideophone extends MTETieredMachineBlock {
             number = becom.phones.registerCopy(world, pos, original)
                 .number();
         } else {
-            // GT records whoever placed it, a machine's fake player included, and a fake player never owns a phone
-            // (X6): only someone who has played on this server does. Otherwise its first user will.
+            // GT records whoever placed it, a machine's fake player included, and a fake player never owns a phone:
+            // only someone who has played on this server does. Otherwise its first user will.
             UUID placer = tile.getOwnerUuid();
             String name = placer == null ? null : UsernameCache.getLastKnownUsername(placer);
             number = becom.phones
@@ -176,7 +176,7 @@ public class MTEVideophone extends MTETieredMachineBlock {
 
     // region Screen
 
-    /** Right-click opens its phone screen: dial, answer, hang up (DESIGN.md 10.2). */
+    /** Right-click opens its phone screen: dial, answer, hang up. */
     @Override
     public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
         if (!tile.isServerSide()) return true;

@@ -16,7 +16,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
 
-/** DESIGN.md 6.3, 6.5, 7 and 12.2: surveys within budget, links on both bands, access and the team lock. */
+/** Surveys within budget, links on both bands, access and the team lock. */
 class AntennaNetworkTest {
 
     private static final int DIM = 0;
@@ -155,7 +155,7 @@ class AntennaNetworkTest {
         assertEquals(Double.NEGATIVE_INFINITY, network.access(mesh, DIM, player(10.5, 0.5), stranger)[ia]);
         assertTrue(network.access(mesh, DIM, player(10.5, 0.5), owner)[ia] >= t.levelLow());
         assertTrue(network.access(mesh, DIM, player(10.5, 0.5), teammate)[ia] >= t.levelLow());
-        // DESIGN.md 12.2: "still relays calls along its links".
+        // A locked antenna still relays calls along its links.
         assertTrue(
             mesh.vhf()
                 .linkSnr(0, 1) >= t.levelLow());

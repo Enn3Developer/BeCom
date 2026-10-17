@@ -23,8 +23,8 @@ import com.enn3developer.becom.logic.radio.Capture;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
- * State the sixteen radio groups share (DESIGN.md 13.3): the published snapshot, the capture holds, the burst-loss
- * chains, who is keyed, and the radio contacts {@code route()} noticed for the quests (DESIGN.md 15.5).
+ * State the sixteen radio groups share: the published snapshot, the capture holds, the burst-loss
+ * chains, who is keyed, and the radio contacts {@code route()} noticed for the quests.
  * <p>
  * The network thread writes the concurrent maps from {@code route()}; the server thread publishes snapshots, reads
  * who is keyed, drains contacts and removes stale entries. Nothing here blocks.
@@ -43,7 +43,8 @@ public final class RadioRouting {
     final double loudspeakerRange;
     final DoubleSupplier random;
     final LongSupplier clock;
-    // D24 twice over: each receiving device holds one speaker, and so does each player, whichever devices their audio
+    // One speaker per receiver, twice over: each receiving device holds one speaker, and so does each player, whichever
+    // devices their audio
     // reaches them through. Without the second, a player whose own walkie holds one speaker hears another through a
     // walkie or loudspeaker beside them.
     final Capture<Object> capture;
@@ -206,7 +207,7 @@ public final class RadioRouting {
      * Server thread: the level a listener hears {@code speaker} at, given the devices that could carry it to them in
      * the order {@code route()} sends through them (their own walkie, walkies around them, loudspeakers). route()
      * sends nothing through a device whose capture keeps another speaker, so the first device that would take this
-     * speaker's frame is the one they hear (DESIGN.md 13.5: that device's level). When every device is kept for now,
+     * speaker's frame is the one they hear. When every device is kept for now,
      * the first takes them once its hold runs out, which can come long before the next publish: its level.
      */
     public SignalLevel heardThrough(UUID speaker, int channel, List<Carrier> carriers) {

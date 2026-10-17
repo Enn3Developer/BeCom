@@ -17,9 +17,9 @@ import appeng.api.features.INetworkEncodable;
 import appeng.api.implementations.items.IAEItemPowerStorage;
 
 /**
- * The ME Phone (DESIGN.md 8.3, D13): late EV, linked to an ME network at a Security Terminal like a wireless terminal,
+ * The ME Phone: late EV, linked to an ME network at a Security Terminal like a wireless terminal,
  * with service only inside that network's wireless range, at Max. It runs on AE power like a wireless terminal and
- * charges in an ME charger; its battery and drain are the Mobile Phone's, in AE (X27).
+ * charges in an ME charger; its battery and drain are the Mobile Phone's, in AE.
  */
 public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, IAEItemPowerStorage {
 
@@ -60,7 +60,7 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     @Override
     public double injectAEPower(ItemStack stack, double amount) {
-        // One a newer BeCom saved keeps its charge as it was (X16): a charger keeps the power it would have lost.
+        // One a newer BeCom saved keeps its charge as it was: a charger keeps the power it would have lost.
         if (isTooNew(stack)) return amount;
         double stored = getAECurrentPower(stack);
         double taken = Math.min(amount, getAEMaxPower(stack) - stored);
@@ -101,7 +101,7 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     // endregion
 
-    // region Linking (D13)
+    // region Linking
 
     /** The ME network it's linked to, as AE2's Security Terminal wrote it: a serial, or empty. */
     @Override

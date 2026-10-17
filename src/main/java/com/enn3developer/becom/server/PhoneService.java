@@ -21,7 +21,7 @@ import com.enn3developer.becom.machine.MTEVideophone;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The world's phone registry (DESIGN.md 8.2, 14) and where block phones, Telephones and Videophones, stand. Server
+ * The world's phone registry and where block phones, Telephones and Videophones, stand. Server
  * thread only.
  */
 public final class PhoneService {
@@ -39,7 +39,7 @@ public final class PhoneService {
         return registry;
     }
 
-    /** A new number for a Telephone placed at {@code pos}; its owner is whoever placed it (DESIGN.md 12.1). */
+    /** A new number for a Telephone placed at {@code pos}; its owner is whoever placed it. */
     public PhoneRecord registerTelephone(World world, long pos, EntityPlayer placer) {
         return registerBlockPhone(
             PhoneKind.TELEPHONE,
@@ -65,7 +65,7 @@ public final class PhoneService {
     }
 
     /**
-     * A phone's owner is its first user (DESIGN.md 12.1): a phone block that has none, because a machine placed it or
+     * A phone's owner is its first user: a phone block that has none, because a machine placed it or
      * its number had to be renewed, goes to the first real player who uses it. Fake players never claim one.
      */
     public void claimIfOwnerless(int number, EntityPlayer player) {
@@ -115,7 +115,7 @@ public final class PhoneService {
     /**
      * Makes {@code tile} the home of its number again if the Telephone moved (a frame or a dolly carries its saved
      * number along without breaking it). A copy whose original still stands with the number is left alone here; it
-     * gets a number of its own on its first tick (X17). Returns whether the record now points at {@code tile}.
+     * gets a number of its own on its first tick. Returns whether the record now points at {@code tile}.
      */
     public boolean relocate(TileTelephone tile) {
         return relocate(
@@ -165,7 +165,7 @@ public final class PhoneService {
         return record;
     }
 
-    /** A number for a carried phone used for the first time: its first user owns it (DESIGN.md 12.1, D25). */
+    /** A number for a carried phone used for the first time: its first user owns it. */
     public PhoneRecord registerCarried(PhoneKind kind, EntityPlayer user) {
         PhoneRecord record = registry().create(kind, user.getUniqueID(), user.getCommandSenderName(), random);
         registry().changed();
@@ -173,7 +173,7 @@ public final class PhoneService {
     }
 
     /**
-     * A fresh number for a copy of a carried phone, as for a copied Telephone (X17): its original's owner and settings.
+     * A fresh number for a copy of a carried phone, as for a copied Telephone: its original's owner and settings.
      */
     public PhoneRecord registerCarriedCopy(PhoneRecord original) {
         PhoneRecord record = copyOf(original);

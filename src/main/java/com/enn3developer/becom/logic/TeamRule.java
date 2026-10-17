@@ -3,7 +3,7 @@ package com.enn3developer.becom.logic;
 import java.util.UUID;
 
 /**
- * Who is in an owner's team (DESIGN.md 12.1, D59): the members of the team the owner is in, its owner and moderators
+ * Who is in an owner's team: the members of the team the owner is in, its owner and moderators
  * included. Its allies aren't, and two players with no team aren't one. A player the team system doesn't know, or no
  * team system at all, leaves only the owner.
  */

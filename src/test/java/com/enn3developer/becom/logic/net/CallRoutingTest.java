@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/** How calls share the network's capacity (DESIGN.md 5.4, 5.5, 7): link rates and vertex call slots. */
+/** How calls share the network's capacity: link rates and vertex call slots. */
 class CallRoutingTest {
 
     private static final int VOICE = 2;
@@ -152,5 +152,26 @@ class CallRoutingTest {
             .route("stream1");
         assertEquals(14, route.width(), 1e-12);
         assertEquals(List.of(CallGraph.HopKind.CABLE, CallGraph.HopKind.RADIO, CallGraph.HopKind.CABLE), route.hops());
+    }
+
+    @Test
+    void dataTakesWhatCallsLeave() {
+        CallGraph graph = twoTerminals(2, 16).build();
+        CallGraph.Routing routing = graph.route(List.of(call(1, 100, 200)));
+        CallGraph.DataRoute data = routing.data(CallGraph.Entry.of(101), CallGraph.Entry.of(201), link -> 0);
+        assertTrue(data.routed());
+        // The run has 16 KB/s, the call takes 2; each phone's own cable has 16 and no call on it.
+        assertEquals(14, data.free());
+        assertTrue(
+            data.links()
+                .contains("run"));
+        assertTrue(
+            data.vertices()
+                .contains(ta));
+        // Other data already filling the rest leaves nothing, and the call keeps its share.
+        assertFalse(
+            routing.data(CallGraph.Entry.of(101), CallGraph.Entry.of(201), link -> "run".equals(link) ? 14 : 0)
+                .routed());
+        assertEquals(2, routing.used("run"));
     }
 }

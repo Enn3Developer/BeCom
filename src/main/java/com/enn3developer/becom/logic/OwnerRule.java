@@ -4,7 +4,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 
 /**
- * Who may act as an owner (DESIGN.md 12.1, 12.2, D37): the owner, their team, and operators. Something with no owner,
+ * Who may act as an owner: the owner, their team, and operators. Something with no owner,
  * like a machine placed by automation, belongs to nobody, so only operators manage it; a Telephone without one goes
  * to its first user instead (12.1).
  */

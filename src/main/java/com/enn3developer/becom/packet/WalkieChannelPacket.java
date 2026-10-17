@@ -12,7 +12,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Sneak + scroll with a walkie-talkie in hand (DESIGN.md 8.1, 11.3): one channel up or down. The only message clients
+ * Sneak + scroll with a walkie-talkie in hand: one channel up or down. The only message clients
  * send outside a screen; the server acts only on the walkie the sender holds.
  */
 public final class WalkieChannelPacket implements IMessage {

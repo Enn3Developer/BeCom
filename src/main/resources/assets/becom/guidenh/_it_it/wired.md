@@ -55,7 +55,13 @@ di un edificio. Va a 4 EU/t e serve ogni dispositivo sul suo cavo, dal più vici
 8 il <ItemLink id="gregtech:gt.blockmachines:25002" showIcon="left">Terminale di linea (MV)</ItemLink>, 16 il
 <ItemLink id="gregtech:gt.blockmachines:25013" showIcon="left">Terminale di linea (HV)</ItemLink>. I dispositivi più
 lontani restano senza linea, e uno sul cavo di due terminali prende il più vicino. Tutti dividono il suo unico
-collegamento: un traliccio, o un'antenna, una parabola, un ripetitore di portale o un ME Bridge collegati a lui.
+collegamento: un traliccio, o un'antenna, una parabola, un ripetitore di portale o un Ponte ME collegati a lui.
+
+Cliccalo col tasto destro per la sua schermata: il collegamento e quanto ne usano le chiamate, e una riga per ogni
+porta, col dispositivo, la tratta del suo cavo e cosa sta facendo. Un dispositivo che non può servire dice perché:
+nessuna porta libera, una tratta più lunga di quanto arriva il suo cavo, o un terminale più vicino. La Centrale, la
+Parabola satellitare, il Ponte ME e il Ripetitore di portale mostrano allo stesso modo chiamate e dorsale, con quel che
+non va in rosso in cima.
 
 ## Tralicci e campate
 

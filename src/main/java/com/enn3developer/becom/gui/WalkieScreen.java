@@ -18,7 +18,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 
 /**
- * The walkie-talkie's screen (DESIGN.md 11.3): its channel, 1 to 16, and its power. The server changes the stack the
+ * The walkie-talkie's screen: its channel, 1 to 16, and its power. The server changes the stack the
  * screen was opened from, and only while it's still a walkie.
  */
 public final class WalkieScreen {
@@ -126,7 +126,7 @@ public final class WalkieScreen {
             (long) item.getMaxCharge(stack));
     }
 
-    /** Server side: one channel up or down, wrapping round (DESIGN.md 8.1). */
+    /** Server side: one channel up or down, wrapping round. */
     static void step(PlayerInventoryGuiData data, int delta) {
         ItemStack stack = data.getUsedItemStack();
         if (!ItemWalkieTalkie.is(stack) || Math.abs(delta) != 1) return;
@@ -134,7 +134,7 @@ public final class WalkieScreen {
         markChanged(data.getPlayer());
     }
 
-    /** Server side: switches it on or off. A flat walkie doesn't switch on (DESIGN.md 11.3). */
+    /** Server side: switches it on or off. A flat walkie doesn't switch on. */
     static void setOn(PlayerInventoryGuiData data, boolean on) {
         ItemStack stack = data.getUsedItemStack();
         if (!ItemWalkieTalkie.is(stack)) return;

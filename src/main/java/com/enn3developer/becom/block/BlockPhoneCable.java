@@ -24,7 +24,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The cables (DESIGN.md 5.5), one block with a tier each by metadata: Phone Cable, Coaxial and Fibre. They connect
+ * The cables, one block with a tier each by metadata: Phone Cable, Coaxial and Fibre. They connect
  * devices to a Line Terminal, losslessly, each over its own reach and at its own rate, and are what pylon spans are
  * strung with. Cable joins cable of any tier, Telephones, Videophones and Line Terminals on any side. It's a thin cord
  * lying on the floor, climbing straight up the middle of its block where it joins something above; nothing bumps into

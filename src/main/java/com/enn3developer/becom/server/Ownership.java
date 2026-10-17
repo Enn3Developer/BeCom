@@ -13,7 +13,7 @@ import com.enn3developer.becom.logic.TeamRule;
 import cpw.mods.fml.common.Loader;
 
 /**
- * Who owns what (DESIGN.md 12.1): the player who placed a machine, and their team, which is ServerUtilities' (D59).
+ * Who owns what: the player who placed a machine, and their team, which is ServerUtilities'.
  * BeCom has no teams of its own. Server thread only: ServerUtilities' universe is the server thread's.
  */
 public final class Ownership {
@@ -27,7 +27,7 @@ public final class Ownership {
     private Ownership() {}
 
     /**
-     * Reads teams from ServerUtilities when it's installed (D59); called once at startup. Without it, nobody has one.
+     * Reads teams from ServerUtilities when it's installed; called once at startup. Without it, nobody has one.
      */
     public static void init() {
         if (!Loader.isModLoaded(SERVER_UTILITIES_MODID)) {

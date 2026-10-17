@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * One phone in the world's registry (DESIGN.md 8.2, 12.3): its number, owner, where a block phone stands, its
+ * One phone in the world's registry: its number, owner, where a block phone stands, its
  * settings and its recent calls. Server-thread only.
  */
 public final class PhoneRecord {
@@ -89,7 +89,7 @@ public final class PhoneRecord {
         this.hidden = hidden;
     }
 
-    /** Silent mode (DESIGN.md 11.2): a carried phone rings only for its holder, as a short buzz. */
+    /** Silent mode: a carried phone rings only for its holder, as a short buzz. */
     public boolean silent() {
         return silent;
     }

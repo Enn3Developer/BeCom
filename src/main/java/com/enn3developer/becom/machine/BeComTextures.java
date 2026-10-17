@@ -6,7 +6,7 @@ import gregtech.api.enums.Textures;
 import gregtech.api.interfaces.IIconContainer;
 
 /**
- * BeCom's front overlays, drawn over GT's own casing textures the way GT's overlays are (DESIGN.md 15.1). Registered
+ * BeCom's front overlays, drawn over GT's own casing textures the way GT's overlays are. Registered
  * with GT's icon loader, so they're stitched with GT's block atlas.
  */
 public final class BeComTextures {

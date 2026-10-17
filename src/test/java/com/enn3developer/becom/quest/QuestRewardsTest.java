@@ -12,7 +12,7 @@ import net.minecraftforge.common.util.Constants;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 15.5: a reward whose item isn't installed is left out, from a choice's options too. */
+/** A reward whose item isn't installed is left out, from a choice's options too. */
 class QuestRewardsTest {
 
     private static final Set<String> INSTALLED = Set.of("becom:walkie_talkie", "enhancedlootbags:lootbag");

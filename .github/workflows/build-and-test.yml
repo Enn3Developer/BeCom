@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ master ]
   push:
-    # Milestone branches are built and reviewed one by one before the owner merges them (DESIGN.md 16.1).
+    # Milestone branches are built and reviewed one by one before the owner merges them.
     branches: [ master, 'milestone/**' ]
   workflow_call:
 
@@ -31,7 +31,7 @@ jobs:
       - name: Checkout mod repo
         uses: actions/checkout@v5
 
-      # DESIGN.md 15.1: the Modernity style ships beside the jar, never in it. Players stack the zip above Modernity.
+      # The Modernity style ships beside the jar, never in it. Players stack the zip above Modernity.
       - name: Zip the pack
         run: cd resourcepacks/modernity && zip -r -X "$GITHUB_WORKSPACE/Modernity-GTNHAddon-BeCom.zip" pack.mcmeta assets
 
@@ -84,7 +84,7 @@ jobs:
           # Constant seed with a village at spawn
           printf 'level-seed=-6202107849386030209\nonline-mode=true\n' > run/server.properties
           printf 'level-seed=-6202107849386030209\nonline-mode=true\n' > run/server/server.properties
-          # The self-test builds what it checks, prints one line per check and stops the server (DESIGN.md 16.3).
+          # The self-test builds what it checks, prints one line per check and stops the server.
           echo "becom selftest" > run/selftest.txt
           timeout 900 ./gradlew --build-cache --info --stacktrace runServer25 2>&1 < run/selftest.txt | tee -a server.log || true
 

@@ -13,7 +13,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-/** D25 and DESIGN.md 12.3: contacts by owner name, hidden phones, block lists, do-not-disturb. */
+/** Contacts by owner name, hidden phones, block lists, do-not-disturb. */
 class PhoneRegistryTest {
 
     private final PhoneRegistry registry = new PhoneRegistry();

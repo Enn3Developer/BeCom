@@ -25,8 +25,8 @@ import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.RadioService;
 
 /**
- * {@code /becom}: the admin commands from DESIGN.md 12.3 (list and hang up calls, set a dimension's satellites), the
- * signal breakdown of DESIGN.md 6.6, and in the development environment only, the self-test (DESIGN.md 16.3).
+ * {@code /becom}: the admin commands (list and hang up calls, set a dimension's satellites, moderate the App Store),
+ * the Signal Analyzer's signal breakdown in chat, and in the development environment only, the self-test.
  */
 public final class CommandBeCom extends CommandBase {
 
@@ -65,11 +65,12 @@ public final class CommandBeCom extends CommandBase {
             case "hangup" -> hangUp(sender, becom, args);
             case "signal" -> signal(sender, becom);
             case "satellites" -> satellites(sender, becom, args);
+            case "store" -> store(sender, becom, args);
             case "selftest" -> {
                 if (!devEnvironment() || !sender.canCommandSenderUseCommand(SELFTEST_LEVEL, "becom")) {
                     throw new WrongUsageException("becom.command.usage");
                 }
-                SelfTest.run(becom, sender);
+                SelfTest.run(becom, sender, args.length > 1 && args[1].equals("apps"));
             }
             default -> throw new WrongUsageException("becom.command.usage");
         }
@@ -119,8 +120,86 @@ public final class CommandBeCom extends CommandBase {
     }
 
     /**
-     * DESIGN.md 12.3: sets how many satellites orbit over a dimension, for testing; with no numbers, lists each
-     * dimension's.
+     * Moderates the App Store: lists every app, hidden ones too, and the ones players reported; hides, shows or
+     * removes one, or writes out its source.
+     */
+    private static void store(ICommandSender sender, BeComServer becom, String[] args) {
+        com.enn3developer.becom.logic.app.AppStore store = becom.apps.store();
+        if (args.length == 1 || args.length == 2 && args[1].equals("list")) {
+            if (store.all()
+                .isEmpty()) sender.addChatMessage(new ChatComponentTranslation("becom.command.store.none"));
+            for (com.enn3developer.becom.logic.app.AppStore.Entry e : store.all()) {
+                sender.addChatMessage(
+                    new ChatComponentTranslation(
+                        e.hidden() ? "becom.command.store.entry_hidden" : "becom.command.store.entry",
+                        e.id(),
+                        e.name(),
+                        e.version(),
+                        e.authorName(),
+                        e.installs()));
+            }
+            return;
+        }
+        if (args.length == 2 && args[1].equals("reports")) {
+            if (store.reports()
+                .isEmpty()) sender.addChatMessage(new ChatComponentTranslation("becom.command.store.reports_none"));
+            for (Map.Entry<String, java.util.Set<java.util.UUID>> report : store.reports()
+                .entrySet()) {
+                com.enn3developer.becom.logic.app.AppStore.Entry e = store.get(report.getKey());
+                if (e == null) continue;
+                sender.addChatMessage(
+                    new ChatComponentTranslation(
+                        "becom.command.store.report",
+                        e.id(),
+                        e.name(),
+                        e.authorName(),
+                        report.getValue()
+                            .size()));
+            }
+            return;
+        }
+        if (args.length != 3) throw new WrongUsageException("becom.command.usage");
+        String id = args[2];
+        if (args[1].equals("source")) {
+            source(sender, store.get(id), id);
+            return;
+        }
+        boolean done = switch (args[1]) {
+            case "hide" -> becom.apps.moderate(id, true);
+            case "show" -> becom.apps.moderate(id, false);
+            case "remove" -> becom.apps.removeFromStore(id);
+            default -> throw new WrongUsageException("becom.command.usage");
+        };
+        sender.addChatMessage(
+            new ChatComponentTranslation(done ? "becom.command.store." + args[1] : "becom.command.store.unknown", id));
+    }
+
+    /** Writes an app's source to a file in the world's folder, for an operator to read before deciding on it. */
+    private static void source(ICommandSender sender, com.enn3developer.becom.logic.app.AppStore.Entry entry,
+        String id) {
+        if (entry == null || !id.matches("[a-z0-9_]+")) {
+            sender.addChatMessage(new ChatComponentTranslation("becom.command.store.unknown", id));
+            return;
+        }
+        java.io.File dir = new java.io.File(
+            net.minecraftforge.common.DimensionManager.getCurrentSaveRootDirectory(),
+            "becom-store");
+        java.io.File file = new java.io.File(dir, id + ".lua");
+        try {
+            java.nio.file.Files.createDirectories(dir.toPath());
+            java.nio.file.Files.write(
+                file.toPath(),
+                entry.source()
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            sender.addChatMessage(new ChatComponentTranslation("becom.command.store.source", id, file.getPath()));
+        } catch (java.io.IOException e) {
+            sender
+                .addChatMessage(new ChatComponentTranslation("becom.command.store.source_failed", id, e.getMessage()));
+        }
+    }
+
+    /**
+     * Sets how many satellites orbit over a dimension, for testing; with no numbers, lists each dimension's.
      */
     private static void satellites(ICommandSender sender, BeComServer becom, String[] args) {
         if (args.length == 1) {
@@ -143,7 +222,7 @@ public final class CommandBeCom extends CommandBase {
     }
 
     /**
-     * DESIGN.md 6.6: the Signal Analyzer's breakdown in chat for radios and for phones, every antenna that reaches the
+     * The Signal Analyzer's breakdown in chat for radios and for phones, every antenna that reaches the
      * sender's radio, and the satellites' sky hop on both bands where there is one.
      */
     private static void signal(ICommandSender sender, BeComServer becom) {
@@ -264,9 +343,12 @@ public final class CommandBeCom extends CommandBase {
     @Override
     @SuppressWarnings("rawtypes")
     public List addTabCompletionOptions(ICommandSender sender, String[] args) {
+        if (args.length == 2 && args[0].equals("store")) {
+            return getListOfStringsMatchingLastWord(args, "list", "reports", "hide", "show", "remove", "source");
+        }
         if (args.length != 1) return null;
         return devEnvironment()
-            ? getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "selftest")
-            : getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites");
+            ? getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "store", "selftest")
+            : getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "store");
     }
 }

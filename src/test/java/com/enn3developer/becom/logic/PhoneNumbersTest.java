@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-/** D25: every phone has a 6-digit number, unique in the world. */
+/** Every phone has a 6-digit number, unique in the world. */
 class PhoneNumbersTest {
 
     @Test

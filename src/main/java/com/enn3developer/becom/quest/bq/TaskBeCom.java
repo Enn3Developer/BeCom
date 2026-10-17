@@ -20,7 +20,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * BeCom's own BetterQuesting task (D50): done when BeCom says the thing happened, never by checking inventories. The
+ * BeCom's own BetterQuesting task: done when BeCom says the thing happened, never by checking inventories. The
  * quest file names what it waits for; a name this BeCom doesn't know (from a newer one) is kept and never completes.
  */
 public class TaskBeCom extends TaskBase {

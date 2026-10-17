@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.radio;
 
 /**
- * Terrain heights for the radio model (DESIGN.md 6.2): the highest point of the height-cache cell holding a column,
+ * Terrain heights for the radio model: the highest point of the height-cache cell holding a column,
  * or sea level where nothing was ever seen.
  */
 @FunctionalInterface

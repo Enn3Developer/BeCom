@@ -19,7 +19,7 @@ import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
-/** DESIGN.md 10.1, D41-D43: who sees whom in a video call, at which level, and where the rear camera goes. */
+/** Who sees whom in a video call, at which level, and where the rear camera goes. */
 class VideoPlanTest {
 
     private static final int MOBILE_A = 111_111;
@@ -159,7 +159,7 @@ class VideoPlanTest {
         VideoPlan.Tile low = plan(call).tilesOf(bob)
             .get(0);
         assertEquals(SignalLevel.LOW, low.level());
-        assertFalse(low.live(), "D43: at Low the picture freezes");
+        assertFalse(low.live(), "At Low the picture freezes");
         snr = 14;
         VideoPlan.Tile medium = plan(call).tilesOf(bob)
             .get(0);
@@ -225,7 +225,7 @@ class VideoPlanTest {
         assertNull(plan(call).rearSendOf(alice), "with two in the room it's three people");
     }
 
-    /** DESIGN.md 15.5: Video call completes for a viewer of live video only. */
+    /** Video call completes for a viewer of live video only. */
     @Test
     void theVideoCallTaskGoesToViewersOfLiveVideo() {
         snr = 8;

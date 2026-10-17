@@ -28,7 +28,7 @@ import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 
 /**
- * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, everyone in the call, video, and
+ * The phone screen: keypad, contacts, recent and missed calls, everyone in the call, video, and
  * settings, with the call's state on top. A Telephone and a Videophone show them as tabs. A carried phone is a phone:
  * a status bar with the time, its signal and its charge, a home screen of apps, each opening full screen, and Back and
  * Home buttons below; it adds power and silent mode, a Battery page and a Signal page. Built on both sides; the server
@@ -36,7 +36,7 @@ import com.enn3developer.becom.server.PhoneScreenActions;
  */
 public final class PhoneScreen {
 
-    // Wide enough for six tabs, and for video as large as the screen allows (D44).
+    // Wide enough for six tabs, and for video as large as the screen allows.
     private static final int WIDTH = 232;
     private static final int HEIGHT = 206;
     private static final int ROWS = 7;
@@ -69,10 +69,14 @@ public final class PhoneScreen {
     private static final int HOME_PAGE = 6;
     private static final int BATTERY_PAGE = 7;
     private static final int SIGNAL_PAGE = 8;
+    private static final int APP_PAGE = 9;
+    private static final int APPS_PAGE = 10;
+    private static final int APP_SETTINGS_PAGE = 11;
+    private static final int STORE_PAGE = 12;
+    private static final int STORE_APP_PAGE = 13;
+    private static final int OFFER_PAGE = 14;
     private static final String[] PAGE_NAMES = { "keypad", "contacts", "recent", "call", "video", "settings", "home",
-        "battery", "signal" };
-    // The home screen's apps, in order, by page.
-    private static final int[] APPS = { 0, 1, 2, 3, 4, SIGNAL_PAGE, SETTINGS_PAGE, BATTERY_PAGE };
+        "battery", "signal", "app", "apps", "app_settings", "store", "store_app", "offer" };
     private static final int APP_COLUMNS = 3;
     private static final int APP_HEIGHT = 20;
     private static final long TICKS_PER_DAY = 24_000;
@@ -147,6 +151,7 @@ public final class PhoneScreen {
         Supplier<PhoneView> view = viewSync::view;
         StringBuilder typed = new StringBuilder();
         PagedWidget.Controller tabs = new PagedWidget.Controller();
+        AppScreens.register(sync, player, tile);
         if (tile instanceof PhoneHandle.CarriedPhone) return shell(sync, view, typed, tabs, player);
 
         ModularPanel panel = new ModularPanel("becom_phone").size(WIDTH, HEIGHT);
@@ -175,7 +180,7 @@ public final class PhoneScreen {
                 .asWidget()
                 .width(WIDTH - 12 - BARS_WIDTH)
                 .height(10));
-        // The call's signal bars, or a carried phone's service (DESIGN.md 11.2), drawn only on the client.
+        // The call's signal bars, or a carried phone's service, drawn only on the client.
         statusRow.child(
             BeCom.proxy.signalBars(
                 () -> view.get()
@@ -200,8 +205,8 @@ public final class PhoneScreen {
         }
         column.child(tabRow);
         column.child(
-            pages(sync, view, typed, tabs, HEIGHT - 12 - 10 - 10 - 14 - 9)
-                // During a video call the screen opens on the video, full size (D44).
+            pages(sync, view, typed, tabs, HEIGHT - 12 - 10 - 10 - 14 - 9, null)
+                // During a video call the screen opens on the video, full size.
                 .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : 0));
         panel.child(column);
         return panel;
@@ -209,7 +214,7 @@ public final class PhoneScreen {
 
     /** The six pages every phone has, in tab order. */
     private static PagedWidget<?> pages(PanelSyncManager sync, Supplier<PhoneView> view, StringBuilder typed,
-        PagedWidget.Controller tabs, int height) {
+        PagedWidget.Controller tabs, int height, Flow settingsTop) {
         return new PagedWidget<>().controller(tabs)
             .widthRel(1f)
             .height(height)
@@ -268,7 +273,7 @@ public final class PhoneScreen {
                     view))
             .addPage(members(view))
             .addPage(video(sync, view))
-            .addPage(settings(sync, view));
+            .addPage(settings(sync, view, settingsTop));
     }
 
     // region Carried phone
@@ -314,24 +319,32 @@ public final class PhoneScreen {
             .width(side)
             .height(10));
         column.child(statusBar);
-        column.child(IKey.dynamic(() -> {
-            int page = pages.isInitialised() ? pages.getActivePageIndex() : HOME_PAGE;
-            if (page == HOME_PAGE) return "";
-            String name = StatCollector.translateToLocal("becom.phone.app." + PAGE_NAMES[page]);
-            return page == BATTERY_PAGE
-                ? StatCollector.translateToLocalFormatted("becom.phone.app.sub", app(SETTINGS_PAGE), name)
-                : name;
-        })
-            .asWidget()
-            .widthRel(1f)
-            .height(10));
+        AppScreens.Picked picked = new AppScreens.Picked();
+        column.child(
+            IKey.dynamic(() -> title(view.get(), pages, picked))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
         int pageHeight = HEIGHT - 12 - 10 - 10 - 14 - 9;
-        PagedWidget<?> screen = pages(sync, view, typed, pages, pageHeight)
-            // During a video call the screen opens on the video, full size (D44).
-            .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : HOME_PAGE);
-        screen.addPage(home(sync, view, pages, player));
+        int inner = WIDTH - 12;
+        int[] shown = { HOME_PAGE };
+        PagedWidget<?> screen = pages(sync, view, typed, pages, pageHeight, settingsLinks(pages))
+            // During a video call the screen opens on the video, full size.
+            .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : HOME_PAGE)
+            .onPageChange(page -> {
+                // Leaving an app takes it off the screen; it keeps running only in the background.
+                if (shown[0] == APP_PAGE && page != APP_PAGE) sync.callSyncedAction(AppScreens.CLOSE, buf -> {});
+                shown[0] = page;
+            });
+        screen.addPage(home(sync, view, pages, player, picked));
         screen.addPage(battery(sync, view));
         screen.addPage(signal(view));
+        screen.addPage(AppScreens.app(sync, view, picked, inner));
+        screen.addPage(AppScreens.list(view, picked, () -> pages.setPage(APP_SETTINGS_PAGE), inner));
+        screen.addPage(AppScreens.settings(sync, view, picked, () -> pages.setPage(APPS_PAGE), inner));
+        screen.addPage(AppScreens.store(sync, view, picked, () -> pages.setPage(STORE_APP_PAGE), inner));
+        screen.addPage(AppScreens.storeApp(sync, view, picked, inner));
+        screen.addPage(AppScreens.offer(sync, view, () -> pages.setPage(HOME_PAGE), inner));
         column.child(screen);
         // The phone's two hardware buttons.
         Flow buttons = Flow.row()
@@ -358,9 +371,64 @@ public final class PhoneScreen {
         return panel;
     }
 
-    /** Where Back goes from a page: Battery to Settings, everything else home. */
+    /** Where Back goes from a page: up a level in Settings and the store, everything else home. */
     private static int parent(int page) {
-        return page == BATTERY_PAGE ? SETTINGS_PAGE : HOME_PAGE;
+        return switch (page) {
+            case BATTERY_PAGE, APPS_PAGE -> SETTINGS_PAGE;
+            case APP_SETTINGS_PAGE -> APPS_PAGE;
+            case STORE_APP_PAGE -> STORE_PAGE;
+            default -> HOME_PAGE;
+        };
+    }
+
+    /** The line over a page: its app's name, and where it sits in Settings or the store. */
+    private static String title(PhoneView view, PagedWidget.Controller pages, AppScreens.Picked picked) {
+        int page = pages.isInitialised() ? pages.getActivePageIndex() : HOME_PAGE;
+        if (page == HOME_PAGE) return "";
+        String name = app(page);
+        return switch (page) {
+            case BATTERY_PAGE, APPS_PAGE -> StatCollector
+                .translateToLocalFormatted("becom.phone.app.sub", app(SETTINGS_PAGE), name);
+            case APP_PAGE -> {
+                AppsView.App a = AppScreens.installed(view, picked.app);
+                yield a == null ? "" : AppScreens.accent(a.accent()) + a.name() + " \u00a77[Lua]";
+            }
+            case APP_SETTINGS_PAGE -> {
+                AppsView.App a = AppScreens.installed(view, picked.app);
+                yield StatCollector
+                    .translateToLocalFormatted("becom.phone.app.sub", app(SETTINGS_PAGE), a == null ? "" : a.name());
+            }
+            case STORE_APP_PAGE -> {
+                AppsView.StoreApp a = AppScreens.picked(view, picked);
+                yield StatCollector
+                    .translateToLocalFormatted("becom.phone.app.sub", app(STORE_PAGE), a == null ? "" : a.name());
+            }
+            default -> name;
+        };
+    }
+
+    /** The links at the top of a carried phone's Settings: Battery and Apps. */
+    private static Flow settingsLinks(PagedWidget.Controller pages) {
+        int half = (WIDTH - 12 - 2) / 2;
+        Flow row = Flow.row()
+            .widthRel(1f)
+            .height(14)
+            .childPadding(2);
+        row.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.str(StatCollector.translateToLocal("becom.phone.app.battery") + " >"))
+                .onMousePressed(b -> {
+                    if (pages.isInitialised()) pages.setPage(BATTERY_PAGE);
+                    return true;
+                }));
+        row.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.str(StatCollector.translateToLocal("becom.phone.app.apps") + " >"))
+                .onMousePressed(b -> {
+                    if (pages.isInitialised()) pages.setPage(APPS_PAGE);
+                    return true;
+                }));
+        return row;
     }
 
     private static String app(int page) {
@@ -381,9 +449,9 @@ public final class PhoneScreen {
         };
     }
 
-    /** The home screen: the day and the number, the phone's state, answer and hang up, and the apps. */
+    /** The home screen: the day and the number, the phone's state or its last notice, answer and hang up, and apps. */
     private static ParentWidget<?> home(PanelSyncManager sync, Supplier<PhoneView> view, PagedWidget.Controller pages,
-        EntityPlayer player) {
+        EntityPlayer player, AppScreens.Picked picked) {
         Flow column = Flow.column()
             .sizeRel(1f)
             .childPadding(2);
@@ -400,11 +468,19 @@ public final class PhoneScreen {
                 .asWidget()
                 .widthRel(1f)
                 .height(10));
-        column.child(
-            IKey.dynamic(() -> status(view.get()))
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
+        column.child(IKey.dynamic(() -> {
+            PhoneView v = view.get();
+            AppsView.Notice notice = v.apps()
+                .notice();
+            if (v.state() == PhoneView.State.IDLE && !notice.app()
+                .isEmpty()) {
+                return "\u00a7e" + notice.app() + "\u00a7r " + notice.title() + " " + notice.text();
+            }
+            return status(v);
+        })
+            .asWidget()
+            .widthRel(1f)
+            .height(10));
         int half = (WIDTH - 12 - 2) / 2;
         Flow callRow = Flow.row()
             .widthRel(1f)
@@ -434,9 +510,10 @@ public final class PhoneScreen {
                     return true;
                 }));
         column.child(callRow);
+        int[] page = { 0 };
         int width = (WIDTH - 12 - 2 * (APP_COLUMNS - 1)) / APP_COLUMNS;
         Flow row = null;
-        for (int i = 0; i < APPS.length; i++) {
+        for (int i = 0; i < TILES; i++) {
             if (i % APP_COLUMNS == 0) {
                 row = Flow.row()
                     .widthRel(1f)
@@ -444,16 +521,82 @@ public final class PhoneScreen {
                     .childPadding(2);
                 column.child(row);
             }
-            int page = APPS[i];
+            int slot = i;
+            java.util.function.IntSupplier tile = () -> {
+                List<Integer> all = tiles(view.get());
+                int index = page[0] * TILES + slot;
+                return index < all.size() ? all.get(index) : NO_TILE;
+            };
             row.child(
                 new ButtonWidget<>().size(width, APP_HEIGHT)
-                    .overlay(IKey.lang("becom.phone.app." + PAGE_NAMES[page]))
+                    .overlay(
+                        BeCom.proxy.appIcon(
+                            () -> tileIcon(view.get(), tile.getAsInt()),
+                            IKey.dynamic(() -> tileName(view.get(), tile.getAsInt()))))
+                    .setEnabledIf(w -> tile.getAsInt() != NO_TILE)
                     .onMousePressed(button -> {
-                        if (pages.isInitialised()) pages.setPage(page);
+                        int t = tile.getAsInt();
+                        if (t == NO_TILE || !pages.isInitialised()) return true;
+                        if (t == OFFER_TILE) pages.setPage(OFFER_PAGE);
+                        else if (t >= 0) pages.setPage(t);
+                        else {
+                            List<AppsView.App> apps = view.get()
+                                .apps()
+                                .installed();
+                            int index = -1 - t;
+                            if (index < apps.size()) {
+                                picked.app = apps.get(index)
+                                    .id();
+                                sync.callSyncedAction(AppScreens.OPEN, buf -> AppScreens.write(buf, picked.app));
+                                pages.setPage(APP_PAGE);
+                            }
+                        }
                         return true;
                     }));
         }
+        column.child(pager(page, () -> tiles(view.get()).size(), TILES));
         return column;
+    }
+
+    // A home screen tile: a built-in app's page, OFFER_TILE, or -1 - i for the i-th Lua app.
+    private static final int NO_TILE = Integer.MIN_VALUE;
+    private static final int OFFER_TILE = Integer.MIN_VALUE + 1;
+    private static final int TILES = 12;
+    private static final int[] BUILT_IN = { 0, 1, 2, 3, 4, SIGNAL_PAGE, SETTINGS_PAGE, STORE_PAGE };
+
+    private static List<Integer> tiles(PhoneView view) {
+        List<Integer> tiles = new java.util.ArrayList<>();
+        if (view.apps()
+            .offer()
+            .any()) tiles.add(OFFER_TILE);
+        for (int page : BUILT_IN) tiles.add(page);
+        int count = view.apps()
+            .installed()
+            .size();
+        for (int i = 0; i < count; i++) tiles.add(-1 - i);
+        return tiles;
+    }
+
+    /** A Lua app's tile shows its icon; the built-in ones have none. */
+    private static String tileIcon(PhoneView view, int tile) {
+        if (tile == NO_TILE || tile == OFFER_TILE || tile >= 0) return "";
+        List<AppsView.App> apps = view.apps()
+            .installed();
+        int index = -1 - tile;
+        return index < apps.size() ? apps.get(index)
+            .icon() : "";
+    }
+
+    private static String tileName(PhoneView view, int tile) {
+        if (tile == NO_TILE) return "";
+        if (tile == OFFER_TILE) return "\u00a7e" + StatCollector.translateToLocal("becom.apps.offer_tile");
+        if (tile >= 0) return app(tile);
+        List<AppsView.App> apps = view.apps()
+            .installed();
+        int index = -1 - tile;
+        if (index >= apps.size()) return "";
+        AppsView.App a = apps.get(index);
+        return AppScreens.accent(a.accent()) + a.name();
     }
 
     /** Settings › Battery: the charge, how long it lasts, where it went today, and the saver and warnings. */
@@ -544,7 +687,7 @@ public final class PhoneScreen {
     }
 
     /** EU as the battery page writes it: 744k, 1.2M. */
-    private static String eu(long eu) {
+    static String eu(long eu) {
         if (eu >= 1_000_000) return String.format(java.util.Locale.ROOT, "%.1fM", eu / 1_000_000.0);
         if (eu >= 1_000) return eu / 1_000 + "k";
         return String.valueOf(eu);
@@ -671,7 +814,7 @@ public final class PhoneScreen {
         Flow actions = Flow.row()
             .coverChildren()
             .childPadding(2);
-        // During a call, the same button adds the number to it (DESIGN.md 8.2: group calls).
+        // During a call, the same button adds the number to it.
         actions.child(
             new ButtonWidget<>().size(54, 14)
                 .overlay(
@@ -706,8 +849,9 @@ public final class PhoneScreen {
     }
 
     /**
-     * A paged list: each row dials its number; for the phone's owner, a second button blocks whoever the row stands for
-     * (X9). The server decides who that is from the row, so the client only names the row.
+     * A paged list: each row dials its number; for the phone's owner, a second button blocks whoever the row stands
+     * for.
+     * The server decides who that is from the row, so the client only names the row.
      */
     private static ParentWidget<?> rows(PanelSyncManager sync, IntSupplier size, IntFunction<String> label,
         IntFunction<Integer> number, BiConsumer<Integer, Integer> block, Supplier<PhoneView> view) {
@@ -755,7 +899,7 @@ public final class PhoneScreen {
         return column;
     }
 
-    private static Flow pager(int[] page, IntSupplier size, int rows) {
+    static Flow pager(int[] page, IntSupplier size, int rows) {
         Flow pager = Flow.row()
             .coverChildren()
             .childPadding(4);
@@ -784,7 +928,7 @@ public final class PhoneScreen {
         return pager;
     }
 
-    /** Everyone else in the call (DESIGN.md 11.2): who, at what level, or still ringing. */
+    /** Everyone else in the call: who, at what level, or still ringing. */
     private static ParentWidget<?> members(Supplier<PhoneView> view) {
         Flow column = Flow.column()
             .sizeRel(1f)
@@ -822,7 +966,7 @@ public final class PhoneScreen {
     }
 
     /**
-     * The other side full size, and this player's camera switches (DESIGN.md 11.2, D44): each camera on or off, and
+     * The other side full size, and this player's camera switches: each camera on or off, and
      * the corner window shown or hidden. The window is the client's own choice; the cameras are the server's.
      */
     private static ParentWidget<?> video(PanelSyncManager sync, Supplier<PhoneView> view) {
@@ -883,10 +1027,11 @@ public final class PhoneScreen {
         return column;
     }
 
-    private static ParentWidget<?> settings(PanelSyncManager sync, Supplier<PhoneView> view) {
+    private static ParentWidget<?> settings(PanelSyncManager sync, Supplier<PhoneView> view, Flow top) {
         Flow column = Flow.column()
             .sizeRel(1f)
             .childPadding(2);
+        if (top != null) column.child(top);
         int half = (WIDTH - 12 - 2) / 2;
         Flow firstRow = Flow.row()
             .widthRel(1f)
@@ -909,7 +1054,7 @@ public final class PhoneScreen {
                     .hidden(),
                 view).width(half));
         column.child(firstRow);
-        // A carried phone's own switches: power for whoever carries it, silent mode for its owner (DESIGN.md 11.2).
+        // A carried phone's own switches: power for whoever carries it, silent mode for its owner.
         Flow secondRow = Flow.row()
             .widthRel(1f)
             .height(14)

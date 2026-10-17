@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 10: call states, one call at a time, ringing, levels per direction, drops and session grace. */
+/** Call states, one call at a time, ringing, levels per direction, drops and session grace. */
 class CallBookTest {
 
     private static final int PHONE_A = 111_111;
@@ -189,7 +189,7 @@ class CallBookTest {
     void levelsArePerDirectionCappedAndHysteretic() {
         Call call = connect();
         book.evaluate(2000, quality);
-        // 18 dB is High, but a Telephone caps it at Low (D10).
+        // 18 dB is High, but a Telephone caps it at Low.
         assertEquals(SignalLevel.LOW, call.level(alice, bob));
         assertEquals(SignalLevel.LOW, call.level(bob, alice));
         assertEquals(SignalLevel.LOW, levels.get(alice + ">" + bob));
@@ -279,7 +279,7 @@ class CallBookTest {
     @Test
     void aRingingCallEndsOnceItsPathHasBeenGoneForTheGrace() {
         assertEquals(CallBook.DialResult.RINGING, book.dial(alice, PHONE_A, PHONE_B, 0, CallBook.Check.OK));
-        // Below Low, a ringing call gets the same 3 s of grace a connected one does (DESIGN.md 4.2).
+        // Below Low, a ringing call gets the same 3 s of grace a connected one does.
         snr = 3;
         book.evaluate(1000, quality);
         book.evaluate(4000, quality);

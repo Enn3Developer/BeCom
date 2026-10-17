@@ -60,12 +60,12 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * An antenna, T1 to T3 (DESIGN.md 7, 3.2): the head on top of a mast of frame boxes, built like a real radio mast. T1
+ * An antenna, T1 to T3: the head on top of a mast of frame boxes, built like a real radio mast. T1
  * and T2 are guyed masts, held by three guys of frame boxes down to casing anchors; T3 is a self-supporting lattice
  * tower. Dipoles or panel antennas hang under the head, and an equipment shelter in front of the mast's pad holds the
  * Energy Hatch. None of it changes what the antenna reaches, which goes by the top of the head. While formed and
  * powered it reports to the antenna network every tick, which surveys it and links it to other antennas; it also
- * bridges wired lines it's wrench-linked to (X19).
+ * bridges wired lines it's wrench-linked to.
  * <p>
  * Like the Pylon Head, it isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick,
  * and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
@@ -123,7 +123,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     public static final int FORMAT = 1;
 
     private final int tier;
-    // BeCom's keys from a newer BeCom: kept as they were, and the antenna left alone (X16).
+    // BeCom's keys from a newer BeCom: kept as they were, and the antenna left alone.
     private NBTTagCompound tooNew;
     private int mast;
     private boolean working;
@@ -145,7 +145,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         return new MTEAntenna(mName, tier);
     }
 
-    /** Its mast's frame boxes (DESIGN.md 3.2): steel, aluminium, stainless steel. */
+    /** Its mast's frame boxes: steel, aluminium, stainless steel. */
     static Materials frameOf(int tier) {
         return switch (tier) {
             case 1 -> Materials.Steel;
@@ -154,7 +154,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         };
     }
 
-    /** Its base's machine casings (DESIGN.md 3.2): LV, MV, HV. */
+    /** Its base's machine casings: LV, MV, HV. */
     static Casings casingOf(int tier) {
         return switch (tier) {
             case 1 -> Casings.LVMachineCasing;
@@ -368,7 +368,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     }
 
     /**
-     * Where it transmits from (DESIGN.md 6.1): the top of the head, how far below the surface that is, and the top of
+     * Where it transmits from: the top of the head, how far below the surface that is, and the top of
      * its casings, the ground it stands on.
      */
     public RadioHops.End head() {
@@ -385,7 +385,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     /** Runs the structure check now and tells the networks; the self-test calls this directly. */
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        // Left alone: no node, no formed state, no bridges written for it here (X16).
+        // Left alone: no node, no formed state, no bridges written for it here.
         if (tooNew != null) return false;
         checkStructure(true, tile);
         BeComServer becom = BeComServer.get();

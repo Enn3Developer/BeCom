@@ -72,7 +72,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 import micdoodle8.mods.galacticraft.core.util.FluidUtil;
 
 /**
- * The Satellite Launch Pad (DESIGN.md 9.1, 3.2, D16, D40): a late-HV launch complex of clean stainless steel casings
+ * The Satellite Launch Pad: a late-HV launch complex of clean stainless steel casings
  * and
  * stainless steel frame boxes. A 7 by 7 pad with a flame pit in the middle, the controller on its front edge; a service
  * tower behind it with two swing arms reaching over the pad; lightning masts on its front corners; a propellant tank
@@ -231,7 +231,7 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     }
 
     /**
-     * Whether the flame pit sees the sky, in a dimension that has one (DESIGN.md 9.1): the rocket's way up. The tower's
+     * Whether the flame pit sees the sky, in a dimension that has one: the rocket's way up. The tower's
      * swing arms hang over the back of the pad, never over the pit.
      */
     public boolean openSky() {
@@ -293,7 +293,7 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     // Whether the sky over the pad was open at the last look, taken once a second while a launch runs.
     private boolean skyOpen = true;
 
-    /** A launch holds while anything covers the pad, drawing no power, and goes on once it's clear (DESIGN.md 9.1). */
+    /** A launch holds while anything covers the pad, drawing no power, and goes on once it's clear. */
     @Override
     public boolean onRunningTick(ItemStack stack) {
         if (getBaseMetaTileEntity().getTimer() % TICKS_PER_SECOND == 0) skyOpen = openSky();
@@ -358,13 +358,13 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         super.onBlockDestroyed();
     }
 
-    // A launch draws its power whatever the maintenance; its problems cost time instead (DESIGN.md 9.1).
+    // A launch draws its power whatever the maintenance; its problems cost time instead.
     @Override
     protected long getActualEnergyUsage() {
         return -mEUt;
     }
 
-    /** The rocket has gone up: one more satellite over this dimension, and the owner's quest tasks (DESIGN.md 15.5). */
+    /** The rocket has gone up: one more satellite over this dimension, and the owner's quest tasks. */
     @Override
     protected void outputAfterRecipe() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
@@ -395,7 +395,7 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
 
     // region Screen
 
-    /** The Satellite Rockets in its input buses, waiting to launch (DESIGN.md 11.4). */
+    /** The Satellite Rockets in its input buses, waiting to launch. */
     public int rocketsWaiting() {
         int rockets = 0;
         for (ItemStack stack : getStoredInputs()) {

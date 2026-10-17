@@ -10,7 +10,7 @@ import net.minecraft.world.chunk.Chunk;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** DESIGN.md 6.2 and 14.2: cells from heightmaps, saved per region, rebuilt when unreadable, never unbounded. */
+/** Cells from heightmaps, saved per region, rebuilt when unreadable, never unbounded. */
 class HeightCacheTest {
 
     private static Chunk chunk(int cx, int cz, int height) {

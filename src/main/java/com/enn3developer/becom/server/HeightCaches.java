@@ -12,7 +12,7 @@ import net.minecraftforge.common.DimensionManager;
 import com.enn3developer.becom.logic.radio.Terrain;
 
 /**
- * Every loaded dimension's height cache (DESIGN.md 6.2): filled from chunks as they load and save, written next to the
+ * Every loaded dimension's height cache: filled from chunks as they load and save, written next to the
  * dimension's own saves when the world saves. Server thread only.
  */
 public final class HeightCaches {

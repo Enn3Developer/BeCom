@@ -68,10 +68,11 @@ public class CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(events);
-        // Session listeners outlive voice server restarts, so this is added once (DESIGN.md 13.2).
+        // Session listeners outlive voice server restarts, so this is added once.
         GtnhVoiceApi.addSessionListener(new VoiceSessions());
         BeComQuests.init();
         Ownership.init();
+        com.enn3developer.becom.apps.PhoneOs.init();
         // By name, so the class and WAILA's API load only if WAILA is there to call it. GT covers BeCom's machines.
         FMLInterModComms.sendMessage("Waila", "register", "com.enn3developer.becom.block.WailaTelephone.register");
     }
@@ -81,7 +82,7 @@ public class CommonProxy {
     }
 
     public void serverAboutToStart(FMLServerAboutToStartEvent event) {
-        // A server acts on its own config file (DESIGN.md 14.2); a client in this JVM had the defaults or a server's.
+        // A server acts on its own config file; a client in this JVM had the defaults or a server's.
         String problem = BeComConfig.fileProblem();
         if (problem != null) refuseWorld("config: " + problem);
         BeComConfig.useFileValues();
@@ -93,7 +94,7 @@ public class CommonProxy {
         try {
             BeComServer.start();
         } catch (IllegalStateException e) {
-            // Saved data BeCom won't overwrite (DESIGN.md 14.2).
+            // Saved data BeCom won't overwrite.
             refuseWorld(e.getMessage());
         }
         event.registerServerCommand(new CommandBeCom());
@@ -158,23 +159,22 @@ public class CommonProxy {
 
     public void onRearFrame(RearFramePacket packet) {}
 
-    /** Whether this client is transmitting on that walkie, for its TX light (DESIGN.md 11.3); never on a server. */
+    /** Whether this client is transmitting on that walkie, for its TX light; never on a server. */
     public boolean isTransmittingOn(ItemStack stack) {
         return false;
     }
 
-    /** Signal bars for a screen (DESIGN.md 11.2); nothing to draw on a server. */
+    /** Signal bars for a screen; nothing to draw on a server. */
     public IDrawable signalBars(Supplier<SignalLevel> level) {
         return IDrawable.EMPTY;
     }
 
-    /** An antenna's coverage map for its screen, drawn only on the client (DESIGN.md 6.6). */
+    /** An antenna's coverage map for its screen, drawn only on the client. */
     public IDrawable coverageMap(Supplier<byte[]> map, Supplier<SignalLevel> cap) {
         return IDrawable.EMPTY;
     }
 
-    /** The coverage map's colour key, Low up to {@code cap}. */
-    /** The other side of this player's video call, full size, for the phone screen (D44); nothing on a server. */
+    /** The other side of this player's video call, full size, for the phone screen; nothing on a server. */
     public IDrawable videoView(BooleanSupplier capable) {
         return IDrawable.EMPTY;
     }
@@ -184,18 +184,32 @@ public class CommonProxy {
         return false;
     }
 
-    /** Whether the corner video window shows (D44): the client's own choice. */
+    /** Whether the corner video window shows: the client's own choice. */
     public boolean videoWindowShown() {
         return true;
     }
 
     public void setVideoWindowShown(boolean shown) {}
 
-    /** Whether this client can capture its rear camera; it needs framebuffers (DESIGN.md 16.2's fallback). */
+    /**
+     * Whether this client can capture its rear camera; it needs framebuffers, else the fallback draws straight into the
+     * window.
+     */
     public boolean rearCameraWorks() {
         return true;
     }
 
+    /** {@code beside}, after a Lua app's icon when it has one; just {@code beside} on a server. */
+    public IDrawable appIcon(Supplier<String> icon, IDrawable beside) {
+        return beside;
+    }
+
+    /** This client's world time, the world's total time, for how old a screen's data is; 0 on a server. */
+    public long worldTime() {
+        return 0;
+    }
+
+    /** The coverage map's colour key, Low up to {@code cap}. */
     public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
         return IDrawable.EMPTY;
     }

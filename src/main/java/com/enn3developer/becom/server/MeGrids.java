@@ -6,7 +6,7 @@ import java.util.WeakHashMap;
 import appeng.api.networking.IGrid;
 
 /**
- * Ids for the ME networks calls cross (DESIGN.md 8.3): the call graph sees each ME network as one vertex, named by
+ * Ids for the ME networks calls cross: the call graph sees each ME network as one vertex, named by
  * its grid while that grid lives. A grid AE2 merges or splits away is a new grid, and gets a new id. Server thread
  * only.
  */

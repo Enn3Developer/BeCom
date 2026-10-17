@@ -14,7 +14,7 @@ import serverutils.lib.data.TeamType;
 import serverutils.lib.data.Universe;
 
 /**
- * ServerUtilities' teams (D59), the one class that touches ServerUtilities: {@code Ownership} loads it by name, and
+ * ServerUtilities' teams, the one class that touches ServerUtilities: {@code Ownership} loads it by name, and
  * only when ServerUtilities is installed. Server thread only: ServerUtilities' universe is the server thread's.
  */
 public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
@@ -31,7 +31,7 @@ public final class ServerUtilitiesTeams implements TeamRule.Teams<ForgeTeam> {
     @Override
     public boolean isTeam(ForgeTeam team) {
         // Not the "no team" every player without one is in. Nor, on a dedicated server, the "singleplayer" team a world
-        // first played alone keeps: ServerUtilities makes every player its moderator, so anyone may join it (X46).
+        // first played alone keeps: ServerUtilities makes every player its moderator, so anyone may join it.
         return team.isValid() && !(team.type == TeamType.SERVER && SINGLE_PLAYER_TEAM.equals(team.getId())
             && !team.universe.server.isSinglePlayer());
     }

@@ -20,7 +20,7 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 
 /**
- * One dimension's network (DESIGN.md 14): every node with its position, owner and links, and which links a clearance
+ * One dimension's network: every node with its position, owner and links, and which links a clearance
  * check found blocked. Saved in the dimension's own data folder.
  */
 public final class NetworkSavedData extends WorldSavedData {

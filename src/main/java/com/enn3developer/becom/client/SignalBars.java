@@ -8,7 +8,7 @@ import com.enn3developer.becom.logic.SignalLevel;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * Signal bars next to the hotbar while the player is in a call or holds a phone (DESIGN.md 11.2): one bar per level,
+ * Signal bars next to the hotbar while the player is in a call or holds a phone: one bar per level,
  * Low to Max, lit up to the level they hear the call at, or else to the service of the phone they carry, none lit when
  * it has none.
  */

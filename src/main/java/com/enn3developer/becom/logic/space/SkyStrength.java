@@ -5,11 +5,11 @@ import com.enn3developer.becom.logic.radio.Band;
 import com.enn3developer.becom.logic.radio.RadioModel;
 
 /**
- * How strong the satellites over a dimension make its sky hops (DESIGN.md 9.1). With {@code n} satellites in orbit, at
+ * How strong the satellites over a dimension make its sky hops. With {@code n} satellites in orbit, at
  * least as many as Low needs, the SNR is {@code Low + (Max - Low) * log10(n / nLow) / log10(nMax / nLow)}. With
- * DESIGN.md's numbers that's {@code 6 + 18 * log10(n / 5) / log10(20)}: Low at 5, Medium at 14, High at 37 and Max at
- * 100. More than Max's count add nothing (X38). A sky hop then loses its ground end's cover and the weather (DESIGN.md
- * 6.1).
+ * the default numbers that's {@code 6 + 18 * log10(n / 5) / log10(20)}: Low at 5, Medium at 14, High at 37 and Max at
+ * 100. More than Max's count add nothing. A sky hop then loses its ground end's cover and the weather.
+ * 
  */
 public final class SkyStrength {
 
@@ -41,8 +41,8 @@ public final class SkyStrength {
     }
 
     /**
-     * The SNR of a sky hop with nothing in its way; negative infinity with too few satellites. It stops at Max's count
-     * (X38): "100 for maximum", and underground the hop stays gone however many go up (DESIGN.md 9.1).
+     * The SNR of a sky hop with nothing in its way; negative infinity with too few satellites. It stops at Max's count:
+     * "100 for maximum", and underground the hop stays gone however many go up.
      */
     public double snr(int satellites) {
         if (!enough(satellites)) return Double.NEGATIVE_INFINITY;
@@ -60,7 +60,7 @@ public final class SkyStrength {
     }
 
     /**
-     * The same hop term by term, for the Signal Analyzer (DESIGN.md 6.6): the satellites' SNR as its budget, its
+     * The same hop term by term, for the Signal Analyzer: the satellites' SNR as its budget, its
      * cover and the weather; null with too few satellites.
      */
     public RadioModel.Losses losses(int satellites, double depth, Band band, double weather) {

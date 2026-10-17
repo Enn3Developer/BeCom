@@ -24,13 +24,13 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
 /**
- * This client's side of its video call (DESIGN.md 10.1, 11.2): what the server says it sees, each person's latest
+ * This client's side of its video call: what the server says it sees, each person's latest
  * poses, profile and equipment, and the rear pictures coming in. Everything here is touched on the client thread
  * only: packets are handed over there, and pictures are decoded on a worker and handed back.
  */
 public final class ClientVideo {
 
-    /** How many frames of blocky glitches show after frames were lost (DESIGN.md 10.1: dropouts). */
+    /** How many frames of blocky glitches show after frames were lost. */
     static final int GLITCH_FRAMES = 3;
 
     /** One person this player sees. */
@@ -67,7 +67,7 @@ public final class ClientVideo {
     private static VideoStatePacket.State state = VideoStatePacket.State.NONE;
     private static final Map<UUID, Feed> FEEDS = new HashMap<>();
     private static boolean windowShown = true;
-    // Decoding and encoding pictures stays off the render thread (DESIGN.md 10.1).
+    // Decoding and encoding pictures stays off the render thread.
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r, "BeCom video");
         thread.setDaemon(true);
@@ -159,7 +159,7 @@ public final class ClientVideo {
         }
         feed.profile = profile;
         feed.name = packet.name();
-        // A new body, so the skin loads from the new profile (DESIGN.md 16.2: the owner checks it does).
+        // A new body, so the skin loads from the new profile.
         feed.entity = null;
     }
 

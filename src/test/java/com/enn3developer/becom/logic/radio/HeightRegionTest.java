@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 6.2: 4 x 4 cells per chunk, the highest point in each, 16 KB per 32 x 32-chunk region. */
+/** The height cache: 4 x 4 cells per chunk, the highest point in each, 16 KB per 32 x 32-chunk region. */
 class HeightRegionTest {
 
     @Test

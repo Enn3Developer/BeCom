@@ -6,7 +6,7 @@ import java.util.Locale;
 import net.minecraftforge.common.config.Configuration;
 
 /**
- * BeCom's client config (DESIGN.md 14.2): what a player chooses for their own screen, in a file of its own beside the
+ * BeCom's client config: what a player chooses for their own screen, in a file of its own beside the
  * server's. The keys live in Minecraft's controls screen; this holds which corner the video window sits in.
  */
 public final class ClientConfig {

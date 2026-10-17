@@ -3,7 +3,7 @@ package com.enn3developer.becom.logic.call;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
 /**
- * Which row a call leaves in a phone's recent calls about another phone of the same call (DESIGN.md 11.2). A phone
+ * Which row a call leaves in a phone's recent calls about another phone of the same call. A phone
  * records the phones it rang and the ones that rang it, as outgoing, incoming or missed, and in a group call also
  * every other phone it was in the call with at the same time, as incoming. Nothing for a phone it never talked with
  * and had no part in ringing.

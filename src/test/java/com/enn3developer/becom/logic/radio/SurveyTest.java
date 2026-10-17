@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 6.3: 64 bearings, 4-block steps, a whole profile per bearing. */
+/** A survey: 64 bearings, 4-block steps, a whole profile per bearing. */
 class SurveyTest {
 
     @Test

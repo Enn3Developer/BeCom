@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 9.4 and 9.5: the portals a relay works at, and the dimensions a pair joins. */
+/** The portals a relay works at, and the dimensions a pair joins. */
 class PortalsTest {
 
     private static final String OVERWORLD = "net.minecraft.world.WorldProviderSurface";
@@ -40,7 +40,7 @@ class PortalsTest {
 
     @Test
     void everyOtherPairIsRefused() {
-        // DESIGN.md 9.5: the Deep Dark and the rest have no link in v1, and planets go through satellites.
+        // The Deep Dark and the rest have no link in v1, and planets go through satellites.
         assertNull(Portals.pairKind(0, OVERWORLD, -100, DEEP_DARK));
         assertNull(Portals.pairKind(0, OVERWORLD, -28, MOON));
         // Both ends in the Overworld, or neither.
@@ -51,7 +51,7 @@ class PortalsTest {
 
     @Test
     void aNetherPairStandsWhereOnePortalLeads() {
-        // DESIGN.md 9.4: on opposite sides of a portal. The Nether's coordinates are an eighth of the Overworld's, and
+        // On opposite sides of a portal. The Nether's coordinates are an eighth of the Overworld's, and
         // Minecraft looks for the far portal within 128 blocks of where that puts you.
         assertTrue(Portals.sameLink(Portals.Kind.NETHER, 1, 800, 800, 8, 100, 100, 4));
         assertTrue(Portals.sameLink(Portals.Kind.NETHER, 8, 100, 100, 1, 800, 800, 4));
@@ -124,7 +124,7 @@ class PortalsTest {
 
     @Test
     void reachIsASphereOfTheDistance() {
-        // DESIGN.md 9.4: within 4 blocks.
+        // Within 4 blocks.
         assertTrue(Portals.inReach(4, 0, 0, 4));
         assertTrue(Portals.inReach(2, 2, 2, 4));
         assertFalse(Portals.inReach(3, 3, 0, 4));

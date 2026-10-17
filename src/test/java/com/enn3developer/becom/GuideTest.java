@@ -28,7 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.enn3developer.becom.machine.BeComMachines;
 
 /**
- * DESIGN.md 15.4 and 15.5: the guide's pages, in English and Italian, and each quest pointing to its page. A quest's
+ * The guide's pages, in English and Italian, and each quest pointing to its page. A quest's
  * [guide] link must name a page of its own language under that page's title, and the page must list the quest back,
  * which is how GuideNH opens it from the quest book.
  */
@@ -118,6 +118,9 @@ class GuideTest {
         String name = id.substring("becom:".length());
         // A tiered item names its tier by its damage: phone_cable:1 is Coaxial, switching_rack:2 the HV rack.
         int colon = name.indexOf(':');
+        if (colon >= 0 && name.startsWith("becom_card:")) return "item.becom."
+            + com.enn3developer.becom.item.ItemBecomCard.nameOf(Integer.parseInt(name.substring(colon + 1)))
+            + ".name";
         if (colon >= 0) {
             com.enn3developer.becom.logic.net.CableTier tier = com.enn3developer.becom.logic.net.CableTier
                 .byOrdinal(Integer.parseInt(name.substring(colon + 1)));

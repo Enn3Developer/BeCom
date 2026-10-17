@@ -49,6 +49,7 @@ public final class BeComServer {
     public final LinkService links;
     public final PhoneService phones;
     public final CallService calls;
+    public final com.enn3developer.becom.apps.AppService apps;
     public final VideoService video;
     public final RadioService radio;
     public final CarriedPhones carried;
@@ -99,8 +100,8 @@ public final class BeComServer {
                 .nextDouble());
         this.radio = new RadioService(server, tunables, antennas, heights, space);
         this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
-        // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
-        // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2
+        // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range;
+        // ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2
         // checks the range in the holder's dimension, so that's the part of the network it joins. Out of range it is
         // a Mobile Phone, with a Mobile Phone's signal.
         CarriedPhones.Access mobile = carried.accessOf(PhoneKind.MOBILE);
@@ -114,12 +115,13 @@ public final class BeComServer {
         });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
         this.video = new VideoService(calls, tunables);
+        this.apps = new com.enn3developer.becom.apps.AppService(server, tunables, phones, carried, calls, network);
         carried.setWatching(
             id -> video.plan()
                 .sees(id));
     }
 
-    /** Whether rain or snow falls at a column, so the weather can cost a link there (DESIGN.md 6.1, D26). */
+    /** Whether rain or snow falls at a column, so the weather can cost a link there. */
     public static boolean rains(World world, int x, int z) {
         BiomeGenBase biome = world.getBiomeGenForCoords(x, z);
         return biome.canSpawnLightningBolt() || biome.getEnableSnow();
@@ -143,9 +145,9 @@ public final class BeComServer {
     }
 
     /**
-     * Starts BeCom for a server whose worlds have loaded (DESIGN.md 13.1): GTNH Voice forgets every group when its
+     * Starts BeCom for a server whose worlds have loaded: GTNH Voice forgets every group when its
      * server stops, so the groups are registered again on every start. Loading the phone registry and the satellites
-     * here stops the server early if a newer BeCom saved them (DESIGN.md 14.2).
+     * here stops the server early if a newer BeCom saved them.
      */
     public static void start() {
         BeComServer becom = mine();
@@ -153,6 +155,7 @@ public final class BeComServer {
         for (WorldServer world : DimensionManager.getWorlds()) becom.network.worldLoaded(world);
         becom.phones.attach(GlobalSavedData.get(DimensionManager.getWorld(0)));
         becom.space.attach(SatelliteSavedData.get(DimensionManager.getWorld(0)));
+        becom.apps.attach(com.enn3developer.becom.data.AppsSavedData.get(DimensionManager.getWorld(0)));
         GtnhVoiceApi.groupManager()
             .registerGroup(becom.calls.group());
         becom.radio.start();
@@ -167,6 +170,7 @@ public final class BeComServer {
         if (becom == null) return;
         LATER.clear();
         stopping = becom;
+        becom.apps.stopAll();
         becom.calls.stop();
         becom.video.stop();
         becom.radio.stop();
@@ -202,7 +206,7 @@ public final class BeComServer {
         heights.tick();
         space.tick();
         rockets.tick();
-        // DESIGN.md 6.5: surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
+        // Surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
         // share it: up to half for them, the rest for surveys.
         long budget = (long) (tunables.surveyBudgetMillis() * 1_000_000);
         long start = System.nanoTime();
@@ -210,6 +214,7 @@ public final class BeComServer {
         antennas.tick(Math.max(0, budget - (System.nanoTime() - start)), System::nanoTime);
         carried.tick();
         calls.tick();
+        apps.tick();
         video.tick();
         radio.tick();
         if (network.currentTick() % 20 == 0) links.expire();

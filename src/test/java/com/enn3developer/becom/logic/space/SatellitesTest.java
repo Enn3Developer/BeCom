@@ -67,7 +67,7 @@ class SatellitesTest {
 
     @Test
     void lifetimesSpreadAroundTheirDays() {
-        // DESIGN.md 9.1: 100 days, give or take 20%.
+        // 100 days, give or take 20%.
         assertEquals(80 * Satellites.DAY_TICKS, Satellites.lifetime(100, 0.2, 0));
         assertEquals(100 * Satellites.DAY_TICKS, Satellites.lifetime(100, 0.2, 0.5));
         assertTrue(Satellites.lifetime(100, 0.2, 0.999999) < 120 * Satellites.DAY_TICKS);

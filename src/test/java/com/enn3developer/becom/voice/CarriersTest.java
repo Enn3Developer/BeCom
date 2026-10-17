@@ -17,7 +17,7 @@ import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
  * A radio publish tells each listener the level they hear each speaker at, through the devices route() would send
- * through (DESIGN.md 13.5). Found from the devices out, those devices and their order must be what a look at every
+ * through. Found from the devices out, those devices and their order must be what a look at every
  * walkie and loudspeaker for every listener finds.
  */
 class CarriersTest {

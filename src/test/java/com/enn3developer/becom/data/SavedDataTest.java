@@ -26,7 +26,7 @@ import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
-/** DESIGN.md 14.2: saved data carries a format version, and data newer than BeCom understands is never overwritten. */
+/** Saved data carries a format version, and data newer than BeCom understands is never overwritten. */
 class SavedDataTest {
 
     private static NetworkSavedData networkWith(long a, long b, UUID owner) {
@@ -70,7 +70,7 @@ class SavedDataTest {
 
     @Test
     void aPortalRelaysPartnerRoundTrips() {
-        // DESIGN.md 9.4: each end of a pair keeps its partner, in the other dimension, with its own network.
+        // Each end of a pair keeps its partner, in the other dimension, with its own network.
         long relay = BlockPos.pack(10, 64, -20);
         long other = BlockPos.pack(1, 40, -3);
         NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
@@ -162,7 +162,7 @@ class SavedDataTest {
 
     @Test
     void anUnknownNodeKindMeansANewerBeComSavedIt() {
-        // DESIGN.md 14.2: data a newer BeCom wrote is kept untouched and never saved over, not partly dropped.
+        // Data a newer BeCom wrote is kept untouched and never saved over, not partly dropped.
         NBTTagCompound nbt = new NBTTagCompound();
         NBTTagList nodes = new NBTTagList();
         nodes.appendTag(node(BlockPos.pack(0, 64, 0), NodeKind.PYLON));

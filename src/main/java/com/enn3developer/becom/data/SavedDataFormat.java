@@ -3,7 +3,7 @@ package com.enn3developer.becom.data;
 import net.minecraft.nbt.NBTTagCompound;
 
 /**
- * The format version every piece of BeCom saved data carries (DESIGN.md 14.2). Older data is upgraded as it loads;
+ * The format version every piece of BeCom saved data carries. Older data is upgraded as it loads;
  * data newer than this BeCom understands is left untouched on disk and stops the server.
  * <p>
  * The check can't throw from {@code readFromNBT}: vanilla's {@code MapStorage.loadData} catches it, keeps the

@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.phone;
 
 /**
- * The Telephone's handset cord (DESIGN.md 5.6, X10): how far a player is from the phone, as the gap between the phone's
+ * The Telephone's handset cord: how far a player is from the phone, as the gap between the phone's
  * block and the player's body. Measuring to the body rather than the feet keeps a phone on a desk, or on a shelf at
  * head height, as easy to hold as one on the floor.
  */

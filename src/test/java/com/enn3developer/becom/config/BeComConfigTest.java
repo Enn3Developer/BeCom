@@ -14,7 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 14.2: a server acts on its config file; a client never does, so a bad file can't stop it starting. */
+/** A server acts on its config file; a client never does, so a bad file can't stop it starting. */
 class BeComConfigTest {
 
     @BeforeAll

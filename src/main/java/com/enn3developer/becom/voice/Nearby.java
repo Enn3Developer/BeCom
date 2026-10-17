@@ -10,8 +10,8 @@ import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
  * One frame's players by dimension and 16-block cell, so a device finds the players around it without looking at
- * everyone: with every listener's walkie playing around it (D21), that was one look per listener per player, for every
- * frame (DESIGN.md 6.5). Built from the frame's own position snapshot, on the thread that routes it, and on the server
+ * everyone: with every listener's walkie playing around it, that was one look per listener per player, for every
+ * frame. Built from the frame's own position snapshot, on the thread that routes it, and on the server
  * thread from the online players when a radio publish works out who hears whom. A player whose position isn't finite
  * is in no cell, so nobody finds them, where NaN would have put them in the cell at the world's origin.
  */

@@ -4,11 +4,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * One region of the height cache (DESIGN.md 6.2): 32 x 32 chunks of 4 x 4 cells each, one byte per cell holding the
+ * One region of the height cache: 32 x 32 chunks of 4 x 4 cells each, one byte per cell holding the
  * highest point of the chunk's heightmap in that cell. A zero byte means "never seen", read as sea level.
  * <p>
  * On disk a region is a short header (magic and format version) and the 16 KB of cells. The cache is only a cache:
- * a file with any other header is thrown away and rebuilt as chunks load (DESIGN.md 14.2).
+ * a file with any other header is thrown away and rebuilt as chunks load.
  */
 public final class HeightRegion {
 

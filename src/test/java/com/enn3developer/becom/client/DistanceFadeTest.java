@@ -13,7 +13,7 @@ import com.enn3developer.gtnhvoice.api.client.IPlaybackFrame;
 import com.enn3developer.gtnhvoice.api.client.VoiceFormat;
 
 /**
- * DESIGN.md 13.5: a walkie's or loudspeaker's frames fade to silence at its range, each over its own range, and nothing
+ * A walkie's or loudspeaker's frames fade to silence at its range, each over its own range, and nothing
  * else changes.
  */
 class DistanceFadeTest {

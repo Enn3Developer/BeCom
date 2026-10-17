@@ -17,7 +17,7 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
 
 /**
- * World-wide data kept with the Overworld (DESIGN.md 14): the phone number registry. Lives in the shared map storage,
+ * World-wide data kept with the Overworld: the phone number registry. Lives in the shared map storage,
  * which every dimension of a world sees.
  */
 public final class GlobalSavedData extends WorldSavedData {
@@ -97,11 +97,11 @@ public final class GlobalSavedData extends WorldSavedData {
         }
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
         // Phone kinds and history directions are added without a format bump: one this BeCom doesn't know means a newer
-        // BeCom saved the file. Dropping those phones would free their numbers for reuse (D12), so keep it untouched.
+        // BeCom saved the file. Dropping those phones would free their numbers for reuse, so keep it untouched.
         java.util.Set<Integer> numbers = new java.util.HashSet<>();
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound phone = list.getCompoundTagAt(i);
-            // Numbers are six digits and unique (D12, DESIGN.md 14.2): anything else is damage, not a newer BeCom.
+            // Numbers are six digits and unique: anything else is damage, not a newer BeCom.
             int number = phone.getInteger("number");
             if (!PhoneNumbers.isValid(number) || !numbers.add(number)) {
                 notUnderstood(nbt, "a phone number that is invalid or repeated, " + number);

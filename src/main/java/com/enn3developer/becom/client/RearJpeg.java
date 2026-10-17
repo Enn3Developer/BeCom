@@ -17,7 +17,7 @@ import javax.imageio.stream.MemoryCacheImageOutputStream;
 import com.enn3developer.becom.logic.Tunables;
 
 /**
- * The rear camera's pictures as JPEG (DESIGN.md 10.1): compressed small enough for the server's size cap, trying lower
+ * The rear camera's pictures as JPEG: compressed small enough for the server's size cap, trying lower
  * qualities until one fits, and read back for showing. Runs on the video worker, never the render thread.
  */
 public final class RearJpeg {

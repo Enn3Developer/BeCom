@@ -13,7 +13,7 @@ import com.enn3developer.becom.logic.DropTimer;
 import com.enn3developer.becom.logic.SignalLevel;
 
 /**
- * One call (DESIGN.md 8.2, 10): the phones in it, who is on each, and the level of every direction between them. A
+ * One call: the phones in it, who is on each, and the level of every direction between them. A
  * call starts with a caller and one phone ringing; once connected, anyone in it can add more phones, up to the group
  * call size, and phones leave one by one until fewer than two are left. Server-thread only; the routing thread sees
  * calls only through the routing snapshot.
@@ -302,7 +302,7 @@ public final class Call {
         }
     }
 
-    /** One way between two phones of the call (DESIGN.md 10: levels are per direction). */
+    /** One way between two phones of the call. */
     public record Direction(int speaker, int listener) {}
 
     static final class LinkState {

@@ -14,7 +14,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * DESIGN.md 15.5: who First call, Mobile call, ME Bridge call and Call between dimensions complete for as a call
+ * Who First call, Mobile call, ME Bridge call and Call between dimensions complete for as a call
  * connects.
  */
 class CallQuestsTest {

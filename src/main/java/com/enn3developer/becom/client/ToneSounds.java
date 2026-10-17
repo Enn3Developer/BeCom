@@ -9,7 +9,7 @@ import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.packet.TonePacket;
 
 /**
- * Plays the handset's call tones to this player only (DESIGN.md 10, 15.2): dial tone, ringback and busy loop until
+ * Plays the handset's call tones to this player only: dial tone, ringback and busy loop until
  * the next tone replaces them; the unreachable tones and the hang-up click play once.
  */
 public final class ToneSounds {

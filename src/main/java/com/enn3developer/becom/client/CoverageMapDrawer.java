@@ -8,7 +8,7 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.radio.Coverage;
 
 /**
- * Draws an antenna's coverage map (DESIGN.md 6.6, 11.4): one square per cell, north up, coloured by the level a
+ * Draws an antenna's coverage map: one square per cell, north up, coloured by the level a
  * player standing there would get, the antenna marked in the middle.
  */
 public final class CoverageMapDrawer {

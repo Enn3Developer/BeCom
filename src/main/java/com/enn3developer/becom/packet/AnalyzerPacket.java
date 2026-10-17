@@ -10,8 +10,8 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A Signal Analyzer reading (DESIGN.md 6.6, 11.4) on each band: radios on VHF, phones on UHF, where weather counts
- * (D26). Sent once a refresh period while the player holds an analyzer. What serves the player best is an antenna or
+ * A Signal Analyzer reading on each band: radios on VHF, phones on UHF, where weather counts.
+ * Sent once a refresh period while the player holds an analyzer. What serves the player best is an antenna or
  * the satellites over their dimension (9.1).
  */
 public final class AnalyzerPacket implements IMessage {
@@ -42,7 +42,7 @@ public final class AnalyzerPacket implements IMessage {
                 level);
         }
 
-        /** The satellites serving the player: {@code satellites} of them, and the hop's terms (DESIGN.md 9.1). */
+        /** The satellites serving the player: {@code satellites} of them, and the hop's terms. */
         public static Reading sky(int satellites, RadioModel.Losses losses, SignalLevel level) {
             return new Reading(
                 true,

@@ -20,9 +20,9 @@ import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 
 /**
- * {@code becom:call} (DESIGN.md 13.1, 13.3): carries every call's voice, flat, to the others in the call, minus those
+ * {@code becom:call}: carries every call's voice, flat, to the others in the call, minus those
  * who hear the speaker directly and frames the dropout model eats. A Videophone at the other end plays it from its
- * loudspeaker instead, positional from the block, to everyone around it (DESIGN.md 10.2). Flat routes go first: GTNH
+ * loudspeaker instead, positional from the block, to everyone around it. Flat routes go first: GTNH
  * Voice keeps the first send per player, so someone in the call on their own phone never also hears a loudspeaker.
  * <p>
  * {@link #route} runs on GTNH Voice's network thread. It reads the volatile snapshot, the routing context and its own
@@ -65,7 +65,7 @@ public final class CallGroup implements IGroup {
         return DISPLAY_NAME;
     }
 
-    /** Each client translates the group's name into its own player's language (DESIGN.md 15.3). */
+    /** Each client translates the group's name into its own player's language. */
     @Override
     public IChatComponent getDisplayComponent() {
         return new ChatComponentTranslation("becom.group.call");
@@ -123,7 +123,7 @@ public final class CallGroup implements IGroup {
 
     /**
      * Positional from a Videophone to everyone within its loudspeaker's range, minus the speaker and whoever hears
-     * them directly (D17). Sending stops at the range, where each client's fade reaches silence
+     * them directly. Sending stops at the range, where each client's fade reaches silence
      * ({@link com.enn3developer.becom.logic.SpeakerFade}).
      */
     private static void playFrom(RoutingContext context, UUID speaker, PlayerSnapshot from, double direct,

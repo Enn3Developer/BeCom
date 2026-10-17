@@ -9,7 +9,7 @@ import com.enn3developer.gtnhvoice.api.client.IPlaybackFrame;
 import com.enn3developer.gtnhvoice.api.client.VoiceFormat;
 
 /**
- * How loud each person is talking, for the front camera's talking animation (DESIGN.md 10.1, 13.5): a stage at the
+ * How loud each person is talking, for the front camera's talking animation: a stage at the
  * head of BeCom's playback chain, one instance per source, that measures every frame's loudness and passes every
  * sample through unchanged. It sees every voice this player hears, whichever group brings it, so someone standing
  * close by still talks on screen. Frames are measured on GTNH Voice's decode threads, read on the render thread.

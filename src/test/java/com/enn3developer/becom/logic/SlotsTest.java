@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 6.5: once-a-second work, one tick of the second for each thing. */
+/** Once-a-second work, one tick of the second for each thing. */
 class SlotsTest {
 
     @Test

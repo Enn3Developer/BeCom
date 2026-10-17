@@ -13,7 +13,7 @@ import java.util.UUID;
 import com.enn3developer.becom.logic.PhoneNumbers;
 
 /**
- * Every phone in the world, by number (D12: numbers are unique per world). Server-thread only; the owner of the
+ * Every phone in the world, by number. Server-thread only; the owner of the
  * registry saves it whenever {@link #version()} moves.
  */
 public final class PhoneRegistry {
@@ -63,12 +63,12 @@ public final class PhoneRegistry {
         version++;
     }
 
-    /** One line of a dialer's contacts list (D25). */
+    /** One line of a dialer's contacts list. */
     public record Contact(int number, String ownerName) {}
 
     /**
      * The contacts {@code caller} sees from {@code ownNumber}: every phone in {@code reachable} except its own, ones
-     * hidden from contacts, and ones whose block list has the caller (DESIGN.md 12.3). Sorted by owner name, then
+     * hidden from contacts, and ones whose block list has the caller. Sorted by owner name, then
      * number.
      */
     public List<Contact> contacts(UUID caller, int ownNumber, Collection<Integer> reachable) {
@@ -76,7 +76,8 @@ public final class PhoneRegistry {
         for (int number : reachable) {
             if (number == ownNumber) continue;
             PhoneRecord record = phones.get(number);
-            if (record == null || record.hidden() || record.blocks(caller)) continue;
+            if (record == null || record.hidden() || record.blocks(caller) || record.kind() == PhoneKind.COMPUTER)
+                continue;
             contacts.add(new Contact(number, record.ownerName()));
         }
         contacts.sort(

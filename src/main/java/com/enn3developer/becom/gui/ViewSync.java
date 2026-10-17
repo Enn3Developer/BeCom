@@ -14,7 +14,7 @@ import io.netty.buffer.Unpooled;
 
 /**
  * Sends a screen's view from server to client whenever its bytes change. One way only: the client acts through synced
- * actions the server checks (DESIGN.md 14: client input).
+ * actions the server checks.
  */
 public final class ViewSync<T> extends SyncHandler<ViewSync<T>> {
 

@@ -22,7 +22,7 @@ import com.enn3developer.becom.packet.AnalyzerPacket;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * The Signal Analyzer's overlay (DESIGN.md 6.6, 11.4, D35): while the player holds one, the server's latest reading in
+ * The Signal Analyzer's overlay: while the player holds one, the server's latest reading in
  * the top-left corner. At a glance, a line a band: signal bars, the SNR and the biggest loss. Sneaking, every term of
  * each band, a bar each: what the link starts with, what each loss takes off it, and what's left.
  */

@@ -15,7 +15,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * What a person in a video call holds and wears (DESIGN.md 10.1: the front camera shows their held item and armor),
+ * What a person in a video call holds and wears,
  * sent to those who see them when it changes: the held item first, then boots, leggings, chestplate and helmet.
  */
 public final class VideoEquipmentPacket implements IMessage {

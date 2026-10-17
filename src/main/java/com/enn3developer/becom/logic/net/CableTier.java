@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * The three cables (DESIGN.md 5.5): Phone Cable, Coaxial and Fibre, one per voltage tier from LV. Wire is digital: a
+ * The three cables: Phone Cable, Coaxial and Fibre, one per voltage tier from LV. Wire is digital: a
  * cable carries its data rate the whole of its reach and nothing past it, whatever the weather. The ordinal is the
  * cable block's metadata and the saved and wire format, so constants can be added but never reordered.
  */

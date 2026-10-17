@@ -18,7 +18,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * Switching Racks (DESIGN.md 5.4): LV, MV and HV, one per cable tier by damage. An Exchange switches as many calls at
+ * Switching Racks: LV, MV and HV, one per cable tier by damage. An Exchange switches as many calls at
  * once as the racks in its input buses add up to. They do nothing in the hand.
  */
 public class ItemSwitchingRack extends Item {

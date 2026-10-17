@@ -13,7 +13,7 @@ import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.Tunables;
 
 /**
- * The rear camera's pictures on their way through the server (DESIGN.md 10.1, 14): each sender's are held to the
+ * The rear camera's pictures on their way through the server: each sender's are held to the
  * per-client byte and rate caps, then go on to each viewer their rear camera reaches, as often as that viewer's level
  * allows and when the dropout chain lets them through. A picture is never looked into. Pure, so it's tested without a
  * world. Server thread only.

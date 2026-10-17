@@ -10,12 +10,17 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentTranslation;
 
+import com.enn3developer.becom.apps.AppService;
+import com.enn3developer.becom.gui.AppsView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.app.AppManifest;
+import com.enn3developer.becom.logic.app.AppStore;
+import com.enn3developer.becom.logic.app.PhoneApps;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
@@ -27,7 +32,7 @@ import com.enn3developer.becom.logic.phone.PhoneRegistry;
 import com.enn3developer.becom.logic.video.VideoPlan;
 
 /**
- * What the phone screen may do, checked on the server (DESIGN.md 14: client input). Every action re-checks that the
+ * What the phone screen may do, checked on the server. Every action re-checks that the
  * player can use the phone, at a Telephone or a Videophone or carrying the phone, and is allowed to do it, whatever
  * their client sent.
  */
@@ -39,7 +44,7 @@ public final class PhoneScreenActions {
         BeComServer becom = BeComServer.get();
         int number = handle.number();
         // A phone the player can't use shows nothing: one renumbered in their hands as a copy was another's, and its
-        // calls are private (DESIGN.md 12.2).
+        // calls are private.
         if (becom == null || number < 0 || !handle.usableBy(player)) return PhoneView.EMPTY;
         PhoneRecord record = becom.phones.record(number);
         if (record == null) return PhoneView.EMPTY;
@@ -47,7 +52,7 @@ public final class PhoneScreenActions {
         Call call = becom.calls.book()
             .callOfPhone(number);
         Call.Leg own = call == null ? null : call.legOf(number);
-        // Calls are private to the people in them (DESIGN.md 12.2): anyone else at a Telephone or a Videophone in a
+        // Calls are private to the people in them: anyone else at a Telephone or a Videophone in a
         // call sees only that it's in use.
         boolean outsider = own != null && own.state() == Call.Leg.State.ACTIVE
             && !call.participants()
@@ -57,7 +62,7 @@ public final class PhoneScreenActions {
         if (outsider) {
             state = PhoneView.State.IN_USE;
         } else if (own != null && own.state() == Call.Leg.State.RINGING) {
-            // A ringing phone shows who calls, as its notice does (DESIGN.md 11.2), and none of the rest of the call.
+            // A ringing phone shows who calls, as its notice does, and none of the rest of the call.
             state = PhoneView.State.RINGING_IN;
             Call.Leg ringer = call.legOf(own.invitedBy());
             if (ringer == null && !call.activeLegs()
@@ -75,7 +80,7 @@ public final class PhoneScreenActions {
                 SignalLevel level = talking ? call.level(leg, own) : SignalLevel.NONE;
                 if (leg.speakerphone() && !leg.players()
                     .isEmpty()) {
-                    // Everyone in a Videophone's room is in the call, each by name (DESIGN.md 11.2).
+                    // Everyone in a Videophone's room is in the call, each by name.
                     String owner = becom.phones.name(leg.phone());
                     for (UUID inRoom : leg.players()) {
                         members.add(new PhoneView.Member(leg.phone(), becom.calls.nameOf(inRoom, owner), level, false));
@@ -102,7 +107,7 @@ public final class PhoneScreenActions {
             .contacts(player.getUniqueID(), number, becom.calls.reachableFrom(number))) {
             contacts.add(new PhoneView.Contact(contact.number(), contact.ownerName()));
         }
-        // Calls are private to the people in them (DESIGN.md 12.2): a phone's history is for its owner and their team.
+        // Calls are private to the people in them: a phone's history is for its owner and their team.
         List<PhoneView.Recent> recent = new ArrayList<>();
         if (manage) {
             for (PhoneRecord.HistoryEntry entry : record.history()) {
@@ -140,7 +145,138 @@ public final class PhoneScreenActions {
             offline,
             videoOf(becom, player, record, call, own),
             stack == null ? PhoneView.Battery.NONE : batteryOf(becom, number, stack),
-            carried ? viaOf(becom, number) : PhoneView.Via.NONE);
+            carried ? viaOf(becom, number) : PhoneView.Via.NONE,
+            carried && manage ? appsOf(becom, number) : AppsView.NONE);
+    }
+
+    private record CachedApps(long version, AppsView view) {}
+
+    // Each open phone's apps view, built again only when the apps' version moves: the view is asked for every tick,
+    // and building it measures and searches every app's source.
+    private static final Map<Integer, CachedApps> APPS_VIEWS = new java.util.LinkedHashMap<>(16, 0.75f, true) {
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Integer, CachedApps> eldest) {
+            return size() > 64;
+        }
+    };
+
+    /** A carried phone's apps, for its owner: installed, the open one, an offer, the last notice and the store. */
+    private static AppsView appsOf(BeComServer becom, int number) {
+        long version = becom.apps.version();
+        CachedApps cached = APPS_VIEWS.get(number);
+        if (cached != null && cached.version() == version) return cached.view();
+        AppsView view = buildApps(becom, number);
+        APPS_VIEWS.put(number, new CachedApps(version, view));
+        return view;
+    }
+
+    private static AppsView buildApps(BeComServer becom, int number) {
+        AppService apps = becom.apps;
+        List<AppsView.App> installed = new ArrayList<>();
+        Map<String, String> versions = new java.util.HashMap<>();
+        for (PhoneApps.App app : apps.installed(number)) {
+            AppManifest m = app.manifest();
+            versions.put(m.id(), m.version());
+            installed.add(
+                new AppsView.App(
+                    m.id(),
+                    m.name(),
+                    m.version(),
+                    app.author(),
+                    m.about(),
+                    m.accent(),
+                    m.icon(),
+                    m.uses(),
+                    app.origin()
+                        .store(),
+                    app.origin()
+                        .where(),
+                    app.background(),
+                    app.woke(),
+                    app.euToday(),
+                    app.size(),
+                    apps.storageUsed(number, m.id()),
+                    apps.storageLimit()));
+        }
+        AppService.Screen screen = apps.screen(number);
+        AppsView.Screen shown = screen == null ? AppsView.Screen.NONE
+            : new AppsView.Screen(
+                screen.id(),
+                AppsView.State.valueOf(
+                    screen.state()
+                        .name()),
+                screen.error(),
+                screen.widgets(),
+                apps.lastData(number, screen.id()));
+        AppService.Offer offer = apps.offer(number);
+        AppsView.Offer offered = offer == null ? AppsView.Offer.NONE
+            : new AppsView.Offer(
+                offer.id(),
+                offer.publish(),
+                offer.manifest()
+                    .name(),
+                offer.manifest()
+                    .version(),
+                offer.author(),
+                offer.where(),
+                offer.source()
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
+                offer.manifest()
+                    .uses());
+        AppService.Notice notice = apps.notice(number);
+        AppService.StoreQuery query = apps.query(number);
+        List<AppStore.Entry> found;
+        if (query.tab() == AppService.StoreTab.INSTALLED) {
+            // What this phone has from the store, still in it, matching the search.
+            found = new ArrayList<>();
+            for (AppStore.Entry e : apps.store()
+                .search(query.text(), AppStore.Order.POPULAR, e -> apps.sees(number, e)))
+                if (versions.containsKey(e.id())) found.add(e);
+        } else {
+            found = apps.store()
+                .search(
+                    query.text(),
+                    query.tab() == AppService.StoreTab.NEW ? AppStore.Order.NEW : AppStore.Order.POPULAR,
+                    e -> apps.sees(number, e));
+        }
+        int pages = Math.max(1, (found.size() + AppsView.STORE_ROWS - 1) / AppsView.STORE_ROWS);
+        int page = Math.min(query.page(), pages - 1);
+        PhoneRecord record = becom.phones.record(number);
+        java.util.UUID owner = record == null ? null : record.owner();
+        long now = System.currentTimeMillis();
+        List<AppsView.StoreApp> store = new ArrayList<>();
+        for (AppStore.Entry e : found
+            .subList(page * AppsView.STORE_ROWS, Math.min(found.size(), (page + 1) * AppsView.STORE_ROWS))) {
+            AppManifest m = e.manifest();
+            store.add(
+                new AppsView.StoreApp(
+                    e.id(),
+                    e.name(),
+                    e.version(),
+                    e.authorName(),
+                    e.about(),
+                    e.installs(),
+                    e.size(),
+                    versions.getOrDefault(e.id(), ""),
+                    e.icon(),
+                    m == null ? 0 : m.uses(),
+                    (int) Math.max(0, (now - e.published()) / 86_400_000L),
+                    e.team(),
+                    owner != null && apps.store()
+                        .reported(e.id(), owner)));
+        }
+        return new AppsView(
+            installed,
+            shown,
+            offered,
+            notice == null ? AppsView.Notice.NONE : new AppsView.Notice(notice.app(), notice.title(), notice.text()),
+            store,
+            query.text(),
+            query.tab()
+                .ordinal(),
+            page,
+            found.size());
     }
 
     /** A carried phone's battery page: its charge, how long it lasts, where it went today and its switches. */
@@ -184,7 +320,7 @@ public final class PhoneScreenActions {
         return PhoneView.Via.NONE;
     }
 
-    /** The video part of the screen: the player's own switches, on a phone with a camera (DESIGN.md 10.1, 11.2). */
+    /** The video part of the screen: the player's own switches, on a phone with a camera. */
     private static PhoneView.Video videoOf(BeComServer becom, EntityPlayer player, PhoneRecord record, Call call,
         Call.Leg own) {
         if (!record.kind()
@@ -284,7 +420,7 @@ public final class PhoneScreenActions {
     }
 
     /**
-     * Switches a carried phone on or off (DESIGN.md 11.3): whoever carries it may, as with a walkie. It looks at the
+     * Switches a carried phone on or off: whoever carries it may, as with a walkie. It looks at the
      * player's phones again at once, so it shares the settings' rate limit.
      */
     public static void setPower(EntityPlayer player, PhoneHandle handle, boolean on) {
@@ -295,9 +431,71 @@ public final class PhoneScreenActions {
         if (stack == null || !mayChange(player)) return;
         ItemCarriedPhone.setOn(stack, on);
         player.inventory.markDirty();
-        // Now, not at the next second: a phone switched off can't ring or stay in its call (DESIGN.md 11.3).
+        // Now, not at the next second: a phone switched off can't ring or stay in its call.
         becom.carried.refresh(mp);
     }
+
+    // region Apps
+
+    /**
+     * The phone whose apps {@code player} may use from this screen: a carried phone they carry and own, or whose
+     * owner's team they're on; -1 otherwise.
+     */
+    private static int appPhone(EntityPlayer player, PhoneHandle handle) {
+        BeComServer becom = BeComServer.get();
+        if (becom == null || !(player instanceof EntityPlayerMP) || carriedStack(player, handle) == null) return -1;
+        PhoneRecord record = becom.phones.record(handle.number());
+        return record != null && Ownership.mayManage(player, record.owner()) ? handle.number() : -1;
+    }
+
+    public static void appOpen(EntityPlayer player, PhoneHandle handle, String id) {
+        int number = appPhone(player, handle);
+        if (number >= 0) BeComServer.get().apps.open((EntityPlayerMP) player, number, id);
+    }
+
+    public static void appClose(EntityPlayer player, PhoneHandle handle) {
+        int number = appPhone(player, handle);
+        if (number >= 0) BeComServer.get().apps.close(number);
+    }
+
+    public static void appEvent(EntityPlayer player, PhoneHandle handle, String id, String widget, String value) {
+        int number = appPhone(player, handle);
+        if (number >= 0) BeComServer.get().apps.event(number, id, widget, value);
+    }
+
+    public static void appBackground(EntityPlayer player, PhoneHandle handle, String id, boolean on) {
+        int number = appPhone(player, handle);
+        if (number >= 0 && mayChange(player)) BeComServer.get().apps.setBackground(number, id, on);
+    }
+
+    public static void appUninstall(EntityPlayer player, PhoneHandle handle, String id) {
+        int number = appPhone(player, handle);
+        if (number >= 0 && mayChange(player)) BeComServer.get().apps.uninstall(number, id);
+    }
+
+    public static void storeQuery(EntityPlayer player, PhoneHandle handle, String query, int tab, int page) {
+        int number = appPhone(player, handle);
+        if (number >= 0 && mayChange(player))
+            BeComServer.get().apps.setQuery(number, query, AppService.StoreTab.byOrdinal(tab), page);
+    }
+
+    public static void storeReport(EntityPlayer player, PhoneHandle handle, String id) {
+        int number = appPhone(player, handle);
+        if (number >= 0 && mayChange(player)) BeComServer.get().apps.report((EntityPlayerMP) player, number, id);
+    }
+
+    public static void storeInstall(EntityPlayer player, PhoneHandle handle, String id) {
+        int number = appPhone(player, handle);
+        if (number >= 0 && mayChange(player))
+            BeComServer.get().apps.installFromStore((EntityPlayerMP) player, number, id);
+    }
+
+    public static void answerOffer(EntityPlayer player, PhoneHandle handle, long id, boolean accept, boolean team) {
+        int number = appPhone(player, handle);
+        if (number >= 0) BeComServer.get().apps.answerOffer((EntityPlayerMP) player, number, id, accept, team);
+    }
+
+    // endregion
 
     /** Switches a carried phone's battery saver by hand (the Battery settings page). */
     public static void setSaver(EntityPlayer player, PhoneHandle handle, boolean on) {
@@ -321,7 +519,7 @@ public final class PhoneScreenActions {
     }
 
     // Settings and block-list changes are cheap one by one, but each recomputes contacts or the view: a client that
-    // floods them only wastes the server's time (DESIGN.md 14: client input). A person never needs more than this.
+    // floods them only wastes the server's time. A person never needs more than this.
     private static final int SETTINGS_CHANGES_PER_MINUTE = 60;
     private static final RateLimiter<UUID> SETTINGS_CHANGES = new RateLimiter<>(SETTINGS_CHANGES_PER_MINUTE, 60_000);
     // Each phone screen opened finds every phone in reach for its contacts; nobody opens one faster than this.
@@ -342,7 +540,7 @@ public final class PhoneScreenActions {
     }
 
     /**
-     * Switches one of {@code player}'s own cameras during their call on this phone (DESIGN.md 10.1), on a phone with
+     * Switches one of {@code player}'s own cameras during their call on this phone, on a phone with
      * video. Each switch re-plans every video call, so it shares the settings' rate limit.
      */
     public static void setCamera(EntityPlayer player, PhoneHandle handle, boolean rear, boolean on) {
@@ -383,7 +581,7 @@ public final class PhoneScreenActions {
             .changed();
     }
 
-    /** Silent mode, for a carried phone (DESIGN.md 11.2): it buzzes for its holder instead of ringing out loud. */
+    /** Silent mode, for a carried phone: it buzzes for its holder instead of ringing out loud. */
     public static void setSilent(EntityPlayer player, PhoneHandle handle, boolean on) {
         if (!(handle instanceof PhoneHandle.CarriedPhone)) return;
         PhoneRecord record = managed(player, handle);
@@ -393,7 +591,7 @@ public final class PhoneScreenActions {
             .changed();
     }
 
-    /** Blocks the owner of a phone in this player's contacts (DESIGN.md 12.3, X9). */
+    /** Blocks the owner of a phone in this player's contacts. */
     public static void blockContact(EntityPlayer player, PhoneHandle handle, int number) {
         PhoneRecord record = managed(player, handle);
         if (record == null) return;

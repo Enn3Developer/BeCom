@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 6.1 to 6.4, and the worked ranges of 7 and 8.1, through the hops the server works out. */
+/** The radio model through the hops the server works out, and the ranges it gives. */
 class RadioHopsTest {
 
     private final Tunables t = Tunables.defaults();
@@ -115,8 +115,8 @@ class RadioHopsTest {
 
     @Test
     void aSurveyOfAnAntennaT3IsAboutFiveKilobytes() {
-        // DESIGN.md 6.3 says at most 64 heights per bearing, about 4 KB. The survey reaches as far as a link at Low
-        // holds, 2 dB further (X22): 80 steps, about 5 KB.
+        // At most 64 heights per bearing, about 4 KB. The survey reaches as far as a link at Low
+        // holds, 2 dB further: 80 steps, about 5 KB.
         Survey survey = Survey.of(
             FLAT,
             0.5,

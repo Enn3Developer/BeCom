@@ -13,7 +13,7 @@ import ic2.api.item.ElectricItem;
 import ic2.api.item.IElectricItem;
 
 /**
- * The Mobile Phone (DESIGN.md 8): early HV, with service through antennas on UHF and a cap of High. Its HV battery
+ * The Mobile Phone: early HV, with service through antennas on UHF and a cap of High. Its HV battery
  * charges in GT's chargers and battery buffers through IC2's electric item interface, like GT's own tools.
  */
 public class ItemMobilePhone extends ItemCarriedPhone implements IElectricItem {

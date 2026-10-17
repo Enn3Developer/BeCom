@@ -121,7 +121,7 @@ import gregtech.api.util.GTUtility;
 import ic2.api.item.ElectricItem;
 
 /**
- * {@code /becom selftest} (DESIGN.md 16.3): the checks that need a real server. It builds what it needs in a scratch
+ * {@code /becom selftest}: the checks that need a real server. It builds what it needs in a scratch
  * area far from spawn, lets the machines tick, prints one line per check, then
  * {@code BeCom self-test: N passed, M failed}, and stops the server. Only exists in the development environment.
  */
@@ -135,7 +135,7 @@ public final class SelfTest {
     private static final int GROUP_GAP = 80;
     static final int TICKS_PER_SECOND = 20;
     private static final String RELOAD_DATABASE = "becom_selftest_reload";
-    // The first-call quest's reward items from other mods (DESIGN.md 15.5): each is left out where it isn't installed.
+    // The first-call quest's reward items from other mods: each is left out where it isn't installed.
     private static final String LOOTBAG = "enhancedlootbags:lootbag";
     private static final String LV_COIN = "dreamcraft:CoinTechnician";
     // Enough for every machine to tick, form, scan its cable and send heartbeats, with the 2 s offline window.
@@ -235,7 +235,7 @@ public final class SelfTest {
     private final boolean thunderExplosions = GregTechAPI.sMachineThunderExplosions;
     private final boolean fireExplosions = GregTechAPI.sMachineFireExplosions;
 
-    private SelfTest(BeComServer becom, ICommandSender sender) {
+    private SelfTest(BeComServer becom, ICommandSender sender, boolean appsOnly) {
         // It makes it rain over machines it builds under open sky, and GregTech sets any machine left in the rain on
         // fire or blows it up at random: one gone in the middle of a check fails rows that have nothing to do with it.
         weatherHazards(false, false, false);
@@ -249,13 +249,18 @@ public final class SelfTest {
         this.looker = FakePlayerFactory
             .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000b1"), "BeComLooker"));
         BeComQuests.recordForSelfTest();
-        // Satellites an earlier run left in orbit would give every radio and phone here a sky hop (DESIGN.md 9.1),
+        // Satellites an earlier run left in orbit would give every radio and phone here a sky hop,
         // stronger than the links the checks before 0.4's measure.
         for (int dimension : new ArrayList<>(
             becom.space.counts()
                 .keySet()))
             becom.space.satellitesForSelfTest()
                 .clear(dimension);
+        if (appsOnly) {
+            // Phone apps need none of the world the rest builds: a quick run while working on them.
+            steps.addAll(new AppSelfTest(this, becom).steps());
+            return;
+        }
         steps.add(this::checkQuestBookBuild);
         steps.add(this::checkRegistration);
         steps.add(this::build);
@@ -352,19 +357,20 @@ public final class SelfTest {
         steps.add(this::checkVideoSwitches);
         steps.add(this::checkVideoEnded);
         steps.addAll(new SpaceSelfTest(this, becom).steps());
+        steps.addAll(new AppSelfTest(this, becom).steps());
     }
 
-    public static void run(BeComServer becom, ICommandSender sender) {
+    public static void run(BeComServer becom, ICommandSender sender, boolean appsOnly) {
         if (running != null) {
             sender.addChatMessage(new ChatComponentText(PREFIX + "already running"));
             return;
         }
-        running = new SelfTest(becom, sender);
+        running = new SelfTest(becom, sender, appsOnly);
         running.log("starting");
     }
 
     // How long each of BeCom's server ticks took while the self-test ran, in nanoseconds: a real server's figure
-    // beside the load test's (DESIGN.md 6.5).
+    // beside the load test's.
     private final List<Long> becomTicks = new ArrayList<>();
 
     /** Server tick hook: how long BeCom's own tick took; does nothing unless a self-test is running. */
@@ -537,7 +543,7 @@ public final class SelfTest {
                 + ", fire "
                 + GregTechAPI.sMachineFireExplosions);
         check(
-            "config holds DESIGN.md 17's defaults",
+            "config holds the defaults",
             BeComConfig.get()
                 .equals(Tunables.defaults()),
             BeComConfig.get()
@@ -818,7 +824,7 @@ public final class SelfTest {
         world.setBlock(x, y, z, BeComBlocks.telephone);
         BeComBlocks.telephone.onBlockPlacedBy(world, x, y, z, owner, new ItemStack(BeComBlocks.telephone));
         TileTelephone tile = (TileTelephone) world.getTileEntity(x, y, z);
-        // A fake player, like a machine placing blocks, never owns a phone (X6). The self-test's owner stands in for
+        // A fake player, like a machine placing blocks, never owns a phone. The self-test's owner stands in for
         // the real player who would place it.
         PhoneRecord record = becom.phones.record(tile.number());
         if (record != null && record.owner() == null) {
@@ -928,7 +934,7 @@ public final class SelfTest {
             width == Double.POSITIVE_INFINITY,
             "width " + width);
 
-        // Clearance (D20): a block on the line refuses the link; cleared, it links; blocked again, the re-check
+        // Clearance: a block on the line refuses the link; cleared, it links; blocked again, the re-check
         // marks it.
         LinkService.Outcome blocked = link(clearA, clearB);
         check("a solid block on the line refuses the link", blocked == LinkService.Outcome.BLOCKED, blocked.name());
@@ -941,7 +947,7 @@ public final class SelfTest {
         becom.network.recheckAll();
         check("the re-check finds the line blocked again", model.isBlocked(pos(clearA), pos(clearB)), "");
 
-        // Unlinking is the owner's (D37): a stranger's wrench can't cut it.
+        // Unlinking is the owner's: a stranger's wrench can't cut it.
         LinkService.Outcome cut = wrenchPair(stranger, clearA, clearB);
         check(
             "a stranger can't unlink",
@@ -954,7 +960,7 @@ public final class SelfTest {
     }
 
     /**
-     * A span's bundle from a pocket that runs out (DESIGN.md 5.1): stringing costs one cable per few blocks of span,
+     * A span's bundle from a pocket that runs out: stringing costs one cable per few blocks of span,
      * a bundle holds {@code bundleSize} cables, a better cable then swaps out the poorest, and unlinking gives them
      * all back.
      */
@@ -1032,6 +1038,23 @@ public final class SelfTest {
             "a Telephone on two terminals' cable takes the nearer one",
             self.equals(becom.network.terminalOf(first)) && near.equals(becom.network.terminalOf(last)),
             becom.network.terminalOf(first) + " / " + becom.network.terminalOf(last));
+        com.enn3developer.becom.gui.LineTerminalView view = com.enn3developer.becom.gui.LineTerminalScreen
+            .view(deviceTerminal);
+        List<com.enn3developer.becom.gui.LineTerminalView.Device> rows = view.devices();
+        check(
+            "the terminal's screen lists its five Telephones, the nearest first with a line, the farthest without",
+            view.ports() == ports && rows.size() == 5
+                && rows.get(0)
+                    .number() == first
+                && rows.get(0)
+                    .kind() == com.enn3developer.becom.logic.phone.PhoneKind.TELEPHONE.ordinal()
+                && rows.get(0)
+                    .now()
+                    .served()
+                && !rows.get(4)
+                    .now()
+                    .served(),
+            rows.toString());
     }
 
     /** Contacts settle a second after the line changed: the Telephones reach each other now. */
@@ -1085,7 +1108,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** WAILA asks for a machine's lines on the server thread (DESIGN.md 16.4), so they come with the first look. */
+    /** WAILA asks for a machine's lines on the server thread, so they come with the first look. */
     private int checkWaila() {
         List<String> terminal = wailaLines(phoneLine.start);
         check(
@@ -1205,7 +1228,7 @@ public final class SelfTest {
             .membersOf(calls.group());
         check("both players join becom:call", members.contains(alice) && members.contains(bob), members.toString());
         check("the ring stops", !end.ringing(), "");
-        // 18 dB a stretch is High on the line, so Low here is the Telephone's cap (D10).
+        // 18 dB a stretch is High on the line, so Low here is the Telephone's cap.
         check(
             "levels are Low both ways, the Telephone's cap",
             call != null && call.level(alice, bob) == SignalLevel.LOW && call.level(bob, alice) == SignalLevel.LOW,
@@ -1234,8 +1257,7 @@ public final class SelfTest {
                     .direction() == PhoneRecord.Direction.INCOMING,
             "");
 
-        // Alice still holds her handset. Do-not-disturb, the block list and a busy handset refuse her (DESIGN.md 10,
-        // 12.3).
+        // Alice still holds her handset. Do-not-disturb, the block list and a busy handset refuse her.
         rb.setDoNotDisturb(true);
         result = calls.dial(owner, a, b);
         check("do-not-disturb makes the phone unreachable", result == CallBook.DialResult.UNREACHABLE, result.name());
@@ -1296,7 +1318,7 @@ public final class SelfTest {
      * original, and breaking it doesn't end the original's call.
      */
     private void checkCopyDuringCall(int a, int b, TileTelephone start, TileTelephone end, UUID alice, UUID bob) {
-        // Bob dials this time: Alice has used up her five attempts this minute (DESIGN.md 12.3).
+        // Bob dials this time: Alice has used up her five attempts this minute.
         CallService calls = becom.calls;
         NBTTagCompound saved = new NBTTagCompound();
         start.writeToNBT(saved);
@@ -1481,7 +1503,7 @@ public final class SelfTest {
         return 2 * TICKS_PER_SECOND;
     }
 
-    /** DESIGN.md 16.2: the questline comes back after BQ's own reload, the one that wipes anything not in the file. */
+    /** The questline comes back after BQ's own reload, the one that wipes anything not in the file. */
     private int checkQuestReload() {
         BeComQuests.QuestBackend quests = BeComQuests.backend();
         if (!cpw.mods.fml.common.Loader.isModLoaded(BeComQuests.BQ_MODID)) return 1;
@@ -1495,7 +1517,7 @@ public final class SelfTest {
             back != null && Boolean.TRUE.equals(invoke(back, "isComplete", questProbe)),
             "");
         // Put back from BeCom's files just now, whatever an earlier run left in this world's quest book, with each
-        // reward item that isn't installed left out (D51, X41). The dev runs have Enhanced Loot Bags and the coins'
+        // reward item that isn't installed left out. The dev runs have Enhanced Loot Bags and the coins'
         // mod, but a server may lack either.
         Object rewards = invoke(quests, "rewardsOf", QuestTask.FIRST_CALL);
         List<String> expected = new ArrayList<>();
@@ -1539,7 +1561,7 @@ public final class SelfTest {
     }
 
     /**
-     * X42: at server start, a BeCom quest the book holds with an older definition takes the one BeCom ships, and keeps
+     * At server start, a BeCom quest the book holds with an older definition takes the one BeCom ships, and keeps
      * its players' progress where it still means the same.
      */
     private int checkQuestRefresh() {
@@ -1927,7 +1949,7 @@ public final class SelfTest {
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    /** Walkies and a Transceiver out of every antenna's reach: only direct links (DESIGN.md 6.4, 8.1). */
+    /** Walkies and a Transceiver out of every antenna's reach: only direct links. */
     private int keyDirect() {
         alice = radioPlayer("BeComRadioAlice", 1, X0 + 0.5, DIRECT_Z + 0.5, 3);
         bob = radioPlayer("BeComRadioBob", 2, X0 + 30.5, DIRECT_Z + 0.5, 3);
@@ -2009,7 +2031,7 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 6.4: a press of push-to-talk works out the pressing radio, and any keyed radio whose transmitter
+     * A press of push-to-talk works out the pressing radio, and any keyed radio whose transmitter
      * changed since, and leaves the others' links as they were until their own tick of the second.
      */
     private int checkPress() {
@@ -2051,7 +2073,7 @@ public final class SelfTest {
     private int spreadOffTick;
 
     /**
-     * DESIGN.md 6.4, 6.5: a radio keyed for a second, with nothing about it changed, is worked out again once, in its
+     * A radio keyed for a second, with nothing about it changed, is worked out again once, in its
      * own tick of the second; the other ticks publish its transmission as it was. The antenna network changing in
      * every one of those ticks, as an owner toggling a lock makes it, doesn't change that: each radio takes the new
      * network in its own tick.
@@ -2105,7 +2127,7 @@ public final class SelfTest {
     private boolean skyBobOwnTick;
 
     /**
-     * DESIGN.md 9.1, 6.4: a Transceiver's sky hop is worked out in its own tick of the second, and a speaker standing
+     * A Transceiver's sky hop is worked out in its own tick of the second, and a speaker standing
      * at it is worked out again in that tick when the hop changed, not up to a second later in their own.
      */
     private int startSky() {
@@ -2165,7 +2187,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** Two walkies 100 blocks apart, each 20 blocks from one of two linked T1 antennas (DESIGN.md 7, 8.1). */
+    /** Two walkies 100 blocks apart, each 20 blocks from one of two linked T1 antennas. */
     private int keyThroughAntennas() {
         eve = radioPlayer("BeComRadioEve", 5, X0 - 19.5, RADIO_Z + 0.5, 7);
         frank = radioPlayer("BeComRadioFrank", 6, X0 + ANTENNA_GAP + 20.5, RADIO_Z + 0.5, 7);
@@ -2238,12 +2260,12 @@ public final class SelfTest {
     }
 
     /**
-     * Teams are ServerUtilities' (D59). The self-test's players are fake, so ServerUtilities never saw them log in: its
+     * Teams are ServerUtilities'. The self-test's players are fake, so ServerUtilities never saw them log in: its
      * adapter puts them in a team for the length of one call, and forgets them before anything can save it.
      */
     private int checkTeams() {
         boolean installed = cpw.mods.fml.common.Loader.isModLoaded(Ownership.SERVER_UTILITIES_MODID);
-        check("ServerUtilities is in the dev server, through GregTech's dependencies (D59)", installed, "");
+        check("ServerUtilities is in the dev server, through GregTech's dependencies", installed, "");
         if (installed) {
             teamModerator = teamPlayer("BeComTeamModerator", 1);
             teamMember = teamPlayer("BeComTeamMember", 2);
@@ -2292,7 +2314,7 @@ public final class SelfTest {
         UUID o = owner.getUniqueID(), s = stranger.getUniqueID();
         UUID mod = teamModerator.getUniqueID(), mem = teamMember.getUniqueID(), ally = teamAlly.getUniqueID();
 
-        // Unlinking (D37): the ally's wrench and a teamless stranger's can't cut the owner's line; a member's can.
+        // Unlinking: the ally's wrench and a teamless stranger's can't cut the owner's line; a member's can.
         NetworkModel model = becom.network.model(world);
         LinkService.Outcome byAlly = wrenchBoth(teamAlly, clearA, clearB);
         LinkService.Outcome byStranger = wrenchBoth(stranger, clearA, clearB);
@@ -2303,14 +2325,14 @@ public final class SelfTest {
             byAlly + "/" + byStranger);
         LinkService.Outcome byMember = wrenchBoth(teamMember, clearA, clearB);
         check(
-            "...but a member of it can (D37, D59)",
+            "...but a member of it can",
             byMember == LinkService.Outcome.UNLINKED && !model.linked(pos(clearA), pos(clearB)),
             byMember.name());
         // Back as it was: linked, and blocked by the stone the clearance check left on it.
         model.link(pos(clearA), pos(clearB));
         becom.network.recheckAll();
 
-        // The lock (D38): a locked antenna serves its owner's team and nobody else, wherever they stand.
+        // The lock: a locked antenna serves its owner's team and nobody else, wherever they stand.
         AntennaNetwork.Mesh mesh = becom.antennas.mesh(world.provider.dimensionId);
         AntennaNetwork.Antenna known = becom.antennas.antenna(antennaA.ref());
         int i = mesh.antennas()
@@ -2323,7 +2345,7 @@ public final class SelfTest {
         }
         boolean refused = i >= 0 && level[3] == Double.NEGATIVE_INFINITY && level[4] == Double.NEGATIVE_INFINITY;
         check(
-            "an antenna locked to its owner's team serves the owner, a moderator and a member of it (D38, D59)",
+            "an antenna locked to its owner's team serves the owner, a moderator and a member of it",
             known != null && known.locked()
                 && i >= 0
                 && level[0] > Double.NEGATIVE_INFINITY
@@ -2335,18 +2357,18 @@ public final class SelfTest {
             "two players ServerUtilities knows with no team aren't one team",
             !Ownership.sameTeam(ally, s) && !Ownership.sameTeam(s, ally),
             "");
-        // Its screen's lock (X45): the owner's team may lock and unlock it, as it manages the owner's other machines.
+        // Its screen's lock: the owner's team may lock and unlock it, as it manages the owner's other machines.
         AntennaScreen.setLocked(antennaA, teamAlly, false);
         boolean allyUnlocked = !antennaA.isLocked();
         AntennaScreen.setLocked(antennaA, teamMember, false);
         boolean memberUnlocked = !antennaA.isLocked();
         AntennaScreen.setLocked(antennaA, teamMember, true);
         check(
-            "a member of the owner's team may unlock and lock the owner's antenna from its screen; its ally can't (X45)",
+            "a member of the owner's team may unlock and lock the owner's antenna from its screen; its ally can't",
             !allyUnlocked && memberUnlocked && antennaA.isLocked(),
             "ally unlocked " + allyUnlocked + ", member unlocked " + memberUnlocked);
 
-        // A phone's settings (D39): its owner's team may change its block list, nobody else.
+        // A phone's settings: its owner's team may change its block list, nobody else.
         PhoneHandle handle = new PhoneHandle.Telephone(bridgePhoneA);
         PhoneRecord record = becom.phones.record(bridgePhoneA.number());
         UUID blocked = looker.getUniqueID();
@@ -2368,12 +2390,12 @@ public final class SelfTest {
 
     /**
      * Runs while the owner and the stranger are in ServerUtilities' "singleplayer" team, which a world first played
-     * alone keeps and which anyone may join: on a dedicated server, it makes nobody a team (X46).
+     * alone keeps and which anyone may join: on a dedicated server, it makes nobody a team.
      */
     private void checkInSinglePlayerTeam() {
         MinecraftServer server = MinecraftServer.getServer();
         String name = "a player who joins ServerUtilities' \"singleplayer\" team on a dedicated server, as anyone may, "
-            + "can't unlink its members' lines (X46)";
+            + "can't unlink its members' lines";
         // The guard's own test: a server started for one player, LAN or not, keeps the team.
         if (server.isSinglePlayer()) {
             log("NOT CHECKED " + name + ": this server is a single player's");
@@ -2401,7 +2423,7 @@ public final class SelfTest {
             server.setServerOwner(before);
         }
         check(
-            "...while on a single player's server, LAN or not, the team counts as any team does (X46)",
+            "...while on a single player's server, LAN or not, the team counts as any team does",
             counts && java.util.Objects.equals(server.getServerOwner(), before),
             "");
     }
@@ -2474,7 +2496,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 4.1: a link at Low leaves it only 2 dB below the threshold, at the edge of range too. */
+    /** A link at Low leaves it only 2 dB below the threshold, at the edge of range too. */
     private int keyEdge() {
         hank = radioPlayer("BeComRadioHank", 8, X0 + 0.5, DIRECT_Z + 10.5, 11);
         iris = radioPlayer("BeComRadioIris", 9, X0 + 78.5, DIRECT_Z + 10.5, 11);
@@ -2520,7 +2542,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 4.2: below Low for longer than the drop delay, a link drops, radio as well as wire. */
+    /** Below Low for longer than the drop delay, a link drops, radio as well as wire. */
     private int startEdgeHold() {
         iris.setPosition(X0 + 78.5, Y, DIRECT_Z + 10.5);
         becom.radio.refreshForSelfTest(iris);
@@ -2584,7 +2606,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** X16: an antenna whose BeCom keys a newer BeCom wrote is left alone, its keys kept. */
+    /** An antenna whose BeCom keys a newer BeCom wrote is left alone, its keys kept. */
     private int checkNewerAntenna() {
         NBTTagCompound saved = new NBTTagCompound();
         antennaT2.saveNBTData(saved);
@@ -2618,7 +2640,7 @@ public final class SelfTest {
     // region Phones (0.3)
 
     // 0.3's phone checks, in their own area: a T1 antenna bridged onto a pylon line with a Telephone at its end, and
-    // mobile phones west of it, where rain falls (D26). EndlessIDs forbids rewriting a chunk's biomes, so the area is
+    // mobile phones west of it, where rain falls. EndlessIDs forbids rewriting a chunk's biomes, so the area is
     // the first stretch north of here whose biome rains.
     private static final int PHONE_Z_FROM = RADIO_Z + 1000;
     private static final int PHONE_Z_STEP = 64;
@@ -2727,7 +2749,7 @@ public final class SelfTest {
         return player;
     }
 
-    /** DESIGN.md 8, 8.2, 12.1, D25: a carried phone's number, owner and service. */
+    /** A carried phone's number, owner and service. */
     private int checkMobileService() {
         Tunables t = BeComConfig.get();
         // The fake players have no voice session; the real check would refuse them before anything else.
@@ -2808,7 +2830,7 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 16, 0.3's "Done when": a mobile phone calls a Telephone through an antenna bridged onto a pylon line.
+     * A mobile phone calls a Telephone through an antenna bridged onto a pylon line.
      */
     private int checkMobileCall() {
         int telephone = phoneTelephone.number();
@@ -2833,14 +2855,14 @@ public final class SelfTest {
             "...over the phone's link to the antenna, the path's weakest hop",
             clearService,
             call == null ? Double.NaN : call.snr(m, s));
-        // Calls are private to the people in them (DESIGN.md 12.2): the Telephone's owner, at it but not holding its
+        // Calls are private to the people in them: the Telephone's owner, at it but not holding its
         // handset, isn't one of them.
         double ox = owner.posX, oy = owner.posY, oz = owner.posZ;
         standBy(owner, phoneTelephone);
         PhoneView seen = PhoneScreenActions.view(owner, new PhoneHandle.Telephone(phoneTelephone));
         owner.setPosition(ox, oy, oz);
         check(
-            "...and anyone else at the Telephone, its owner too, sees only that it's in use (DESIGN.md 12.2)",
+            "...and anyone else at the Telephone, its owner too, sees only that it's in use",
             seen.state() == PhoneView.State.IN_USE && seen.members()
                 .isEmpty()
                 && seen.otherName()
@@ -2849,7 +2871,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 8.2, 11.1: group calls up to 8, the Phone key answering and hanging up. */
+    /** Group calls up to 8, the Phone key answering and hanging up. */
     private int checkGroupCall() {
         CallBook.DialResult added = becom.calls.dialCarried(mona, monaNumber, nellNumber);
         check(
@@ -2880,7 +2902,7 @@ public final class SelfTest {
                 && call.participants()
                     .size() == 2,
             "");
-        // The Telephone's own Add (DESIGN.md 11.2): its handset's holder adds Nell, who turns it down.
+        // The Telephone's own Add: its handset's holder adds Nell, who turns it down.
         becom.calls.logForSelfTest();
         PhoneScreenActions.dial(stranger, new PhoneHandle.Telephone(phoneTelephone), nellNumber);
         boolean rang = becom.calls.isRinging(nellNumber);
@@ -2893,7 +2915,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 10, 11.3: a phone switched off leaves its call and can't be called. */
+    /** A phone switched off leaves its call and can't be called. */
     private int checkPhonePower() {
         Call call = becom.calls.book()
             .callOf(mona.getUniqueID());
@@ -2912,7 +2934,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** D36, DESIGN.md 17: a phone drains its battery on standby, and more in a call. */
+    /** A phone drains its battery on standby, and more in a call. */
     private int checkPhoneDrain() {
         Tunables t = BeComConfig.get();
         ItemStack phone = mona.inventory.mainInventory[0];
@@ -2934,7 +2956,7 @@ public final class SelfTest {
 
     private TonePacket.Tone busyTone;
 
-    /** DESIGN.md 10: a carried phone's ringback and busy tones stop, with no handset to put down. */
+    /** A carried phone's ringback and busy tones stop, with no handset to put down. */
     private int checkTones() {
         UUID m = mona.getUniqueID(), n = nell.getUniqueID(), s = stranger.getUniqueID();
         becom.calls.logForSelfTest();
@@ -2966,7 +2988,7 @@ public final class SelfTest {
         Call keyed = becom.calls.book()
             .callOf(n);
         check(
-            "the Phone key answers a ringing Telephone within its cord (DESIGN.md 11.1)",
+            "the Phone key answers a ringing Telephone within its cord",
             keyed != null && keyed.state() == Call.State.CONNECTED
                 && Integer.valueOf(phoneTelephone.number())
                     .equals(becom.calls.handsetOf(s)),
@@ -2994,7 +3016,7 @@ public final class SelfTest {
     }
 
     /**
-     * D14, DESIGN.md 11.2: a phone being moved with the mouse stays in its call, and a ringing phone that leaves its
+     * A phone being moved with the mouse stays in its call, and a ringing phone that leaves its
      * player stops ringing for them, its notice included.
      */
     private FakePlayer olga;
@@ -3037,7 +3059,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** D14: a phone in a bauble slot is carried like one in the inventory. */
+    /** A phone in a bauble slot is carried like one in the inventory. */
     private int checkBaublePhone() {
         FakePlayer quin = phonePlayer("BeComQuin", 4, X0 - 19.5, phoneZ + 2.5);
         ItemStack phone = quin.inventory.mainInventory[0];
@@ -3065,7 +3087,7 @@ public final class SelfTest {
         boolean off = !ItemCarriedPhone.on(phone) && !becom.carried.working()
             .contains(number);
         check(
-            "a Mobile Phone in a bauble slot has service, rings, answers to the Phone key and switches off (D14)",
+            "a Mobile Phone in a bauble slot has service, rings, answers to the Phone key and switches off",
             service && rang && answered && off,
             "service " + service + ", rang " + rang + ", answered " + answered + ", off " + off);
         baubles.setInventorySlotContents(0, null);
@@ -3083,7 +3105,7 @@ public final class SelfTest {
     private int contactSearches;
 
     /**
-     * DESIGN.md 11.1, 11.2: two phones ringing for one player. The notice names the latest, and the Phone key answers
+     * Two phones ringing for one player. The notice names the latest, and the Phone key answers
      * that one; pressed again it hangs up, and the other's notice shows again, as it does when the latest stops. Sneak
      * + the key in a call turns the other down and keeps the call.
      */
@@ -3116,7 +3138,7 @@ public final class SelfTest {
         boolean hungUp = becom.calls.book()
             .callOf(r) == null;
         check(
-            "...pressed again in that call, it hangs up, though the other phone still rings (DESIGN.md 11.1)",
+            "...pressed again in that call, it hangs up, though the other phone still rings",
             hungUp && becom.calls.isRinging(first),
             "still in the call " + !hungUp);
         check(
@@ -3141,7 +3163,7 @@ public final class SelfTest {
             .callOf(r);
         answered = call == null ? null : call.legOf(r);
         check(
-            "...in a call on one, sneak + the Phone key turns the other down and keeps the call (D34)",
+            "...in a call on one, sneak + the Phone key turns the other down and keeps the call",
             answered != null && answered.phone() == other && !becom.calls.isRinging(first),
             (answered == null ? "no call" : "in the call on " + answered.phone()) + ", the first ringing "
                 + becom.calls.isRinging(first));
@@ -3197,7 +3219,7 @@ public final class SelfTest {
         return 1;
     }
 
-    // A phone screen asks for its view every tick; its contacts are a path search per phone in reach (X32).
+    // A phone screen asks for its view every tick; its contacts are a path search per phone in reach.
     private int startContacts() {
         contactSearches = becom.calls.reachableSearchesForSelfTest();
         PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
@@ -3214,13 +3236,10 @@ public final class SelfTest {
         PhoneScreenActions.view(sid, new PhoneHandle.CarriedPhone(sidNumber));
         int again = becom.calls.reachableSearchesForSelfTest() - contactSearches - second;
         check(
-            "a phone screen open for a second, asking every tick, finds its contacts once (X32)",
+            "a phone screen open for a second, asking every tick, finds its contacts once",
             second == 1,
             second + " searches");
-        check(
-            "...and finds them again a second later, so a change shows within a second (X32)",
-            again == 1,
-            again + "");
+        check("...and finds them again a second later, so a change shows within a second", again == 1, again + "");
         return 1;
     }
 
@@ -3228,7 +3247,7 @@ public final class SelfTest {
     private TileTelephone umaTelephone;
 
     /**
-     * DESIGN.md 11.1: someone holding a Telephone's handset can't dial or answer on a phone they carry, whose call its
+     * Someone holding a Telephone's handset can't dial or answer on a phone they carry, whose call its
      * cord would then end. The Phone key puts the handset down first, and pressed again answers.
      */
     private int checkHandsetFirst() {
@@ -3261,7 +3280,7 @@ public final class SelfTest {
         boolean down = becom.calls.handsetOf(u) == null && becom.calls.isRinging(umaNumber);
         boolean shownAgain = becom.calls.noticeForSelfTest(u);
         check(
-            "...its notice goes while they hold the handset, and comes back as the key puts it down (DESIGN.md 11.2)",
+            "...its notice goes while they hold the handset, and comes back as the key puts it down",
             hidden && shownAgain,
             "hidden " + hidden + ", shown again " + shownAgain);
         becom.calls.phoneKey(uma, false);
@@ -3289,7 +3308,7 @@ public final class SelfTest {
     }
 
     /**
-     * X17, DESIGN.md 12.2: a copy of Olga's phone in Pete's hands, opened during her call, opens on a number of its
+     * A copy of Olga's phone in Pete's hands, opened during her call, opens on a number of its
      * own, and her call shows to nobody but those in it.
      */
     private void checkCopiedPhone(Call call) {
@@ -3301,14 +3320,14 @@ public final class SelfTest {
         int bound = copy == null ? -1 : becom.carried.numberFor(pete, copy);
         PhoneView seen = PhoneScreenActions.view(pete, new PhoneHandle.CarriedPhone(olgaNumber));
         check(
-            "a copy of a phone opens on a number of its own, and its original's call shows to nobody else (X17)",
+            "a copy of a phone opens on a number of its own, and its original's call shows to nobody else",
             call != null && bound >= 0 && bound != olgaNumber && seen == PhoneView.EMPTY,
             "opens on " + bound + ", Olga's is " + olgaNumber + ", shown " + seen.members());
         pete.inventory.mainInventory[0] = null;
         becom.carried.refreshForSelfTest(pete);
     }
 
-    /** D26: rain costs calls and phones' service, where it falls. */
+    /** Rain costs calls and phones' service, where it falls. */
     private int startRain() {
         WorldInfo info = world.getWorldInfo();
         info.setRaining(true);
@@ -3338,7 +3357,7 @@ public final class SelfTest {
                 .best());
         AnalyzerPacket reading = becom.radio.reading(mona);
         check(
-            "...and the Signal Analyzer shows it on the phones' band, not the radios' (DESIGN.md 6.6, D26)",
+            "...and the Signal Analyzer shows it on the phones' band, not the radios'",
             reading.phone()
                 .served()
                 && Math.abs(
@@ -3361,7 +3380,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 6.6, 11.4: the antenna screen's coverage map, on both bands, strongest at the antenna. */
+    /** The antenna screen's coverage map, on both bands, strongest at the antenna. */
     private int checkCoverage() {
         AntennaView view = AntennaScreen.view(phoneAntenna, owner);
         int cells = Coverage.CELLS * Coverage.CELLS;
@@ -3516,7 +3535,7 @@ public final class SelfTest {
         return player;
     }
 
-    /** DESIGN.md 8.3, D13, D45, and 16.2's ME Bridge row. */
+    /** ME Phones: their ME network's service, calls through an ME Bridge, and service outside its range. */
     private int checkMe() {
         int z = phoneZ + ME_DZ;
         // 16.2: the fallback is a bridge holding a linked terminal, if this fails.
@@ -3567,13 +3586,13 @@ public final class SelfTest {
         List<CallGraph.HopKind> hops = becom.network.graph()
             .hops(becom.calls.entriesOf(odoNumber), becom.calls.entriesOf(telephone));
         check(
-            "...and any other phone through an ME Bridge (D45)",
+            "...and any other phone through an ME Bridge",
             result == CallBook.DialResult.RINGING && call != null
                 && call.state() == Call.State.CONNECTED
                 && hops.contains(CallGraph.HopKind.ME_BRIDGE),
             result + ", hops " + hops);
         check(
-            "...which reports the ME Bridge call quest task for the ME Phone's user (DESIGN.md 15.5)",
+            "...which reports the ME Bridge call quest task for the ME Phone's user",
             BeComQuests.reportedForSelfTest(QuestTask.ME_BRIDGE_CALL, odo.getUniqueID())
                 && !BeComQuests.reportedForSelfTest(QuestTask.ME_BRIDGE_CALL, stranger.getUniqueID()),
             "");
@@ -3582,7 +3601,7 @@ public final class SelfTest {
         odo.setPosition(X0 - 60.5, Y, z);
         becom.carried.refreshForSelfTest(odo);
         check(
-            "...and outside its network's wireless range is a Mobile Phone, capped at High (DESIGN.md 8.3)",
+            "...and outside its network's wireless range is a Mobile Phone, capped at High",
             becom.carried.serviceOf(odoNumber)
                 .entries()
                 .stream()
@@ -3602,7 +3621,7 @@ public final class SelfTest {
     private NBTTagCompound newerSaved;
 
     /**
-     * X16: an ME Bridge a newer BeCom saved, next to the owner's online one on the same cable, loaded the way its chunk
+     * An ME Bridge a newer BeCom saved, next to the owner's online one on the same cable, loaded the way its chunk
      * loads it: before its first tick.
      */
     private int placeNewerBridge() {
@@ -3623,7 +3642,7 @@ public final class SelfTest {
             .getNode() != null;
         boolean proxy = newerSaved.hasKey(MTEMeBridge.PROXY);
         check(
-            "an ME Bridge saved by a newer BeCom stays out of ME, and keeps its keys and its AE2 node's data (X16)",
+            "an ME Bridge saved by a newer BeCom stays out of ME, and keeps its keys and its AE2 node's data",
             newerBridge.isTooNew() && !node
                 && !newerBridge.meOnline()
                 && proxy
@@ -3642,7 +3661,7 @@ public final class SelfTest {
         double offered = BeComItems.mePhone.getAEMaxPower(new ItemStack(BeComItems.mePhone));
         double handedBack = BeComItems.mePhone.injectAEPower(newerPhone, offered);
         check(
-            "...and an ME Phone saved by a newer BeCom takes no AE power, so a charger loses none to it (X16)",
+            "...and an ME Phone saved by a newer BeCom takes no AE power, so a charger loses none to it",
             handedBack == offered && BeComItems.mePhone.getAECurrentPower(newerPhone) == 0,
             handedBack + " AE of " + offered + " handed back");
         // One charged before a newer BeCom wrote to it gives none of its charge away either.
@@ -3652,14 +3671,14 @@ public final class SelfTest {
             .setInteger(BeComNbt.KEY, ItemCarriedPhone.FORMAT + 1);
         double given = BeComItems.mePhone.extractAEPower(chargedNewer, offered);
         check(
-            "...nor gives any away, keeping the charge it was saved with (X16)",
+            "...nor gives any away, keeping the charge it was saved with",
             given == 0 && BeComItems.mePhone.getAECurrentPower(chargedNewer) == offered,
             given + " AE given");
         return 1;
     }
 
     /**
-     * DESIGN.md 10.1, 14: in the ME Phones' one-to-one call at Max, the rear camera's pictures reach the other side
+     * In the ME Phones' one-to-one call at Max, the rear camera's pictures reach the other side
      * through the server's relay, within the size cap and no faster than the level allows.
      */
     private void checkRearCamera() {
@@ -3681,7 +3700,7 @@ public final class SelfTest {
         for (int i = 0; i < 4; i++) becom.video.rearFrame(odo, new byte[100]);
         int burst = becom.video.rearDelivered(o, p);
         check(
-            "...and of pictures sent all at once, only the two the viewer's allowance holds go on (X29)",
+            "...and of pictures sent all at once, only the two the viewer's allowance holds go on",
             burst == 2,
             burst + " of 5 went on");
     }
@@ -3722,7 +3741,7 @@ public final class SelfTest {
 
     // region Videophone (0.3)
 
-    // A Videophone on a Line Terminal of its own, bridged onto the phone antenna 5 blocks north (DESIGN.md 10.2).
+    // A Videophone on a Line Terminal of its own, bridged onto the phone antenna 5 blocks north.
     private static final int VIDEOPHONE_DZ = -7;
     private MTEVideophone videophone;
     private MTELineTerminal videophoneTerminal;
@@ -3754,7 +3773,7 @@ public final class SelfTest {
     private int formVideophone() {
         // Its number comes on its first tick; this one may not have had it yet.
         if (videophone.number() < 0) videophone.settle();
-        // A fake player, like a machine, never owns a phone (X6). The self-test's owner stands in for the player who
+        // A fake player, like a machine, never owns a phone. The self-test's owner stands in for the player who
         // would place it.
         PhoneRecord record = becom.phones.record(videophone.number());
         videophoneOwnerless = record != null && record.owner() == null;
@@ -3778,7 +3797,7 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 11.2, 12.2, X28: a Videophone added to a group call shows only who calls while it rings; answered, its
+     * A Videophone added to a group call shows only who calls while it rings; answered, its
      * screen shows the call to everyone in it and to nobody else, only its room works the screen, and the Phone key
      * there hangs it up for the room.
      */
@@ -3807,10 +3826,7 @@ public final class SelfTest {
         PhoneScreenActions.hangUp(uma, screen);
         boolean turnedDown = !becom.calls.isRinging(number);
         uma.setPosition(X0 - 5.5, Y, z + 0.5);
-        check(
-            "...and someone in its room who is already in a call can't turn it down (DESIGN.md 12.2)",
-            !turnedDown,
-            "");
+        check("...and someone in its room who is already in a call can't turn it down", !turnedDown, "");
         PhoneScreenActions.pickUp(yul, screen);
         String told = becom.calls.lastMessageForSelfTest(yul.getUniqueID());
         boolean stillRinging = becom.calls.isRinging(number);
@@ -3818,7 +3834,7 @@ public final class SelfTest {
         Call call = becom.calls.book()
             .callOfPhone(number);
         check(
-            "...only someone in its room answers at its screen, which opens from further off (X28)",
+            "...only someone in its room answers at its screen, which opens from further off",
             stillRinging && "becom.videophone.step_closer".equals(told)
                 && call != null
                 && call.legOf(zed.getUniqueID()) != null,
@@ -3835,7 +3851,7 @@ public final class SelfTest {
             inCall.state() + " / " + outside.state());
         PhoneScreenActions.hangUp(yul, screen);
         check(
-            "...Hang up there from outside its room does nothing (X28)",
+            "...Hang up there from outside its room does nothing",
             becom.calls.book()
                 .callOfPhone(number) != null,
             "");
@@ -3843,7 +3859,7 @@ public final class SelfTest {
         Call goesOn = becom.calls.book()
             .callOf(tia.getUniqueID());
         check(
-            "...and the Phone key in its room hangs it up for the room, the call going on without it (X28)",
+            "...and the Phone key in its room hangs it up for the room, the call going on without it",
             becom.calls.book()
                 .callOfPhone(number) == null && goesOn != null && goesOn.state() == Call.State.CONNECTED,
             goesOn == null ? "no call left" : goesOn.state() + "");
@@ -3854,17 +3870,17 @@ public final class SelfTest {
         return 1;
     }
 
-    /** DESIGN.md 10.2, D19, D42: a Videophone is its Line Terminal's phone, rings, and answers as a speakerphone. */
+    /** A Videophone is its Line Terminal's phone, rings, and answers as a speakerphone. */
     private int checkVideophoneCall() {
         int number = videophone.number();
         int z = phoneZ + VIDEOPHONE_DZ;
         PhoneRecord record = becom.phones.record(number);
         check(
-            "a Videophone gets its number, and its Line Terminal serves it as its one phone (D19)",
+            "a Videophone gets its number, and its Line Terminal serves it as its one phone",
             record != null && record.kind() == PhoneKind.VIDEOPHONE && videophoneTerminal.phone() == number,
             "number " + number + ", record " + record + ", the terminal serves " + videophoneTerminal.phone());
         check(
-            "...a machine's fake player placing it doesn't own it (X6)",
+            "...a machine's fake player placing it doesn't own it",
             videophoneOwnerless,
             record == null ? "no record" : "owner " + record.owner());
         check(
@@ -3901,7 +3917,7 @@ public final class SelfTest {
             atScreen.state() == PhoneView.State.CONNECTED && atScreen.otherNumber() == piaNumber,
             atScreen.state() + ", " + atScreen.otherNumber());
         check(
-            "...an ME Phone's Max comes through at the Videophone's High (D42)",
+            "...an ME Phone's Max comes through at the Videophone's High",
             call != null && call.level(p, v) == SignalLevel.HIGH && call.level(v, p) == SignalLevel.HIGH,
             call == null ? "no call" : call.level(p, v) + " / " + call.level(v, p));
         CallSnapshot snapshot = becom.calls.group()
@@ -4013,7 +4029,7 @@ public final class SelfTest {
         int number = videophone.number();
         CallBook.DialResult result = becom.calls.dialCarried(pia, piaNumber, number);
         check(
-            "an unpowered Videophone isn't in contacts and can't be called (D11)",
+            "an unpowered Videophone isn't in contacts and can't be called",
             !videophone.isWorking() && !becom.calls.videophoneWorking(number)
                 && !becom.calls.reachableFrom(piaNumber)
                     .contains(number)
@@ -4034,7 +4050,7 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 16, 0.3's second "Done when": a Mobile Phone calls the Videophone, and Vic answers with the Phone key.
+     * A Mobile Phone calls the Videophone, and Vic answers with the Phone key.
      */
     private int startVideoCall() {
         int z = phoneZ + VIDEOPHONE_DZ;
@@ -4062,20 +4078,20 @@ public final class SelfTest {
         VideoPlan.Tile vicSeen = tileOf(plan, m, v);
         check(
             "a video call between a Mobile Phone and a Videophone: the server sends each side the other's poses "
-                + "(DESIGN.md 16, 0.3; that they show is the owner's check)",
+                + "(that they show is the owner's check)",
             becom.video.posesDelivered(m, v) > 0 && becom.video.posesDelivered(v, m) > 0,
             "poses Mona to Vic " + becom.video.posesDelivered(m, v)
                 + ", Vic to Mona "
                 + becom.video.posesDelivered(v, m));
         check(
-            "...which reports the Video call quest task for both, and the Mobile call one for Mona (DESIGN.md 15.5)",
+            "...which reports the Video call quest task for both, and the Mobile call one for Mona",
             BeComQuests.reportedForSelfTest(QuestTask.VIDEO_CALL, m)
                 && BeComQuests.reportedForSelfTest(QuestTask.VIDEO_CALL, v)
                 && BeComQuests.reportedForSelfTest(QuestTask.MOBILE_CALL, m)
                 && !BeComQuests.reportedForSelfTest(QuestTask.MOBILE_CALL, v),
             "");
         check(
-            "...each sees the other live, at the call's level, Medium or better (D43)",
+            "...each sees the other live, at the call's level, Medium or better",
             monaSeen != null && vicSeen != null
                 && monaSeen.live()
                 && vicSeen.live()
@@ -4087,7 +4103,7 @@ public final class SelfTest {
     }
 
     /**
-     * DESIGN.md 10.1: a person seen again gets their profile sent again, since the viewer's client let go of it. Wes
+     * A person seen again gets their profile sent again, since the viewer's client let go of it. Wes
      * walks into the Videophone's room during the video call, out of it, and back in.
      */
     private void walkWes(boolean in) {
@@ -4119,7 +4135,7 @@ public final class SelfTest {
         for (PhoneView.Member member : PhoneScreenActions.view(mona, new PhoneHandle.CarriedPhone(monaNumber))
             .members()) names.add(member.name());
         check(
-            "...and the other side's Call tab lists everyone in the room by name (DESIGN.md 11.2)",
+            "...and the other side's Call tab lists everyone in the room by name",
             names.containsAll(List.of("BeComVic", "BeComWes")) && names.size() == 2,
             String.valueOf(names));
         check(
@@ -4129,7 +4145,7 @@ public final class SelfTest {
             "");
         PhoneView atScreen = PhoneScreenActions.view(xan, new PhoneHandle.Videophone(videophone));
         check(
-            "...and sees on the Videophone's screen only that it's in use (DESIGN.md 12.2)",
+            "...and sees on the Videophone's screen only that it's in use",
             atScreen.state() == PhoneView.State.IN_USE && atScreen.members()
                 .isEmpty(),
             atScreen.state() + ", "
@@ -4138,7 +4154,7 @@ public final class SelfTest {
                 + " in the call shown");
         PhoneScreenActions.hangUp(xan, new PhoneHandle.Videophone(videophone));
         check(
-            "...nor can hang it up there, standing in its room but kept out of its call (X28)",
+            "...nor can hang it up there, standing in its room but kept out of its call",
             becom.calls.book()
                 .callOfPhone(videophone.number()) != null,
             "");
@@ -4173,7 +4189,7 @@ public final class SelfTest {
         return null;
     }
 
-    /** DESIGN.md 10.1: each camera switches on and off during a call; the rear camera needs High, one to one. */
+    /** Each camera switches on and off during a call; the rear camera needs High, one to one. */
     private int checkVideoSwitches() {
         UUID m = mona.getUniqueID(), v = vic.getUniqueID();
         PhoneHandle phone = new PhoneHandle.CarriedPhone(monaNumber);

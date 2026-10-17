@@ -10,7 +10,7 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
 
 /**
- * Follows cable out from a Line Terminal (DESIGN.md 5.2, 5.5): a breadth-first walk over the cable touching it,
+ * Follows cable out from a Line Terminal: a breadth-first walk over the cable touching it,
  * collecting the devices within {@code maxLength} blocks of cable, each with the length of its shortest run and the
  * poorest cable on it. A run of more than {@code maxCables} blocks in all serves nothing, so a solid blob of cable
  * can't make every scan read thousands of blocks, and what a terminal finds never depends on walk order.

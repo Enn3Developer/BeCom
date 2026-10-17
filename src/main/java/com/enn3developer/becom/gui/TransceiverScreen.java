@@ -18,7 +18,7 @@ import com.enn3developer.becom.machine.MTETransceiver;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
-/** The Transceiver's screen (DESIGN.md 11.3): its channel and its loudspeaker. */
+/** The Transceiver's screen: its channel and its loudspeaker. */
 public final class TransceiverScreen {
 
     private static final int WIDTH = 150;

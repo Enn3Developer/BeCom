@@ -15,6 +15,7 @@ import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.AnalyzerOverlay;
+import com.enn3developer.becom.client.AppIcon;
 import com.enn3developer.becom.client.ClientAudio;
 import com.enn3developer.becom.client.ClientConfig;
 import com.enn3developer.becom.client.ClientLevels;
@@ -187,6 +188,28 @@ public class ClientProxy extends CommonProxy {
     public IDrawable coverageMap(Supplier<byte[]> map, Supplier<SignalLevel> cap) {
         return (context, x, y, width, height, theme) -> CoverageMapDrawer
             .draw(x, y, width, height, map.get(), cap.get());
+    }
+
+    @Override
+    public IDrawable appIcon(Supplier<String> icon, IDrawable beside) {
+        return (context, x, y, width, height, theme) -> {
+            String hex = icon.get();
+            if (hex == null || hex.length() != AppIcon.CELLS * AppIcon.CELLS) {
+                beside.draw(context, x, y, width, height, theme);
+                return;
+            }
+            // Whole pixels a cell, as big as the row lets it be.
+            int cell = Math.max(1, Math.min(2, (height - 2) / AppIcon.CELLS));
+            int size = cell * AppIcon.CELLS;
+            AppIcon.draw(x + 3, y + (height - size) / 2, cell, hex);
+            beside.draw(context, x + size + 5, y, width - size - 5, height, theme);
+        };
+    }
+
+    @Override
+    public long worldTime() {
+        net.minecraft.client.multiplayer.WorldClient world = net.minecraft.client.Minecraft.getMinecraft().theWorld;
+        return world == null ? 0 : world.getTotalWorldTime();
     }
 
     @Override

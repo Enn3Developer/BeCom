@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 10.1's table and 17's defaults: what each level allows each camera. */
+/** What each level allows each camera. */
 class VideoQualityTest {
 
     private final Tunables t = Tunables.defaults();

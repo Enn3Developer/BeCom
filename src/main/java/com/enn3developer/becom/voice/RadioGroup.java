@@ -18,13 +18,13 @@ import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 
 /**
- * {@code becom:radio.N} (DESIGN.md 8.1, 13.1, 13.3): one radio channel. Only frames sent while the speaker holds
+ * {@code becom:radio.N}: one radio channel. Only frames sent while the speaker holds
  * push-to-talk count. Each receiving device the speaker reaches at Low or better gets the frame if it passes the
- * capture rule (D24) and the dropout model. Then, in this order, since GTNH Voice keeps the first send per player:
- * flat to walkie holders, positional from each walkie that got it to players within 6 blocks of its holder (D21),
+ * capture rule and the dropout model. Then, in this order, since GTNH Voice keeps the first send per player:
+ * flat to walkie holders, positional from each walkie that got it to players within 6 blocks of its holder,
  * positional from each Transceiver that got it to players within its loudspeaker range. Whoever hears the speaker
- * directly (D17) gets nothing from BeCom, and each player hears one speaker at a time, whichever device it comes
- * through (D24).
+ * directly gets nothing from BeCom, and each player hears one speaker at a time, whichever device it comes
+ * through.
  * <p>
  * {@link #route} runs on GTNH Voice's network thread and reads only the snapshot, the routing context and the shared
  * concurrent state in {@link RadioRouting}.
@@ -67,7 +67,7 @@ public final class RadioGroup implements IGroup {
         return displayName;
     }
 
-    /** Each client translates the group's name into its own player's language (DESIGN.md 15.3). */
+    /** Each client translates the group's name into its own player's language. */
     @Override
     public IChatComponent getDisplayComponent() {
         return new ChatComponentTranslation("becom.group.radio", channel);
@@ -101,7 +101,7 @@ public final class RadioGroup implements IGroup {
         double fz = from == null ? 0 : from.getZ();
 
         // A device holds the speaker even through a burst of dropped frames, and so do the players hearing them on
-        // it: otherwise a burst would hand them to the next speaker with no margin (D24). Only the send is skipped.
+        // it: otherwise a burst would hand them to the next speaker with no margin. Only the send is skipped.
         boolean[] walkieHeld = new boolean[tx.walkies().length];
         boolean[] walkieGot = receive(speaker, tx.walkies(), now, walkieHeld);
         boolean[] transceiverHeld = new boolean[tx.transceivers().length];
@@ -115,7 +115,7 @@ public final class RadioGroup implements IGroup {
             // Without voice they hear nothing, so nobody holds them.
             IVoiceSession session = sessions.get(holder);
             if (session == null) continue;
-            // Hearing the speaker in person (D17) counts as hearing them, for the hold, though BeCom sends nothing.
+            // Hearing the speaker in person counts as hearing them, for the hold, though BeCom sends nothing.
             if (!shared.listeners.admit(holder, channel, speaker, link.snr(), now)) continue;
             if (!walkieGot[i] || DirectHearing.hears(from, Snapshots.of(positions, holder), direct)) continue;
             boolean heard = reaches(context, session);
@@ -168,7 +168,7 @@ public final class RadioGroup implements IGroup {
     }
 
     /**
-     * Runs each receiving device through capture (D24) and then the dropout model: {@code held[i]} says the device
+     * Runs each receiving device through capture and then the dropout model: {@code held[i]} says the device
      * holds this speaker, the result whether this frame got through to it.
      */
     private boolean[] receive(UUID speaker, RadioSnapshot.Link[] links, long now, boolean[] held) {
@@ -183,7 +183,7 @@ public final class RadioGroup implements IGroup {
 
     /**
      * Positional from a device to the players around it, minus the speaker, its holder, direct hearers and anyone
-     * already held by another speaker (D24). Players around a device holding the speaker keep hearing them for the
+     * already held by another speaker. Players around a device holding the speaker keep hearing them for the
      * hold even when this frame didn't get through ({@code send} false), or they hear the speaker in person. Sending
      * stops at the device's range, where each client's fade reaches silence ({@link SpeakerFade}).
      */
@@ -205,7 +205,7 @@ public final class RadioGroup implements IGroup {
     }
 
     /**
-     * Whether a send to this listener reaches them, so it counts as a radio contact (DESIGN.md 15.5). {@code sendTo}
+     * Whether a send to this listener reaches them, so it counts as a radio contact. {@code sendTo}
      * silently drops a send to a listener whose client hasn't sent its first voice datagram yet, and one that a group
      * already served this frame: a higher one, such as BeCom's call group for two players in a call who share a
      * channel, or this one through another device. Asked before the send, which marks the listener served.

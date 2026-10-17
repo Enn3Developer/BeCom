@@ -12,11 +12,12 @@ import net.minecraft.network.PacketBuffer;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.app.AppTree;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
 import io.netty.buffer.Unpooled;
 
-/** The phone screen's view survives the wire whole, up to each list's cap (DESIGN.md 11.2). */
+/** The phone screen's view survives the wire whole, up to each list's cap. */
 class PhoneViewTest {
 
     private static PhoneView view(int contacts, int blocked) {
@@ -49,7 +50,71 @@ class PhoneViewTest {
             false,
             new PhoneView.Video(true, false, true, true, true),
             new PhoneView.Battery(744_000, 1_200_000, 155, 39, true, List.of(42, 24, 21, 9, 4), false, true, true),
-            new PhoneView.Via(PhoneView.Via.Kind.ANTENNA, 2));
+            new PhoneView.Via(PhoneView.Via.Kind.ANTENNA, 2),
+            new AppsView(
+                List.of(
+                    new AppsView.App(
+                        "reactor",
+                        "Reactor",
+                        "1.2",
+                        "Steve",
+                        "Hot",
+                        0x2a8a4a,
+                        "0".repeat(32) + "a".repeat(32),
+                        0b10101,
+                        false,
+                        "120, 64, -30",
+                        true,
+                        14,
+                        3000,
+                        3072,
+                        12_000,
+                        65_536)),
+                new AppsView.Screen(
+                    "reactor",
+                    AppsView.State.RUNNING,
+                    "",
+                    List.of(
+                        new AppTree.Widget(
+                            AppTree.Kind.PROGRESS,
+                            "",
+                            "Heat",
+                            "",
+                            0.5,
+                            AppTree.Level.HIGH,
+                            AppTree.Style.PLAIN,
+                            ""),
+                        new AppTree.Widget(
+                            AppTree.Kind.BUTTON,
+                            "scram",
+                            "SCRAM",
+                            "",
+                            0,
+                            AppTree.Level.PLAIN,
+                            AppTree.Style.DANGER,
+                            "")),
+                    123_456_789L),
+                new AppsView.Offer(7, true, "Lights", "1.0", "Alex", "1, 2, 3", 900, 3),
+                new AppsView.Notice("Reactor", "Hull heat", "80%"),
+                List.of(
+                    new AppsView.StoreApp(
+                        "lights",
+                        "Lights",
+                        "1.0",
+                        "Alex",
+                        "Base lights",
+                        4,
+                        900,
+                        "",
+                        "f".repeat(64),
+                        1,
+                        12,
+                        true,
+                        true)),
+                "li",
+                2,
+                3,
+                17));
     }
 
     private static PhoneView roundTrip(PhoneView view) {

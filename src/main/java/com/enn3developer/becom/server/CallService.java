@@ -50,7 +50,7 @@ import com.enn3developer.becom.voice.CallSnapshot;
 import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 
 /**
- * Calls in the world (DESIGN.md 10): handsets, dialling, ringing, tones, history, group membership and the routing
+ * Calls in the world: handsets, dialling, ringing, tones, history, group membership and the routing
  * snapshot, all around the pure {@link CallBook}. Server thread only.
  */
 public final class CallService implements CallBook.Listener {
@@ -59,7 +59,7 @@ public final class CallService implements CallBook.Listener {
     private static final long MILLIS_PER_SECOND = 1000L;
     // How often handset cords are checked: often enough that walking off hangs up within a quarter second.
     private static final int CORD_CHECK_TICKS = 5;
-    // A Videophone not heard from for this long is unpowered or unloaded, like a node offline (DESIGN.md 14).
+    // A Videophone not heard from for this long is unpowered or unloaded, like a node offline.
     private static final int VIDEOPHONE_LOST_TICKS = 2 * TICKS_PER_SECOND;
     /** How long a busy tone plays on a phone with no handset to put down before it stops by itself. */
     public static final int BRIEF_TONE_TICKS = 3 * TICKS_PER_SECOND;
@@ -80,7 +80,7 @@ public final class CallService implements CallBook.Listener {
     // Per call, the pairs of phones that were in it at the same time, and those whose history is written.
     private final Map<Long, Set<Pair>> talked = new HashMap<>();
     private final Map<Long, Set<Pair>> recorded = new HashMap<>();
-    // Carried phones ringing now, and the tick each started (DESIGN.md 11.2: a carried phone rings from its player).
+    // Carried phones ringing now, and the tick each started.
     private final Map<Integer, Long> ringingCarried = new HashMap<>();
     // Each ringing carried phone's notice and whose phone it is: it goes from their screen however the phone left them.
     // A client shows one notice: the latest ringing for its player, while they're free to answer it.
@@ -88,11 +88,11 @@ public final class CallService implements CallBook.Listener {
     private long noticesShown;
     // The phone whose notice each player's screen shows now.
     private final Map<UUID, Integer> shownNotices = new HashMap<>();
-    // Working Videophones, where they stand, and the tick each last reported in (DESIGN.md 10.2).
+    // Working Videophones, where they stand, and the tick each last reported in.
     private final Map<Integer, Videophone> videophones = new HashMap<>();
-    // The level each player around a Videophone's loudspeaker was last told they hear each speaker at (DESIGN.md 13.5).
+    // The level each player around a Videophone's loudspeaker was last told they hear each speaker at.
     private final Map<Heard, SignalLevel> loudspeakerLevels = new HashMap<>();
-    // The bars each player in a call was last told: the weakest level they hear their call at (DESIGN.md 11.2).
+    // The bars each player in a call was last told: the weakest level they hear their call at.
     private final Map<UUID, SignalLevel> callBars = new HashMap<>();
     // Players hearing a tone that stops by itself, and the tick it stops.
     private final Map<UUID, Long> toneStops = new HashMap<>();
@@ -132,7 +132,7 @@ public final class CallService implements CallBook.Listener {
 
             @Override
             public void lost(int number) {
-                // Switched off, flat, dropped or stored: it can't ring or carry a call any more (DESIGN.md 11.3).
+                // Switched off, flat, dropped or stored: it can't ring or carry a call any more.
                 book.phoneGone(number);
             }
         });
@@ -174,7 +174,7 @@ public final class CallService implements CallBook.Listener {
 
     /**
      * {@code player} picks up the Telephone {@code phone}: answers it if it's ringing; otherwise rings the only other
-     * reachable phone, or opens the dialer (DESIGN.md 5.6). Returns whether the dialer should open.
+     * reachable phone, or opens the dialer. Returns whether the dialer should open.
      */
     public boolean pickUp(EntityPlayerMP player, TileTelephone telephone) {
         Pickup pickup = takeHandset(player, telephone);
@@ -262,12 +262,20 @@ public final class CallService implements CallBook.Listener {
      */
     public List<CallGraph.Entry> entriesOf(int phone) {
         PhoneRecord record = phones.record(phone);
+        if (record != null && record.kind() == PhoneKind.COMPUTER) return computerEntries.apply(phone);
         if (record != null && record.kind()
             .carried()) {
             return carried.serviceOf(phone)
                 .entries();
         }
         return CallGraph.Entry.of(phone);
+    }
+
+    private java.util.function.IntFunction<List<CallGraph.Entry>> computerEntries = n -> List.of();
+
+    /** Where computers' BeCom Cards come into the network, by number. */
+    public void setComputerEntries(java.util.function.IntFunction<List<CallGraph.Entry>> entries) {
+        computerEntries = entries;
     }
 
     /** The weakest hop on the best path from one phone to another, whatever kind each is, capacity aside. */
@@ -286,7 +294,7 @@ public final class CallService implements CallBook.Listener {
         }
     }
 
-    // How the calls share the network (DESIGN.md 5.4, 5.5, 7): rebuilt as the graph or the calls change, and every
+    // How the calls share the network: rebuilt as the graph or the calls change, and every
     // second, as carried phones move.
     private CallGraph.Routing routing;
     private CallGraph routedGraph;
@@ -345,9 +353,55 @@ public final class CallService implements CallBook.Listener {
         return hasRoom(null, from, to);
     }
 
+    /**
+     * How many phones a call from the node at {@code (dimension, pos)} could reach now, at Low or better: those on
+     * lines, and carried ones in service.
+     */
+    public int reachFrom(int dimension, long pos) {
+        CallGraph graph = network.graph();
+        List<CallGraph.Entry> from = List
+            .of(new CallGraph.Entry(new CallGraph.NodeVertex(dimension, pos), Double.POSITIVE_INFINITY));
+        double low = levels.threshold(SignalLevel.LOW);
+        java.util.Set<Integer> found = new java.util.HashSet<>();
+        for (Map.Entry<Integer, Double> phone : graph.phonesFrom(from)
+            .entrySet()) if (phone.getValue() >= low) found.add(phone.getKey());
+        for (int number : carried.working()) {
+            if (!found.contains(number) && graph.width(from, entriesOf(number)) >= low) found.add(number);
+        }
+        return found.size();
+    }
+
+    /** The ME Phones in service through ME network {@code grid}'s part in {@code dimension}: [in service, in calls]. */
+    public int[] mePhones(int grid, int dimension) {
+        CallGraph.MeVertex me = new CallGraph.MeVertex(grid, dimension);
+        int phones = 0, inCalls = 0;
+        for (int number : carried.working()) {
+            boolean on = false;
+            for (CallGraph.Entry entry : carried.serviceOf(number)
+                .entries()) on |= me.equals(entry.vertex());
+            if (!on) continue;
+            phones++;
+            if (book.callOfPhone(number) != null) inCalls++;
+        }
+        return new int[] { phones, inCalls };
+    }
+
     /** How many calls go through a node now: an Exchange's or an antenna's. */
     public int callsAt(int dimension, long pos) {
         return routing().calls(new CallGraph.NodeVertex(dimension, pos));
+    }
+
+    /** How many calls the satellites over a dimension carry now, and how many they can: [now, at most]. */
+    public int[] skyCalls(int dimension) {
+        CallGraph.SkyVertex sky = new CallGraph.SkyVertex(dimension);
+        int slots = network.graph()
+            .slots(sky);
+        return new int[] { routing().calls(sky), slots == CallGraph.UNLIMITED ? 0 : slots };
+    }
+
+    /** Where data from one phone to another would go now, over what calls leave and {@code dataOn} doesn't take. */
+    public CallGraph.DataRoute dataRoute(int from, int to, java.util.function.ToIntFunction<Object> dataOn) {
+        return routing().data(entriesOf(from), entriesOf(to), dataOn);
     }
 
     /** The KB/s calls take of a run of wire between two powered nodes now. */
@@ -361,7 +415,7 @@ public final class CallService implements CallBook.Listener {
     private record Reachable(long tick, List<Integer> phones) {}
 
     // Each phone's reachable phones, kept a second: an open phone screen asks for its contacts every tick, and each
-    // answer is a path search per phone in reach (DESIGN.md 14: path finding re-runs only when something changes).
+    // answer is a path search per phone in reach.
     private final Map<Integer, Reachable> reachable = new HashMap<>();
     private int reachableSearches;
 
@@ -392,7 +446,7 @@ public final class CallService implements CallBook.Listener {
             .entrySet()) {
             PhoneRecord record = phones.record(entry.getKey());
             if (entry.getValue() < low || record == null) continue;
-            // An unpowered or unloaded Videophone can't be called (D11).
+            // An unpowered or unloaded Videophone can't be called.
             if (record.kind() == PhoneKind.VIDEOPHONE && !videophoneWorking(entry.getKey())) continue;
             found.add(entry.getKey());
         }
@@ -436,9 +490,14 @@ public final class CallService implements CallBook.Listener {
         PhoneRegistry registry = phones.registry();
         if (registry.refusal(caller.getUniqueID(), to) != PhoneRegistry.Refusal.NONE) return CallBook.Check.UNREACHABLE;
         PhoneRecord target = registry.get(to);
+        // A computer's number is for apps' data; there's nobody to talk to (joining a computer to BeCom).
+        if (target.kind() == PhoneKind.COMPUTER) {
+            tell(caller, "becom.call.computer");
+            return CallBook.Check.UNREACHABLE;
+        }
         if (target.kind()
             .carried()) {
-            // Unreachable when nobody carries it switched on and charged, or its holder has no voice (DESIGN.md 10);
+            // Unreachable when nobody carries it switched on and charged, or its holder has no voice;
             // busy when its holder is in a call on another phone.
             UUID holder = carried.holderOf(to);
             if (holder == null || !carried.working()
@@ -446,10 +505,10 @@ public final class CallService implements CallBook.Listener {
             if (book.callOf(holder) != null || handsetOf.containsKey(holder)) return CallBook.Check.BUSY;
         }
         if (target.kind() == PhoneKind.VIDEOPHONE && !videophoneWorking(to)) return CallBook.Check.UNREACHABLE;
-        // Someone holding the other handset without a call is dialling out (DESIGN.md 10: busy).
+        // Someone holding the other handset without a call is dialling out.
         if (handsets.containsKey(to)) return CallBook.Check.BUSY;
         if (width(from, to) < levels.threshold(SignalLevel.LOW)) return CallBook.Check.UNREACHABLE;
-        // Reachable, but every way there is full: the network is busy (DESIGN.md 5.4).
+        // Reachable, but every way there is full: the network is busy.
         if (!hasRoom(book.callOf(caller.getUniqueID()), from, to)) {
             tell(caller, "becom.call.network_busy");
             return CallBook.Check.BUSY;
@@ -473,7 +532,7 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * {@code player} dials {@code to} from the phone they carry (DESIGN.md 11.2): a call, or, while they're in one on
+     * {@code player} dials {@code to} from the phone they carry: a call, or, while they're in one on
      * it, another phone added to it (group calls).
      */
     public CallBook.DialResult dialCarried(EntityPlayerMP player, int from, int to) {
@@ -552,7 +611,7 @@ public final class CallService implements CallBook.Listener {
         return book.answer(player.getUniqueID(), number, now());
     }
 
-    /** {@code player} turns down a call ringing phone {@code number}, which they carry (D34). */
+    /** {@code player} turns down a call ringing phone {@code number}, which they carry. */
     public boolean rejectCarried(EntityPlayer player, int number) {
         return carries(player, number) && book.reject(number);
     }
@@ -579,7 +638,7 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * The Phone key (DESIGN.md 11.1, D34): with sneak, turns down the player's ringing phone; hangs up during a call,
+     * The Phone key: with sneak, turns down the player's ringing phone; hangs up during a call,
      * or puts a handset down; answers the ringing phone; otherwise opens the screen of the first phone they carry. A
      * ringing phone is one they carry, or a Telephone or Videophone close enough to answer: within its cord, or in its
      * room. Hanging up comes before answering: a call they're in has to end before another can be answered.
@@ -664,7 +723,7 @@ public final class CallService implements CallBook.Listener {
 
     /**
      * Puts on {@code holder}'s screen the notice they should see: the latest of their phones ringing, unless they're in
-     * a call or hold a handset, where the Phone key hangs up instead of answering (DESIGN.md 11.1). The phone rings on.
+     * a call or hold a handset, where the Phone key hangs up instead of answering. The phone rings on.
      */
     private void showNotice(UUID holder) {
         boolean busy = book.callOf(holder) != null || handsetOf.containsKey(holder);
@@ -682,7 +741,7 @@ public final class CallService implements CallBook.Listener {
 
     // region Videophones
 
-    /** A working Videophone: where it stands and faces, and the tick it last reported in (DESIGN.md 10.2). */
+    /** A working Videophone: where it stands and faces, and the tick it last reported in. */
     public record Videophone(int dimension, int x, int y, int z, int facing, long heard) {
 
         public double centerX() {
@@ -701,7 +760,7 @@ public final class CallService implements CallBook.Listener {
     /** A listener and a speaker they hear. */
     private record Heard(UUID listener, UUID speaker) {}
 
-    /** A Videophone reports in each tick it's loaded and powered (D11). */
+    /** A Videophone reports in each tick it's loaded and powered. */
     public void videophoneHeard(int number, int dimension, int x, int y, int z, int facing) {
         videophones.put(number, new Videophone(dimension, x, y, z, facing, ticks));
     }
@@ -717,7 +776,7 @@ public final class CallService implements CallBook.Listener {
         return videophoneWorking(number) ? videophones.get(number) : null;
     }
 
-    /** Whether {@code player} stands in {@code videophone}'s room, where everyone is in its call (DESIGN.md 10.2). */
+    /** Whether {@code player} stands in {@code videophone}'s room, where everyone is in its call. */
     private boolean inRoom(EntityPlayer player, Videophone videophone) {
         double room = tunables.videophoneRoom();
         return player.dimension == videophone.dimension()
@@ -770,7 +829,7 @@ public final class CallService implements CallBook.Listener {
     /**
      * Someone in Videophone {@code number}'s call hangs it up at its screen for the whole room, who hear the click as
      * they leave the call; or someone in its room who could answer it turns a ringing call down. Its call is the
-     * room's: anyone near it but kept out of it, in another call say, can't end it (DESIGN.md 12.2).
+     * room's: anyone near it but kept out of it, in another call say, can't end it.
      */
     public void hangUpVideophone(EntityPlayerMP player, int number) {
         if (!atVideophone(player, number)) return;
@@ -786,8 +845,8 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * Once a second: Videophones not heard from leave their calls (D11); the rest take in whoever stands around them
-     * (DESIGN.md 10.2); and the players around each loudspeaker learn the level they hear the call at.
+     * Once a second: Videophones not heard from leave their calls; the rest take in whoever stands around them;
+     * and the players around each loudspeaker learn the level they hear the call at.
      */
     private void updateVideophones(long now) {
         for (int number : new ArrayList<>(videophones.keySet())) {
@@ -806,7 +865,7 @@ public final class CallService implements CallBook.Listener {
     /**
      * Whoever stands around a Videophone is in its room, but nobody joins it without voice, who could neither hear nor
      * be heard, nor while their own phone rings, which they couldn't answer from a call. Someone already in it stays
-     * through their voice's grace, as on any phone (DESIGN.md 10).
+     * through their voice's grace, as on any phone.
      */
     private void updateRoom(int number, long now) {
         Videophone phone = videophones.get(number);
@@ -863,8 +922,8 @@ public final class CallService implements CallBook.Listener {
     }
 
     /**
-     * The players around a Videophone's loudspeaker who aren't in its call hear it too (DESIGN.md 10.2), at the level
-     * the Videophone hears each speaker at, as around a Transceiver (DESIGN.md 13.5).
+     * The players around a Videophone's loudspeaker who aren't in its call hear it too, at the level
+     * the Videophone hears each speaker at, as around a Transceiver.
      */
     private void sendLoudspeakerLevels() {
         Map<Heard, SignalLevel> current = new HashMap<>();
@@ -923,7 +982,7 @@ public final class CallService implements CallBook.Listener {
             .carried()) return;
         ringingCarried.put(leg.phone(), ticks);
         ringCarried(leg.phone());
-        // The notice in the corner (DESIGN.md 11.2): who calls, and from which number.
+        // The notice in the corner: who calls, and from which number.
         UUID holder = carried.holderOf(leg.phone());
         Call.Leg ringer = call.legOf(leg.invitedBy());
         if (holder != null && ringer != null) {
@@ -997,7 +1056,7 @@ public final class CallService implements CallBook.Listener {
         publish();
     }
 
-    /** The quest tasks a call completes as it connects or a phone joins it (DESIGN.md 15.5). */
+    /** The quest tasks a call completes as it connects or a phone joins it. */
     private void completeQuests(Call call) {
         CallGraph graph = network.graph();
         CallQuests.Done done = CallQuests.of(
@@ -1022,7 +1081,7 @@ public final class CallService implements CallBook.Listener {
         return player == null ? null : player.dimension;
     }
 
-    /** A phone added to a call stopped ringing unanswered: whoever added it hears why (DESIGN.md 11.2). */
+    /** A phone added to a call stopped ringing unanswered: whoever added it hears why. */
     private void addFailed(Call call, Call.Leg leg, CallBook.EndReason reason) {
         Call.Leg inviter = call.legOf(leg.invitedBy());
         if (inviter == null) return;
@@ -1181,7 +1240,7 @@ public final class CallService implements CallBook.Listener {
         }
     }
 
-    // Whether a player has a voice session (DESIGN.md 13.2). Only the self-test swaps it, for its fake players.
+    // Whether a player has a voice session. Only the self-test swaps it, for its fake players.
     private Predicate<UUID> hasVoice = id -> GtnhVoiceApi.session(id)
         .isPresent();
 
@@ -1190,7 +1249,7 @@ public final class CallService implements CallBook.Listener {
         this.hasVoice = hasVoice;
     }
 
-    /** A direction's SNR is its best path's weakest hop; its level is capped by both phones (DESIGN.md 4.1). */
+    /** A direction's SNR is its best path's weakest hop; its level is capped by both phones. */
     private final CallBook.Quality quality = new CallBook.Quality() {
 
         @Override
@@ -1224,13 +1283,13 @@ public final class CallService implements CallBook.Listener {
         }
     }
 
-    /** The player logged out (DESIGN.md 10): their call ends and their handset drops. */
+    /** The player logged out: their call ends and their handset drops. */
     public void logout(UUID player) {
         hangUpHandset(player);
         book.logout(player);
     }
 
-    /** sessionStarted: a player in a call gets their membership back (DESIGN.md 13.2). */
+    /** sessionStarted: a player in a call gets their membership back. */
     public void sessionStarted(UUID player) {
         book.sessionBack(player);
         Call call = book.callOf(player);
@@ -1284,8 +1343,7 @@ public final class CallService implements CallBook.Listener {
                     double loss = dropouts.lossRate(call.snr(from, to));
                     double enterBad = dropouts.enterBadChance(loss);
                     double leaveBad = dropouts.leaveBadChance();
-                    // A Videophone plays the call from its loudspeaker to everyone around it, its room included
-                    // (DESIGN.md 10.2, 13.3).
+                    // A Videophone plays the call from its loudspeaker to everyone around it, its room included.
                     Videophone loud = kindOf(to.phone()) == PhoneKind.VIDEOPHONE ? videophone(to.phone()) : null;
                     for (UUID speaker : from.players()) {
                         if (loud != null) {
@@ -1409,7 +1467,7 @@ public final class CallService implements CallBook.Listener {
         tone(player.getUniqueID(), tone);
     }
 
-    /** A tone that loops until a handset goes down, played for a while on a phone with no handset (DESIGN.md 10). */
+    /** A tone that loops until a handset goes down, played for a while on a phone with no handset. */
     private void briefTone(UUID player, TonePacket.Tone tone) {
         tone(player, tone);
         toneStops.put(player, ticks + BRIEF_TONE_TICKS);

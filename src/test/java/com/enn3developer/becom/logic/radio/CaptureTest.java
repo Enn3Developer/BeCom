@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** D24: each listener hears the strongest transmitter, held for 100 ms, taken over at 3 dB stronger. */
+/** Each listener hears the strongest transmitter, held for 100 ms, taken over at 3 dB stronger. */
 class CaptureTest {
 
     private static final long MS = 1_000_000L;

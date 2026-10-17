@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
-/** DESIGN.md 11.2: which recent-calls row each phone of a call keeps about the others. */
+/** Which recent-calls row each phone of a call keeps about the others. */
 class CallHistoryTest {
 
     private static final int A = 111_111;

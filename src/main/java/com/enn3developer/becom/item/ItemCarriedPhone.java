@@ -35,8 +35,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.modularui2.GTGuiThemes;
 
 /**
- * A phone players carry (DESIGN.md 8, 8.2): the Mobile Phone and the ME Phone. It works from the inventory or a bauble
- * slot (D14) while switched on and charged, and drains its charge on standby and more in a call (D36). Its number,
+ * A phone players carry: the Mobile Phone and the ME Phone. It works from the inventory or a bauble
+ * slot while switched on and charged, and drains its charge on standby and more in a call. Its number,
  * given on first use, and whether it's on live in the stack; its owner and settings in the world's phone registry.
  */
 public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, IGuiHolder<PlayerInventoryGuiData> {
@@ -84,7 +84,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         tag(stack).setInteger(NUMBER, number);
     }
 
-    /** Switched on; a new phone is, and a flat battery switches it off (DESIGN.md 11.3). */
+    /** Switched on; a new phone is, and a flat battery switches it off. */
     public static boolean on(ItemStack stack) {
         NBTTagCompound tag = stack.getTagCompound();
         return tag == null || !tag.hasKey(ON) || tag.getBoolean(ON);
@@ -138,7 +138,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         tag(stack).setBoolean(WARN, on);
     }
 
-    /** Its state was written by a newer BeCom: this one leaves it alone (X16). */
+    /** Its state was written by a newer BeCom: this one leaves it alone. */
     public static boolean isTooNew(ItemStack stack) {
         return BeComNbt.tooNew(stack.getTagCompound(), FORMAT);
     }
@@ -192,7 +192,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
 
     // region Screen
 
-    /** Right-click opens its phone screen (DESIGN.md 11.2); so does the Phone key, for the first phone carried. */
+    /** Right-click opens its phone screen; so does the Phone key, for the first phone carried. */
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
         if (!world.isRemote && PhoneScreenActions.mayOpenScreen(player)) GuiFactories.playerInventory()
@@ -211,7 +211,11 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
             number = becom.carried.numberFor(mp, stack);
             // An open screen costs charge.
             sync.addOpenListener(p -> becom.carried.screenOpen(number, true));
-            sync.addCloseListener(p -> becom.carried.screenOpen(number, false));
+            sync.addCloseListener(p -> {
+                becom.carried.screenOpen(number, false);
+                // Its app leaves the screen too: the machine stops unless something runs in the background.
+                becom.apps.close(number);
+            });
         } else number = stack == null || !is(stack) ? -1 : number(stack);
         return PhoneScreen.build(new PhoneHandle.CarriedPhone(number), player, sync);
     }

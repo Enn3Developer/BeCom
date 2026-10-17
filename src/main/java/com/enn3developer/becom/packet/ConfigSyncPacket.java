@@ -13,7 +13,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * The server's tunables, sent to each player as they log in (DESIGN.md 14.2): clients show the server's rules in
+ * The server's tunables, sent to each player as they log in: clients show the server's rules in
  * tooltips and holograms, never their own config file's.
  */
 public final class ConfigSyncPacket implements IMessage {

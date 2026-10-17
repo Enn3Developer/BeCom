@@ -9,7 +9,7 @@ import gregtech.api.GregTechAPI;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 
 /**
- * BeCom's GregTech machines and their IDs (D18, DESIGN.md 14.1). The range is one of the three fixed tunables. Every
+ * BeCom's GregTech machines and their IDs. The range is one of the three fixed tunables. Every
  * ID is checked before anything is registered, so another mod already using one stops the game with a clear error
  * instead of two machines quietly sharing an ID and corrupting worlds.
  */

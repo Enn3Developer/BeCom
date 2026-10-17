@@ -13,8 +13,8 @@ import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.util.Constants;
 
 /**
- * Brings a BeCom quest that a world already holds up to the definition BeCom ships, keeping its players' progress
- * (DEVIATIONS.md X42: DESIGN.md 15.5 is silent on updates). Works on quests as BetterQuesting writes them, a definition
+ * Brings a BeCom quest that a world already holds up to the definition BeCom ships, keeping its players' progress.
+ * Works on quests as BetterQuesting writes them, a definition
  * from {@code IQuest.writeToNBT} and progress from {@code writeProgressToNBT}, without BetterQuesting's classes, so it
  * can be tested on its own.
  */

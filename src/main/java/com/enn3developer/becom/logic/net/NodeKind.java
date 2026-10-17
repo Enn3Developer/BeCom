@@ -1,42 +1,42 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * Every kind of node a BeCom network holds (DESIGN.md 14). Saved by name, so constants can be added but never
+ * Every kind of node a BeCom network holds. Saved by name, so constants can be added but never
  * renamed.
  */
 public enum NodeKind {
 
-    /** A Pylon Head: passive, holds the cables of a line's spans (DESIGN.md 5.1). */
+    /** A Pylon Head: passive, holds the cables of a line's spans. */
     PYLON(2, false, true, 0),
-    /** A ground machine where a building's line starts: it serves every device on its cable (DESIGN.md 5.2). */
+    /** A ground machine where a building's line starts: it serves every device on its cable. */
     TERMINAL(1, true, false, 0),
     /**
-     * The Exchange (DESIGN.md 5.4): a ground multiblock whose Switching Racks switch calls between every line wired
+     * The Exchange: a ground multiblock whose Switching Racks switch calls between every line wired
      * to it.
      */
     EXCHANGE(15, true, false, 0),
     /**
-     * Antennas (DESIGN.md 7). Their wrench links are wired backhaul; links between antennas come from their surveys
-     * and aren't saved. Like an Exchange, an antenna joins whatever it's wired to into one network (X19).
+     * Antennas. Their wrench links are wired backhaul; links between antennas come from their surveys
+     * and aren't saved. Like an Exchange, an antenna joins whatever it's wired to into one network.
      */
     ANTENNA_T1(15, true, false, 1),
     ANTENNA_T2(15, true, false, 2),
     ANTENNA_T3(15, true, false, 3),
-    /** A radio on a block (DESIGN.md 8): kept here so the network knows where every Transceiver is (DESIGN.md 14). */
+    /** A radio on a block: kept here so the network knows where every Transceiver is. */
     TRANSCEIVER(0, true, false, 0),
     /**
-     * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network. Its one wrench link is a bridge onto
-     * a Pylon Head, a Line Terminal or an antenna within the bridge distance (X40), a short stretch of line it drives,
+     * The ME Bridge: joins an ME network to a BeCom network. Its one wrench link is a bridge onto
+     * a Pylon Head, a Line Terminal or an antenna within the bridge distance, a short stretch of line it drives,
      * like an antenna's.
      */
     ME_BRIDGE(1, true, false, 0),
     /**
-     * The Satellite Dish (DESIGN.md 9.2): its one wrench link is a bridge onto an antenna, a Pylon Head or a Line
+     * The Satellite Dish: its one wrench link is a bridge onto an antenna, a Pylon Head or a Line
      * Terminal within the bridge distance, and it joins that network to the satellites over its dimension.
      */
     SATELLITE_DISH(1, true, false, 0),
     /**
-     * The Portal Relay (DESIGN.md 9.4): its one wrench link is a bridge onto its own network, as a dish's is (X36), and
+     * The Portal Relay: its one wrench link is a bridge onto its own network, as a dish's is, and
      * its partner, the relay on the far side of a portal, is a link of its own between two dimensions.
      */
     PORTAL_RELAY(1, true, false, 0);
@@ -57,12 +57,12 @@ public enum NodeKind {
         return linkSlots;
     }
 
-    /** Powered nodes work only while loaded and powered (D11), and end the runs of wire between them (5.7). */
+    /** Powered nodes work only while loaded and powered, and end the runs of wire between them (5.7). */
     public boolean powered() {
         return powered;
     }
 
-    /** Sits on a frame column with a span limit and a clearance check (DESIGN.md 5.1). */
+    /** Sits on a frame column with a span limit and a clearance check. */
     public boolean pylonHead() {
         return pylonHead;
     }

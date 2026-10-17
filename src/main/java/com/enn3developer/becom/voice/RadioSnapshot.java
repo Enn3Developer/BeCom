@@ -8,13 +8,13 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * What the {@code becom:radio.N} groups route from (DESIGN.md 13.3), built on the server thread and handed to the
+ * What the {@code becom:radio.N} groups route from, built on the server thread and handed to the
  * network thread whole. Immutable once published. A transmission worked out once is used as it is by the snapshots
  * after, until its radio is worked out again.
  * <p>
  * For each player transmitting, it holds the channel they transmit on and every receiving device their signal reaches
- * at Low or better: walkie-talkie holders first, then Transceivers. The SNR rides along for the capture rule (D24),
- * the burst-loss chances for the dropout model (DESIGN.md 4.2).
+ * at Low or better: walkie-talkie holders first, then Transceivers. The SNR rides along for the capture rule,
+ * the burst-loss chances for the dropout model.
  */
 public final class RadioSnapshot {
 

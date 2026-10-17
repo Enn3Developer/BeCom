@@ -14,14 +14,14 @@ import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * Who sees whom in a video call (DESIGN.md 10.1, D41-D43): every player on a video phone sees everyone on the other
+ * Who sees whom in a video call: every player on a video phone sees everyone on the other
  * video phones of their call, each at the level they hear that phone at. Video needs Medium or better: at Low the
  * picture freezes, and the client says so. The rear camera streams only between the two people of a one-to-one call,
  * from a phone they carry, at High or better. Built from a call's state; pure, so it's tested without a world.
  */
 public final class VideoPlan {
 
-    /** The cameras a player has switched on: the front starts on, the rear off (DESIGN.md 10.1). */
+    /** The cameras a player has switched on: the front starts on, the rear off. */
     public record Cameras(boolean front, boolean rear) {
 
         public static final Cameras START = new Cameras(true, false);
@@ -34,7 +34,7 @@ public final class VideoPlan {
      */
     public record Tile(UUID source, int phone, SignalLevel level, boolean front, boolean rear) {
 
-        /** Whether the front camera's picture moves: switched on and at Medium or better (D43). */
+        /** Whether the front camera's picture moves: switched on and at Medium or better. */
         public boolean live() {
             return front && level.atLeast(SignalLevel.MEDIUM);
         }
@@ -122,7 +122,7 @@ public final class VideoPlan {
 
     /**
      * Whether {@code viewer} gets live video from someone in their call: both on video phones, that person's front
-     * camera on, at Medium or better. What completes the Video call quest task for them (DESIGN.md 15.5).
+     * camera on, at Medium or better. What completes the Video call quest task for them.
      */
     public boolean seesLive(UUID viewer) {
         for (Tile tile : tilesOf(viewer)) if (tile.live()) return true;

@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic;
 
 /**
- * Turns a hop's SNR into a {@link SignalLevel} (DESIGN.md 4.1). A link enters a level at its threshold and leaves it
+ * Turns a hop's SNR into a {@link SignalLevel}. A link enters a level at its threshold and leaves it
  * only {@code hysteresis} dB below, so a link sitting on a threshold doesn't flicker.
  */
 public final class LevelScale {

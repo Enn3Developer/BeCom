@@ -11,7 +11,7 @@ import java.util.function.IntFunction;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * Who a call's quest tasks complete for as it connects or a phone joins it (DESIGN.md 15.5): First call for everyone
+ * Who a call's quest tasks complete for as it connects or a phone joins it: First call for everyone
  * in it, Mobile call for everyone in it on a Mobile Phone, ME Bridge call for each ME Phone's user whose path to
  * another phone of the call goes through an ME Bridge, and Call between dimensions for everyone in it when its people
  * are in different dimensions. Pure, so it's tested without a world.

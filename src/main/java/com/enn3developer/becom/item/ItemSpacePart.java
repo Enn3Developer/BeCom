@@ -11,8 +11,8 @@ import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 
 /**
- * BeCom's parts for space (DESIGN.md 9): the Satellite, the Satellite Rocket a Launch Pad puts into orbit (D30), and
- * the Rocket Radio Receiver a rocket carries in its cargo (D6). They do nothing in the hand; what holds them does.
+ * BeCom's parts for space: the Satellite, the Satellite Rocket a Launch Pad puts into orbit, and
+ * the Rocket Radio Receiver a rocket carries in its cargo. They do nothing in the hand; what holds them does.
  */
 public class ItemSpacePart extends Item {
 

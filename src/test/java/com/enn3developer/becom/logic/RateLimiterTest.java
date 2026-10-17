@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 12.3: at most 5 call attempts per minute per caller. */
+/** At most 5 call attempts per minute per caller. */
 class RateLimiterTest {
 
     @Test

@@ -34,7 +34,7 @@ import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 
 /**
- * DESIGN.md 6.5's budgets at a busy server's scale, timed on this machine: 64 T3 antennas over hilly ground, 200
+ * BeCom's per-tick budgets at a busy server's scale, timed on this machine: 64 T3 antennas over hilly ground, 200
  * players each holding a walkie and a phone, 30 radios keyed at once, and the voice routing on GTNH Voice's thread.
  * Not part of the build, since timings depend on the machine: {@code ./gradlew loadTest} runs it and prints the report.
  */
@@ -222,7 +222,7 @@ class BudgetLoadTest {
             }
         }
         line(
-            "BeCom load test (DESIGN.md 6.5), Java %s, %d cores",
+            "BeCom load test, Java %s, %d cores",
             System.getProperty("java.version"),
             Runtime.getRuntime()
                 .availableProcessors());
@@ -489,7 +489,7 @@ class BudgetLoadTest {
         line("  every radio's links at once, as when a Transceiver stops working: %s in one tick", ms(everyone));
         System.out.print(report);
 
-        // What DESIGN.md 6.5 promises: surveys keep to their budget, give or take one step, and the rest is small
+        // The budgets: surveys keep to their budget, give or take one step, and the rest is small
         // beside a tick's 50 ms.
         assertEquals(PLAYERS - 1, heard, "every listener on the channel gets the frame");
         assertTrue(links > 0, "the antennas link up");
@@ -500,7 +500,7 @@ class BudgetLoadTest {
         assertTrue(press < 1_000_000, "a press of push-to-talk works out only that radio");
         // Spread, a tick works out only the radios due in it, three to five of the 30 here, each about a thirtieth of
         // everyone at once: measured at 0.5 to 0.7 ms beside 3.1 to 3.4 ms at once, on a 4-core VM. So a spread
-        // second's slowest tick keeps under what DESIGN.md 6.5 lets surveys take, 2 ms, and under half of everyone at
+        // second's slowest tick keeps under what surveys may take, 2 ms, and under half of everyone at
         // once whatever the machine, with room for the VM's stalls.
         assertTrue(spread < 2_000_000, "a spread second's slowest tick stays under 2 ms: " + ms(spread));
         assertTrue(2 * spread < everyone, "spreading takes at least half off the slowest tick");

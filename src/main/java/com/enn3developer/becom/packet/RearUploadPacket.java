@@ -11,8 +11,8 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * One rear-camera picture from this player's client (DESIGN.md 10.1): their view just before the HUD, shrunk and
- * compressed to JPEG. The server caps each client's pictures by size and rate (DESIGN.md 14: client input), and sends
+ * One rear-camera picture from this player's client: their view just before the HUD, shrunk and
+ * compressed to JPEG. The server caps each client's pictures by size and rate, and sends
  * them on only where a level allows.
  */
 public final class RearUploadPacket implements IMessage {

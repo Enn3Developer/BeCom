@@ -7,7 +7,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.CallGraph;
 
 /**
- * The hops that join networks far apart and in other dimensions (DESIGN.md 9.2 to 9.5): each working Satellite Dish up
+ * The hops that join networks far apart and in other dimensions: each working Satellite Dish up
  * to the satellites over its dimension, each planet's Rocket Radio Receiver up to the Overworld's, and each linked
  * pair of Portal Relays through its portal. Devices under open sky join the satellites on their own, as they reach
  * them. Each carries a fixed number of calls: a dish its own, the satellites over a dimension a few each, shared by
@@ -16,13 +16,13 @@ import com.enn3developer.becom.logic.net.CallGraph;
  */
 public final class Gateways {
 
-    /** The Overworld, whose satellites every planet's receiver uplinks to (DESIGN.md 9.3). */
+    /** The Overworld, whose satellites every planet's receiver uplinks to. */
     public static final int OVERWORLD = 0;
 
     /** A working Satellite Dish, and what its hop up loses: rain at the dish and its maintenance problems (9.2). */
     public record Dish(int dimension, long pos, double loss) {}
 
-    /** A working Rocket Radio Receiver, by the dimension and spot its rocket stands at (DESIGN.md 9.3). */
+    /** A working Rocket Radio Receiver, by the dimension and spot its rocket stands at. */
     public record Receiver(int dimension, long pos) {}
 
     /** A linked pair of working Portal Relays, and the GT voltage tier the pair works at: its lower relay's. */
@@ -63,12 +63,12 @@ public final class Gateways {
 
     /**
      * Adds every gateway's hops to {@code builder}. {@code satellites} gives how many satellites orbit over a
-     * dimension: 0 for one without a sky, which satellites don't reach (DESIGN.md 6.1).
+     * dimension: 0 for one without a sky, which satellites don't reach.
      */
     public void addTo(CallGraph.Builder builder, IntUnaryOperator satellites, Collection<Dish> dishes,
         Collection<Receiver> receivers, Collection<RelayPair> relays) {
         for (Dish dish : dishes) {
-            // Below Low's count there are no sky hops at all (DESIGN.md 9.2: at least 5 satellites).
+            // Below Low's count there are no sky hops at all.
             int count = satellites.applyAsInt(dish.dimension());
             double snr = sky.snr(count) - dish.loss();
             if (snr == Double.NEGATIVE_INFINITY) continue;
@@ -85,7 +85,7 @@ public final class Gateways {
             builder.slots(vertex, t.dishCalls());
             builder.slots(new CallGraph.SkyVertex(dish.dimension()), skyCalls(count));
         }
-        // Planets reach the Overworld's satellites only while it has enough of them (DESIGN.md 9.5).
+        // Planets reach the Overworld's satellites only while it has enough of them.
         int overworld = satellites.applyAsInt(OVERWORLD);
         if (sky.enough(overworld)) {
             for (Receiver receiver : receivers) {

@@ -18,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.world.World;
 
 import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemCarriedPhone;
@@ -34,13 +35,13 @@ import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.PhoneStatusPacket;
 
 /**
- * Phones players carry (DESIGN.md 8, 8.2, D14, D36): which player carries which number, the service each working one
- * has where its holder stands, and their batteries. Each player is looked at once a second, spread over the ticks
- * (DESIGN.md 6.5). Server thread only.
+ * Phones players carry: which player carries which number, the service each working one
+ * has where its holder stands, and their batteries. Each player is looked at once a second, spread over the ticks.
+ * Server thread only.
  * <p>
- * A carried phone gets its number the first time the server sees it, and its first user owns it (DESIGN.md 12.1).
+ * A carried phone gets its number the first time the server sees it, and its first user owns it.
  * The same number in two places at once is a copy, made in creative or with a world editor: the one found second gets
- * a number of its own with the original's owner and settings, as a copied Telephone does (X17).
+ * a number of its own with the original's owner and settings, as a copied Telephone does.
  */
 public final class CarriedPhones {
 
@@ -96,6 +97,10 @@ public final class CarriedPhones {
     // Phones whose screen is open now.
     private final Set<Integer> screens = new HashSet<>();
     private Predicate<UUID> watching = id -> false;
+    private java.util.function.IntPredicate appsRunning = n -> false;
+    private java.util.function.BiConsumer<Integer, Long> appsBilled = (n, eu) -> {};
+    private final AntennaNetwork antennas;
+    private final SpaceService space;
     private long ticks;
 
     /** @param endOf where a holder hears and talks from, or null when they have no position */
@@ -105,34 +110,45 @@ public final class CarriedPhones {
         this.tunables = tunables;
         this.levels = tunables.levelScale();
         this.phones = phones;
-        // The Mobile Phone: every antenna that reaches its holder on UHF (DESIGN.md 8.2), and the satellites over
-        // their dimension (9.1), rain included (D26).
+        // The Mobile Phone: every antenna that reaches its holder on UHF, and the satellites over
+        // their dimension (9.1), rain included.
+        this.antennas = antennas;
+        this.space = space;
         access.put(PhoneKind.MOBILE, (holder, phone) -> {
             // A holder whose position isn't a number has none, and so no service.
             RadioHops.End end = endOf.apply(holder);
             if (end == null) return List.of();
-            List<CallGraph.Entry> entries = new ArrayList<>();
-            boolean rains = BeComServer
-                .rains(holder.worldObj, (int) Math.floor(holder.posX), (int) Math.floor(holder.posZ));
-            double sky = space
-                .hop(holder.dimension, end.depth(), antennas.uhf(), rains ? space.weather(holder.dimension) : 0);
-            if (sky > Double.NEGATIVE_INFINITY) {
-                entries.add(new CallGraph.Entry(new CallGraph.SkyVertex(holder.dimension), sky));
-            }
-            for (AntennaNetwork.Best reached : antennas
-                .reach(holder.dimension, end, holder.getUniqueID(), antennas.uhf(), rains)) {
-                entries.add(
-                    new CallGraph.Entry(
-                        new CallGraph.NodeVertex(
-                            holder.dimension,
-                            reached.antenna()
-                                .ref()
-                                .pos()),
-                        reached.losses()
-                            .snr()));
-            }
-            return entries;
+            return entriesAt(holder.worldObj, end, holder.getUniqueID());
         });
+    }
+
+    /**
+     * The ways in a radio at {@code end} reaches: every antenna that reaches it on UHF, and the
+     * satellites over its dimension (9.1), rain included. {@code user} is who uses it, for team-locked antennas.
+     */
+    public List<CallGraph.Entry> entriesAt(World world, RadioHops.End end, UUID user) {
+        int dimension = world.provider.dimensionId;
+        List<CallGraph.Entry> entries = new ArrayList<>();
+        boolean rains = BeComServer.rains(world, (int) Math.floor(end.x()), (int) Math.floor(end.z()));
+        double sky = space.hop(dimension, end.depth(), antennas.uhf(), rains ? space.weather(dimension) : 0);
+        if (sky > Double.NEGATIVE_INFINITY) entries.add(new CallGraph.Entry(new CallGraph.SkyVertex(dimension), sky));
+        for (AntennaNetwork.Best reached : antennas.reach(dimension, end, user, antennas.uhf(), rains)) {
+            entries.add(
+                new CallGraph.Entry(
+                    new CallGraph.NodeVertex(
+                        dimension,
+                        reached.antenna()
+                            .ref()
+                            .pos()),
+                    reached.losses()
+                        .snr()));
+        }
+        return entries;
+    }
+
+    /** The level a set of ways in gives, by its best one. */
+    public SignalLevel levelOf(List<CallGraph.Entry> entries) {
+        return entries.isEmpty() ? SignalLevel.NONE : levels.levelOf(new Service(entries, SignalLevel.NONE).best());
     }
 
     /** Where phones of {@code kind} get service, or null for a kind with none set. */
@@ -170,7 +186,7 @@ public final class CarriedPhones {
 
     /**
      * The best level a call through a phone of {@code kind} with this service reaches: an ME Phone reaches Max only
-     * through its ME network, and out of its range is a Mobile Phone (DESIGN.md 8.3).
+     * through its ME network, and out of its range is a Mobile Phone.
      */
     public static SignalLevel cap(PhoneKind kind, List<CallGraph.Entry> entries) {
         if (kind != PhoneKind.ME_PHONE) return kind.cap();
@@ -213,7 +229,7 @@ public final class CarriedPhones {
         UUID id = player.getUniqueID();
         List<Integer> found = new ArrayList<>();
         Map<Integer, ItemStack> stacks = new HashMap<>();
-        // The cursor counts: a phone being moved to another slot mustn't drop out of its call (D14).
+        // The cursor counts: a phone being moved to another slot mustn't drop out of its call.
         for (ItemStack stack : Carried.stacks(player)) {
             if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack)) continue;
             ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
@@ -253,14 +269,14 @@ public final class CarriedPhones {
             }
             service.put(number, new Service(List.copyOf(entries), level));
         }
-        // The bars by the hotbar show the first phone they carry (DESIGN.md 11.2).
+        // The bars by the hotbar show the first phone they carry.
         SignalLevel bars = found.isEmpty() ? SignalLevel.NONE : serviceOf(found.get(0)).level();
         if (shown.put(id, bars) != bars) BeComPackets.send(new PhoneStatusPacket(bars), player);
     }
 
     /**
      * The number of the phone {@code player} uses, after looking at their phones again unless this server already knows
-     * it in their hands: a phone used for the first time gets its number, and a copy of someone else's its own (X17),
+     * it in their hands: a phone used for the first time gets its number, and a copy of someone else's its own,
      * before a screen shows anything of it.
      */
     public int numberFor(EntityPlayerMP player, ItemStack stack) {
@@ -301,7 +317,7 @@ public final class CarriedPhones {
 
     /**
      * Phones drain their charge while switched on, more in a call, more with video and with their screen open, and
-     * switch off when it's flat (D36, DESIGN.md 11.3). Once a second, the second's worth, kept by what used it. A drop
+     * switch off when it's flat. Once a second, the second's worth, kept by what used it. A drop
      * past 20% or 5% warns the holder; a charge that went up since the last second is charging.
      */
     private void drain(List<EntityPlayerMP> players) {
@@ -340,13 +356,16 @@ public final class CarriedPhones {
                 }
                 if (number >= 0 && screens.contains(number))
                     rates.put(BatteryUse.Use.SCREEN, tunables.phoneScreenDrain());
+                if (number >= 0 && appsRunning.test(number)) rates.put(BatteryUse.Use.APPS, tunables.phoneAppDrain());
                 double wanted = 0;
                 for (int rate : rates.values()) wanted += (double) rate * TICKS_PER_SECOND;
                 if (wanted <= 0) continue;
                 double took = item.drain(stack, wanted);
                 BatteryUse use = ItemCarriedPhone.use(stack);
                 for (Map.Entry<BatteryUse.Use, Integer> entry : rates.entrySet()) {
-                    use.add(day, entry.getKey(), Math.round(took * entry.getValue() * TICKS_PER_SECOND / wanted));
+                    long eu = Math.round(took * entry.getValue() * TICKS_PER_SECOND / wanted);
+                    use.add(day, entry.getKey(), eu);
+                    if (entry.getKey() == BatteryUse.Use.APPS) appsBilled.accept(number, eu);
                 }
                 ItemCarriedPhone.setUse(stack, use);
                 double after = before - took;
@@ -384,6 +403,12 @@ public final class CarriedPhones {
         if (number < 0) return;
         if (open) screens.add(number);
         else screens.remove(number);
+    }
+
+    /** Which phones run their apps now, which costs them charge, and who to tell what each second of it cost. */
+    public void setApps(java.util.function.IntPredicate running, java.util.function.BiConsumer<Integer, Long> billed) {
+        this.appsRunning = running;
+        this.appsBilled = billed;
     }
 
     /** Who sees video right now, which costs their phone charge. */

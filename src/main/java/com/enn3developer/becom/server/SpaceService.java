@@ -15,7 +15,7 @@ import com.enn3developer.becom.logic.space.Satellites;
 import com.enn3developer.becom.logic.space.SkyStrength;
 
 /**
- * The satellites in orbit (DESIGN.md 9.1, D23): launched from Launch Pads, each coming down after its lifetime, and the
+ * The satellites in orbit: launched from Launch Pads, each coming down after its lifetime, and the
  * sky hops they give every dimension with a sky and enough of them. Times are the Overworld's world time, which only
  * runs while the server does. Server thread only.
  */
@@ -36,7 +36,7 @@ public final class SpaceService {
         this.sky = SkyStrength.of(tunables);
     }
 
-    /** Takes the satellites saved with the world (DESIGN.md 14). */
+    /** Takes the satellites saved with the world. */
     public void attach(SatelliteSavedData data) {
         satellites = data.satellites();
     }
@@ -69,7 +69,7 @@ public final class SpaceService {
         return overworld == null ? 0 : overworld.getTotalWorldTime();
     }
 
-    /** One satellite goes up over {@code dimension}, to stay its lifetime, give or take the spread (D23). */
+    /** One satellite goes up over {@code dimension}, to stay its lifetime, give or take the spread. */
     public void launch(int dimension) {
         long lifetime = Satellites
             .lifetime(tunables.satelliteLifetimeDays(), tunables.satelliteLifetimeSpread(), random.nextDouble());
@@ -77,7 +77,7 @@ public final class SpaceService {
     }
 
     /**
-     * Sets how many satellites orbit over {@code dimension}, for testing (DESIGN.md 12.3): the ones there come down,
+     * Sets how many satellites orbit over {@code dimension}, for testing: the ones there come down,
      * and {@code count} fresh ones go up, each with its own lifetime.
      */
     public void set(int dimension, int count) {
@@ -106,19 +106,19 @@ public final class SpaceService {
         return satellites.version();
     }
 
-    /** Whether {@code dimension} is loaded and has a sky; satellites don't reach one without (DESIGN.md 6.1). */
+    /** Whether {@code dimension} is loaded and has a sky; satellites don't reach one without. */
     public boolean hasSky(int dimension) {
         WorldServer world = DimensionManager.getWorld(dimension);
         return world != null && !world.provider.hasNoSky;
     }
 
-    /** Whether {@code dimension} has a sky and satellites enough over it for sky hops (DESIGN.md 6.1, 9.1). */
+    /** Whether {@code dimension} has a sky and satellites enough over it for sky hops. */
     public boolean skyHops(int dimension) {
         return hasSky(dimension) && sky.enough(satellites.count(dimension));
     }
 
     /**
-     * The weather's loss on a sky hop in {@code dimension} now, in dB (D26): it costs a hop whose ground end stands
+     * The weather's loss on a sky hop in {@code dimension} now, in dB: it costs a hop whose ground end stands
      * where it rains or snows. 0 for a dimension that isn't loaded.
      */
     public double weather(int dimension) {
@@ -136,7 +136,7 @@ public final class SpaceService {
         return sky.hop(satellites.count(dimension), depth, band, weather);
     }
 
-    /** The same hop term by term, for the Signal Analyzer (DESIGN.md 6.6); null where there are none. */
+    /** The same hop term by term, for the Signal Analyzer; null where there are none. */
     public RadioModel.Losses losses(int dimension, double depth, Band band, double weather) {
         if (!hasSky(dimension)) return null;
         return sky.losses(satellites.count(dimension), depth, band, weather);

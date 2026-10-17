@@ -54,23 +54,23 @@ import com.enn3developer.gtnhvoice.api.server.GtnhVoiceApi;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
- * Radio channels in the world (DESIGN.md 8.1, 13.2, 13.3): who carries a working walkie or stands at a Transceiver,
+ * Radio channels in the world: who carries a working walkie or stands at a Transceiver,
  * their memberships of the sixteen {@code becom:radio.N} groups, and the routing snapshot for whoever holds
  * push-to-talk.
  * Server thread only.
  * <p>
  * Each player's radio and each Transceiver's links to the antennas are refreshed once a second, spread over the twenty
- * ticks (DESIGN.md 6.5). Direct links are worked out only for speakers keyed right now: a speaker shows up in the
+ * ticks. Direct links are worked out only for speakers keyed right now: a speaker shows up in the
  * routing state with their first frame, gets a transmission on the next tick, and is worked out again once a second
  * after that, in their own tick of the second, so the radios keyed at once are spread over it too. Levels go to
- * clients only when they change (DESIGN.md 13.5).
+ * clients only when they change.
  */
 public final class RadioService {
 
     private static final int TICKS_PER_SECOND = 20;
     // A speaker whose last radio frame is older than this has let go of the key: voice frames are 20 ms apart.
     private static final long RELEASED_AFTER_NANOS = 250_000_000L;
-    // A Transceiver not heard from for 2 seconds is offline (DESIGN.md 14).
+    // A Transceiver not heard from for 2 seconds is offline.
     private static final long OFFLINE_AFTER_TICKS = 40;
     // A listener keeps the level of someone who stopped talking for this long, so their next transmission isn't
     // heard clean for the moment before its level arrives.
@@ -123,7 +123,7 @@ public final class RadioService {
     }
 
     /**
-     * What a speaker transmits from: their walkie, or the Transceiver they stand at (DESIGN.md 8.1); {@code sky} is its
+     * What a speaker transmits from: their walkie, or the Transceiver they stand at; {@code sky} is its
      * hop up to the satellites (9.1), worked out in the radio's own tick of the second, the holder's for a walkie and
      * the Transceiver's for one, and when a Transceiver comes back, moves or has its cover changed. Its access to the
      * antennas isn't part of it: that changes with the whole network, and is worked out with its links, so one
@@ -193,7 +193,7 @@ public final class RadioService {
     // region Lifecycle
 
     /**
-     * Registers the sixteen channels with GTNH Voice, which forgets them whenever its server stops (DESIGN.md 13.1).
+     * Registers the sixteen channels with GTNH Voice, which forgets them whenever its server stops.
      */
     public void start() {
         for (int channel = 1; channel <= RadioGroup.CHANNELS; channel++) {
@@ -312,7 +312,7 @@ public final class RadioService {
         }
         if (tick % ((long) tunables.analyzerRefreshSeconds() * TICKS_PER_SECOND) == 0) analyzers();
         // Each keyed radio is worked out once a second, in its own tick of the second, the one its holder is refreshed
-        // in (DESIGN.md 6.4, 6.5); one that pressed push-to-talk, moved or changed what it transmits from, at once.
+        // in; one that pressed push-to-talk, moved or changed what it transmits from, at once.
         for (UUID speaker : active) {
             if (Slots.due(speaker, tick)) fresh.add(speaker);
         }
@@ -363,7 +363,7 @@ public final class RadioService {
 
     // region Radios
 
-    /** Looks at a player's inventory and surroundings again (DESIGN.md 6.5: once a second per player). */
+    /** Looks at a player's inventory and surroundings again. */
     private void refresh(EntityPlayerMP player) {
         UUID id = player.getUniqueID();
         Carried.Slot slot = ItemWalkieTalkie.active(player);
@@ -388,7 +388,7 @@ public final class RadioService {
         if (walkieChannel > 0) accessOf(radio);
     }
 
-    /** The nearest working Transceiver within talk range of {@code player} (DESIGN.md 8.1), or null. */
+    /** The nearest working Transceiver within talk range of {@code player}, or null. */
     private NodeRef transceiverAt(EntityPlayer player) {
         NodeRef best = null;
         double bestSq = tunables.talkRange() * tunables.talkRange();
@@ -424,7 +424,7 @@ public final class RadioService {
         return t.access;
     }
 
-    /** What a radio transmits from, or null when it can't (DESIGN.md 8.1: a Transceiver at hand wins). */
+    /** What a radio transmits from, or null when it can't. */
     private Tx txOf(Radio radio) {
         Transceiver at = radio.transceiver == null ? null : transceivers.get(radio.transceiver);
         if (at != null && working(at)) {
@@ -436,7 +436,7 @@ public final class RadioService {
         return null;
     }
 
-    /** The channel a player transmits on, or 0 (DESIGN.md 13.2: that's the group they're in). */
+    /** The channel a player transmits on, or 0. */
     public int channelOf(UUID player) {
         Radio radio = radios.get(player);
         Tx tx = radio == null ? null : txOf(radio);
@@ -467,8 +467,8 @@ public final class RadioService {
 
     /**
      * Builds the routing snapshot for everyone keyed, and sends listeners the levels that changed. A keyed radio's
-     * links are worked out again when it keys, moves or changes what it transmits from, and once a second (DESIGN.md
-     * 6.4); otherwise its last transmission stands as it was, so neither a press nor a radio's tick of the second works
+     * links are worked out again when it keys, moves or changes what it transmits from, and once a second;
+     * otherwise its last transmission stands as it was, so neither a press nor a radio's tick of the second works
      * out every other keyed radio's links again. A change to the antennas reaches each radio in its own tick, and a
      * change to its sky hop in the tick that hop is worked out. Nothing is published when nothing changed.
      *
@@ -575,7 +575,7 @@ public final class RadioService {
     }
 
     /**
-     * The best of the direct link, the path through the antennas (DESIGN.md 8.1) and the path through the satellites,
+     * The best of the direct link, the path through the antennas and the path through the satellites,
      * up from one radio and down to the other (9.1). A direct link uses the transmitter's budget (6.1); through
      * antennas, every hop uses the antennas' budgets.
      */
@@ -592,16 +592,16 @@ public final class RadioService {
     }
 
     /**
-     * A radio's hop up to the satellites over its dimension on VHF (DESIGN.md 9.1): their strength less its cover,
-     * and the rain where it stands (D26). Negative infinity without enough satellites.
+     * A radio's hop up to the satellites over its dimension on VHF: their strength less its cover,
+     * and the rain where it stands. Negative infinity without enough satellites.
      */
     private double skyHop(int dimension, RadioHops.End end, boolean rains) {
         return space.hop(dimension, end.depth(), vhf, rains ? space.weather(dimension) : 0);
     }
 
     /**
-     * The pair's level after this evaluation: hysteresis, the radios' Medium cap (D10), and the drop after the grace
-     * below Low (DESIGN.md 4.2).
+     * The pair's level after this evaluation: hysteresis, the radios' Medium cap, and the drop after the grace
+     * below Low.
      */
     private SignalLevel level(Pair pair, double snr) {
         PairLevel pairLevel = pairLevels
@@ -612,7 +612,7 @@ public final class RadioService {
 
     /**
      * Tells each listener the level they hear each speaker at, in the order {@code route()} sends: their own walkie,
-     * then the nearest walkie speaker in the snapshot's order, then a loudspeaker (DESIGN.md 13.3, 13.5).
+     * then the nearest walkie speaker in the snapshot's order, then a loudspeaker.
      */
     private void sendLevels(List<UUID> speakers) {
         List<EntityPlayerMP> online = players();
@@ -665,8 +665,8 @@ public final class RadioService {
     }
 
     /**
-     * The squelch tail (DESIGN.md 13.6, 15.2) for the players who were hearing a transmission that just ended: at
-     * each device that held it, to the players within the walkie speaker's range of a walkie (D21) or a loudspeaker's
+     * The squelch tail for the players who were hearing a transmission that just ended: at
+     * each device that held it, to the players within the walkie speaker's range of a walkie or a loudspeaker's
      * of a Transceiver who were hearing that speaker, through it or another device.
      */
     private void squelch(UUID speaker) {
@@ -697,7 +697,7 @@ public final class RadioService {
             if (player.dimension != dimension || !Positions.withinSq(player.getDistanceSq(x, y, z), range)) continue;
             if (player instanceof FakePlayer || player.playerNetServerHandler == null) continue;
             if (!routing.listenerHeldBy(player.getUniqueID(), channel, speaker)) continue;
-            // Faded like the voice it ends, to nothing at the range (DESIGN.md 13.5).
+            // Faded like the voice it ends, to nothing at the range.
             float volume = SpeakerFade.volume(SQUELCH_VOLUME, Math.sqrt(player.getDistanceSq(x, y, z)), range);
             if (volume <= 0) continue;
             player.playerNetServerHandler.sendPacket(new S29PacketSoundEffect(SQUELCH, x, y, z, volume, 1.0f));
@@ -715,7 +715,7 @@ public final class RadioService {
 
     /**
      * Walkies drain their battery while switched on, more while receiving and most while transmitting, and switch off
-     * when it's flat (D36, DESIGN.md 11.3). Once a second, the second's worth.
+     * when it's flat. Once a second, the second's worth.
      */
     private void drainWalkies(List<EntityPlayerMP> players) {
         Set<UUID> receiving = new HashSet<>();
@@ -750,7 +750,7 @@ public final class RadioService {
 
     // region Signal Analyzer
 
-    /** A reading for everyone holding a Signal Analyzer (DESIGN.md 11.4). */
+    /** A reading for everyone holding a Signal Analyzer. */
     private void analyzers() {
         for (EntityPlayerMP player : players()) {
             if (!ItemSignalAnalyzer.is(player.getHeldItem())) continue;
@@ -760,7 +760,7 @@ public final class RadioService {
 
     /**
      * What serves a player best on each band, an antenna or the satellites, and every loss on that link; also what
-     * {@code /becom signal} says. Radios use VHF; phones use UHF, where rain where the player stands counts (D26), as
+     * {@code /becom signal} says. Radios use VHF; phones use UHF, where rain where the player stands counts, as
      * it does on any sky hop.
      */
     public AnalyzerPacket reading(EntityPlayer player) {
@@ -773,7 +773,7 @@ public final class RadioService {
         double weather = rains ? space.weather(dimension) : 0;
         int satellites = space.count(dimension);
         return new AnalyzerPacket(
-            // What a radio hears there: radios stop at Medium (D10).
+            // What a radio hears there: radios stop at Medium.
             reading(
                 antennas.best(dimension, end, id, vhf),
                 space.losses(dimension, end.depth(), vhf, weather),
@@ -859,7 +859,7 @@ public final class RadioService {
     // region World
 
     /**
-     * Where a player hears and talks from (DESIGN.md 6.1): their eyes, their depth under the surface, their feet. Null
+     * Where a player hears and talks from: their eyes, their depth under the surface, their feet. Null
      * when their position isn't a number: a player with no position has no links.
      */
     public static RadioHops.End endOf(EntityPlayer player) {

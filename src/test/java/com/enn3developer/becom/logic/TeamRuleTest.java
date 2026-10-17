@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 12.1, D59: the owner's team counts, its owner, moderators and members; allies and strangers don't. */
+/** The owner's team counts, its owner, moderators and members; allies and strangers don't. */
 class TeamRuleTest {
 
     /** A team as ServerUtilities keeps one: an owner, moderators, allies; its members are the players in it. */

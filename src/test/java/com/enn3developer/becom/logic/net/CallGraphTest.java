@@ -37,7 +37,7 @@ class CallGraphTest {
     @Test
     void aPhoneIsNeverAWayThrough() {
         // Two separate lines, A on one and C on the other. B touches the terminal of each: it may call either side,
-        // but it doesn't join the lines (D19, DESIGN.md 5.4).
+        // but it doesn't join the lines.
         CallGraph.NodeVertex t1 = new CallGraph.NodeVertex(0, 1);
         CallGraph.NodeVertex t1b = new CallGraph.NodeVertex(0, 2);
         CallGraph.NodeVertex t2 = new CallGraph.NodeVertex(0, 3);
@@ -71,7 +71,7 @@ class CallGraphTest {
 
     @Test
     void aCarriedPhoneJoinsAtTheAntennasItReaches() {
-        // A Telephone on a terminal an antenna bridges (X19), and two carried phones near antennas linked over UHF.
+        // A Telephone on a terminal an antenna bridges, and two carried phones near antennas linked over UHF.
         CallGraph.NodeVertex terminal = new CallGraph.NodeVertex(0, 1);
         CallGraph.NodeVertex near = new CallGraph.NodeVertex(0, 2);
         CallGraph.NodeVertex far = new CallGraph.NodeVertex(0, 3);

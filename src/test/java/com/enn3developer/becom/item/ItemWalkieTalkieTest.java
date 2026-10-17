@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.data.BeComNbt;
 
-/** DESIGN.md 8.1, 11.3: a walkie's channel and power live in its stack, versioned (14.2). */
+/** A walkie's channel and power live in its stack, versioned (14.2). */
 class ItemWalkieTalkieTest {
 
     private static final ItemWalkieTalkie WALKIE = new ItemWalkieTalkie();

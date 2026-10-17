@@ -16,8 +16,8 @@ import com.enn3developer.becom.server.NetworkService;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The world side of {@link CableWalk}: what a Line Terminal's cable reaches (DESIGN.md 5.2, 5.5), Telephones and
- * Videophones alike (DESIGN.md 10.2), over cable of any tier. Only loaded chunks are walked.
+ * The world side of {@link CableWalk}: what a Line Terminal's cable reaches, Telephones and
+ * Videophones alike, over cable of any tier. Only loaded chunks are walked.
  */
 public final class PhoneCables {
 
@@ -25,7 +25,7 @@ public final class PhoneCables {
 
     /**
      * The walk from the terminal at x, y, z: the devices its cable reaches within {@code maxLength} blocks, or that
-     * touch it directly, walking at most {@code maxCables} blocks of cable in all (X15).
+     * touch it directly, walking at most {@code maxCables} blocks of cable in all.
      */
     public static CableWalk.Result walk(World world, int x, int y, int z, int maxLength, int maxCables) {
         return CableWalk.walk(x, y, z, maxLength, maxCables, new CableWalk.Probe() {
@@ -40,6 +40,7 @@ public final class PhoneCables {
                 if (block instanceof BlockTelephone) return CableWalk.Block.PHONE;
                 if (block instanceof BlockPhoneCable) return CableWalk.Block.CABLE;
                 if (isVideophone(world.getTileEntity(nx, ny, nz))) return CableWalk.Block.PHONE;
+                if (wiredComputer(world, BlockPos.pack(nx, ny, nz)) >= 0) return CableWalk.Block.PHONE;
                 return CableWalk.Block.OTHER;
             }
 
@@ -48,6 +49,12 @@ public final class PhoneCables {
                 return BlockPhoneCable.tierOf(world.getBlockMetadata(nx, ny, nz));
             }
         });
+    }
+
+    /** The number of a computer with a wired BeCom Card at a spot, or -1. */
+    private static int wiredComputer(World world, long pos) {
+        com.enn3developer.becom.server.BeComServer becom = com.enn3developer.becom.server.BeComServer.get();
+        return becom == null ? -1 : becom.apps.wiredComputerAt(world.provider.dimensionId, pos);
     }
 
     private static boolean isVideophone(TileEntity tile) {
@@ -67,6 +74,7 @@ public final class PhoneCables {
             if (tile instanceof TileTelephone phone) number = phone.number();
             else if (tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof MTEVideophone phone)
                 number = phone.number();
+            else if (wiredComputer(world, pos) >= 0) number = wiredComputer(world, pos);
             devices.add(new NetworkService.Device(number, found.length(), found.cable()));
         }
         return devices;

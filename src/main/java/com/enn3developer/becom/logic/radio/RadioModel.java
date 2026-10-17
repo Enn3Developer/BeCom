@@ -1,11 +1,11 @@
 package com.enn3developer.becom.logic.radio;
 
 /**
- * The radio simulation's link budget (DESIGN.md 6.1):
+ * The radio simulation's link budget:
  * {@code SNR = B - L_dist - L_terrain - L_cover(a) - L_cover(b) - L_weather - N}.
  * <p>
  * Pure arithmetic over numbers the caller gathers: terrain comes as heights sampled along the path (from the height
- * cache, DESIGN.md 6.2), cover as each end's depth below the surface. Nothing here touches a world.
+ * cache), cover as each end's depth below the surface. Nothing here touches a world.
  */
 public final class RadioModel {
 
@@ -17,7 +17,7 @@ public final class RadioModel {
     private final double noSkyNoise;
 
     /**
-     * @param terrainCap the most terrain can cost, in dB (DESIGN.md 17)
+     * @param terrainCap the most terrain can cost, in dB
      * @param coverCap   the most cover can cost at one end, in dB
      * @param noSkyNoise the noise floor in a dimension without a sky (the Nether), in dB
      */
@@ -65,9 +65,9 @@ public final class RadioModel {
 
     /**
      * The worst obstacle on the straight path from {@code a} to {@code b}, as the largest diffraction parameter over
-     * height-cache samples every {@code step} blocks (DESIGN.md 6.4). Samples in either end's own cell are skipped:
+     * height-cache samples every {@code step} blocks. Samples in either end's own cell are skipped:
      * that cell holds the end itself, and what stands over an end is its cover. So are samples no higher than
-     * {@code floor}, the ground the lower end stands on: open ground isn't an obstacle (X20). Negative infinity when
+     * {@code floor}, the ground the lower end stands on: open ground isn't an obstacle. Negative infinity when
      * nothing lies between.
      */
     public static double worstNuAlong(Terrain terrain, double ax, double ay, double az, double bx, double by, double bz,
@@ -96,7 +96,7 @@ public final class RadioModel {
     }
 
     /**
-     * One hop's losses (DESIGN.md 6.1). In a dimension without a sky, terrain and cover are left out and the noise
+     * One hop's losses. In a dimension without a sky, terrain and cover are left out and the noise
      * floor rises instead.
      *
      * @param distance the 3D distance between the ends
@@ -118,7 +118,7 @@ public final class RadioModel {
             0);
     }
 
-    /** Every term of one hop's budget, so the Signal Analyzer can say what costs the most (DESIGN.md 6.6). */
+    /** Every term of one hop's budget, so the Signal Analyzer can say what costs the most. */
     public record Losses(double budget, double distance, double terrain, double coverA, double coverB, double weather,
         double noise) {
 
@@ -158,7 +158,7 @@ public final class RadioModel {
         }
     }
 
-    /** The losses the analyzer names (DESIGN.md 6.6). Ordinals go on the wire, so constants are only appended. */
+    /** The losses the analyzer names. Ordinals go on the wire, so constants are only appended. */
     public enum Loss {
 
         DISTANCE,

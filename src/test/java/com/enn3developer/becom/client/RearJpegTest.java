@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 10.1, 17: rear pictures fit the per-client cap at Max's size, and come back the right way up. */
+/** Rear pictures fit the per-client cap at Max's size, and come back the right way up. */
 class RearJpegTest {
 
     private static final int RED = 0xFFFF0000;

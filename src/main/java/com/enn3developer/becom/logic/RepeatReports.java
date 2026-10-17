@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Lets each key through at most once per window (DESIGN.md 15.5): a quest task done while its quest is still locked
+ * Lets each key through at most once per window: a quest task done while its quest is still locked
  * is reported again once the window has passed, so it isn't used up for good, and one done every tick doesn't walk the
  * quest book every tick. Server thread only.
  */

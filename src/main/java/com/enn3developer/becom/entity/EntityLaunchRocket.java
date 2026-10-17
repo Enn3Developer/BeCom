@@ -7,7 +7,7 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 
 /**
- * The Satellite Rocket a Launch Pad shows (DESIGN.md 9.1): it stands in the pad's flame pit while a launch counts down,
+ * The Satellite Rocket a Launch Pad shows: it stands in the pad's flame pit while a launch counts down,
  * then lifts off when the launch ends and climbs out of sight. Only a sight: it carries nothing, nothing hits it, and
  * it's never saved, since the pad stands a new one whenever a launch is under way.
  * <p>

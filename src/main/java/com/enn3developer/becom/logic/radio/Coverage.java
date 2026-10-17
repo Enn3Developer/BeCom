@@ -1,9 +1,9 @@
 package com.enn3developer.becom.logic.radio;
 
 /**
- * An antenna's coverage map (DESIGN.md 6.6, 11.4): the SNR a player standing on the ground would get from it, on a
- * square grid around the antenna as far as a link at Low still holds (X22). Worked out from the antenna's survey, as a
- * device's access link is (DESIGN.md 6.3), so it costs one profile scan per cell.
+ * An antenna's coverage map: the SNR a player standing on the ground would get from it, on a
+ * square grid around the antenna as far as a link at Low still holds. Worked out from the antenna's survey, as a
+ * device's access link is, so it costs one profile scan per cell.
  */
 public final class Coverage {
 

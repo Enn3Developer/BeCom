@@ -10,7 +10,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A phone the player carries rings, or stopped ringing (DESIGN.md 11.2): the notice in the corner of the screen shows
+ * A phone the player carries rings, or stopped ringing: the notice in the corner of the screen shows
  * who calls and from which number, with the keys to answer or reject.
  */
 public final class RingPacket implements IMessage {

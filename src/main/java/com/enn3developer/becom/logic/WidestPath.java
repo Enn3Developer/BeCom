@@ -9,7 +9,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 /**
- * A call's best path (DESIGN.md 14): the one whose weakest hop is strongest. A Dijkstra variant over directed edges
+ * A call's best path: the one whose weakest hop is strongest. A Dijkstra variant over directed edges
  * weighted by hop SNR, where a path's value is its smallest edge instead of its sum.
  * <p>
  * Vertices are dense ints; callers keep their own index. Not thread-safe; build, solve and throw away.

@@ -13,7 +13,7 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 /**
- * The cables (DESIGN.md 15.1): a cord on the floor in its tier's colour, with an arm toward each neighbour it joins.
+ * The cables: a cord on the floor in its tier's colour, with an arm toward each neighbour it joins.
  */
 public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
 

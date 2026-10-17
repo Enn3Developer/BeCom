@@ -13,8 +13,7 @@ import cpw.mods.fml.relauncher.Side;
 /**
  * BeCom's own network channel. Messages go from the server to clients, but for sneak + scroll on a walkie-talkie, the
  * Phone key and rear-camera pictures; otherwise clients act on the server only through ModularUI's synced actions. The
- * server checks all of them (DESIGN.md 14: client input). Video travels here too (DESIGN.md 14; VOICE.md V2 if it
- * lags the game).
+ * server checks all of them. Video travels here too.
  */
 public final class BeComPackets {
 

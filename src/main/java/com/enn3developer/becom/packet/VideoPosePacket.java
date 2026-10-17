@@ -13,7 +13,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Front-camera poses (DESIGN.md 10.1): how each person this player sees stands right now, about ten times a second.
+ * Front-camera poses: how each person this player sees stands right now, about ten times a second.
  * The server already knows all of it, so the person's own client sends nothing. About 22 bytes a person.
  */
 public final class VideoPosePacket implements IMessage {

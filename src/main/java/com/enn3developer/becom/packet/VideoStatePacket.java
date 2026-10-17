@@ -15,7 +15,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A player's video call as the server sees it (DESIGN.md 10.1, 11.2): whom they see and at which level, their own
+ * A player's video call as the server sees it: whom they see and at which level, their own
  * camera switches, at which level their rear camera goes out, and the Videophone whose screen they stand at. Sent
  * whole whenever it changes; the client draws from it and decides nothing.
  */
@@ -28,7 +28,7 @@ public final class VideoStatePacket implements IMessage {
     public record Tile(UUID source, String name, SignalLevel level, boolean front, boolean rear) {}
 
     /**
-     * A Videophone whose screen shows the call to its room (DESIGN.md 10.2): where it stands and which way it faces.
+     * A Videophone whose screen shows the call to its room: where it stands and which way it faces.
      */
     public record Screen(int dimension, int x, int y, int z, int facing) {}
 

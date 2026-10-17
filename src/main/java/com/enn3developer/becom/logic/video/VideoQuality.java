@@ -4,8 +4,8 @@ import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 
 /**
- * How each camera's picture looks at a level (DESIGN.md 10.1's table, 17): the front camera's height and frame rate,
- * the rear camera's size and frame rate. A frame rate of 0 means every frame. Nothing moves below Medium (D43), and the
+ * How each camera's picture looks at a level: the front camera's height and frame rate,
+ * the rear camera's size and frame rate. A frame rate of 0 means every frame. Nothing moves below Medium, and the
  * rear camera needs High.
  */
 public record VideoQuality(int frontHeight, int frontFps, int rearWidth, int rearHeight, int rearFps) {

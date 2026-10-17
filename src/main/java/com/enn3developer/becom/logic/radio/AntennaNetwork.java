@@ -17,11 +17,11 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.NodeRef;
 
 /**
- * Every working antenna, its survey and the links between antennas (DESIGN.md 6.3, 7), and what a device's link to
- * each one is worth. Antennas report themselves every tick while they work (D11); one not heard from for 2 seconds is
- * offline (DESIGN.md 14).
+ * Every working antenna, its survey and the links between antennas, and what a device's link to
+ * each one is worth. Antennas report themselves every tick while they work; one not heard from for 2 seconds is
+ * offline.
  * <p>
- * Surveys run a step at a time within a time budget per tick (DESIGN.md 6.5): a step is one bearing, or the link to one
+ * Surveys run a step at a time within a time budget per tick: a step is one bearing, or the link to one
  * other antenna on both bands. An antenna surveys when it starts working, when it moves or changes, and every refresh
  * period after that. Surveys aren't saved: a restart surveys every antenna again as it loads.
  * <p>
@@ -39,7 +39,7 @@ public final class AntennaNetwork {
 
         boolean noSky(int dimension);
 
-        /** The weather's loss on UHF in a dimension now, in dB (D26): 0 in clear skies. */
+        /** The weather's loss on UHF in a dimension now, in dB: 0 in clear skies. */
         default double weather(int dimension) {
             return 0;
         }
@@ -58,7 +58,7 @@ public final class AntennaNetwork {
         }
     }
 
-    /** A link between two antennas, worked out on each band (DESIGN.md 7: radio on VHF, calls on UHF). */
+    /** A link between two antennas, worked out on each band. */
     public record Link(RadioModel.Losses vhf, RadioModel.Losses uhf) {}
 
     /** One antenna as the network knows it. */
@@ -115,13 +115,13 @@ public final class AntennaNetwork {
     /** An antenna's coverage maps on both bands, for the survey they were worked out from. */
     private record CoverageMaps(Survey survey, byte[] vhf, byte[] uhf) {}
 
-    /** The working antennas of one dimension, numbered, with the VHF links radio channels travel (DESIGN.md 7). */
+    /** The working antennas of one dimension, numbered, with the VHF links radio channels travel. */
     public record Mesh(List<Antenna> antennas, AntennaMesh vhf) {
 
         public static final Mesh EMPTY = new Mesh(List.of(), new AntennaMesh(0));
     }
 
-    /** The antenna serving a device best, and every loss on that link (DESIGN.md 6.6). */
+    /** The antenna serving a device best, and every loss on that link. */
     public record Best(Antenna antenna, RadioModel.Losses losses) {}
 
     private final Tunables tunables;
@@ -143,7 +143,7 @@ public final class AntennaNetwork {
 
     /**
      * @param sameTeam whether a player, the second argument, is in an owner's team, the first: for team-locked
-     *                 antennas (DESIGN.md 12.2, D59)
+     *                 antennas
      */
     public AntennaNetwork(Tunables tunables, Dimensions dimensions, BiPredicate<UUID, UUID> sameTeam) {
         this.tunables = tunables;
@@ -263,7 +263,7 @@ public final class AntennaNetwork {
     // Weather changes in steps this small move calls' paths; finer ones would rebuild them every second of a fade.
     private static final double WEATHER_STEP = 0.1;
 
-    /** Once a second: each dimension's weather loss, which moves calls' paths when it changes (D26). */
+    /** Once a second: each dimension's weather loss, which moves calls' paths when it changes. */
     private void lookAtTheWeather() {
         Map<Integer, Double> now = new HashMap<>();
         for (Antenna antenna : antennas.values()) {
@@ -368,7 +368,7 @@ public final class AntennaNetwork {
             RadioModel.Losses onVhf = hops.direct(terrain, here, other.end, budget, vhf, 0, noSky);
             RadioModel.Losses onUhf = hops.direct(terrain, here, other.end, budget, uhf, 0, noSky);
             double low = tunables.levelLow();
-            // Only links at Low or better exist (DESIGN.md 7).
+            // Only links at Low or better exist.
             if (onVhf.snr() < low && onUhf.snr() < low) return;
             found.put(LinkKey.of(target.ref.pos(), other.ref.pos()), new Link(onVhf, onUhf));
         }
@@ -417,7 +417,7 @@ public final class AntennaNetwork {
                     entry.getKey()
                         .b()));
             if (a == null || b == null) continue;
-            // Rain weakens calls between antennas when either stands where it rains (D26).
+            // Rain weakens calls between antennas when either stands where it rains.
             double snr = a.rains || b.rains ? clear - rain : clear;
             if (snr < low) continue;
             if (working(a) && working(b)) {
@@ -475,7 +475,7 @@ public final class AntennaNetwork {
     /**
      * A device's VHF links to each antenna of {@code mesh}, in its order: negative infinity for an antenna out of
      * range,
-     * not surveyed yet, or locked to a team {@code user} isn't in (DESIGN.md 12.2).
+     * not surveyed yet, or locked to a team {@code user} isn't in.
      */
     public double[] access(Mesh mesh, int dimension, RadioHops.End device, UUID user) {
         double[] access = new double[mesh.antennas()
@@ -497,7 +497,7 @@ public final class AntennaNetwork {
 
     /**
      * The antenna that serves a device best on {@code band}, or null when none reaches it. On UHF, rain costs the
-     * link where either end stands in rain (D26); {@code deviceRains} says whether the device does.
+     * link where either end stands in rain; {@code deviceRains} says whether the device does.
      */
     public Best best(int dimension, RadioHops.End device, UUID user, Band band, boolean deviceRains) {
         Best best = null;
@@ -517,8 +517,8 @@ public final class AntennaNetwork {
     }
 
     /**
-     * Every working antenna that reaches a device on {@code band}, with every loss on each link: a phone's service
-     * (DESIGN.md 8.2). Rain counts on UHF as in {@link #best}.
+     * Every working antenna that reaches a device on {@code band}, with every loss on each link: a phone's service.
+     * Rain counts on UHF as in {@link #best}.
      */
     public List<Best> reach(int dimension, RadioHops.End device, UUID user, Band band, boolean deviceRains) {
         List<Best> found = new ArrayList<>();
@@ -542,7 +542,7 @@ public final class AntennaNetwork {
     }
 
     /**
-     * An antenna's coverage map on {@code band} (DESIGN.md 6.6, {@link Coverage}): worked out once per survey, so a
+     * An antenna's coverage map on {@code band} ({@link Coverage}): worked out once per survey, so a
      * screen asking every second costs nothing more. Null before its first survey.
      */
     public byte[] coverage(Antenna antenna, Band band) {

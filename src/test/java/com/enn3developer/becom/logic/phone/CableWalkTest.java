@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
 
-/** DESIGN.md 5.5: the devices within a walk's length of cable from a terminal, and no more work than that. */
+/** The devices within a walk's length of cable from a terminal, and no more work than that. */
 class CableWalkTest {
 
     private final Map<Long, CableWalk.Block> world = new HashMap<>();

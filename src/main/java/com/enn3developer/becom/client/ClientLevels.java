@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.enn3developer.becom.logic.SignalLevel;
 
 /**
- * The level this player hears each source at through each BeCom group (DESIGN.md 13.5), filled by the server's level
+ * The level this player hears each source at through each BeCom group, filled by the server's level
  * packets and read by the playback chain on GTNH Voice's decode threads, hence concurrent.
  */
 public final class ClientLevels {
@@ -31,7 +31,7 @@ public final class ClientLevels {
 
     /**
      * The level to filter a radio frame at. A frame can arrive before its level: the server tells levels once a
-     * second, and someone can walk up to a receiving walkie in between. Radios never sound better than Medium (D10),
+     * second, and someone can walk up to a receiving walkie in between. Radios never sound better than Medium,
      * so that's what an unknown one plays at, never clean.
      */
     public static SignalLevel radio(UUID source, String group) {

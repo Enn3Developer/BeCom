@@ -12,7 +12,7 @@ import net.minecraftforge.common.util.Constants;
 import com.enn3developer.becom.logic.space.Satellites;
 
 /**
- * The satellites in orbit, world-wide data kept with the Overworld (DESIGN.md 14): each one's dimension, when it went
+ * The satellites in orbit, world-wide data kept with the Overworld: each one's dimension, when it went
  * up and when it comes down. A file of its own beside the phone registry, so a BeCom from before satellites never
  * reads it and never saves over it.
  */

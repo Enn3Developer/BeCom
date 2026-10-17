@@ -22,14 +22,14 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * Push-to-talk on the client (DESIGN.md 11.1, 13.4): every tick, BeCom's {@code radio} activation is keyed while the
+ * Push-to-talk on the client: every tick, BeCom's {@code radio} activation is keyed while the
  * key is held and the player has a radio to talk on, a working walkie or a working Transceiver within reach. The
  * activation's transmitting state lights the walkie's TX light. Sneak + scroll with a walkie in hand asks the server
- * for the next channel (DESIGN.md 8.1).
+ * for the next channel.
  */
 public final class ClientRadio {
 
-    /** The radio push-to-talk key's default: Caps Lock, unbound in a full GTNH install (DESIGN.md 11.1, 16.2). */
+    /** The radio push-to-talk key's default: Caps Lock, unbound in a full GTNH install. */
     public static final int DEFAULT_KEY = Keyboard.KEY_CAPITAL;
 
     private static KeyBinding key;
@@ -55,7 +55,7 @@ public final class ClientRadio {
         activation.setKeyed(held && (atTransceiver || slot != null));
     }
 
-    /** Whether the player is transmitting on {@code stack} right now, for its TX light (DESIGN.md 11.3). */
+    /** Whether the player is transmitting on {@code stack} right now, for its TX light. */
     public static boolean transmittingOn(ItemStack stack) {
         return activation != null && stack != null && stack == talkingOn && activation.isTransmitting();
     }

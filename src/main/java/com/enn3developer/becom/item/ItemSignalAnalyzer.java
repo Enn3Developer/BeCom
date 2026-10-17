@@ -10,7 +10,7 @@ import net.minecraft.util.StatCollector;
 import com.enn3developer.becom.BeCom;
 
 /**
- * The Signal Analyzer (DESIGN.md 6.6, 11.4, D35): while held, an overlay shows SNR, level, the serving antenna and the
+ * The Signal Analyzer: while held, an overlay shows SNR, level, the serving antenna and the
  * biggest loss, refreshed by the server every second. Needs no power.
  */
 public class ItemSignalAnalyzer extends Item {

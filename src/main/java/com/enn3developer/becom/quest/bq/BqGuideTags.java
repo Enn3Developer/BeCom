@@ -11,7 +11,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * Each quest ends with a [guide] link to its guide page (DESIGN.md 15.5), which GuideNH turns into a link in the quest
+ * Each quest ends with a [guide] link to its guide page, which GuideNH turns into a link in the quest
  * book. Without GuideNH there is no guide to open, so the quest book shows the link's label alone.
  */
 @SideOnly(Side.CLIENT)

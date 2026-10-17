@@ -14,7 +14,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeRef;
 
-/** D26, DESIGN.md 6.1: rain weakens UHF links where either end stands in rain, and leaves VHF alone. */
+/** Rain weakens UHF links where either end stands in rain, and leaves VHF alone. */
 class AntennaWeatherTest {
 
     private static final int DIM = 0;

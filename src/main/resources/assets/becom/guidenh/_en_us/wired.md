@@ -56,6 +56,11 @@ the <ItemLink id="gregtech:gt.blockmachines:25013" showIcon="left">Line Terminal
 no line, and a device on two terminals' cable takes the nearer one. All its devices share its one link, its uplink: a
 pylon, or an antenna, a dish, a relay or an ME Bridge wired to it.
 
+Right-click it for its screen: its uplink and how much of it calls take, and a row for each port, with the device on it,
+its cable run and what it's doing. A device it can't serve says why: no free port, a cable run longer than its cable
+reaches, or a nearer terminal. The Exchange, the Satellite Dish, the ME Bridge and the Portal Relay show their calls and
+backhaul the same way, with anything wrong in red on top.
+
 ## Pylons and spans
 
 A <ItemLink id="gregtech:gt.blockmachines:25000" showIcon="left">Pylon Head</ItemLink> tops a telephone pole: 6 to 16

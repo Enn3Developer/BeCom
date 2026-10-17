@@ -12,7 +12,7 @@ import com.enn3developer.becom.logic.Tunables;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-/** DESIGN.md 14.2: a client gets the server's values whole. */
+/** A client gets the server's values whole. */
 class ConfigSyncPacketTest {
 
     @Test

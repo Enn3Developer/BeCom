@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-/** D20: the straight line between two heads must be free of solid blocks. */
+/** The straight line between two heads must be free of solid blocks. */
 class ClearanceTest {
 
     private final Set<Long> solid = new HashSet<>();

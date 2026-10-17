@@ -7,7 +7,7 @@ import com.enn3developer.gtnhvoice.api.server.IVoiceSessionListener;
 import com.enn3developer.gtnhvoice.api.server.SessionEndReason;
 
 /**
- * Follows GTNH Voice sessions (DESIGN.md 13.2). GTNH Voice wipes memberships on logout and timeout, so a player whose
+ * Follows GTNH Voice sessions. GTNH Voice wipes memberships on logout and timeout, so a player whose
  * session comes back gets theirs again, and a timed-out session gets the grace period before its call ends.
  * Callbacks run on the server thread.
  */

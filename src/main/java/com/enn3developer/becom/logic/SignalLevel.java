@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic;
 
 /**
- * The five levels every BeCom link ends up at (DESIGN.md 4). Declared weakest first, so {@link #ordinal()} orders
+ * The five levels every BeCom link ends up at. Declared weakest first, so {@link #ordinal()} orders
  * them and the wire format is the ordinal.
  */
 public enum SignalLevel {

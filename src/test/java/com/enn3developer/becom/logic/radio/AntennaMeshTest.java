@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.WidestPath;
 
-/** DESIGN.md 7 and 8.1: a signal goes up to an antenna, along antenna links, and down; its SNR is the weakest hop. */
+/** A signal goes up to an antenna, along antenna links, and down; its SNR is the weakest hop. */
 class AntennaMeshTest {
 
     private static final double NONE = Double.NEGATIVE_INFINITY;

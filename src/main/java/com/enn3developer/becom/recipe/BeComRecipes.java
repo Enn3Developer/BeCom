@@ -25,12 +25,12 @@ import gregtech.api.util.GTOreDictUnificator;
 import micdoodle8.mods.galacticraft.core.items.GCItems;
 
 /**
- * BeCom's recipes, from DESIGN.md 3.1 and GT's conventions (D31): controllers are shaped crafting around a machine
+ * BeCom's recipes, after GT's conventions: controllers are shaped crafting around a machine
  * hull, devices and parts come from the assembler.
  */
 public final class BeComRecipes {
 
-    // Recipe values come straight from DESIGN.md 3.1's table.
+    // Recipe values: the tier each machine belongs to, and GT's usual durations and EU/t for it.
     private static final int PHONE_CABLE_EUT = 8;
     private static final int PHONE_CABLE_SECONDS = 5;
     private static final int PHONE_CABLE_RUBBER_L = 72;
@@ -87,9 +87,24 @@ public final class BeComRecipes {
     public static void register() {
         ItemStack cable = new ItemStack(BeComBlocks.phoneCable);
 
-        // Phone Cable ×2 (D8): red alloy wire in rubber. GT's own Red Alloy Cable takes the same wire with circuit 24
+        // BeCom Cards: OpenComputers' card base with an MV circuit; the radio card adds an emitter and a sensor, the
+        // wired one Coaxial Cable.
+        li.cil.oc.api.detail.ItemInfo base = li.cil.oc.api.Items.get("card");
+        Object card = base == null ? OrePrefixes.circuit.get(Materials.LV) : base.createItemStack(1);
+        GTModHandler.addCraftingRecipe(
+            com.enn3developer.becom.item.ItemBecomCard.stack(com.enn3developer.becom.item.ItemBecomCard.RADIO, 1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "ECS", " B ", 'E', ItemList.Emitter_MV, 'C', OrePrefixes.circuit.get(Materials.MV), 'S',
+                ItemList.Sensor_MV, 'B', card });
+        GTModHandler.addCraftingRecipe(
+            com.enn3developer.becom.item.ItemBecomCard.stack(com.enn3developer.becom.item.ItemBecomCard.WIRED, 1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "WCW", " B ", 'W', BlockPhoneCable.stack(CableTier.COAXIAL, 1), 'C',
+                OrePrefixes.circuit.get(Materials.MV), 'B', card });
+
+        // Phone Cable ×2: red alloy wire in rubber. GT's own Red Alloy Cable takes the same wire with circuit 24
         // and more rubber; without a circuit of its own, a machine that last made Phone Cable would keep making it
-        // from GT's inputs (D31: GT keeps overlapping assembler recipes apart by circuit).
+        // from GT's inputs.
         GTValues.RA.stdBuilder()
             .itemInputs(GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.RedAlloy, 1))
             .circuit(PHONE_CABLE_CIRCUIT)
@@ -161,7 +176,7 @@ public final class BeComRecipes {
             new Object[] { "CPC", "PHP", "CPC", 'C', OrePrefixes.circuit.get(Materials.LV), 'P', cable.copy(), 'H',
                 ItemList.Hull_LV });
 
-        // Antenna heads (DESIGN.md 3.1): a hull of the tier with an emitter to transmit and a sensor to receive, the
+        // Antenna heads: a hull of the tier with an emitter to transmit and a sensor to receive, the
         // tier's circuits and cable, and two long rods for the elements.
         antenna(BeComMachines.antennaT1, 1, Materials.LV, Materials.Tin, Materials.Steel);
         antenna(BeComMachines.antennaT2, 2, Materials.MV, Materials.Copper, Materials.Aluminium);
@@ -211,7 +226,7 @@ public final class BeComRecipes {
             .eut(HANDHELD_EUT)
             .addTo(assemblerRecipes);
 
-        // Mobile Phone (DESIGN.md 3.1): an MV emitter and sensor are enough for UHF; the screen, an HV circuit and
+        // Mobile Phone: an MV emitter and sensor are enough for UHF; the screen, an HV circuit and
         // battery make it a phone, in the walkie's polyethylene case.
         GTValues.RA.stdBuilder()
             .itemInputs(
@@ -258,7 +273,7 @@ public final class BeComRecipes {
             .eut(SPACE_EUT)
             .addTo(assemblerRecipes);
 
-        // Satellite Rocket (D30): a Satellite on Galacticraft's Tier 1 rocket parts.
+        // Satellite Rocket: a Satellite on Galacticraft's Tier 1 rocket parts.
         GTValues.RA.stdBuilder()
             .itemInputs(
                 new ItemStack(BeComItems.satellite),
@@ -283,7 +298,7 @@ public final class BeComRecipes {
             .eut(SPACE_EUT)
             .addTo(assemblerRecipes);
 
-        // Satellite Launch Pad (DESIGN.md 3.1): an HV hull with pumps for the fuel, a robot arm to raise the rocket,
+        // Satellite Launch Pad: an HV hull with pumps for the fuel, a robot arm to raise the rocket,
         // its circuits and gold cables.
         GTModHandler.addCraftingRecipe(
             BeComMachines.launchPad.getStackForm(1),
@@ -292,7 +307,7 @@ public final class BeComRecipes {
                 OrePrefixes.circuit.get(Materials.HV), 'H', ItemList.Hull_HV, 'T',
                 OrePrefixes.cableGt01.get(Materials.Gold) });
 
-        // Portal Relays (DESIGN.md 3.1): a hull of the tier with an emitter and a sensor, its circuits and cables, and
+        // Portal Relays: a hull of the tier with an emitter and a sensor, its circuits and cables, and
         // two Eyes of Ender to find the portal.
         relay(
             BeComMachines.portalRelay,
@@ -316,7 +331,7 @@ public final class BeComRecipes {
             Materials.Aluminium,
             ItemList.Sensor_EV);
 
-        // Satellite Dish (DESIGN.md 3.1): an HV hull with two emitters and two sensors, its circuits and gold cables.
+        // Satellite Dish: an HV hull with two emitters and two sensors, its circuits and gold cables.
         GTModHandler.addCraftingRecipe(
             BeComMachines.satelliteDish.getStackForm(1),
             GTModHandler.RecipeBits.BUFFERED,

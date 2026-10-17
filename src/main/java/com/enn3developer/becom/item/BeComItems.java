@@ -3,7 +3,7 @@ package com.enn3developer.becom.item;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.GregTechAPI;
 
-/** BeCom's items (DESIGN.md 15.1): the handhelds, the Exchange's racks, and the parts for space. */
+/** BeCom's items: the handhelds, the Exchange's racks, and the parts for space. */
 public final class BeComItems {
 
     public static ItemWalkieTalkie walkieTalkie;
@@ -14,6 +14,7 @@ public final class BeComItems {
     public static ItemSpacePart satelliteRocket;
     public static ItemSpacePart rocketRadioReceiver;
     public static ItemSwitchingRack switchingRack;
+    public static ItemBecomCard becomCard;
 
     private BeComItems() {}
 
@@ -42,5 +43,8 @@ public final class BeComItems {
         switchingRack = new ItemSwitchingRack();
         switchingRack.setCreativeTab(GregTechAPI.TAB_GREGTECH);
         GameRegistry.registerItem(switchingRack, "switching_rack");
+        becomCard = new ItemBecomCard();
+        becomCard.setCreativeTab(GregTechAPI.TAB_GREGTECH);
+        GameRegistry.registerItem(becomCard, "becom_card");
     }
 }

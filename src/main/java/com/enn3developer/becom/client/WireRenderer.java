@@ -14,8 +14,8 @@ import com.enn3developer.becom.packet.WireSyncPacket;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * Draws pylon spans as sagging lines between linked heads (DESIGN.md 5.1): one strand per cable on the span, side by
- * side along the crossarms, in its cable's colour, and a thin dark line for a span with none. A blocked link (D20)
+ * Draws pylon spans as sagging lines between linked heads: one strand per cable on the span, side by
+ * side along the crossarms, in its cable's colour, and a thin dark line for a span with none. A blocked link
  * renders broken: each end hangs down limp from its head.
  */
 public final class WireRenderer {

@@ -14,11 +14,11 @@ import com.enn3developer.becom.logic.radio.HeightRegion;
 import com.enn3developer.becom.logic.radio.Terrain;
 
 /**
- * One dimension's height cache (DESIGN.md 6.2): what the radio model knows about terrain, without ever loading a
+ * One dimension's height cache: what the radio model knows about terrain, without ever loading a
  * chunk. Each chunk's cells are taken from its heightmap when it loads and when it saves; regions live in memory once
  * touched and go to disk when the world saves. Terrain never seen reads as sea level.
  * <p>
- * Only a cache (DESIGN.md 14.2): a region file that can't be read, or has another format, is thrown away and filled
+ * Only a cache: a region file that can't be read, or has another format, is thrown away and filled
  * again as chunks load. Server thread only.
  */
 public final class HeightCache implements Terrain {

@@ -4,8 +4,8 @@ import java.util.Random;
 import java.util.function.IntPredicate;
 
 /**
- * Phone numbers (DESIGN.md 8.2, D25): {@link #DIGITS} digits, unique in the world, with no leading zero so every
- * number reads at full length. The length is one of the three fixed tunables (DESIGN.md 14.2).
+ * Phone numbers: {@link #DIGITS} digits, unique in the world, with no leading zero so every
+ * number reads at full length. The length is one of the three fixed tunables.
  */
 public final class PhoneNumbers {
 

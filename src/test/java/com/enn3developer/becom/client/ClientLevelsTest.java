@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
 
-/** DESIGN.md 13.5: the level a radio frame is filtered at, before and after the server tells it. */
+/** The level a radio frame is filtered at, before and after the server tells it. */
 class ClientLevelsTest {
 
     @AfterEach

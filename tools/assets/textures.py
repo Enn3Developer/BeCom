@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates BeCom's textures in both styles (DESIGN.md 15.1, D53).
+"""Generates BeCom's textures in both styles.
 
 Every texture is drawn from simple shapes (panels, lamps, wires, insulators) on a 16x16 grid of roles, then rendered
 twice: in GT's default palette into the jar's assets, and in a Modernity-like palette into

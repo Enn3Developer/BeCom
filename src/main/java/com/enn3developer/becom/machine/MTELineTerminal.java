@@ -13,8 +13,13 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.gui.LineTerminalScreen;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
@@ -37,8 +42,8 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Line Terminal (DESIGN.md 5.2): where a building's line starts. An LV, MV or HV machine drawing a few EU/t (D29)
- * that links to one pylon and serves every device on its cable, Telephones and Videophones (DESIGN.md 10.2), as many as
+ * The Line Terminal: where a building's line starts. An LV, MV or HV machine drawing a few EU/t
+ * that links to one pylon and serves every device on its cable, Telephones and Videophones, as many as
  * its tier has ports: the nearest first. Its devices share its uplink's rate.
  */
 @IMetaTileEntity.SkipGenerateName
@@ -156,6 +161,26 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         becom.links.wrench(player, tile.getWorld(), pos);
         return true;
     }
+
+    // region Screen
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
+        if (tile.isServerSide()) openGui(player);
+        return true;
+    }
+
+    @Override
+    protected boolean forceUseMui2() {
+        return true;
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
+        return LineTerminalScreen.build(this, data, sync);
+    }
+
+    // endregion
 
     // region Power
 

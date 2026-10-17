@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * Who may link to whom on the wired network (DESIGN.md 5.1, 5.2). Ownership (D37) and clearance (D20) need the
+ * Who may link to whom on the wired network. Ownership and clearance need the
  * world, so callers check those; everything else is here.
  */
 public final class LinkRules {
@@ -10,7 +10,7 @@ public final class LinkRules {
     private final double bridgeDistance;
 
     /**
-     * @param spanFactor     how many times the shorter pylon's height two pylons may be apart (DESIGN.md 17)
+     * @param spanFactor     how many times the shorter pylon's height two pylons may be apart
      * @param bridgeDistance how far an antenna or a gateway is wired to a pylon, a terminal or an Exchange
      */
     public LinkRules(double spanFactor, double bridgeDistance) {
@@ -63,8 +63,8 @@ public final class LinkRules {
             .bridge()
             || b.kind()
                 .bridge()) {
-            // Antennas, ME Bridges, dishes and relays are wired to a pylon, a terminal or an Exchange (DESIGN.md 7,
-            // 8.3, 9.2, X36), or the last three to an antenna: antennas reach each other by radio, dishes through the
+            // Antennas, ME Bridges, dishes and relays are wired to a pylon, a terminal or an Exchange,
+            // or the last three to an antenna: antennas reach each other by radio, dishes through the
             // satellites, relays their partners through a portal, and ME Bridges join ME networks, not lines.
             if (a.kind()
                 .bridge()
@@ -79,7 +79,7 @@ public final class LinkRules {
             .pylonHead()
             && !b.kind()
                 .pylonHead()) {
-                    // A line runs over pylon heads; terminals and Exchanges only end one (DESIGN.md 5.2).
+                    // A line runs over pylon heads; terminals and Exchanges only end one.
                     return Result.INCOMPATIBLE;
                 }
         if (!a.formed() || !b.formed()) return Result.NOT_FORMED;

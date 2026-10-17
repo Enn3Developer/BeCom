@@ -5,52 +5,56 @@ import com.enn3developer.becom.logic.radio.Band;
 import com.enn3developer.becom.logic.radio.RadioModel;
 
 /**
- * Every server-side tunable from DESIGN.md 17 that the code reads, as loaded from the config at startup (DESIGN.md
- * 14.2). Immutable and free of Minecraft types, so logic and tests can take it as-is.
+ * Every server-side tunable the code reads, as loaded from the config at startup.
+ * Immutable and free of Minecraft types, so logic and tests can take it as-is.
  */
 public record Tunables(
-    // Signal (DESIGN.md 4)
+    // Signal
     double levelLow, double levelMedium, double levelHigh, double levelMax, double levelHysteresis,
     double dropoutMaxLoss, double dropoutFullLossSnr, double dropoutCleanSnr, double dropoutMeanBurstMillis,
     double dropAfterSeconds,
-    // Wired network (DESIGN.md 5)
+    // Wired network
     int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, int cableRatePhone,
     int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial, int cableReachFibre,
     int bundleSize, int cableBlocksPerItem, int terminalPower, int terminalPortsLV, int terminalPortsMV,
     int terminalPortsHV, int terminalCableBudget, int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV,
     int voiceRate, int videoRate,
-    // Calls (DESIGN.md 8.2, 10, 12)
+    // Calls
     double directHearingRange, int sessionGraceSeconds, int halfLinkSeconds, int ringSeconds, int callAttemptsPerMinute,
-    // Radio simulation (DESIGN.md 6)
+    // Radio simulation
     double vhfWavelength, double uhfWavelength, double vhfCoverPerBlock, double uhfCoverPerBlock, double coverLossCap,
     double terrainLossCap, double noSkyNoise, int surveyBearings, int surveyStep, int surveySeconds,
     double surveyBudgetMillis,
-    // Antennas (DESIGN.md 7)
+    // Antennas
     double antennaBudgetT1, double antennaBudgetT2, double antennaBudgetT3, int antennaPowerT1, int antennaPowerT2,
     int antennaPowerT3, int antennaMastMinT1, int antennaMastMinT2, int antennaMastMinT3, int antennaMastMax,
     double wrenchLinkDistance, int antennaCallsT1, int antennaCallsT2, int antennaCallsT3, int radioRateLow,
     int radioRateMedium, int radioRateHigh, int radioRateMax,
-    // Radios (DESIGN.md 8, 11.3, 11.4)
+    // Radios
     double transceiverBudget, double walkieBudget, int transceiverPower, double loudspeakerRange, double talkRange,
     double walkieSpeakerRange, int captureHoldMillis, double captureMargin, int walkieBattery, int walkieStandbyDrain,
     int walkieReceiveDrain, int walkieTransmitDrain, int analyzerRefreshSeconds,
-    // Phones (DESIGN.md 6.1, 8.2, 11.2, D26, D36)
+    // Phones
     int groupCallSize, int phoneBattery, int phoneStandbyDrain, int phoneCallDrain, int phoneVideoDrain,
-    int phoneScreenDrain, int phoneSaverPercent, double weatherRainLoss, double weatherStormLoss,
-    // Video (DESIGN.md 10.1, 10.2, 14)
+    int phoneScreenDrain, int phoneSaverPercent, int phoneAppDrain, int phoneStorageKB, double weatherRainLoss,
+    double weatherStormLoss,
+    // Apps
+    int appsPerPhone, int appSourceKB, int appStorageKB, int appMessageKB, int appWakeSeconds, int appAwakeSeconds,
+    int appOfferSeconds, int appAuthorReach, int storeApps, int storeAppsPerAuthor, int computerForgetDays,
+    // Video
     int videoPoseRate, int videoHeightMedium, int videoHeightHigh, int videoHeightMax, int videoFpsMedium,
     int videoFpsHigh, int videoFpsMax, int rearWidthHigh, int rearHeightHigh, int rearFpsHigh, int rearWidthMax,
     int rearHeightMax, int rearFpsMax, int rearMaxBytes, int rearMaxFps, int videophonePower, double videophoneRoom,
     double videophoneLoudspeaker, int videophoneEmptySeconds,
-    // ME (DESIGN.md 8.3)
+    // ME
     int meBridgePower, int meBridgeChannels, int meBridgeCalls,
-    // Space (DESIGN.md 9): levels by number, 1 Low to 4 Max
+    // Space: levels by number, 1 Low to 4 Max
     int satellitesLow, int satellitesMax, double satelliteLifetimeDays, double satelliteLifetimeSpread,
     int launchSeconds, int launchPower, int launchFuel, int dishPower, double dishMaintenanceLoss,
     int receiverUplinkLevel, int relayPower, double relayPortalDistance, int relayHopLevel, int satelliteCalls,
     int dishCalls, int receiverCalls, int relayCallsMV, int relayCallsHV, int relayCallsEV, int relayRateMV,
     int relayRateHV, int relayRateEV,
-    // Quests (DESIGN.md 15.5)
+    // Quests
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
     // Ceilings no sensible config reaches, which keep a hostile server's values from hanging a client: no frame column
@@ -59,12 +63,12 @@ public record Tunables(
     public static final int MAX_CABLE = 16_384;
     // A span holds at most this many cables, so a hostile value can't make a wire packet huge.
     public static final int MAX_BUNDLE = 8;
-    // Portal Relays come in MV, HV and EV (DESIGN.md 9.4).
+    // Portal Relays come in MV, HV and EV.
     public static final int RELAY_MIN_TIER = 2;
     public static final int RELAY_MAX_TIER = 4;
     private static final String[] RELAY_VOLTAGES = { "MV", "HV", "EV" };
     // Radio work grows with range and bearings: a survey reads bearings x range / step heights, a direct link
-    // range / step. Far past DESIGN.md's numbers (256 blocks, 64 bearings), these keep one survey or link bounded.
+    // range / step. Far past the defaults (256 blocks, 64 bearings), these keep one survey or link bounded.
     public static final int MAX_RADIO_RANGE = 4096;
     public static final int MAX_BEARINGS = 1024;
     // A call's every listener gets every speaker, and a group call's grid one tile each: past this, both stop being
@@ -88,7 +92,7 @@ public record Tunables(
     /** GTNH Voice's frame length, in ms: the dropout model's step. Fixed by the voice codec, not a tunable. */
     public static final int FRAME_MILLIS = 20;
 
-    // The values DESIGN.md 17 starts from, by component name. Doubles are written as doubles, ints as ints: fromMap
+    // The defaults, by component name. Doubles are written as doubles, ints as ints: fromMap
     // takes a value only when its type matches.
     private static final java.util.Map<String, Object> DEFAULTS = new java.util.LinkedHashMap<>();
 
@@ -181,6 +185,19 @@ public record Tunables(
         d.put("phoneVideoDrain", 16);
         d.put("phoneScreenDrain", 2);
         d.put("phoneSaverPercent", 15);
+        d.put("phoneAppDrain", 8);
+        d.put("phoneStorageKB", 256);
+        d.put("appsPerPhone", 16);
+        d.put("appSourceKB", 64);
+        d.put("appStorageKB", 64);
+        d.put("appMessageKB", 8);
+        d.put("appWakeSeconds", 60);
+        d.put("appAwakeSeconds", 10);
+        d.put("appOfferSeconds", 60);
+        d.put("appAuthorReach", 16);
+        d.put("storeApps", 1024);
+        d.put("storeAppsPerAuthor", 32);
+        d.put("computerForgetDays", 30);
         d.put("weatherRainLoss", 3.0);
         d.put("weatherStormLoss", 6.0);
         d.put("videoPoseRate", 10);
@@ -232,7 +249,7 @@ public record Tunables(
         d.put("questlineRecheckSeconds", 60);
     }
 
-    /** The values DESIGN.md 17 starts from. */
+    /** The defaults. */
     public static Tunables defaults() {
         return fromMap(java.util.Map.of());
     }
@@ -361,9 +378,25 @@ public record Tunables(
         if (phoneCallDrain < 0) throw invalid("phoneCallDrain", phoneCallDrain, "0 or more");
         if (phoneVideoDrain < 0) throw invalid("phoneVideoDrain", phoneVideoDrain, "0 or more");
         if (phoneScreenDrain < 0) throw invalid("phoneScreenDrain", phoneScreenDrain, "0 or more");
+        if (phoneAppDrain < 0) throw invalid("phoneAppDrain", phoneAppDrain, "0 or more");
+        if (phoneStorageKB < 1 || phoneStorageKB > 16384) throw invalid("phoneStorageKB", phoneStorageKB, "1 to 16384");
         if (phoneSaverPercent < 0 || phoneSaverPercent > 100) {
             throw invalid("phoneSaverPercent", phoneSaverPercent, "0 to 100");
         }
+        if (appsPerPhone < 1 || appsPerPhone > 64) throw invalid("appsPerPhone", appsPerPhone, "1 to 64");
+        if (appSourceKB < 1 || appSourceKB > 64) throw invalid("appSourceKB", appSourceKB, "1 to 64");
+        if (appStorageKB < 1 || appStorageKB > 16384) throw invalid("appStorageKB", appStorageKB, "1 to 16384");
+        if (appMessageKB < 1 || appMessageKB > 64) throw invalid("appMessageKB", appMessageKB, "1 to 64");
+        if (appWakeSeconds < 10 || appWakeSeconds > 3600) throw invalid("appWakeSeconds", appWakeSeconds, "10 to 3600");
+        if (appAwakeSeconds < 2 || appAwakeSeconds > 120) throw invalid("appAwakeSeconds", appAwakeSeconds, "2 to 120");
+        if (appOfferSeconds < 10 || appOfferSeconds > 600)
+            throw invalid("appOfferSeconds", appOfferSeconds, "10 to 600");
+        if (appAuthorReach < 2 || appAuthorReach > 64) throw invalid("appAuthorReach", appAuthorReach, "2 to 64");
+        if (storeApps < 1 || storeApps > 8192) throw invalid("storeApps", storeApps, "1 to 8192");
+        if (storeAppsPerAuthor < 1 || storeAppsPerAuthor > 1024)
+            throw invalid("storeAppsPerAuthor", storeAppsPerAuthor, "1 to 1024");
+        if (computerForgetDays < 1 || computerForgetDays > 3650)
+            throw invalid("computerForgetDays", computerForgetDays, "1 to 3650");
         if (weatherRainLoss < 0) throw invalid("weatherRainLoss", weatherRainLoss, "0 or more");
         if (weatherStormLoss < weatherRainLoss)
             throw invalid("weatherStormLoss", weatherStormLoss, "at least weatherRainLoss");
@@ -440,12 +473,12 @@ public record Tunables(
         return new IllegalArgumentException(key + " is " + value + ", but must be " + rule);
     }
 
-    /** The level of a Rocket Radio Receiver's uplink to the Overworld's satellites (DESIGN.md 9.3). */
+    /** The level of a Rocket Radio Receiver's uplink to the Overworld's satellites. */
     public SignalLevel receiverUplink() {
         return SignalLevel.byOrdinal(receiverUplinkLevel);
     }
 
-    /** How many calls a Portal Relay of a GT voltage tier carries at once, MV to EV (DESIGN.md 9.4). */
+    /** How many calls a Portal Relay of a GT voltage tier carries at once, MV to EV. */
     public int relayCalls(int voltageTier) {
         return switch (Math.max(RELAY_MIN_TIER, Math.min(RELAY_MAX_TIER, voltageTier))) {
             case 2 -> relayCallsMV;
@@ -454,7 +487,7 @@ public record Tunables(
         };
     }
 
-    /** A Portal Relay pair's data rate in KB/s, by the GT voltage tier it works at, MV to EV (DESIGN.md 9.4). */
+    /** A Portal Relay pair's data rate in KB/s, by the GT voltage tier it works at, MV to EV. */
     public int relayRate(int voltageTier) {
         return switch (Math.max(RELAY_MIN_TIER, Math.min(RELAY_MAX_TIER, voltageTier))) {
             case 2 -> relayRateMV;
@@ -463,12 +496,12 @@ public record Tunables(
         };
     }
 
-    /** The level of the hop between a linked pair of Portal Relays (DESIGN.md 9.4). */
+    /** The level of the hop between a linked pair of Portal Relays. */
     public SignalLevel relayHop() {
         return SignalLevel.byOrdinal(relayHopLevel);
     }
 
-    /** Every value by its name, for sending to clients (DESIGN.md 14.2). Doubles, ints and booleans only. */
+    /** Every value by its name, for sending to clients. Doubles, ints and booleans only. */
     public java.util.Map<String, Object> toMap() {
         java.util.Map<String, Object> values = new java.util.LinkedHashMap<>();
         try {
@@ -508,7 +541,7 @@ public record Tunables(
     }
 
     /**
-     * The weather's loss on calls and satellite hops (D26, DESIGN.md 6.1), from Minecraft's rain strength and its
+     * The weather's loss on calls and satellite hops, from Minecraft's rain strength and its
      * thunder strength (already weighed by the rain), each 0 to 1: the rain's loss in rain, the storm's in a storm.
      */
     public double weatherLoss(double rain, double thunder) {
@@ -528,7 +561,7 @@ public record Tunables(
             frameMillis);
     }
 
-    /** A cable's data rate in KB/s (DESIGN.md 5.5). */
+    /** A cable's data rate in KB/s. */
     public int cableRate(CableTier tier) {
         return switch (tier) {
             case PHONE -> cableRatePhone;
@@ -537,7 +570,7 @@ public record Tunables(
         };
     }
 
-    /** The longest run a cable carries, in blocks (DESIGN.md 5.5). */
+    /** The longest run a cable carries, in blocks. */
     public int cableReach(CableTier tier) {
         return switch (tier) {
             case PHONE -> cableReachPhone;
@@ -546,7 +579,7 @@ public record Tunables(
         };
     }
 
-    /** How many devices a Line Terminal of a cable tier's voltage serves (DESIGN.md 5.2). */
+    /** How many devices a Line Terminal of a cable tier's voltage serves. */
     public int terminalPorts(CableTier tier) {
         return switch (tier) {
             case PHONE -> terminalPortsLV;
@@ -555,7 +588,7 @@ public record Tunables(
         };
     }
 
-    /** How many calls a Switching Rack of a cable tier's voltage switches at once (DESIGN.md 5.4). */
+    /** How many calls a Switching Rack of a cable tier's voltage switches at once. */
     public int rackCalls(CableTier tier) {
         return switch (tier) {
             case PHONE -> rackCallsLV;
@@ -564,7 +597,7 @@ public record Tunables(
         };
     }
 
-    /** How many calls an antenna carries at once, by tier 1 to 3 (DESIGN.md 7). */
+    /** How many calls an antenna carries at once, by tier 1 to 3. */
     public int antennaCalls(int tier) {
         return switch (tier) {
             case 1 -> antennaCallsT1;
@@ -573,7 +606,7 @@ public record Tunables(
         };
     }
 
-    /** A radio hop's data rate in KB/s at a level; nothing below Low (DESIGN.md 6). */
+    /** A radio hop's data rate in KB/s at a level; nothing below Low. */
     public int radioRate(SignalLevel level) {
         return switch (level) {
             case NONE -> 0;
@@ -584,12 +617,12 @@ public record Tunables(
         };
     }
 
-    /** Radio channels' band (DESIGN.md 6.1): longer waves bend over hills better. */
+    /** Radio channels' band: longer waves bend over hills better. */
     public Band vhf() {
         return new Band("VHF", vhfWavelength, vhfCoverPerBlock);
     }
 
-    /** Calls' band (DESIGN.md 6.1). */
+    /** Calls' band. */
     public Band uhf() {
         return new Band("UHF", uhfWavelength, uhfCoverPerBlock);
     }
@@ -598,7 +631,7 @@ public record Tunables(
         return new RadioModel(terrainLossCap, coverLossCap, noSkyNoise);
     }
 
-    /** An antenna's link budget, by tier 1 to 3 (DESIGN.md 7). */
+    /** An antenna's link budget, by tier 1 to 3. */
     public double antennaBudget(int tier) {
         return switch (tier) {
             case 1 -> antennaBudgetT1;
@@ -616,7 +649,7 @@ public record Tunables(
         };
     }
 
-    /** An antenna's power draw in EU/t, by tier 1 to 3 (DESIGN.md 7). */
+    /** An antenna's power draw in EU/t, by tier 1 to 3. */
     public int antennaPower(int tier) {
         return switch (tier) {
             case 1 -> antennaPowerT1;
@@ -625,14 +658,14 @@ public record Tunables(
         };
     }
 
-    /** How far a radio with {@code budget} reaches Low on open ground, in blocks (DESIGN.md 7, 8.1). */
+    /** How far a radio with {@code budget} reaches Low on open ground, in blocks. */
     public double rangeToLow(double budget) {
         return RadioModel.rangeFor(budget, levelLow);
     }
 
     /**
      * How far a link already at Low holds on open ground: a level is left only {@code levelHysteresis} below its
-     * threshold (DESIGN.md 4.1). Anything that decides whether a link is worth working out reaches this far, or the
+     * threshold. Anything that decides whether a link is worth working out reaches this far, or the
      * hysteresis would stop at the edge of range and links there would flicker.
      */
     public double rangeToHold(double budget) {

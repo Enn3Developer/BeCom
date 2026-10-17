@@ -26,7 +26,7 @@ import micdoodle8.mods.galacticraft.api.prefab.entity.EntitySpaceshipBase;
 import micdoodle8.mods.galacticraft.api.world.IGalacticraftWorldProvider;
 
 /**
- * Rocket Radio Receivers (DESIGN.md 9.3, 14, D28). Rockets are Galacticraft's entities, so BeCom can't tick them: it
+ * Rocket Radio Receivers. Rockets are Galacticraft's entities, so BeCom can't tick them: it
  * keeps every rocket built on {@link EntityAutoRocket} as it joins its world, and once a second checks each one's pad,
  * launch phase and cargo. One standing unignited on a launch pad on a planet, with a receiver in its cargo, is a T1
  * antenna there, needing no power, and the planet's uplink to the Overworld's satellites. Server thread only.
@@ -34,7 +34,7 @@ import micdoodle8.mods.galacticraft.api.world.IGalacticraftWorldProvider;
 public final class RocketReceivers {
 
     private static final int TICKS_PER_SECOND = 20;
-    // A receiver is an antenna of the first tier (DESIGN.md 9.3).
+    // A receiver is an antenna of the first tier.
     private static final int TIER = 1;
     // Galacticraft keeps a rocket's last two slots for itself; the rest is cargo.
     private static final int OWN_SLOTS = 2;
@@ -52,7 +52,7 @@ public final class RocketReceivers {
         this.antennas = antennas;
     }
 
-    /** An entity joined a world: a rocket is followed from now on (DESIGN.md 14). */
+    /** An entity joined a world: a rocket is followed from now on. */
     public void joined(Entity entity) {
         if (entity instanceof EntityAutoRocket rocket && !entity.worldObj.isRemote) rockets.add(rocket);
     }
@@ -108,8 +108,8 @@ public final class RocketReceivers {
     }
 
     /**
-     * Whether a rocket's receiver counts (DESIGN.md 9.3): it stands unignited on a launch pad, on a planet (a
-     * Galacticraft world other than the Overworld, X35), with a receiver in its cargo.
+     * Whether a rocket's receiver counts: it stands unignited on a launch pad, on a planet (a
+     * Galacticraft world other than the Overworld), with a receiver in its cargo.
      */
     public static boolean counts(EntityAutoRocket rocket) {
         World world = rocket.worldObj;
@@ -119,7 +119,7 @@ public final class RocketReceivers {
         return carriesReceiver(rocket);
     }
 
-    /** Whether a receiver is in the rocket's cargo; a rocket built without chests has none (DESIGN.md 9.3). */
+    /** Whether a receiver is in the rocket's cargo; a rocket built without chests has none. */
     public static boolean carriesReceiver(EntityAutoRocket rocket) {
         int cargo = rocket.getSizeInventory() - OWN_SLOTS;
         for (int slot = 0; slot < cargo; slot++) {
@@ -135,7 +135,7 @@ public final class RocketReceivers {
     }
 
     /**
-     * Where the receiver transmits from (DESIGN.md 6.1): the top of the rocket's top block, how far below the surface
+     * Where the receiver transmits from: the top of the rocket's top block, how far below the surface
      * that is, and the pad it stands on. Whole blocks, like an antenna's head, so the rocket's position settling by a
      * hair doesn't make a new antenna that surveys again.
      */

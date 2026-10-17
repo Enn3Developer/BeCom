@@ -11,7 +11,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * One rear-camera picture from the other person in a one-to-one call (DESIGN.md 10.1), a JPEG relayed by the server
+ * One rear-camera picture from the other person in a one-to-one call, a JPEG relayed by the server
  * as their client sent it, never decoded on the way.
  */
 public final class RearFramePacket implements IMessage {

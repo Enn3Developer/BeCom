@@ -39,9 +39,9 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Transceiver (DESIGN.md 8, 8.1, 11.3): a radio on a block. Anyone within its talk range transmits through it on
+ * The Transceiver: a radio on a block. Anyone within its talk range transmits through it on
  * its channel when they hold push-to-talk, and its loudspeaker plays the channel to everyone around. MV, 32 EU/t.
- * Like any radio, anyone may tune it: radio channels are public (DESIGN.md 12.2, X21).
+ * Like any radio, anyone may tune it: radio channels are public.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -50,7 +50,7 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     private static final int TIER = 2;
     public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the Transceiver left alone (X16).
+    // BeCom's keys from a newer BeCom: kept as they were, and the Transceiver left alone.
     private NBTTagCompound tooNew;
     private int channel = 1;
     private boolean loudspeaker = true;

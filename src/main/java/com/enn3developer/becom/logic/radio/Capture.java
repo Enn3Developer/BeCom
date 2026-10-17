@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The capture effect (D24): on a radio channel, each listener hears only the strongest of several transmitters.
+ * The capture effect: on a radio channel, each listener hears only the strongest of several transmitters.
  * Whoever a listener hears keeps the channel until {@code hold} after their last frame; another transmitter takes over
  * sooner only if its link to that listener is at least {@code margin} dB stronger.
  * <p>

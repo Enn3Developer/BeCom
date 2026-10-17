@@ -12,7 +12,7 @@ import com.enn3developer.becom.BeCom;
 import cpw.mods.fml.common.Loader;
 
 /**
- * Where BeCom reports what its quest tasks wait for (D50). BetterQuesting is optional (DESIGN.md 15.5): without it,
+ * Where BeCom reports what its quest tasks wait for. BetterQuesting is optional: without it,
  * every report is dropped. Server thread only.
  */
 public final class BeComQuests {
@@ -38,7 +38,7 @@ public final class BeComQuests {
                 .newInstance();
             backend.init();
         } catch (Throwable t) {
-            // DESIGN.md 15.5: anything going wrong with the quest book leaves BeCom running without it.
+            // Anything going wrong with the quest book leaves BeCom running without it.
             BeCom.LOG.error("BetterQuesting integration failed to start; BeCom carries on without its quests", t);
             backend = QuestBackend.NONE;
         }

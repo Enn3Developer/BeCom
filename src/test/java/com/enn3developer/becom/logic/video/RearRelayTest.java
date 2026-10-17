@@ -18,7 +18,7 @@ import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
-/** DESIGN.md 10.1, 14: rear pictures go on to the one viewer, held to the client caps and the viewer's level. */
+/** Rear pictures go on to the one viewer, held to the client caps and the viewer's level. */
 class RearRelayTest {
 
     private static final int MOBILE_A = 111_111;

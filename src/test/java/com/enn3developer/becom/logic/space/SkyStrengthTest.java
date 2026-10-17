@@ -22,7 +22,7 @@ class SkyStrengthTest {
 
     @Test
     void designsCountsReachEachLevelFirst() {
-        // DESIGN.md 9.1 and 16.3: 5, 14, 37 and 100 satellites give Low, Medium, High and Max.
+        // 5, 14, 37 and 100 satellites give Low, Medium, High and Max.
         assertEquals(SignalLevel.LOW, level(5));
         assertEquals(SignalLevel.MEDIUM, level(14));
         assertEquals(SignalLevel.HIGH, level(37));
@@ -35,7 +35,7 @@ class SkyStrengthTest {
 
     @Test
     void theFormulaIsTheDesigns() {
-        // 6 + 18 * log10(n / 5) / log10(20), up to Max's 100 (X38).
+        // 6 + 18 * log10(n / 5) / log10(20), up to Max's 100.
         for (int n = 5; n <= 100; n += 5) {
             assertEquals(6 + 18 * Math.log10(n / 5.0) / Math.log10(20), sky.snr(n), 1e-9, n + " satellites");
         }
@@ -43,7 +43,7 @@ class SkyStrengthTest {
 
     @Test
     void moreThanAHundredAddNothing() {
-        // X38: Max at 100 is the most; a thousand satellites don't reach deeper underground.
+        // Max at 100 is the most; a thousand satellites don't reach deeper underground.
         assertEquals(t.levelMax(), sky.snr(1000), 1e-9);
         assertEquals(t.levelMax(), sky.snr(Integer.MAX_VALUE), 1e-9);
         assertTrue(sky.hop(4000, 200, t.uhf(), 0) < t.levelLow());
@@ -62,7 +62,7 @@ class SkyStrengthTest {
     void aRoofWeakensItAndUndergroundItsGone() {
         double open = sky.hop(100, -10, t.uhf(), 0);
         assertEquals(sky.snr(100), open, 1e-9);
-        // Two blocks of roof on UHF: 2.5 dB each (DESIGN.md 6.1).
+        // Two blocks of roof on UHF: 2.5 dB each.
         assertEquals(sky.snr(100) - 5, sky.hop(100, 2, t.uhf(), 0), 1e-9);
         assertEquals(sky.snr(100) - 3, sky.hop(100, 2, t.vhf(), 0), 1e-9);
         // Deep down, the cover's 40 dB cap leaves nothing at Low.
@@ -71,7 +71,7 @@ class SkyStrengthTest {
 
     @Test
     void theAnalyzersTermsAddUpToTheHop() {
-        // DESIGN.md 6.6: the satellites' strength is the budget, less the cover and the weather.
+        // The satellites' strength is the budget, less the cover and the weather.
         var losses = sky.losses(37, 3, t.uhf(), t.weatherRainLoss());
         assertEquals(sky.hop(37, 3, t.uhf(), t.weatherRainLoss()), losses.snr(), 1e-9);
         assertEquals(sky.snr(37), losses.budget(), 1e-9);

@@ -13,7 +13,7 @@ import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.CableTier;
 
-/** The cables' item (DESIGN.md 5.5): one per tier, named and described by it. */
+/** The cables' item: one per tier, named and described by it. */
 public class ItemBlockCable extends ItemBlockWithMetadata {
 
     public ItemBlockCable(Block block) {

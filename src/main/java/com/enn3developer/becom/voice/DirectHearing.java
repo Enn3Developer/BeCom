@@ -3,7 +3,7 @@ package com.enn3developer.becom.voice;
 import com.enn3developer.gtnhvoice.api.server.PlayerSnapshot;
 
 /**
- * D17: a listener close enough to hear the speaker directly gets nothing from BeCom, so nobody hears a voice twice.
+ * A listener close enough to hear the speaker directly gets nothing from BeCom, so nobody hears a voice twice.
  * The range is the configured one, capped by GTNH Voice's own proximity range.
  */
 public final class DirectHearing {

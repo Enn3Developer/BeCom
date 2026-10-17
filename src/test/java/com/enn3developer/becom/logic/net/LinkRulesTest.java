@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 5.1, 5.2: spans, slots and who links to whom. */
+/** Spans, slots and who links to whom. */
 class LinkRulesTest {
 
     private final LinkRules rules = new LinkRules(4, 16);
@@ -127,7 +127,7 @@ class LinkRulesTest {
 
     @Test
     void aDishBridgesAnAntennaAPylonHeadOrALineTerminalWithinTheBridgeDistance() {
-        // DESIGN.md 9.2: wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks.
+        // Wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks.
         NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
         assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(16, 0, NodeKind.ANTENNA_T3, 8)));
         assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 16, NodeKind.PYLON, 6), dish));
@@ -140,7 +140,7 @@ class LinkRulesTest {
 
     @Test
     void aRelayJoinsItsNetworkTheWayADishDoes() {
-        // X36: a relay's one wrench link bridges an antenna, a Pylon Head or a Line Terminal within 16 blocks; its
+        // A relay's one wrench link bridges an antenna, a Pylon Head or a Line Terminal within 16 blocks; its
         // partner through the portal is no wrench link of the same dimension.
         NetNode relay = node(0, 0, NodeKind.PORTAL_RELAY, 0);
         assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(16, 0, NodeKind.TERMINAL, 0)));
@@ -153,7 +153,7 @@ class LinkRulesTest {
 
     @Test
     void anMeBridgeDoesntLinkOntoADishOrARelay() {
-        // DESIGN.md 9.2 and X36 name what a dish and a relay link to; an ME Bridge isn't among them.
+        // A dish and a relay link to pylons, terminals, Exchanges and antennas; an ME Bridge links to no antenna.
         NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, node(5, 0, NodeKind.SATELLITE_DISH, 0)));
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, node(0, 5, NodeKind.PORTAL_RELAY, 0), bridge));

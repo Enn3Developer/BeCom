@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 /**
- * Work done a slice per tick within a time budget (DESIGN.md 6.5, 14: threading), so a large network's periodic
+ * Work done a slice per tick within a time budget, so a large network's periodic
  * checks never land in a single tick. Each tick takes at least one item, so a sweep always finishes.
  */
 public final class Sweep<T> {

@@ -13,9 +13,9 @@ import appeng.api.util.DimensionalCoord;
 import appeng.tile.networking.TileWireless;
 
 /**
- * Where an ME Phone has service (DESIGN.md 8.3, D13): inside the wireless range of the ME network it's linked to,
+ * Where an ME Phone has service: inside the wireless range of the ME network it's linked to,
  * by AE2's own rule, so GTNH's ranges and booster cards apply unchanged. AE2 keeps that rule for its own wireless
- * terminals, and an ME Phone isn't one, so this is the same test on the same access points (X27).
+ * terminals, and an ME Phone isn't one, so this is the same test on the same access points.
  */
 public final class MeAccess {
 

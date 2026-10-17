@@ -80,7 +80,7 @@ import micdoodle8.mods.galacticraft.core.tile.TileEntityLandingPad;
 import micdoodle8.mods.galacticraft.core.util.ConfigManagerCore;
 
 /**
- * 0.4's checks in {@code /becom selftest} (DESIGN.md 16.3): the Satellite Launch Pad, satellites and their decay, sky
+ * 0.4's checks in {@code /becom selftest}: the Satellite Launch Pad, satellites and their decay, sky
  * hops for phones and radios, the Satellite Dish, the Rocket Radio Receiver in a Tier 1 rocket on the Moon (16.2's
  * assumption), the Portal Relay, and 0.4's "Done when": a call from the Overworld to the Moon, and one to the Nether.
  */
@@ -354,7 +354,7 @@ final class SpaceSelfTest {
     private static final int TWILIGHT_DX = 300;
 
     /**
-     * DESIGN.md 9.4, D46: relays at the Twilight Forest's and the End's portals, on both sides. The Twilight Forest
+     * Relays at the Twilight Forest's and the End's portals, on both sides. The Twilight Forest
      * keeps the Overworld's coordinates, so its relay stands near where the Overworld one's portal leads.
      */
     private int buildTwilightAndEnd() {
@@ -408,7 +408,7 @@ final class SpaceSelfTest {
     private static final int PERSONAL_OTHER_DX = 68;
 
     /**
-     * DESIGN.md 9.4, D46: two personal dimensions, made the way a player makes one at a Personal Space portal in the
+     * Two personal dimensions, made the way a player makes one at a Personal Space portal in the
      * Overworld, each with a relay by its return portal. The Overworld relay stands by the portal into the first.
      */
     private int buildPersonal() {
@@ -441,7 +441,7 @@ final class SpaceSelfTest {
         link(owner, overworld, relayOverworld, relayTerminalOverworld);
         if (nether != null) {
             link(netherHand, nether, relayNether, relayTerminalNether);
-            // DESIGN.md 9.4: wrench one relay, go through the portal, and wrench the other.
+            // Wrench one relay, go through the portal, and wrench the other.
             becom.links.forget(owner.getUniqueID());
             becom.links.wrench(owner, overworld, pos(relayOverworld));
             paired = becom.links.wrench(owner, nether, pos(relayNether));
@@ -482,11 +482,11 @@ final class SpaceSelfTest {
 
     // region Launch Pad and satellites
 
-    /** DESIGN.md 9.1, 3.2, 11.4: the pad forms, takes a rocket and fuel, and the screen counts the queue. */
+    /** The pad forms, takes a rocket and fuel, and the screen counts the queue. */
     private int startLaunch() {
         t.check(
             "the Satellite Launch Pad forms: pad, flame pit, service tower, lightning masts and propellant tank, with its "
-                + "four hatches (DESIGN.md 3.2)",
+                + "four hatches",
             pad.mMachine,
             "");
         checkPadStandsRight();
@@ -499,7 +499,7 @@ final class SpaceSelfTest {
             "the pad's input hatch takes Galacticraft's rocket fuel",
             filled == 2 * fuel(),
             filled + " L of " + 2 * fuel());
-        t.check("its screen counts one rocket waiting to launch (DESIGN.md 11.4)", pad.rocketsWaiting() == 1, "");
+        t.check("its screen counts one rocket waiting to launch", pad.rocketsWaiting() == 1, "");
         // GT looks for work every 5 s while idle.
         return 8 * SelfTest.TICKS_PER_SECOND;
     }
@@ -551,7 +551,7 @@ final class SpaceSelfTest {
         return null;
     }
 
-    /** DESIGN.md 9.1: a block over the flame pit during a launch holds it. */
+    /** A block over the flame pit during a launch holds it. */
     private int coverLaunch() {
         t.check("the launch starts", pad.mMaxProgresstime > 0, "progress " + pad.mProgresstime);
         EntityLaunchRocket standing = rocketInPit();
@@ -604,7 +604,7 @@ final class SpaceSelfTest {
         UUID padOwner = pad.getBaseMetaTileEntity()
             .getOwnerUuid();
         t.check(
-            "...completing First satellite for the pad's owner (DESIGN.md 15.5)",
+            "...completing First satellite for the pad's owner",
             padOwner != null && BeComQuests.reportedForSelfTest(QuestTask.FIRST_SATELLITE, padOwner),
             "owner " + padOwner);
         t.check(
@@ -617,7 +617,7 @@ final class SpaceSelfTest {
             "...and its rocket lifts off out of the pit and climbs",
             flying != null && flying.flying() && flying.posY > Y + 4 && pad.standingRocket() == null,
             flying == null ? "none lifted off" : "at y " + flying.posY + (flying.isDead ? ", out of sight" : ""));
-        // A roof over one corner of the pit, and another rocket: it waits (DESIGN.md 9.1: open sky).
+        // A roof over one corner of the pit, and another rocket: it waits.
         overworld.setBlock(SX - 1, Y + 3, SZ + PAD_PIT + 1, Blocks.stone);
         padBus.setInventorySlotContents(0, new ItemStack(BeComItems.satelliteRocket, 1));
         return 8 * SelfTest.TICKS_PER_SECOND;
@@ -636,7 +636,7 @@ final class SpaceSelfTest {
     private Tunables configBefore;
     private int countBeforeFree;
 
-    /** DESIGN.md 17: a server that sets launches to need no fuel launches from an empty hatch. */
+    /** A server that sets launches to need no fuel launches from an empty hatch. */
     private int startFreeLaunch() {
         configBefore = BeComConfig.get();
         Map<String, Object> values = new HashMap<>(configBefore.toMap());
@@ -666,7 +666,7 @@ final class SpaceSelfTest {
         return 1;
     }
 
-    /** DESIGN.md 9.1, D23: a satellite comes down when its time is up. */
+    /** A satellite comes down when its time is up. */
     private int startDecay() {
         countBeforeDecay = becom.space.count(0);
         long now = SpaceService.now();
@@ -677,7 +677,7 @@ final class SpaceSelfTest {
 
     private int checkDecay() {
         t.check(
-            "a satellite comes down once its lifetime is up, by the Overworld's world time (D23)",
+            "a satellite comes down once its lifetime is up, by the Overworld's world time",
             becom.space.count(0) == countBeforeDecay,
             becom.space.count(0) + " now, " + countBeforeDecay + " before");
         return 1;
@@ -687,14 +687,14 @@ final class SpaceSelfTest {
 
     // region Sky hops
 
-    /** DESIGN.md 9.1, 8.2: a Mobile Phone under open sky reaches the satellites; a roof weakens the hop. */
+    /** A Mobile Phone under open sky reaches the satellites; a roof weakens the hop. */
     private int checkSkyHops() {
         Tunables cfg = BeComConfig.get();
         becom.space.set(0, cfg.satellitesMax());
         skyCaller = phonePlayer(overworld, "BeComSkyCaller", 0, SX + 150.5, Y, SKY_Z + 0.5);
         skyNumber = ItemCarriedPhone.number(skyCaller.inventory.mainInventory[0]);
         t.near(
-            "a Mobile Phone under open sky with 100 satellites over it reaches them at Max's 24 dB (DESIGN.md 9.1)",
+            "a Mobile Phone under open sky with 100 satellites over it reaches them at Max's 24 dB",
             cfg.levelMax(),
             skyEntry(skyNumber));
         FakePlayer roofed = phonePlayer(overworld, "BeComRoofed", 2, SX + 170.5, Y, SKY_Z + 0.5);
@@ -702,20 +702,20 @@ final class SpaceSelfTest {
         becom.carried.refreshForSelfTest(roofed);
         double depth = Y + ROOF + 1 - (Y + 1.62);
         t.near(
-            "...under a roof its hop loses the cover's 2.5 dB a block on UHF (DESIGN.md 6.1)",
+            "...under a roof its hop loses the cover's 2.5 dB a block on UHF",
             cfg.levelMax() - depth * cfg.uhf()
                 .coverPerBlock(),
             skyEntry(ItemCarriedPhone.number(roofed.inventory.mainInventory[0])));
         overworld.setBlockToAir(SX + 170, Y + ROOF, SKY_Z);
         // Out here the biome may not rain, so the rain check stands where 0.3's phone checks found one that does.
         if (!t.phoneRains()) {
-            t.fail("rain costs a Mobile Phone's sky hop 3 dB where it falls (D26)", "no rainy biome found to test in");
+            t.fail("rain costs a Mobile Phone's sky hop 3 dB where it falls", "no rainy biome found to test in");
             return 1;
         }
         startRain();
         FakePlayer rained = phonePlayer(overworld, "BeComRained", 5, SelfTest.X0 - 19.5, Y, t.phoneZ() + 1.5);
         t.near(
-            "rain costs a Mobile Phone's sky hop 3 dB where it falls (D26)",
+            "rain costs a Mobile Phone's sky hop 3 dB where it falls",
             cfg.levelMax() - cfg.weatherLoss(1, 0),
             skyEntry(ItemCarriedPhone.number(rained.inventory.mainInventory[0])));
         clearWeather();
@@ -731,7 +731,7 @@ final class SpaceSelfTest {
         return Double.NEGATIVE_INFINITY;
     }
 
-    /** DESIGN.md 9.1: two walkies far out of each other's and every antenna's reach talk through the satellites. */
+    /** Two walkies far out of each other's and every antenna's reach talk through the satellites. */
     private int keySkyRadio() {
         walkieA = walkiePlayer("BeComSkyWalkieA", 3, SX + 200.5, RADIO_Z + 0.5);
         walkieB = walkiePlayer("BeComSkyWalkieB", 4, SX + 1200.5, RADIO_Z + 0.5);
@@ -762,7 +762,7 @@ final class SpaceSelfTest {
 
     // region Satellite Dish
 
-    /** DESIGN.md 9.2: two networks far apart, each with a dish, become one. */
+    /** Two networks far apart, each with a dish, become one. */
     private int checkDishes() {
         Tunables cfg = BeComConfig.get();
         IGregTechTileEntity tile = dishA.getBaseMetaTileEntity();
@@ -782,8 +782,7 @@ final class SpaceSelfTest {
                 && overworld.isAirBlock(tile.getXCoord(), tile.getYCoord() + 1, tile.getZCoord()),
             "facing " + back.getOpposite());
         t.check(
-            "the Satellite Dish forms: a bowl facing the sky, a feed horn on struts, a pedestal and a plinth "
-                + "(DESIGN.md 3.2)",
+            "the Satellite Dish forms: a bowl facing the sky, a feed horn on struts, a pedestal and a plinth " + "",
             dishA.mMachine && dishB.mMachine && dishA.isWorking() && dishB.isWorking(),
             "formed " + dishA.mMachine
                 + "/"
@@ -812,7 +811,7 @@ final class SpaceSelfTest {
     private int checkDishMaintenance() {
         Tunables cfg = BeComConfig.get();
         t.near(
-            "each maintenance problem costs a dish's hop 2 dB (D40)",
+            "each maintenance problem costs a dish's hop 2 dB",
             cfg.levelMax() - cfg.dishMaintenanceLoss(),
             becom.calls.width(dishPhoneA.number(), dishPhoneB.number()));
         dishA.fixAllIssues();
@@ -823,7 +822,7 @@ final class SpaceSelfTest {
 
     private int checkDishSky() {
         t.check(
-            "a dish without open sky above the whole dish stops (DESIGN.md 9.2)",
+            "a dish without open sky above the whole dish stops",
             !dishB.isWorking() && becom.calls.width(dishPhoneA.number(), dishPhoneB.number()) < BeComConfig.get()
                 .levelLow(),
             "working " + dishB.isWorking());
@@ -837,7 +836,7 @@ final class SpaceSelfTest {
 
     private int checkDishTooFew() {
         t.check(
-            "with fewer than 5 satellites over the dimension, dishes join nothing (DESIGN.md 9.2)",
+            "with fewer than 5 satellites over the dimension, dishes join nothing",
             dishB.isWorking() && becom.calls.width(dishPhoneA.number(), dishPhoneB.number()) < BeComConfig.get()
                 .levelLow(),
             "working " + dishB.isWorking());
@@ -861,7 +860,7 @@ final class SpaceSelfTest {
                 (int) Math.floor(rocket.posZ)));
     }
 
-    /** DESIGN.md 16.2's assumption for 0.4, with a Tier 1 rocket on a launch pad on the Moon. */
+    /** A Rocket Radio Receiver on the Moon, with a Tier 1 rocket on a launch pad there. */
     private int checkReceiver() {
         if (moon == null || rocket == null) return 1;
         NodeRef ref = receiverRef();
@@ -879,7 +878,7 @@ final class SpaceSelfTest {
                 + becom.rockets.countingForSelfTest());
         AntennaNetwork.Antenna antenna = becom.antennas.antenna(ref);
         t.check(
-            "...as a T1 antenna there (DESIGN.md 9.3)",
+            "...as a T1 antenna there",
             antenna != null && antenna.tier() == 1 && becom.antennas.working(antenna),
             String.valueOf(antenna));
         rocket.setInventorySlotContents(0, null);
@@ -919,7 +918,7 @@ final class SpaceSelfTest {
         return 1;
     }
 
-    /** 0.4's "Done when", first half: a call connects from the Overworld to the Moon (DESIGN.md 9.5). */
+    /** 0.4's "Done when", first half: a call connects from the Overworld to the Moon. */
     private int checkMoonCall() {
         if (moon == null || rocket == null) return 1;
         becom.calls.voiceForSelfTest(id -> true);
@@ -947,13 +946,13 @@ final class SpaceSelfTest {
             result + ", "
                 + (call == null ? "no call" : call.state() + " " + call.level(s, m) + "/" + call.level(m, s)));
         t.check(
-            "...through the uplink to the Overworld's satellites (DESIGN.md 9.3)",
+            "...through the uplink to the Overworld's satellites",
             becom.network.graph()
                 .hops(becom.calls.entriesOf(skyNumber), becom.calls.entriesOf(moonNumber))
                 .contains(CallGraph.HopKind.UPLINK),
             "");
         t.check(
-            "...completing Call between dimensions for both (DESIGN.md 15.5)",
+            "...completing Call between dimensions for both",
             BeComQuests.reportedForSelfTest(QuestTask.CALL_BETWEEN_DIMENSIONS, s)
                 && BeComQuests.reportedForSelfTest(QuestTask.CALL_BETWEEN_DIMENSIONS, m),
             "");
@@ -973,7 +972,7 @@ final class SpaceSelfTest {
 
     // region Portal Relay and the Nether
 
-    /** DESIGN.md 9.4, D46: which portals relays work at, and the pair through the Nether portal. */
+    /** Which portals relays work at, and the pair through the Nether portal. */
     private int checkRelays() {
         t.check(
             "a relay by a Nether portal sees it, and works",
@@ -1005,7 +1004,7 @@ final class SpaceSelfTest {
                 "leads to " + relayPersonal.personalTargets() + ", made " + personalA);
             t.check(
                 "relays by that portal and its return portal pair into the personal dimension, a High hop, and one in "
-                    + "another personal dimension is refused (DESIGN.md 9.4)",
+                    + "another personal dimension is refused",
                 pairedPersonal == LinkService.Outcome.LINKED && pairedPersonalOther == LinkService.Outcome.REFUSED
                     && Math.abs(
                         becom.network.graph()
@@ -1056,19 +1055,19 @@ final class SpaceSelfTest {
             relayBare.portals() + ", working " + relayBare.isWorking());
         if (nether == null) return 1;
         t.check(
-            "relays on both sides of a Nether portal pair: wrench one, go through, wrench the other (DESIGN.md 9.4)",
+            "relays on both sides of a Nether portal pair: wrench one, go through, wrench the other",
             paired == LinkService.Outcome.LINKED && relayNether.ref()
                 .equals(becom.network.partnerOf(relayOverworld.ref())),
             String.valueOf(paired));
         t.check("...and both halves of the pair are on disk at once, each in its dimension's file", pairSaved, "");
         t.check(
-            "...completing Portal Relay pair for whoever linked them (DESIGN.md 15.5)",
+            "...completing Portal Relay pair for whoever linked them",
             BeComQuests.reportedForSelfTest(QuestTask.PORTAL_RELAY_PAIR, owner.getUniqueID()),
             "");
         return 1;
     }
 
-    /** 0.4's "Done when", second half: a call connects from the Overworld to the Nether (DESIGN.md 9.5). */
+    /** 0.4's "Done when", second half: a call connects from the Overworld to the Nether. */
     private int checkNetherCall() {
         if (nether == null) return 1;
         CallService calls = becom.calls;
@@ -1094,7 +1093,7 @@ final class SpaceSelfTest {
                 && call.state() == Call.State.CONNECTED,
             taken + ", " + result + ", " + answered);
         t.check(
-            "...through the relay pair (DESIGN.md 9.4)",
+            "...through the relay pair",
             becom.network.graph()
                 .hops(a, b)
                 .contains(CallGraph.HopKind.RELAY),
@@ -1110,7 +1109,7 @@ final class SpaceSelfTest {
         return 1;
     }
 
-    /** DESIGN.md 9.4, 12.2, D37: one partner each, and unpairing. */
+    /** One partner each, and unpairing. */
     private int checkRelayPairRules() {
         if (nether == null) return 1;
         becom.links.forget(owner.getUniqueID());
@@ -1138,7 +1137,7 @@ final class SpaceSelfTest {
             unpaired == LinkService.Outcome.UNLINKED && becom.network.partnerOf(relayOverworld.ref()) == null,
             unpaired + "");
         t.check("...and with saving switched off, as during a backup, both halves wait for the next save", waited, "");
-        // DESIGN.md 9.4: on opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
+        // On opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
         becom.links.wrench(owner, overworld, pos(relayBare));
         LinkService.Outcome far = becom.links.wrench(owner, nether, pos(relayFarNether));
         becom.links.wrench(owner, overworld, pos(relayBare));
@@ -1153,7 +1152,7 @@ final class SpaceSelfTest {
 
     // endregion
 
-    /** DESIGN.md 12.3: the admin command that sets a dimension's satellites for testing. */
+    /** The admin command that sets a dimension's satellites for testing. */
     private int checkSatellitesCommand() {
         new CommandBeCom().processCommand(becom.server, new String[] { "satellites", "0", "7" });
         t.check("/becom satellites 0 7 puts 7 satellites over the Overworld", becom.space.count(0) == 7, "");
@@ -1253,7 +1252,7 @@ final class SpaceSelfTest {
         world.setBlock(x, y, z, BeComBlocks.telephone);
         BeComBlocks.telephone.onBlockPlacedBy(world, x, y, z, placer, new ItemStack(BeComBlocks.telephone));
         TileTelephone tile = (TileTelephone) world.getTileEntity(x, y, z);
-        // A fake player never owns a phone (X6); the self-test's owner stands in for the real player.
+        // A fake player never owns a phone; the self-test's owner stands in for the real player.
         PhoneRecord record = becom.phones.record(tile.number());
         if (record != null && record.owner() == null) {
             record.setOwner(owner.getUniqueID(), owner.getCommandSenderName());

@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.radio;
 
 /**
- * An antenna's survey (DESIGN.md 6.3): for each bearing, the terrain height every few blocks out to the antenna's
+ * An antenna's survey: for each bearing, the terrain height every few blocks out to the antenna's
  * range. A device's link to the antenna then scans one bearing's profile, up to the device, for the obstacle with the
  * largest diffraction parameter toward the device's real eye height. The survey keeps whole profiles because which
  * obstacle is worst depends on where the far end is.
@@ -11,7 +11,7 @@ package com.enn3developer.becom.logic.radio;
  * is its cover.
  * <p>
  * Heights are whole blocks from 1 to 255, as the height cache holds them, so a profile keeps one byte per step: 64
- * bearings of 64 steps are 4 KB (DESIGN.md 6.3). Zero marks an unused step.
+ * bearings of 64 steps are 4 KB. Zero marks an unused step.
  */
 public final class Survey {
 
@@ -88,7 +88,7 @@ public final class Survey {
     /**
      * The largest diffraction parameter between the antenna, at height {@code antennaY}, and a device at
      * {@code (x, y, z)}, scanning the profile of the bearing it lies on. Heights no higher than {@code floor}, the
-     * ground the lower end stands on, are open ground and don't count (X20). Negative infinity when nothing lies
+     * ground the lower end stands on, are open ground and don't count. Negative infinity when nothing lies
      * between.
      */
     public double worstNu(double antennaY, double x, double y, double z, double lambda, double floor) {
@@ -116,7 +116,7 @@ public final class Survey {
         return worst;
     }
 
-    /** A survey taken a bearing at a time, so it can be spread over ticks within the survey budget (DESIGN.md 6.5). */
+    /** A survey taken a bearing at a time, so it can be spread over ticks within the survey budget. */
     public static final class Builder {
 
         private final double originX;

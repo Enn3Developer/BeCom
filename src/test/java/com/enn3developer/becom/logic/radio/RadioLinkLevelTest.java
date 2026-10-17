@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 4.1 and 4.2 for a radio link: hysteresis, the Medium cap, and the drop after 3 s below Low. */
+/** A radio link's level: hysteresis, the Medium cap, and the drop after 3 s below Low. */
 class RadioLinkLevelTest {
 
     private final Tunables t = Tunables.defaults();

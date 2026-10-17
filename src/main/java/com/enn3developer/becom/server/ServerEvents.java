@@ -52,7 +52,7 @@ public final class ServerEvents {
         if (becom != null) becom.heights.worldSaved(event.world);
     }
 
-    /** DESIGN.md 6.2: the height cache follows chunks as they load and as they save. */
+    /** The height cache follows chunks as they load and as they save. */
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
         BeComServer becom = BeComServer.get();
@@ -65,7 +65,7 @@ public final class ServerEvents {
         if (becom != null) becom.heights.chunkChanged(event.world, event.getChunk());
     }
 
-    /** DESIGN.md 14: rockets are Galacticraft's entities, so BeCom follows them as they join their world (9.3). */
+    /** Rockets are Galacticraft's entities, so BeCom follows them as they join their world (9.3). */
     @SubscribeEvent
     public void onEntityJoin(EntityJoinWorldEvent event) {
         BeComServer becom = BeComServer.get();
@@ -76,7 +76,7 @@ public final class ServerEvents {
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(event.player instanceof EntityPlayerMP player)) return;
-        // The server's rules for the client's tooltips and holograms (DESIGN.md 14.2).
+        // The server's rules for the client's tooltips and holograms.
         BeComPackets.send(new ConfigSyncPacket(BeComConfig.get()), player);
         becom.network.sendWires(player);
     }

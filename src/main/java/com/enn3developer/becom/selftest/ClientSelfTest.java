@@ -64,11 +64,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * A smoke test of the client's video drawing, for the development environment only. The run has no game client to
- * look with (DESIGN.md 16.3), so this is the nearest it gets: started with {@code -Dbecom.clienttest=<dir>}, the
+ * look with, so this is the nearest it gets: started with {@code -Dbecom.clienttest=<dir>}, the
  * client opens a flat world, plays a made-up video call through the real drawing code, checks what it drew, saves
  * screenshots and every picture into {@code <dir>}, prints {@code BeCom client test: N passed, M failed} and quits.
  * It proves the drawing runs and what it draws; how it looks, and whether it works under Angelica, stays the owner's
- * to judge (DESIGN.md 16.2).
+ * to judge.
  */
 @SideOnly(Side.CLIENT)
 public final class ClientSelfTest {

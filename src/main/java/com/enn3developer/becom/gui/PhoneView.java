@@ -12,13 +12,13 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
 /**
- * Everything one player's phone screen shows (DESIGN.md 11.2), built on the server for that player and phone, and
+ * Everything one player's phone screen shows, built on the server for that player and phone, and
  * sent whole whenever it changes. The client never decides anything from it.
  */
 public record PhoneView(int number, String owner, boolean mayManage, State state, String otherName, int otherNumber,
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
     List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members,
-    boolean offline, Video video, Battery battery, Via via) {
+    boolean offline, Video video, Battery battery, Via via, AppsView apps) {
 
     // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
     // players, and the whole history.
@@ -48,7 +48,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         false,
         Video.NONE,
         Battery.NONE,
-        Via.NONE);
+        Via.NONE,
+        AppsView.NONE);
 
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum State {
@@ -74,11 +75,11 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
 
     public record Blocked(UUID player, String name) {}
 
-    /** Another phone in the call (DESIGN.md 11.2): who is on it, the level this phone hears it at, or still ringing. */
+    /** Another phone in the call: who is on it, the level this phone hears it at, or still ringing. */
     public record Member(int number, String name, SignalLevel level, boolean ringing) {}
 
     /**
-     * Video on this phone (DESIGN.md 10.1, 11.2): whether it has a camera, this player's switches, whether a rear
+     * Video on this phone: whether it has a camera, this player's switches, whether a rear
      * camera means anything in this call, and whether they see anyone right now.
      */
     public record Video(boolean capable, boolean front, boolean rear, boolean rearPossible, boolean active) {
@@ -197,6 +198,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             via.kind()
                 .ordinal());
         buf.writeByte(via.tier());
+        apps.write(buf);
     }
 
     public static PhoneView read(PacketBuffer buf) {
@@ -263,6 +265,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             buf.readBoolean(),
             buf.readBoolean());
         Via via = new Via(Via.Kind.byOrdinal(buf.readByte()), buf.readByte());
+        AppsView apps = AppsView.read(buf);
         return new PhoneView(
             number,
             owner,
@@ -284,7 +287,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             offline,
             video,
             battery,
-            via);
+            via,
+            apps);
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

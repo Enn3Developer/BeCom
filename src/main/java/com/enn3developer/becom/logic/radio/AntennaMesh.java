@@ -1,9 +1,9 @@
 package com.enn3developer.becom.logic.radio;
 
 /**
- * The antennas of one dimension on one band, and the links between them (DESIGN.md 7): a radio signal can go from a
+ * The antennas of one dimension on one band, and the links between them: a radio signal can go from a
  * device up to any antenna it reaches, along the antenna links, and down to another device. The path's SNR is its
- * weakest hop (DESIGN.md 4.1), so the best path is a widest path.
+ * weakest hop, so the best path is a widest path.
  * <p>
  * Antennas are dense ints the caller numbers. Not thread-safe; built on the server thread from the latest surveys.
  */

@@ -12,8 +12,8 @@ import com.enn3developer.gtnhvoice.api.client.IPlaybackFrame;
 import com.enn3developer.gtnhvoice.api.client.VoiceFormat;
 
 /**
- * Fades BeCom's positional frames to silence at their speaker's range (DESIGN.md 13.5): the last stage of BeCom's
- * playback chain, one instance per source. A walkie's frames fade over the walkie speaker's range (D21), a
+ * Fades BeCom's positional frames to silence at their speaker's range: the last stage of BeCom's
+ * playback chain, one instance per source. A walkie's frames fade over the walkie speaker's range, a
  * Transceiver's over its loudspeaker's and a Videophone's over its own, all the server's values. Every other frame
  * passes unchanged.
  * <p>

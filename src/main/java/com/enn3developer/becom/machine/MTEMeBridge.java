@@ -14,8 +14,13 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
+import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -39,10 +44,10 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The ME Bridge (DESIGN.md 8.3, D45): joins an ME network to a BeCom network, so ME Phones on it can call any phone.
+ * The ME Bridge: joins an ME network to a BeCom network, so ME Phones on it can call any phone.
  * It connects to ME cable on any side the way GT's ME hatches do, with an AE2 grid proxy of its own that takes one
- * channel, and is wrench-linked to a Pylon Head, a Line Terminal or an antenna within 16 blocks (X40). Late EV, 512
- * EU/t; works only while loaded, powered and online in its ME network (D11).
+ * channel, and is wrench-linked to a Pylon Head, a Line Terminal or an antenna within 16 blocks. Late EV, 512
+ * EU/t; works only while loaded, powered and online in its ME network.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -51,7 +56,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     private static final int TIER = 4;
     public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the bridge left alone (X16).
+    // BeCom's keys from a newer BeCom: kept as they were, and the bridge left alone.
     private NBTTagCompound tooNew;
     // The NBT key AE2 saves the bridge's node under.
     public static final String PROXY = "proxy";
@@ -199,6 +204,26 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         return true;
     }
 
+    // region Screen
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
+        if (tile.isServerSide()) openGui(player);
+        return true;
+    }
+
+    @Override
+    protected boolean forceUseMui2() {
+        return true;
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
+        return InfoScreen.build("becom_me_bridge", getLocalName(), this::info, sync);
+    }
+
+    // endregion
+
     // region Power
 
     @Override
@@ -310,14 +335,37 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.add("becom.info.too_new");
-        info.add(working ? "becom.info.online" : "becom.info.offline");
-        info.add(meOnline() ? "becom.info.me_online" : "becom.info.me_offline");
+        if (tooNew != null) info.problem("becom.info.too_new");
+        if (working) info.add("becom.info.online");
+        else info.problem("becom.info.offline");
+        if (meOnline()) info.add("becom.info.me_online");
+        else info.problem("becom.bridge.no_channel");
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        BeComServer server = BeComServer.get();
+        if (server != null && tile != null && meOnline()) {
+            int[] phones = server.calls.mePhones(
+                server.meGrids.idOf(
+                    getProxy().getNode()
+                        .getGrid()),
+                tile.getWorld().provider.dimensionId);
+            info.add("becom.bridge.phones", phones[0], phones[1]);
+        }
+        info.add(
+            "becom.bridge.power",
+            working ? BeComConfig.get()
+                .meBridgePower() : 0);
         InfoLines.calls(
             info,
-            getBaseMetaTileEntity(),
+            tile,
             BeComConfig.get()
                 .meBridgeCalls());
+        BeComServer becom = BeComServer.get();
+        if (becom != null && tile != null) InfoLines.backhaul(
+            info,
+            becom,
+            tile.getWorld().provider.dimensionId,
+            BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()),
+            "becom.info.backhaul");
         return info;
     }
 

@@ -7,7 +7,7 @@ import java.util.function.LongPredicate;
 import com.enn3developer.becom.logic.Tunables;
 
 /**
- * Collapses the wired network into the runs a call travels (DESIGN.md 5.7): from each working powered node, along
+ * Collapses the wired network into the runs a call travels: from each working powered node, along
  * passive pylons, to the next working powered node. Wire is digital, so a run loses nothing; what it has is a data
  * rate, from the cables on its spans. A cable counts on a run only if the whole run is within its reach, and a run
  * carries what its thinnest span does, which is why passive pylons aren't vertices of their own.
@@ -25,7 +25,7 @@ public final class WiredTopology {
     /**
      * Every run leaving every working powered node; a run between two working nodes shows up once from each end.
      *
-     * @param working whether the powered node at a position is formed, loaded and powered (D11)
+     * @param working whether the powered node at a position is formed, loaded and powered
      * @param rules   the span limit, checked against each pylon's height now rather than when it was linked
      */
     public static List<Segment> segments(NetworkModel model, LongPredicate working, Tunables cables, LinkRules rules) {

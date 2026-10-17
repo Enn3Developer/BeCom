@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Set;
 
 /**
- * What the Portal Relay knows about portals (DESIGN.md 9.4, 9.5, D22, D46): the kinds it works at, how it tells the
+ * What the Portal Relay knows about portals: the kinds it works at, how it tells the
  * Twilight Forest's and Personal Space's portals and worlds by class name, so neither mod is a dependency, and which
  * two dimensions a pair may join. Pure, so it's tested without those mods.
  */
@@ -57,7 +57,7 @@ public final class Portals {
 
     /**
      * The portal that leads from the Overworld to {@code dimension}, whose world provider is of class
-     * {@code provider}; null for a dimension no relay reaches in v1 (DESIGN.md 9.5).
+     * {@code provider}; null for a dimension no relay reaches in v1.
      */
     public static Kind leadingTo(int dimension, String provider) {
         if (dimension == NETHER) return Kind.NETHER;
@@ -69,7 +69,7 @@ public final class Portals {
 
     /**
      * The portal a pair of relays in these two dimensions goes through: one end in the Overworld, the other in a
-     * dimension a portal leads to from there (DESIGN.md 9.5). Null for any other pair.
+     * dimension a portal leads to from there. Null for any other pair.
      */
     public static Kind pairKind(int dimensionA, String providerA, int dimensionB, String providerB) {
         if (dimensionA == OVERWORLD && dimensionB != OVERWORLD) return leadingTo(dimensionB, providerB);
@@ -78,7 +78,7 @@ public final class Portals {
     }
 
     /**
-     * Whether relays at these two spots stand on the two sides of one portal (DESIGN.md 9.4). Through a Nether or a
+     * Whether relays at these two spots stand on the two sides of one portal. Through a Nether or a
      * Twilight Forest portal, one relay's spot, scaled by the two worlds' movement factors the way Minecraft scales a
      * portal trip, lands within that portal's search of the other's, one way or the other. Each relay stands within
      * {@code reach} of some block of its portal, which may be the far end of a wide one. The End and each personal
@@ -99,7 +99,7 @@ public final class Portals {
     }
 
     /**
-     * Whether a pair of this kind goes through a portal into {@code farDimension} (DESIGN.md 9.4): each personal
+     * Whether a pair of this kind goes through a portal into {@code farDimension}: each personal
      * dimension has portals of its own, so the Overworld relay must stand by one that leads into the far relay's.
      * {@code personalTargets} are the dimensions the Personal Space portals by the Overworld relay lead to. Every other
      * kind leads where {@link #pairKind} says.

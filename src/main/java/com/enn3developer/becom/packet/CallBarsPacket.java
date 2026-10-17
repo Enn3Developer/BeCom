@@ -9,8 +9,8 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Whether the player is in a call, and the weakest level they hear it at, for the signal bars by the hotbar (DESIGN.md
- * 11.2). The client can't tell this from the levels it gets: those also cover a Videophone's loudspeaker it stands
+ * Whether the player is in a call, and the weakest level they hear it at, for the signal bars by the hotbar.
+ * The client can't tell this from the levels it gets: those also cover a Videophone's loudspeaker it stands
  * near. Sent when it changes.
  */
 public final class CallBarsPacket implements IMessage {

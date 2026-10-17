@@ -10,7 +10,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * A person's profile, sent once to each player who sees them in a video call (DESIGN.md 10.1), so that player's client
+ * A person's profile, sent once to each player who sees them in a video call, so that player's client
  * can load their skin: their name, and the textures property Mojang signed, empty on a server that has none.
  */
 public final class VideoProfilePacket implements IMessage {

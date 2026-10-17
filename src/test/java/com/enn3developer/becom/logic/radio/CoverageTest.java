@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.Tunables;
 
-/** DESIGN.md 6.6, 11.4: the coverage map, the SNR a player standing on the ground would get around an antenna. */
+/** The coverage map, the SNR a player standing on the ground would get around an antenna. */
 class CoverageTest {
 
     private static final double GROUND = 64;

@@ -38,7 +38,7 @@ class GatewaysTest {
     @Test
     void twoDishesOfADimensionJoinThroughItsSatellites() {
         List<Gateways.Dish> dishes = List.of(new Gateways.Dish(OVERWORLD, 1, 0), new Gateways.Dish(OVERWORLD, 2, 0));
-        // DESIGN.md 9.2: at least 5 satellites, and 5 give Low.
+        // At least 5 satellites, and 5 give Low.
         CallGraph five = graph(Map.of(OVERWORLD, 5), dishes, List.of(), List.of());
         assertEquals(t.levelLow(), five.width(node(OVERWORLD, 1), node(OVERWORLD, 2)), 1e-9);
         CallGraph four = graph(Map.of(OVERWORLD, 4), dishes, List.of(), List.of());
@@ -70,7 +70,7 @@ class GatewaysTest {
 
     @Test
     void aDimensionWithoutASkyHasNoSkyHops() {
-        // The server counts no satellites over a dimension without a sky (DESIGN.md 6.1).
+        // The server counts no satellites over a dimension without a sky.
         CallGraph graph = graph(
             Map.of(),
             List.of(new Gateways.Dish(NETHER, 1, 0), new Gateways.Dish(NETHER, 2, 0)),
@@ -81,7 +81,7 @@ class GatewaysTest {
 
     @Test
     void aPhoneUnderTheOverworldsSkyReachesAMoonPhoneThroughTheReceiverAtHigh() {
-        // DESIGN.md 9.5: the gateway hop is the lower of the Overworld end's sky hop and the receiver's uplink.
+        // The gateway hop is the lower of the Overworld end's sky hop and the receiver's uplink.
         // The Mobile Phone joins the sky at Max; the Moon phone reaches the receiver, a T1 antenna, at 30 dB.
         CallGraph graph = graph(Map.of(OVERWORLD, 100), List.of(), List.of(new Gateways.Receiver(MOON, 7)), List.of());
         List<CallGraph.Entry> overworld = List
@@ -153,7 +153,7 @@ class GatewaysTest {
 
     @Test
     void aRelayPairIsAHighHopBetweenTheOverworldAndTheNether() {
-        // DESIGN.md 9.4 and 0.4's "Done when": a Telephone in the Overworld calls one in the Nether through a pair.
+        // A Telephone in the Overworld calls one in the Nether through a pair.
         CallGraph.NodeVertex terminalA = node(OVERWORLD, 1);
         CallGraph.NodeVertex relayA = node(OVERWORLD, 2);
         CallGraph.NodeVertex relayB = node(NETHER, 3);
@@ -174,7 +174,7 @@ class GatewaysTest {
 
     @Test
     void longerChainsCombineRelaysAndSatellites() {
-        // DESIGN.md 9.5: Nether to Overworld to planet. A Nether phone on a relay pair's far side, the Overworld's
+        // Nether to Overworld to planet. A Nether phone on a relay pair's far side, the Overworld's
         // relay on a line to a dish, and a receiver on the Moon.
         CallGraph.NodeVertex netherTerminal = node(NETHER, 1);
         CallGraph.NodeVertex netherRelay = node(NETHER, 2);
@@ -237,7 +237,7 @@ class GatewaysTest {
 
     @Test
     void aDishUnderALowSkyCarriesWhatLowsRateHasRoomFor() {
-        // Six satellites are Low: 4 KB/s up through each dish, room for two voice calls (DESIGN.md 6, 9.2).
+        // Six satellites are Low: 4 KB/s up through each dish, room for two voice calls.
         List<Gateways.Dish> dishes = List.of(new Gateways.Dish(OVERWORLD, 1, 0), new Gateways.Dish(OVERWORLD, 2, 0));
         CallGraph.Builder builder = CallGraph.builder();
         for (int i = 0; i < 3; i++) {

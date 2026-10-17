@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Every node and link of one dimension's network (DESIGN.md 14), the cables each link's span holds (DESIGN.md 5.1),
- * and which links a clearance check found blocked (D20). Server-thread only. {@link #version()} goes up on every change
+ * Every node and link of one dimension's network, the cables each link's span holds,
+ * and which links a clearance check found blocked. Server-thread only. {@link #version()} goes up on every change
  * that can move a call's path, so path finding
  * reruns only when it has to.
  */

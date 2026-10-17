@@ -10,7 +10,7 @@ import java.lang.reflect.RecordComponent;
 
 import org.junit.jupiter.api.Test;
 
-/** A config value that would crash or overload the server is refused at load, naming the key (DESIGN.md 14.2). */
+/** A config value that would crash or overload the server is refused at load, naming the key. */
 class TunablesTest {
 
     /** The defaults with one value changed, by its record component's name. */
@@ -178,7 +178,7 @@ class TunablesTest {
     @Test
     void designRangesComeFromTheDefaults() {
         Tunables t = Tunables.defaults();
-        // DESIGN.md 7: roughly 64, 128 and 256 blocks to the edge of Low; 8.1: a walkie about 80, a Transceiver 125.
+        // Roughly 64, 128 and 256 blocks to the edge of Low; 8.1: a walkie about 80, a Transceiver 125.
         assertEquals(64, t.rangeToLow(t.antennaBudget(1)), 2);
         assertEquals(128, t.rangeToLow(t.antennaBudget(2)), 3);
         assertEquals(256, t.rangeToLow(t.antennaBudget(3)), 6);
@@ -189,7 +189,7 @@ class TunablesTest {
     @Test
     void aLinkAtLowHoldsTwoDecibelsFurther() {
         Tunables t = Tunables.defaults();
-        // DESIGN.md 4.1: Low is left at 4 dB. A walkie at Low holds to 100 blocks, a T3 to about 316.
+        // Low is left at 4 dB. A walkie at Low holds to 100 blocks, a T3 to about 316.
         assertEquals(100, t.rangeToHold(t.walkieBudget()), 1e-9);
         assertEquals(316, t.rangeToHold(t.antennaBudget(3)), 1);
         assertTrue(t.rangeToHold(t.walkieBudget()) > t.rangeToLow(t.walkieBudget()));

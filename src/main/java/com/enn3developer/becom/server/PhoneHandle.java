@@ -11,8 +11,8 @@ import com.enn3developer.becom.machine.MTEVideophone;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The phone a phone screen works (DESIGN.md 11.2): a Telephone or a Videophone where it stands, or a phone its player
- * carries. Every action checks again that the player can still use it (DESIGN.md 14: client input).
+ * The phone a phone screen works: a Telephone or a Videophone where it stands, or a phone its player
+ * carries. Every action checks again that the player can still use it.
  */
 public sealed interface PhoneHandle {
 
@@ -40,7 +40,7 @@ public sealed interface PhoneHandle {
         }
     }
 
-    /** A Videophone, used from within the same reach as a Telephone's screen (DESIGN.md 10.2). */
+    /** A Videophone, used from within the same reach as a Telephone's screen. */
     record Videophone(MTEVideophone machine) implements PhoneHandle {
 
         @Override

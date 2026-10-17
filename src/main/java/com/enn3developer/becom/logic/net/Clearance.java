@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * Whether the straight line between two pylon heads is free of solid blocks (D20). Walks every block the line between
+ * Whether the straight line between two pylon heads is free of solid blocks. Walks every block the line between
  * the two block centres passes through (Amanatides and Woo's voxel traversal), leaving out the two heads themselves.
  */
 public final class Clearance {

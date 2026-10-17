@@ -8,7 +8,7 @@ import java.util.function.BiPredicate;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 12.1, 12.2: owners, their teams and operators manage; nothing without an owner is open to all. */
+/** Owners, their teams and operators manage; nothing without an owner is open to all. */
 class OwnerRuleTest {
 
     private final UUID alice = UUID.randomUUID();

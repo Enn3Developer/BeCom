@@ -23,6 +23,7 @@ class InfoLinesTest {
             becom.test.args=%s at %s
             becom.test.level=High
             becom.test.detail=Detail %s
+            becom.test.wrong=Wrong: %s
             """;
         StringTranslate.inject(new ByteArrayInputStream(lang.getBytes(StandardCharsets.UTF_8)));
     }
@@ -45,6 +46,19 @@ class InfoLinesTest {
         List<String> tip = new ArrayList<>();
         InfoLines.read(tag, tip);
         assertEquals(List.of("Plain", "12 at High"), tip);
+    }
+
+    @Test
+    void problemsAreRedAndOnTopForEveryReader() {
+        InfoLines info = sample().problem("becom.test.wrong", new InfoLines.Key("becom.test.level"));
+        List<String> expected = List.of("§cWrong: High", "Plain", "12 at High", "Detail 3");
+        assertEquals(expected, info.translate());
+        assertEquals(expected, InfoLines.decode(String.join("\n", info.encode())));
+        NBTTagCompound tag = new NBTTagCompound();
+        info.write(tag);
+        List<String> tip = new ArrayList<>();
+        InfoLines.read(tag, tip);
+        assertEquals(List.of("§cWrong: High", "Plain", "12 at High"), tip);
     }
 
     @Test

@@ -9,20 +9,20 @@ import java.util.UUID;
 
 /**
  * What {@code becom:call} routes from, built on the server thread whenever a call changes and handed to the network
- * thread whole (DESIGN.md 13.3). Immutable: once published it is never touched again.
+ * thread whole. Immutable: once published it is never touched again.
  */
 public final class CallSnapshot {
 
     public static final CallSnapshot EMPTY = new CallSnapshot(Collections.emptyMap(), Collections.emptyMap());
 
     /**
-     * One listener of one speaker: who, and the burst-loss chain's chances for the direction's SNR (DESIGN.md 4.2).
+     * One listener of one speaker: who, and the burst-loss chain's chances for the direction's SNR.
      * Only directions at Low or better get a route.
      */
     public record Route(UUID listener, double enterBad, double leaveBad) {}
 
     /**
-     * A Videophone at the other end (DESIGN.md 10.2): the speaker plays from its loudspeaker, at the block, to everyone
+     * A Videophone at the other end: the speaker plays from its loudspeaker, at the block, to everyone
      * within {@code range} of it. The dropout chain is the phone's, so everyone around it hears the same gaps.
      */
     public record Loudspeaker(int phone, int dimension, double x, double y, double z, double range, double enterBad,

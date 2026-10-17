@@ -34,7 +34,7 @@ import com.enn3developer.becom.voice.RadioRouting;
 import com.enn3developer.gtnhvoice.api.server.group.IGroup;
 
 /**
- * DESIGN.md 15.3: every player-facing string is in the language files. The keys built from an enum's names are the
+ * Every player-facing string is in the language files. The keys built from an enum's names are the
  * ones a new constant can leave out, so each of those enums is checked whole, and Italian must follow English key for
  * key.
  */

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 6.1, and the worked ranges of 7, 8.1 and 16.3. */
+/** The radio model, and the ranges it gives antennas, phones and walkies. */
 class RadioModelTest {
 
     private static final double LOW = 6;

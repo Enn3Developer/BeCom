@@ -20,9 +20,14 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
+import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
@@ -44,12 +49,12 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Portal Relay (DESIGN.md 9.4, D22, D46): works within a few blocks of a Nether portal, an End portal, the End's
+ * The Portal Relay: works within a few blocks of a Nether portal, an End portal, the End's
  * exit
  * portal, a Twilight Forest portal or a Personal Space portal, telling the last two by their block classes. Two relays
  * on opposite sides of a portal pair the way pylons link, through the portal, and a pair is a fixed High hop between
  * the two dimensions' networks. Each joins its own network by a wrench link to an antenna, a Pylon Head or a Line
- * Terminal within 16 blocks (X36). Built in MV, HV and EV: the tier sets the calls it carries and the KB/s of its
+ * Terminal within 16 blocks. Built in MV, HV and EV: the tier sets the calls it carries and the KB/s of its
  * pair, which works at its lower relay's tier.
  */
 @IMetaTileEntity.SkipGenerateName
@@ -59,7 +64,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     private static final int TICKS_PER_SECOND = 20;
     public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the relay left alone (X16).
+    // BeCom's keys from a newer BeCom: kept as they were, and the relay left alone.
     private NBTTagCompound tooNew;
     private boolean working;
     private boolean registered;
@@ -147,7 +152,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
         return (long) t.relayPower() << 2 * (mTier - Tunables.RELAY_MIN_TIER);
     }
 
-    /** Looks for portals within its reach (DESIGN.md 9.4), in loaded chunks only. The self-test calls this directly. */
+    /** Looks for portals within its reach, in loaded chunks only. The self-test calls this directly. */
     public Set<Portals.Kind> look() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         World world = tile.getWorld();
@@ -195,7 +200,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     // Logged once: a Personal Space whose portals BeCom can't read.
     private static boolean personalUnreadable;
 
-    /** The kind of portal a block is: vanilla's by their blocks, the others by class name (DESIGN.md 9.4). */
+    /** The kind of portal a block is: vanilla's by their blocks, the others by class name. */
     public static Portals.Kind kindOf(Block block) {
         if (block == Blocks.portal) return Portals.Kind.NETHER;
         if (block == Blocks.end_portal) return Portals.Kind.END;
@@ -231,6 +236,26 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
         becom.links.wrench(player, tile.getWorld(), pos);
         return true;
     }
+
+    // region Screen
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
+        if (tile.isServerSide()) openGui(player);
+        return true;
+    }
+
+    @Override
+    protected boolean forceUseMui2() {
+        return true;
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
+        return InfoScreen.build("becom_portal_relay", getLocalName(), this::info, sync);
+    }
+
+    // endregion
 
     // region Power
 
@@ -349,10 +374,11 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
 
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.add("becom.info.too_new");
-        info.add(working ? "becom.info.online" : "becom.info.offline");
+        if (tooNew != null) info.problem("becom.info.too_new");
+        if (working) info.add("becom.info.online");
+        else info.problem("becom.info.offline");
         if (portals.isEmpty()) {
-            info.add("becom.relay.no_portal");
+            info.problem("becom.relay.no_portal");
         } else {
             for (Portals.Kind kind : portals) {
                 info.add(
@@ -380,20 +406,33 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
                     .relayCalls(partner == null ? mTier : becom.network.pairTier(ref(), partner)));
             if (partner != null) {
                 info.add("becom.relay.paired", BlockPos.toString(partner.pos()), partner.dimension());
+                info.add(
+                    "becom.relay.hop",
+                    new InfoLines.Key(
+                        "becom.level." + BeComConfig.get()
+                            .relayHop()
+                            .name()
+                            .toLowerCase(Locale.ROOT)));
+                int pair = becom.network.pairTier(ref(), partner);
+                info.add("becom.relay.far_tier", GTValues.VN[becom.network.pairTier(partner, partner)]);
+                if (pair < mTier) {
+                    info.problem(
+                        "becom.relay.lower_tier",
+                        GTValues.VN[pair],
+                        BeComConfig.get()
+                            .relayCalls(pair),
+                        BeComConfig.get()
+                            .relayCalls(mTier));
+                }
             } else if (kept != null && becom.network.model(kept.dimension()) == null) {
                 // The far side's dimension isn't loaded, so the pair can't be checked, nor carry calls, until it is.
-                info.add("becom.relay.paired_unloaded", BlockPos.toString(kept.pos()), kept.dimension());
+                info.problem("becom.relay.paired_unloaded", BlockPos.toString(kept.pos()), kept.dimension());
             } else {
-                info.add("becom.relay.unpaired");
+                info.problem("becom.relay.unpaired");
             }
-            if (node != null && !node.links()
-                .isEmpty()) {
-                info.add(
-                    "becom.dish.linked",
-                    BlockPos.toString(
-                        node.links()
-                            .iterator()
-                            .next()));
+            InfoLines.backhaul(info, becom, ref().dimension(), ref().pos(), "becom.info.backhaul");
+            if (partner != null && becom.network.model(partner.dimension()) != null) {
+                InfoLines.backhaul(info, becom, partner.dimension(), partner.pos(), "becom.info.far_backhaul");
             }
         }
         return info;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes BeCom's questline (DESIGN.md 15.5) in GTNH's DefaultQuests layout, with fixed UUIDs.
+"""Writes BeCom's questline in GTNH's DefaultQuests layout, with fixed UUIDs.
 
 The quest files land under src/main/resources/assets/becom/questline/DefaultQuests/, where BeCom adds them to the
 BetterQuesting book at runtime, and pack makers can copy them into their own book. Quest names and descriptions go
@@ -27,7 +27,7 @@ LANG_END = "# End of quests"
 NAMESPACE = uuid.UUID("6b5f1c1e-3c39-4f0e-9d35-2b0f4a6c1b00")
 
 LOOTBAG = "enhancedlootbags:lootbag"
-# DESIGN.md 15.5 (D51): one lootbag of the tier on every quest, and coins of the tier on the big steps. The amounts are
+# One lootbag of the tier on every quest, and coins of the tier on the big steps. The amounts are
 # the commonest ones in GTNH's own quests of each tier (GT-New-Horizons-Modpack 5c60ab9, DefaultQuests): LV 15
 # Technician (44 of 144 quests), MV 25 Technician (54 of 142), HV 5 Technician I (33 of 108; 1 Technician II is
 # commoner but D51 names Technician I for HV), EV 2 Technician II (24 of 85). Lootbags there are one per quest.
@@ -41,16 +41,16 @@ TIER = {
 
 GT_MACHINE = "gregtech:gt.blockmachines"
 
-# DESIGN.md 15.5 (D51): some big steps offer their coins as a choice, against something for the next step: Pylon Heads
+# Some big steps offer their coins as a choice, against something for the next step: Pylon Heads
 # to carry the first line further, a walkie for whoever answered on the radio, a rocket to keep the satellites up.
-# GTNH's own quests never put coins in a choice, so these are BeCom's own picks (X41).
+# GTNH's own quests never put coins in a choice, so these are BeCom's own picks.
 COIN_CHOICE = {
     "first_call": (GT_MACHINE, 25000, 2),
     "radio_contact": ("becom:walkie_talkie", 0, 1),
     "five_satellites": ("becom:satellite_rocket", 0, 1),
 }
 
-# DESIGN.md 15.5: each quest points to its page of the guide (DESIGN.md 15.4), by a [guide] link at the end of its text,
+# Each quest points to its page of the guide, by a [guide] link at the end of its text,
 # which GuideNH makes into a link in the quest book. The titles are the pages' own, in English and Italian.
 GUIDE = {
     "wired.md": ("The wired network", "La rete cablata"),

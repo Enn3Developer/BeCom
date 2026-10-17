@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.data.SavedDataFormat;
 
-/** DESIGN.md 14.2: everything BeCom saves carries a format version, the Telephone's number included. */
+/** Everything BeCom saves carries a format version, the Telephone's number included. */
 class TileTelephoneTest {
 
     @BeforeAll

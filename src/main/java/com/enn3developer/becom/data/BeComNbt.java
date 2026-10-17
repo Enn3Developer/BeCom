@@ -4,8 +4,8 @@ import net.minecraft.nbt.NBTTagCompound;
 
 /**
  * BeCom's keys in a compound it shares with others: a GT machine's NBT, which GT writes into too, or an item stack's
- * tag, which IC2 keeps its charge in. They all start with {@code becom}, and {@link #KEY} holds their format version
- * (DESIGN.md 14.2). Whatever a newer BeCom wrote is kept as it was and written back, and the thing is left alone (X16).
+ * tag, which IC2 keeps its charge in. They all start with {@code becom}, and {@link #KEY} holds their format version.
+ * Whatever a newer BeCom wrote is kept as it was and written back, and the thing is left alone.
  */
 public final class BeComNbt {
 

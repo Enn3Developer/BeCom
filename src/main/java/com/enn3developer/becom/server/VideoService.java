@@ -34,7 +34,7 @@ import com.enn3developer.becom.quest.QuestTask;
 import com.mojang.authlib.properties.Property;
 
 /**
- * Video calls on the server (DESIGN.md 10.1, 14): who sees whom and at which level, front-camera poses taken from the
+ * Video calls on the server: who sees whom and at which level, front-camera poses taken from the
  * players about ten times a second and sent to those who see them, and rear-camera pictures relayed as their client
  * sent them. Both are dropped per viewer by level and by the dropout model, the same burst chain voice uses; the
  * server never decodes a picture. Server thread only.
@@ -109,7 +109,7 @@ public final class VideoService {
 
     // region Cameras
 
-    /** {@code player}'s camera switches: the front starts on, the rear off, at every call (DESIGN.md 10.1). */
+    /** {@code player}'s camera switches: the front starts on, the rear off, at every call. */
     public VideoPlan.Cameras camerasOf(UUID player) {
         return cameras.getOrDefault(player, VideoPlan.Cameras.START);
     }
@@ -284,7 +284,7 @@ public final class VideoService {
         }
     }
 
-    /** Those who get live video from someone in their call complete the Video call task (DESIGN.md 15.5). */
+    /** Those who get live video from someone in their call complete the Video call task. */
     private void reportVideo() {
         long now = now();
         List<UUID> seeing = new ArrayList<>();
@@ -338,8 +338,8 @@ public final class VideoService {
     // region Rear camera
 
     /**
-     * A rear-camera picture from {@code sender}'s client: kept within the per-client size and rate caps (DESIGN.md 14:
-     * client input), then sent on to whoever their rear camera reaches, as often as that viewer's level allows and
+     * A rear-camera picture from {@code sender}'s client: kept within the per-client size and rate caps, then sent on
+     * to whoever their rear camera reaches, as often as that viewer's level allows and
      * when the dropout chain lets it through.
      */
     public void rearFrame(EntityPlayerMP sender, byte[] jpeg) {

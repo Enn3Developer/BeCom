@@ -45,7 +45,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
 /**
- * Draws video calls on this client (DESIGN.md 10.1, 10.2, 11.2, D44).
+ * Draws video calls on this client.
  * <p>
  * The front camera: each person is drawn the way the inventory screen draws the player, from the poses the server
  * sends, into a small picture of the height their level allows, as often as it allows; Medium and High add noise,
@@ -68,7 +68,7 @@ public final class VideoRenderer {
     private static final double NOD_HZ = 3.5;
     private static final float TALKING = 0.15f;
     private static final int FULL_BRIGHT = 240;
-    // Noise: the share of a picture's pixels speckled at Medium and at High (DESIGN.md 10.1: noisy, light noise).
+    // Noise: the share of a picture's pixels speckled at Medium and at High.
     private static final float NOISE_MEDIUM = 0.08f;
     private static final float NOISE_HIGH = 0.02f;
     private static final int NOISE_ALPHA = 96;
@@ -133,7 +133,7 @@ public final class VideoRenderer {
         return feed == null || !feed.drawn ? null : feed.frame;
     }
 
-    /** Whether this client can make the pictures at all: they need framebuffers (DESIGN.md 16.2). */
+    /** Whether this client can make the pictures at all: they need framebuffers. */
     public static boolean framebuffers() {
         return OpenGlHelper.isFramebufferEnabled();
     }
@@ -168,7 +168,8 @@ public final class VideoRenderer {
             if (!due) continue;
             feed.frameAt = now;
             if (!framebuffers()) {
-                // DESIGN.md 16.2's fallback: drawn straight into the window, keeping its frame rate and freezes.
+                // The fallback without framebuffers: drawn straight into the window, keeping its frame rate and
+                // freezes.
                 feed.frameSize = size;
                 feed.drawn = true;
                 continue;
@@ -218,7 +219,7 @@ public final class VideoRenderer {
         feed.drawn = true;
     }
 
-    /** Puts the person's latest pose on the body, eased between the last two (DESIGN.md 10.1: every frame at Max). */
+    /** Puts the person's latest pose on the body, eased between the last two. */
     private static void pose(EntityOtherPlayerMP body, ClientVideo.Feed feed, long now) {
         VideoPosePacket.Pose to = feed.pose;
         VideoPosePacket.Pose from = feed.previous != null ? feed.previous : to;
@@ -295,7 +296,7 @@ public final class VideoRenderer {
         tess.draw();
     }
 
-    /** A few frames of blocky glitches after frames were lost (DESIGN.md 10.1). */
+    /** A few frames of blocky glitches after frames were lost. */
     private static void glitch(int size) {
         int block = Math.max(2, size / 8);
         int cells = Math.max(1, size / block);
@@ -440,7 +441,7 @@ public final class VideoRenderer {
         frame.unbindFramebufferTexture();
     }
 
-    /** DESIGN.md 16.2's fallback without framebuffers: the body drawn straight into the tile, at full detail. */
+    /** The fallback without framebuffers: the body drawn straight into the tile, at full detail. */
     private static void drawDirect(ClientVideo.Feed feed, int x, int y, int size) {
         EntityOtherPlayerMP body = ClientVideo.body(feed);
         if (body == null) return;
@@ -464,7 +465,7 @@ public final class VideoRenderer {
     // region Corner window
 
     /**
-     * The small window in a corner during a video call (D44), unless the player hid it: the people, or the rear picture
+     * The small window in a corner during a video call, unless the player hid it: the people, or the rear picture
      * with its sender in an inset, at most a quarter of the screen wide. A screen open over the game hides it, chat
      * aside; the phone screen shows the call full size.
      */
@@ -501,7 +502,7 @@ public final class VideoRenderer {
         return null;
     }
 
-    /** The phone screen's video page (D44): the call as large as the page allows, or why there's none. */
+    /** The phone screen's video page: the call as large as the page allows, or why there's none. */
     public static void drawScreenView(int x, int y, int width, int height, boolean capable) {
         Minecraft mc = Minecraft.getMinecraft();
         Gui.drawRect(x, y, x + width, y + height, TILE_BACKGROUND);
@@ -621,7 +622,7 @@ public final class VideoRenderer {
 
     // region Videophone screen
 
-    /** The call on the screen of the Videophone this player stands at (DESIGN.md 10.2), as its room sees it. */
+    /** The call on the screen of the Videophone this player stands at, as its room sees it. */
     @SubscribeEvent
     public void onWorldLast(RenderWorldLastEvent event) {
         Minecraft mc = Minecraft.getMinecraft();

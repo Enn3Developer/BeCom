@@ -18,7 +18,7 @@ import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
 
 /**
- * Every call in the world and the rules they follow (DESIGN.md 8.2, 10, 12.3): one call per player and per phone,
+ * Every call in the world and the rules they follow: one call per player and per phone,
  * group calls up to a size, ringing that gives up, levels per direction with hysteresis, links that drop after staying
  * weak, and the grace a timed-out voice session gets. Pure logic on the server thread; what a call does in the world
  * goes through {@link Listener}.
@@ -84,7 +84,7 @@ public final class CallBook {
         /** The weakest hop's SNR from the speaker's phone to the listener's. */
         double snr(Call call, Call.Leg speaker, Call.Leg listener);
 
-        /** The best level the pair of phones allows (D10): the lower of the two caps. */
+        /** The best level the pair of phones allows: the lower of the two caps. */
         SignalLevel cap(Call call, Call.Leg speaker, Call.Leg listener);
     }
 
@@ -105,7 +105,7 @@ public final class CallBook {
     private long version;
 
     /**
-     * @param emptyRoomMillis how long a speakerphone stays in its call with nobody in its room (DESIGN.md 10.2)
+     * @param emptyRoomMillis how long a speakerphone stays in its call with nobody in its room
      */
     public CallBook(LevelScale levels, int attemptsPerMinute, long ringMillis, long dropGraceMillis,
         long sessionGraceMillis, int groupSize, long emptyRoomMillis, Listener listener) {
@@ -180,7 +180,7 @@ public final class CallBook {
     }
 
     /**
-     * {@code player}, in a connected call, adds phone {@code to} to it (DESIGN.md 8.2: group calls), which rings like a
+     * {@code player}, in a connected call, adds phone {@code to} to it, which rings like a
      * dialled phone. Counted against the same rate limit as dialling, before {@code worldCheck} runs.
      */
     public DialResult add(UUID player, int to, long nowMillis, Supplier<Check> worldCheck) {
@@ -226,7 +226,7 @@ public final class CallBook {
     private void startAtLow(Call call, Call.Direction direction, Call.Leg answered) {
         Call.LinkState link = call.link(direction, low(), dropGraceMillis);
         link.rawLevel = SignalLevel.LOW;
-        // The ring's time below Low counts: answering doesn't buy a weak line a fresh 3 s (DESIGN.md 4.2).
+        // The ring's time below Low counts: answering doesn't buy a weak line a fresh 3 s.
         link.dropTimer.continueFrom(answered.ringTimer(low(), dropGraceMillis));
     }
 
@@ -253,7 +253,7 @@ public final class CallBook {
         return true;
     }
 
-    /** Someone at a ringing phone turns the call down (D34's reject). */
+    /** Someone at a ringing phone turns the call down. */
     public boolean reject(int phone) {
         Call call = byPhone.get(phone);
         if (call == null) return false;
@@ -271,7 +271,7 @@ public final class CallBook {
         if (leg != null) leave(call, leg, EndReason.PHONE_GONE);
     }
 
-    /** The player logged out (DESIGN.md 10): their phone leaves its call, or they leave a speakerphone's room. */
+    /** The player logged out: their phone leaves its call, or they leave a speakerphone's room. */
     public void logout(UUID player) {
         sessionLostAt.remove(player);
         drop(player, EndReason.LOGOUT);
@@ -303,7 +303,7 @@ public final class CallBook {
     }
 
     /**
-     * Who is in a speakerphone's room now (DESIGN.md 10.2): those within reach join its call unless they're in another
+     * Who is in a speakerphone's room now: those within reach join its call unless they're in another
      * call or the call is full; those gone leave it. The phone must be in a call, ringing out or connected. A room that
      * stays empty hangs the phone up, in {@link #tick}.
      */
@@ -357,7 +357,7 @@ public final class CallBook {
             }
             for (Call.Leg leg : call.activeLegs()) {
                 if (call.state() == Call.State.ENDED) break;
-                // Nobody has been near it for a while: it hangs itself up (DESIGN.md 10.2).
+                // Nobody has been near it for a while: it hangs itself up.
                 if (leg.speakerphone() && leg.emptySinceMillis() >= 0
                     && nowMillis - leg.emptySinceMillis() >= emptyRoomMillis) leave(call, leg, EndReason.HUNG_UP);
             }
@@ -377,7 +377,7 @@ public final class CallBook {
     }
 
     /**
-     * Re-evaluates every call (DESIGN.md 4.1: once a second): each direction of a connected call, and whether each
+     * Re-evaluates every call: each direction of a connected call, and whether each
      * ringing phone still has a path.
      */
     public void evaluate(long nowMillis, Quality quality) {

@@ -18,7 +18,7 @@ import net.minecraftforge.common.util.Constants;
 import org.junit.jupiter.api.Test;
 
 /**
- * DEVIATIONS.md X42: a BeCom quest a world already holds takes the definition BeCom ships, and keeps its players'
+ * A BeCom quest a world already holds takes the definition BeCom ships, and keeps its players'
  * progress where it still means the same. Quests and progress are built as BetterQuesting writes them.
  */
 class QuestRefreshTest {

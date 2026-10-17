@@ -16,7 +16,7 @@ import com.enn3developer.becom.block.BlockTelephone;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 /**
- * The Telephone's model (DESIGN.md 5.6, 15.1): a desk set built from boxes, with the handset across its cradle while
+ * The Telephone's model: a desk set built from boxes, with the handset across its cradle while
  * it's on the hook and gone from the model while someone holds it.
  */
 public final class TelephoneRenderer implements ISimpleBlockRenderingHandler {

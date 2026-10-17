@@ -40,13 +40,13 @@ import com.enn3developer.becom.packet.WireSyncPacket;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The live side of every loaded dimension's network (DESIGN.md 14): which powered nodes are working, which devices hang
- * off which terminal, how many calls each Exchange switches, the clearance re-checks (D20), the graph calls are routed
+ * The live side of every loaded dimension's network: which powered nodes are working, which devices hang
+ * off which terminal, how many calls each Exchange switches, the clearance re-checks, the graph calls are routed
  * over, and the wires clients draw. Server thread only.
  */
 public final class NetworkService {
 
-    // A powered node not heard from for 2 seconds counts as offline (DESIGN.md 14).
+    // A powered node not heard from for 2 seconds counts as offline.
     private static final long OFFLINE_AFTER_TICKS = 40;
     private static final int TICKS_PER_SECOND = 20;
     // A dish's loss moves calls' paths in steps this small; finer ones would rebuild them every second of a fade.
@@ -57,19 +57,19 @@ public final class NetworkService {
     private final LevelScale levels;
     private final Map<Integer, NetworkModel> models = new HashMap<>();
     private final Map<NodeRef, Long> lastHeard = new HashMap<>();
-    // What each terminal's last cable scan found: every device it reaches, nearest first (DESIGN.md 5.2).
+    // What each terminal's last cable scan found: every device it reaches, nearest first.
     private final Map<NodeRef, List<Device>> attachments = new HashMap<>();
-    // How many calls each working Exchange's racks switch at once (DESIGN.md 5.4).
+    // How many calls each working Exchange's racks switch at once.
     private final Map<NodeRef, Integer> exchanges = new HashMap<>();
-    // Each working ME Bridge's ME network, by grid id (DESIGN.md 8.3).
+    // Each working ME Bridge's ME network, by grid id.
     private final Map<NodeRef, Integer> meBridges = new HashMap<>();
-    // Each working Satellite Dish, and what its hop up to the satellites loses (DESIGN.md 9.2).
+    // Each working Satellite Dish, and what its hop up to the satellites loses.
     private final Map<NodeRef, Double> dishes = new HashMap<>();
-    // Each Rocket Radio Receiver standing on a pad, by its rocket's spot; working while heard (DESIGN.md 9.3).
+    // Each Rocket Radio Receiver standing on a pad, by its rocket's spot; working while heard.
     private final Set<NodeRef> receivers = new HashSet<>();
-    // Each working Portal Relay, and the kinds of portal in its reach (DESIGN.md 9.4).
+    // Each working Portal Relay, and the kinds of portal in its reach.
     private final Map<NodeRef, Set<Portals.Kind>> relays = new HashMap<>();
-    // Each Portal Relay's GT voltage tier, as it last said (DESIGN.md 9.4).
+    // Each Portal Relay's GT voltage tier, as it last said.
     private final Map<NodeRef, Integer> relayTiers = new HashMap<>();
     // Where the Personal Space portals by each relay lead, at its last look, working or not.
     private final Map<NodeRef, Set<Integer>> personalTargets = new HashMap<>();
@@ -88,8 +88,8 @@ public final class NetworkService {
     private long graphVersion = -1;
 
     /**
-     * @param antennas where calls find the UHF links between antennas (DESIGN.md 7)
-     * @param space    the satellites, which carry calls between dishes and up from planets (DESIGN.md 9)
+     * @param antennas where calls find the UHF links between antennas
+     * @param space    the satellites, which carry calls between dishes and up from planets
      */
     public NetworkService(Tunables tunables, AntennaNetwork antennas, SpaceService space) {
         this.tunables = tunables;
@@ -184,7 +184,7 @@ public final class NetworkService {
         return node;
     }
 
-    /** The machine was broken: its node and every link to it go (DESIGN.md 14), a relay's partner included. */
+    /** The machine was broken: its node and every link to it go, a relay's partner included. */
     public void removeNode(World world, long pos) {
         NetworkModel model = model(world);
         NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
@@ -213,7 +213,7 @@ public final class NetworkService {
         model.changed();
     }
 
-    /** A working Exchange's racks switch {@code calls} calls at once this tick (DESIGN.md 5.4). */
+    /** A working Exchange's racks switch {@code calls} calls at once this tick. */
     public void exchange(World world, long pos, int calls) {
         heartbeat(world, pos);
         Integer before = exchanges.put(new NodeRef(world.provider.dimensionId, pos), calls);
@@ -225,13 +225,13 @@ public final class NetworkService {
         return working(dimension, pos) ? exchanges.getOrDefault(new NodeRef(dimension, pos), 0) : 0;
     }
 
-    /** A powered node is formed, loaded and powered this tick (D11). */
+    /** A powered node is formed, loaded and powered this tick. */
     public void heartbeat(World world, long pos) {
         Long before = lastHeard.put(new NodeRef(world.provider.dimensionId, pos), tick);
         if (before == null) version++;
     }
 
-    /** An ME Bridge is online in ME network {@code grid} this tick: calls cross between the two (DESIGN.md 8.3). */
+    /** An ME Bridge is online in ME network {@code grid} this tick: calls cross between the two. */
     public void meBridge(World world, long pos, int grid) {
         Integer before = meBridges.put(new NodeRef(world.provider.dimensionId, pos), grid);
         if (before == null || before != grid) version++;
@@ -243,7 +243,7 @@ public final class NetworkService {
     }
 
     /**
-     * A Satellite Dish is working this tick, under open sky (DESIGN.md 9.2): its hop up loses {@code loss} dB, for
+     * A Satellite Dish is working this tick, under open sky: its hop up loses {@code loss} dB, for
      * rain at the dish and its maintenance problems.
      */
     public void dish(World world, long pos, double loss) {
@@ -258,7 +258,7 @@ public final class NetworkService {
     }
 
     /**
-     * A Rocket Radio Receiver counts this second, in a rocket standing at {@code pos} (DESIGN.md 9.3): it uplinks to
+     * A Rocket Radio Receiver counts this second, in a rocket standing at {@code pos}: it uplinks to
      * the Overworld's satellites while it's heard from.
      */
     public void receiver(World world, long pos) {
@@ -274,8 +274,7 @@ public final class NetworkService {
     }
 
     /**
-     * A Portal Relay of GT voltage tier {@code tier} is powered this tick, with these kinds of portal in its reach
-     * (DESIGN.md 9.4).
+     * A Portal Relay of GT voltage tier {@code tier} is powered this tick, with these kinds of portal in its reach.
      */
     public void relay(World world, long pos, Set<Portals.Kind> portals, int tier) {
         heartbeat(world, pos);
@@ -285,7 +284,7 @@ public final class NetworkService {
         if (!portals.equals(before) || tierBefore == null || tierBefore != tier) version++;
     }
 
-    /** The GT voltage tier a relay pair works at: its lower relay's (DESIGN.md 9.4). */
+    /** The GT voltage tier a relay pair works at: its lower relay's. */
     public int pairTier(NodeRef a, NodeRef b) {
         return Math.min(
             relayTiers.getOrDefault(a, Tunables.RELAY_MIN_TIER),
@@ -323,7 +322,7 @@ public final class NetworkService {
         return node != null && node.kind() == NodeKind.PORTAL_RELAY ? node : null;
     }
 
-    /** Pairs two Portal Relays through their portal (DESIGN.md 9.4); the link service checks who may. */
+    /** Pairs two Portal Relays through their portal; the link service checks who may. */
     public void pair(NodeRef a, NodeRef b) {
         NetNode nodeA = relayAt(a);
         NetNode nodeB = relayAt(b);
@@ -382,7 +381,7 @@ public final class NetworkService {
     }
 
     /**
-     * A device a terminal's cable reaches (DESIGN.md 5.2): its number, -1 for one without a number yet; how many
+     * A device a terminal's cable reaches: its number, -1 for one without a number yet; how many
      * blocks of cable lead to it; and the poorest cable on the way, which sets its rate and reach.
      */
     public record Device(int phone, int length, CableTier cable) {}
@@ -399,9 +398,19 @@ public final class NetworkService {
         return attachments.getOrDefault(new NodeRef(dimension, terminalPos), List.of());
     }
 
+    /** The KB/s a wired device's own cable carries, or 0 when no working terminal serves it. */
+    public int cableRate(int phone) {
+        NodeRef terminal = terminalOf(phone);
+        if (terminal == null || !working(terminal.dimension(), terminal.pos())) return 0;
+        for (Device device : devicesOf(terminal.dimension(), terminal.pos())) {
+            if (device.phone() == phone) return tunables.cableRate(device.cable());
+        }
+        return 0;
+    }
+
     /**
      * The terminal serving {@code phone}, or null: of the terminals whose cable reaches it within their ports, the
-     * nearest (DESIGN.md 5.2), then the one that sorts first.
+     * nearest, then the one that sorts first.
      */
     public NodeRef terminalOf(int phone) {
         NodeRef best = null;
@@ -480,6 +489,43 @@ public final class NetworkService {
         return version;
     }
 
+    /**
+     * A run of wire leaving a working node, to the next working one: where it ends, how long it is, the
+     * KB/s it carries, and the link calls share that rate on, to ask the calls how much of it they take.
+     */
+    public record Run(long to, double length, int rate, Object link) {}
+
+    private final Map<Integer, List<WiredTopology.Segment>> segments = new HashMap<>();
+    private long segmentsVersion = -1;
+
+    /** The runs leaving a working node; the screens ask every tick, so they're worked out again only on a change. */
+    public List<Run> runsFrom(int dimension, long pos) {
+        long now = version();
+        if (now != segmentsVersion) {
+            segments.clear();
+            segmentsVersion = now;
+        }
+        NetworkModel model = models.get(dimension);
+        if (model == null) return List.of();
+        List<Run> runs = new ArrayList<>();
+        for (WiredTopology.Segment segment : segments
+            .computeIfAbsent(dimension, d -> WiredTopology.segments(model, p -> working(d, p), tunables, rules))) {
+            if (segment.from() != pos) continue;
+            runs.add(
+                new Run(
+                    segment.to(),
+                    segment.length(),
+                    segment.rate(),
+                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to()))));
+        }
+        return runs;
+    }
+
+    /** The link a wired device's own cable is, to ask the calls how much of it they take. */
+    public Object deviceLink(int phone) {
+        return new DeviceLink(phone);
+    }
+
     /** The link a run of wire shares its rate on: the same from either end. */
     private record RunLink(int dimension, NetworkModel.LinkKey key) {}
 
@@ -496,7 +542,7 @@ public final class NetworkService {
             NetworkModel model = entry.getValue();
             for (WiredTopology.Segment segment : WiredTopology
                 .segments(model, pos -> working(dimension, pos), tunables, rules)) {
-                // A run no cable reaches the whole of carries nothing (DESIGN.md 5.5).
+                // A run no cable reaches the whole of carries nothing.
                 if (segment.rate() <= 0) continue;
                 builder.hop(
                     new CallGraph.NodeVertex(dimension, segment.from()),
@@ -506,7 +552,7 @@ public final class NetworkService {
                     new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to())),
                     segment.rate());
             }
-            // Calls travel between antennas on UHF (DESIGN.md 7), once both are working, at their level's rate.
+            // Calls travel between antennas on UHF, once both are working, at their level's rate.
             antennas.forEachUhfLink(dimension, (a, b, snr) -> {
                 if (working(dimension, a) && working(dimension, b)) {
                     builder.twoWay(
@@ -531,7 +577,7 @@ public final class NetworkService {
                 if (node.kind() == NodeKind.EXCHANGE) builder.slots(vertex, exchangeCalls(dimension, node.pos()));
             }
         }
-        // An ME Bridge joins its ME network to the line it bridges, losing nothing (DESIGN.md 8.3: a Max hop), and
+        // An ME Bridge joins its ME network to the line it bridges, losing nothing, and
         // carries a few calls over its one channel.
         for (Map.Entry<NodeRef, Integer> entry : meBridges.entrySet()) {
             NodeRef bridge = entry.getKey();
@@ -545,7 +591,7 @@ public final class NetworkService {
             builder.slots(vertex, tunables.meBridgeCalls());
         }
         // The satellites over each dimension carry a few calls each, shared by the phones under its sky and every
-        // dish and receiver up to it (DESIGN.md 9.1).
+        // dish and receiver up to it.
         Set<Integer> skies = new HashSet<>(models.keySet());
         skies.add(Gateways.OVERWORLD);
         for (int dimension : skies) {
@@ -560,7 +606,7 @@ public final class NetworkService {
             if (terminal == null || !working(terminal.dimension(), terminal.pos())) continue;
             Device device = null;
             for (Device d : devicesOf(terminal.dimension(), terminal.pos())) if (d.phone() == phone) device = d;
-            // Each device's own cable is lossless, and carries its poorest cable's rate (DESIGN.md 5.5).
+            // Each device's own cable is lossless, and carries its poorest cable's rate.
             builder.twoWay(
                 new CallGraph.PhoneVertex(phone),
                 new CallGraph.NodeVertex(terminal.dimension(), terminal.pos()),
@@ -572,7 +618,7 @@ public final class NetworkService {
         return builder.build();
     }
 
-    /** The satellites over a dimension that its sky hops can reach: none where it has no sky (DESIGN.md 6.1). */
+    /** The satellites over a dimension that its sky hops can reach: none where it has no sky. */
     private int satellitesOver(int dimension) {
         return space.hasSky(dimension) ? space.count(dimension) : 0;
     }
@@ -589,8 +635,8 @@ public final class NetworkService {
     }
 
     /**
-     * Every pair of working Portal Relays, once each: both in reach of the portal between their dimensions (DESIGN.md
-     * 9.4), one end in the Overworld (9.5).
+     * Every pair of working Portal Relays, once each: both in reach of the portal between their dimensions,
+     * one end in the Overworld (9.5).
      */
     private List<Gateways.RelayPair> workingRelayPairs() {
         List<Gateways.RelayPair> pairs = new ArrayList<>();
@@ -646,7 +692,7 @@ public final class NetworkService {
 
     // region Clearance
 
-    /** Whether the line between two heads is clear (D20), probing only loaded chunks. */
+    /** Whether the line between two heads is clear, probing only loaded chunks. */
     public Clearance.Result clearance(World world, long a, long b) {
         return Clearance.check(a, b, (x, y, z) -> probe(world, x, y, z));
     }

@@ -8,6 +8,7 @@ import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -24,17 +25,20 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.gui.InfoScreen;
+import com.enn3developer.becom.gui.ViewSync;
 import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
+import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.NodeHost;
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
@@ -59,7 +63,7 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Exchange (DESIGN.md 5.4): a ground-level building of LV machine casings, three blocks each way, that switches
+ * The Exchange: a ground-level building of LV machine casings, three blocks each way, that switches
  * calls between every line wired to it, up to fifteen. Switching Racks in its input buses set how many calls it
  * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Pylons, terminals, antennas and
  * gateways are wired to it like to any ground node.
@@ -264,10 +268,10 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange> implemen
             @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
                 // The lines as the server has them, joined; each player's client translates its own copy.
-                StringSyncValue text = new StringSyncValue(() -> String.join("\n", info().encode()));
+                ViewSync<String> text = InfoScreen.lines(MTEExchange.this::info);
                 sync.syncValue("becomExchange", text);
                 return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(() -> String.join("\n", InfoLines.decode(text.getValue())))
+                    IKey.dynamic(() -> String.join("\n", InfoLines.decode(text.view())))
                         .asWidget()
                         .marginBottom(2)
                         .fullWidth());
@@ -344,12 +348,13 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange> implemen
 
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        info.add(working ? "becom.info.online" : "becom.info.offline");
+        if (working) info.add("becom.info.online");
+        else info.problem("becom.info.offline");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (!mMachine) return info;
         List<CableTier> racks = racks();
-        if (racks.isEmpty()) info.add("becom.exchange.no_racks");
+        if (racks.isEmpty()) info.problem("becom.exchange.no_racks");
         else {
             int[] counts = new int[CableTier.values().length];
             for (CableTier rack : racks) counts[rack.ordinal()]++;
@@ -365,7 +370,12 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange> implemen
         }
         if (becom == null || tile == null) return info;
         int dimension = tile.getWorld().provider.dimensionId;
-        info.add("becom.exchange.calls", becom.calls.callsAt(dimension, pos()), calls);
+        int now = becom.calls.callsAt(dimension, pos());
+        info.add("becom.exchange.calls", now, calls);
+        if (calls > 0 && now >= calls) info.problem("becom.info.calls_full", calls);
+        int[] data = becom.apps.dataAt(new CallGraph.NodeVertex(dimension, pos()));
+        if (data[1] > 0) info.add("becom.exchange.data", data[0], data[1]);
+        if (working) info.add("becom.exchange.reaches", becom.calls.reachFrom(dimension, pos()));
         NetworkModel model = becom.network.model(dimension);
         NetNode node = model == null ? null : model.node(pos());
         if (node != null) {
@@ -374,6 +384,24 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange> implemen
                 node.links()
                     .size(),
                 NodeKind.EXCHANGE.linkSlots());
+            // Each run to the next working node, with what calls take of it; the spans' cables for the scanner.
+            for (NetworkService.Run run : becom.network.runsFrom(dimension, pos())) {
+                NetNode far = model.node(run.to());
+                if (run.rate() <= 0) {
+                    info.problem("becom.info.run_too_long", BlockPos.toString(run.to()));
+                    continue;
+                }
+                info.add(
+                    "becom.exchange.run",
+                    new InfoLines.Key(
+                        "becom.node." + (far == null ? "pylon"
+                            : far.kind()
+                                .name()
+                                .toLowerCase(Locale.ROOT))),
+                    BlockPos.toString(run.to()),
+                    becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link()),
+                    run.rate());
+            }
             for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
         }
         return info;

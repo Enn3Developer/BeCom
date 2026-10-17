@@ -21,12 +21,12 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 
 /**
- * Carried phones on the client (DESIGN.md 11.1, 11.2): the Phone key, the incoming-call notice in the corner, and the
+ * Carried phones on the client: the Phone key, the incoming-call notice in the corner, and the
  * service of the phone in hand for the signal bars. The server decides what the key does.
  */
 public final class ClientPhone {
 
-    /** The Phone key's default: N, unbound in a full GTNH install (DESIGN.md 11.1). */
+    /** The Phone key's default: N, unbound in a full GTNH install. */
     public static final int DEFAULT_KEY = Keyboard.KEY_N;
 
     private static final int NOTICE_MARGIN = 4;
@@ -83,7 +83,7 @@ public final class ClientPhone {
         BeComPackets.CHANNEL.sendToServer(new PhoneKeyPacket(mc.thePlayer.isSneaking()));
     }
 
-    /** The notice of an incoming call (DESIGN.md 11.2): who, from which number, and the keys. */
+    /** The notice of an incoming call: who, from which number, and the keys. */
     @SubscribeEvent
     public void onOverlay(RenderGameOverlayEvent.Post event) {
         RingPacket ring = ringing;

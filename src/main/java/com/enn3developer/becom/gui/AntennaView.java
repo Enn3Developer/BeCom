@@ -9,7 +9,7 @@ import net.minecraft.network.PacketBuffer;
 import com.enn3developer.becom.logic.radio.Coverage;
 
 /**
- * What the antenna screen shows (DESIGN.md 11.4): its state, the calls through it out of those it carries, its links
+ * What the antenna screen shows: its state, the calls through it out of those it carries, its links
  * to other antennas on each band, its wiring onto lines and what each span carries, the team lock, and its coverage
  * map on each band. Built on the server, formatted on the client.
  */

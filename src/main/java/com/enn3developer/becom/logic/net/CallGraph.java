@@ -7,18 +7,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 
 import com.enn3developer.becom.logic.WidestPath;
 
 /**
- * The graph calls are routed over (DESIGN.md 14: path finding): working powered nodes of every dimension, the phones
+ * The graph calls are routed over: working powered nodes of every dimension, the phones
  * hanging off them, and the hops between, each weighted by its SNR. Each hop also has a data rate, shared by every call
- * crossing its link, and some vertices a number of calls they carry at once (DESIGN.md 5.4, 7). Built when the network
+ * crossing its link, and some vertices a number of calls they carry at once. Built when the network
  * changes, then queried; each source's best paths, capacity aside, are solved once and kept until the next rebuild,
  * and {@link #route} shares the capacity out among calls.
  * <p>
  * A phone is where a path starts or ends, never a way through: inside, each phone is two vertices, one that only has
- * hops out and one that only has hops in. A phone touching two lines can call either, but doesn't join them (D19).
+ * hops out and one that only has hops in. A phone touching two lines can call either, but doesn't join them.
  */
 public final class CallGraph {
 
@@ -29,20 +32,21 @@ public final class CallGraph {
     public record PhoneVertex(int number) {}
 
     /**
-     * An ME network in one dimension, by the id the server gives its grid while it lives (DESIGN.md 8.3). An ME
-     * network spanning dimensions is a vertex in each, so calls cross dimensions only the ways DESIGN.md 9.5 lists.
+     * An ME network in one dimension, by the id the server gives its grid while it lives. An ME
+     * network spanning dimensions is a vertex in each, so calls cross dimensions only through satellites, dishes,
+     * receivers and relay pairs.
      */
     public record MeVertex(int grid, int dimension) {}
 
     /**
-     * The satellites over a dimension (DESIGN.md 9.1): devices under its open sky and its Satellite Dishes join them,
+     * The satellites over a dimension: devices under its open sky and its Satellite Dishes join them,
      * and in the Overworld every planet's Rocket Radio Receiver too (9.2, 9.3).
      */
     public record SkyVertex(int dimension) {}
 
     /**
      * Where a phone that isn't a vertex of its own joins the graph, and how good that hop is: a carried phone at each
-     * antenna it reaches (DESIGN.md 8.2). A phone on a line joins at its own vertex, through a lossless hop.
+     * antenna it reaches. A phone on a line joins at its own vertex, through a lossless hop.
      */
     public record Entry(Object vertex, double snr) {
 
@@ -69,15 +73,15 @@ public final class CallGraph {
     public enum HopKind {
         LINE,
         CABLE,
-        /** A UHF link between two antennas (DESIGN.md 7). */
+        /** A UHF link between two antennas. */
         RADIO,
-        /** An ME Bridge joining its ME network (DESIGN.md 8.3). */
+        /** An ME Bridge joining its ME network. */
         ME_BRIDGE,
-        /** A Satellite Dish's hop up to the satellites over its dimension (DESIGN.md 9.2). */
+        /** A Satellite Dish's hop up to the satellites over its dimension. */
         SKY,
-        /** A Rocket Radio Receiver's uplink to the Overworld's satellites (DESIGN.md 9.3). */
+        /** A Rocket Radio Receiver's uplink to the Overworld's satellites. */
         UPLINK,
-        /** A linked pair of Portal Relays (DESIGN.md 9.4). */
+        /** A linked pair of Portal Relays. */
         RELAY
     }
 
@@ -235,6 +239,28 @@ public final class CallGraph {
         return routing;
     }
 
+    /**
+     * Where data between two phones goes: its weakest hop's SNR, the KB/s free on its narrowest limited link
+     * ({@link #UNLIMITED} when it crosses none), those links, and the vertices on the way.
+     */
+    public record DataRoute(double width, int free, List<Object> links, List<Object> vertices) {
+
+        public static final DataRoute NONE = new DataRoute(Double.NEGATIVE_INFINITY, 0, List.of(), List.of());
+
+        public boolean routed() {
+            return width != Double.NEGATIVE_INFINITY;
+        }
+    }
+
+    private record Found(double width, List<WidestPath.Edge> edges, List<Integer> path) {
+
+        List<HopKind> kinds() {
+            List<HopKind> kinds = new ArrayList<>();
+            for (WidestPath.Edge edge : edges) kinds.add(((Hop) edge.tag()).kind());
+            return kinds;
+        }
+    }
+
     /** What calls took of the network's capacity, and where each stream went. */
     public final class Routing {
 
@@ -275,15 +301,54 @@ public final class CallGraph {
 
         private Route best(Demand demand, Demand taking) {
             Set<Integer> own = verticesOf.getOrDefault(demand.call(), Set.of());
-            double bestWidth = Double.NEGATIVE_INFINITY;
-            List<WidestPath.Edge> bestEdges = null;
-            List<Integer> bestPath = null;
-            for (Entry a : demand.from()) {
+            Found found = search(
+                demand.from(),
+                demand.to(),
+                hop -> fits(hop, demand.rate()),
+                vertex -> hasRoom(vertex, own));
+            if (found == null) return Route.NONE;
+            if (taking != null) {
+                for (WidestPath.Edge edge : found.edges()) {
+                    Hop hop = (Hop) edge.tag();
+                    if (hop.rate() != UNLIMITED) used.merge(hop.link(), taking.rate(), Integer::sum);
+                }
+                Set<Integer> mine = verticesOf.computeIfAbsent(taking.call(), k -> new HashSet<>());
+                for (int vertex : found.path()) if (mine.add(vertex)) callsAt[vertex]++;
+            }
+            return new Route(found.width(), found.kinds());
+        }
+
+        /**
+         * The best route for data between two phones over what calls leave, less what other data already takes
+         * ({@code dataOn}, KB/s by link). Data takes no call slot, and a call never makes way for it.
+         */
+        public DataRoute data(List<Entry> from, List<Entry> to, ToIntFunction<Object> dataOn) {
+            Found found = search(
+                from,
+                to,
+                hop -> hop.rate() == UNLIMITED || used(hop.link()) + dataOn.applyAsInt(hop.link()) < hop.rate(),
+                vertex -> true);
+            if (found == null) return DataRoute.NONE;
+            int free = UNLIMITED;
+            List<Object> links = new ArrayList<>();
+            for (WidestPath.Edge edge : found.edges()) {
+                Hop hop = (Hop) edge.tag();
+                if (hop.rate() == UNLIMITED) continue;
+                links.add(hop.link());
+                free = Math.min(free, hop.rate() - used(hop.link()) - dataOn.applyAsInt(hop.link()));
+            }
+            List<Object> on = new ArrayList<>();
+            for (int vertex : found.path()) on.add(vertices.get(vertex));
+            return new DataRoute(found.width(), free, links, on);
+        }
+
+        private Found search(List<Entry> from, List<Entry> to, Predicate<Hop> hopOk, IntPredicate vertexOk) {
+            Found best = null;
+            for (Entry a : from) {
                 Integer tail = index.get(tail(a.vertex()));
-                if (tail == null || !hasRoom(tail, own)) continue;
-                WidestPath.Result result = paths
-                    .solve(tail, edge -> fits((Hop) edge.tag(), demand.rate()), vertex -> hasRoom(vertex, own));
-                for (Entry b : demand.to()) {
+                if (tail == null || !vertexOk.test(tail)) continue;
+                WidestPath.Result result = paths.solve(tail, edge -> hopOk.test((Hop) edge.tag()), vertexOk);
+                for (Entry b : to) {
                     Integer head = index.get(head(b.vertex()));
                     if (head == null) continue;
                     double width;
@@ -295,25 +360,13 @@ public final class CallGraph {
                         if (!result.reachable(head)) continue;
                         width = Math.min(Math.min(a.snr(), b.snr()), result.width(head));
                     }
-                    if (width > bestWidth) {
-                        bestWidth = width;
-                        bestEdges = head.equals(tail) ? List.of() : result.edges(head);
-                        bestPath = head.equals(tail) ? List.of(tail) : result.path(head);
+                    if (best == null || width > best.width()) {
+                        best = head.equals(tail) ? new Found(width, List.of(), List.of(tail))
+                            : new Found(width, result.edges(head), result.path(head));
                     }
                 }
             }
-            if (bestEdges == null) return Route.NONE;
-            List<HopKind> kinds = new ArrayList<>();
-            for (WidestPath.Edge edge : bestEdges) kinds.add(((Hop) edge.tag()).kind());
-            if (taking != null) {
-                for (WidestPath.Edge edge : bestEdges) {
-                    Hop hop = (Hop) edge.tag();
-                    if (hop.rate() != UNLIMITED) used.merge(hop.link(), taking.rate(), Integer::sum);
-                }
-                Set<Integer> mine = verticesOf.computeIfAbsent(taking.call(), k -> new HashSet<>());
-                for (int vertex : bestPath) if (mine.add(vertex)) callsAt[vertex]++;
-            }
-            return new Route(bestWidth, kinds);
+            return best;
         }
 
         private boolean fits(Hop hop, int rate) {

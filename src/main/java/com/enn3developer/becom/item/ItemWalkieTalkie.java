@@ -36,12 +36,12 @@ import ic2.api.item.ElectricItem;
 import ic2.api.item.IElectricItem;
 
 /**
- * The Walkie-Talkie (DESIGN.md 8, 11.3): an MV radio on its own battery. It works from the inventory while switched on
+ * The Walkie-Talkie: an MV radio on its own battery. It works from the inventory while switched on
  * and charged; right-click opens its screen, sneak + scroll changes the channel. GT's chargers and battery buffers
  * charge it through IC2's electric item interface, like GT's own tools.
  * <p>
  * A player transmits and receives on one walkie, the first working one: the one in hand, then the rest of the
- * inventory, then the bauble slots (X21, D14). Its state lives in the stack: channel, power, and IC2's charge.
+ * inventory, then the bauble slots. Its state lives in the stack: channel, power, and IC2's charge.
  */
 public class ItemWalkieTalkie extends Item
     implements IElectricItem, IGuiHolder<PlayerInventoryGuiData>, IBaubleExpanded {
@@ -74,7 +74,7 @@ public class ItemWalkieTalkie extends Item
         return channel < 1 || channel > RadioGroup.CHANNELS ? 1 : channel;
     }
 
-    /** Its state was written by a newer BeCom: this one leaves it alone (X16). */
+    /** Its state was written by a newer BeCom: this one leaves it alone. */
     public static boolean isTooNew(ItemStack stack) {
         return BeComNbt.tooNew(stack.getTagCompound(), FORMAT);
     }
@@ -84,7 +84,7 @@ public class ItemWalkieTalkie extends Item
         tag(stack).setInteger(CHANNEL, Math.floorMod(channel - 1, RadioGroup.CHANNELS) + 1);
     }
 
-    /** Switched on; a new walkie is, and a flat battery switches it off (DESIGN.md 11.3). */
+    /** Switched on; a new walkie is, and a flat battery switches it off. */
     public static boolean on(ItemStack stack) {
         NBTTagCompound tag = stack.getTagCompound();
         return tag == null || !tag.hasKey(ON) || tag.getBoolean(ON);
@@ -109,7 +109,7 @@ public class ItemWalkieTalkie extends Item
         return ElectricItem.manager.discharge(stack, eu, Integer.MAX_VALUE, true, false, false);
     }
 
-    /** Where the walkie a player talks and listens on is, or null: the first working one, held first (X21). */
+    /** Where the walkie a player talks and listens on is, or null: the first working one, held first. */
     public static Carried.Slot active(EntityPlayer player) {
         return Carried.first(player, ItemWalkieTalkie::working);
     }
@@ -250,7 +250,7 @@ public class ItemWalkieTalkie extends Item
         transmitting = register.registerIcon(BeCom.MODID + ":walkie_talkie_tx");
     }
 
-    /** Its TX light shows while you transmit on it (DESIGN.md 11.3, 13.4). */
+    /** Its TX light shows while you transmit on it. */
     @Override
     @SideOnly(Side.CLIENT)
     public IIcon getIconIndex(ItemStack stack) {

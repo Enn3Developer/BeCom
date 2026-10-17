@@ -10,7 +10,7 @@ import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.Tunables;
 
 /**
- * BeCom's Forge config file (DESIGN.md 14.2): every tunable from DESIGN.md 17 except the three kept fixed, read once at
+ * BeCom's Forge config file: every tunable except the three kept fixed, read once at
  * startup. Only a server acts on it; clients get the server's values when they log in.
  */
 public final class BeComConfig {
@@ -30,9 +30,10 @@ public final class BeComConfig {
     private static final String ME = "me";
     private static final String SPACE = "space";
     private static final String QUESTS = "quests";
+    private static final String APPS = "apps";
 
     // What this side acts on: the file's values while a server runs here, the server's on a client connected to one,
-    // and the defaults on a client that isn't (DESIGN.md 14.2: clients never use their own file).
+    // and the defaults on a client that isn't.
     private static volatile Tunables tunables = Tunables.defaults();
     private static volatile Tunables fileValues = Tunables.defaults();
     private static volatile String fileProblem;
@@ -194,6 +195,54 @@ public final class BeComConfig {
         integer(config, v, PHONES, "phoneCallDrain", "EU/t a phone uses in a call.");
         integer(config, v, PHONES, "phoneVideoDrain", "EU/t more a phone uses while it shows video.");
         integer(config, v, PHONES, "phoneScreenDrain", "EU/t more a phone uses while its screen is open.");
+        integer(config, v, PHONES, "phoneAppDrain", "EU/t more a phone uses while its apps run.");
+        integer(config, v, PHONES, "phoneStorageKB", 1, 16384, "KB of storage a phone's apps share.");
+        integer(config, v, APPS, "appsPerPhone", 1, 64, "Most apps one phone holds.");
+        integer(config, v, APPS, "appSourceKB", 1, 64, "KB an app's one Lua file may take.");
+        integer(
+            config,
+            v,
+            APPS,
+            "appStorageKB",
+            1,
+            16384,
+            "KB of the phone's storage each app may fill with its files.");
+        integer(config, v, APPS, "appMessageKB", 1, 64, "KB one message between apps and computers may take.");
+        integer(config, v, APPS, "appWakeSeconds", 10, 3600, "Seconds at least between a phone's background wakes.");
+        integer(
+            config,
+            v,
+            APPS,
+            "appAwakeSeconds",
+            2,
+            120,
+            "Seconds a background wake keeps the phone's apps running.");
+        integer(
+            config,
+            v,
+            APPS,
+            "appOfferSeconds",
+            10,
+            600,
+            "Seconds a phone's holder has to answer a computer's install or publish.");
+        integer(
+            config,
+            v,
+            APPS,
+            "appAuthorReach",
+            2,
+            64,
+            "Blocks from a computer within which a player is asked to publish its app.");
+        integer(config, v, APPS, "storeApps", 1, 8192, "Most apps the App Store holds.");
+        integer(config, v, APPS, "storeAppsPerAuthor", 1, 1024, "Most apps one player may have in the App Store.");
+        integer(
+            config,
+            v,
+            APPS,
+            "computerForgetDays",
+            1,
+            3650,
+            "Days after which the number of a BeCom Card nobody has run is given up.");
         integer(
             config,
             v,
@@ -297,8 +346,8 @@ public final class BeComConfig {
                     + " servers with a curated book, and BeCom leaves the book alone."));
         integer(config, v, QUESTS, "questlineRecheckSeconds", "Seconds between checks that the tab is there.");
         Tunables loaded = Tunables.fromMap(v);
-        // Checked when a server is about to use them, not here: a client never acts on its own file (DESIGN.md
-        // 14.2), so a bad value in it mustn't stop the client from starting.
+        // Checked when a server is about to use them, not here: a client never acts on its own file,
+        // so a bad value in it mustn't stop the client from starting.
         fileValues = loaded;
         try {
             loaded.validate();

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 15.5: a quest task is reported again after a while, so one done while its quest was locked isn't lost. */
+/** A quest task is reported again after a while, so one done while its quest was locked isn't lost. */
 class RepeatReportsTest {
 
     // A monotonic clock, far from zero as on a real machine.

@@ -8,9 +8,9 @@ import com.enn3developer.gtnhvoice.api.client.IPlaybackFrame;
 import com.enn3developer.gtnhvoice.api.client.IVoiceAddon;
 
 /**
- * How BeCom audio sounds on the listener's client (DESIGN.md 4.3, 13.5): one playback chain with a branch per level
+ * How BeCom audio sounds on the listener's client: one playback chain with a branch per level
  * and kind of group, picking frames by the group that routed them and the level the server said this player hears
- * that source at. These are DESIGN.md's starting recipes, to be tuned by ear; Max is left clean, and radios stop at
+ * that source at. These are starting recipes, to be tuned by ear; Max is left clean, and radios stop at
  * Medium. Last, frames from a walkie or loudspeaker fade with distance, hiss and all.
  */
 public final class ClientAudio {
@@ -32,7 +32,7 @@ public final class ClientAudio {
             .register();
         addon.audio()
             .playbackChain(
-                // The talking animation first, so it measures the voice as it arrived (DESIGN.md 13.5).
+                // The talking animation first, so it measures the voice as it arrived.
                 chain -> chain.stage(TalkMeter::new)
                     .when(
                         frame -> callLevel(frame) == SignalLevel.LOW,

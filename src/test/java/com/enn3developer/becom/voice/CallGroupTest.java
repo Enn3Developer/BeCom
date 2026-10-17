@@ -14,8 +14,8 @@ import com.enn3developer.gtnhvoice.api.server.ActivationIds;
 import com.enn3developer.gtnhvoice.api.server.SourceState;
 
 /**
- * DESIGN.md 13.3: who gets each call frame, flat or from a Videophone's loudspeaker, and who's skipped: direct hearing
- * (D17), dropouts.
+ * Who gets each call frame, flat or from a Videophone's loudspeaker, and who's skipped: direct hearing,
+ * dropouts.
  */
 class CallGroupTest {
 
@@ -204,7 +204,7 @@ class CallGroupTest {
 
     @Test
     void aSpeakerWhosePositionIsntANumberIsCarriedToEveryone() {
-        // Nobody can hear a speaker with no position in person (D17): the call carries Alice to Bob 3 blocks from the
+        // Nobody can hear a speaker with no position in person: the call carries Alice to Bob 3 blocks from the
         // origin, and the Videophone to its room.
         UUID alice = fixture.player("alice", Double.NaN, Double.NaN, Double.NaN, 0);
         UUID bob = fixture.player("bob", 3, 64, 0, 0);

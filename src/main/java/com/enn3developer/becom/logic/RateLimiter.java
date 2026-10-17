@@ -6,8 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * At most {@code limit} attempts per key in any sliding window of {@code windowMillis} (DESIGN.md 12.3: call
- * attempts per caller). Server thread only.
+ * At most {@code limit} attempts per key in any sliding window of {@code windowMillis}. Server thread only.
  */
 public final class RateLimiter<K> {
 

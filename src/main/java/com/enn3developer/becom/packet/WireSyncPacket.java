@@ -13,13 +13,13 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Every pylon wire of one dimension, so clients can draw them (DESIGN.md 5.1): sent to a player entering the dimension
+ * Every pylon wire of one dimension, so clients can draw them: sent to a player entering the dimension
  * and to everyone in it when a link or its clearance changes.
  */
 public final class WireSyncPacket implements IMessage {
 
     /**
-     * One span between two nodes and the cables strung on it, best first; a blocked one renders broken (D20), and one
+     * One span between two nodes and the cables strung on it, best first; a blocked one renders broken, and one
      * with no cable as a bare line.
      */
     public record Wire(long a, long b, boolean blocked, List<CableTier> cables) {}

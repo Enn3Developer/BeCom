@@ -26,15 +26,15 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.modularui2.GTGuiThemes;
 
 /**
- * The Telephone's state (DESIGN.md 5.6): its number, whether it rings, and its phone screen. Who holds the handset
+ * The Telephone's state: its number, whether it rings, and its phone screen. Who holds the handset
  * lives in the call service; the block's metadata carries only whether the handset is off the hook, for the model.
  */
 public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> {
 
-    // A ring cycle: the ring sound plays for its first part, then silence, like a real bell (DESIGN.md 15.2). Carried
+    // A ring cycle: the ring sound plays for its first part, then silence, like a real bell. Carried
     // phones ring the same.
     public static final int RING_PERIOD_TICKS = 120;
-    // "You can move 1 block away" (DESIGN.md 5.6): the gap from the block to the player's body, with a little slack.
+    // "You can move 1 block away": the gap from the block to the player's body, with a little slack.
     private static final double CORD_REACH = 1.2;
 
     public static final int FORMAT = 1;
@@ -87,7 +87,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         PhoneRecord original = becom == null || number < 0 ? null : becom.phones.record(number);
         if (original != null && !becom.phones.relocate(this)) {
             // A copy: its number is the original's, which still stands elsewhere. Holding it would put the number on
-            // two cables and ring both. It gets its own, owned by the original's owner (X17).
+            // two cables and ring both. It gets its own, owned by the original's owner.
             setNumber(
                 becom.phones.registerCopy(worldObj, BlockPos.pack(xCoord, yCoord, zCoord), original)
                     .number());
@@ -169,7 +169,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
         if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            // A Telephone from a newer BeCom: kept untouched and left alone, never given a number here (X16).
+            // A Telephone from a newer BeCom: kept untouched and left alone, never given a number here.
             tooNew = (NBTTagCompound) nbt.copy();
             number = -1;
             return;

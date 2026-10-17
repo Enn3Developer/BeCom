@@ -44,7 +44,7 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * A Pylon Head (DESIGN.md 5.1): the controller on top of a telephone pole, a column of wood frame boxes with a crossarm
+ * A Pylon Head: the controller on top of a telephone pole, a column of wood frame boxes with a crossarm
  * across it right under the head. It's passive and keeps working unloaded: it holds the cables strung on its two
  * spans, up to a bundle each.
  * <p>

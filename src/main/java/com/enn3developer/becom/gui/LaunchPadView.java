@@ -6,7 +6,7 @@ import java.util.List;
 import net.minecraft.network.PacketBuffer;
 
 /**
- * What the Satellite Launch Pad's screen shows (DESIGN.md 9.1, 11.4): the rockets waiting to launch, whether a launch
+ * What the Satellite Launch Pad's screen shows: the rockets waiting to launch, whether a launch
  * is on hold under something covering the pad, and each dimension's satellites with the time until the next comes
  * down. Built on the server, translated on the client.
  */

@@ -18,7 +18,7 @@ import cpw.mods.fml.common.versioning.DefaultArtifactVersion;
 import cpw.mods.fml.common.versioning.VersionParser;
 
 /**
- * DESIGN.md 16.4: BeCom builds against GTNH Voice 0.11.0, and an older one fails on a missing API after loading. FML
+ * BeCom builds against GTNH Voice 0.11.0, and an older one fails on a missing API after loading. FML
  * checks the version only if the dependency names one, written as GTNH Voice writes its own, with the "v".
  */
 class GtnhVoiceVersionTest {

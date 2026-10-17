@@ -25,7 +25,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * The Telephone (DESIGN.md 5.6): right-click picks up the handset, answers a ringing phone, or hangs up. Sneak +
+ * The Telephone: right-click picks up the handset, answers a ringing phone, or hangs up. Sneak +
  * right-click opens its phone screen without touching the handset. Metadata: the low two bits are the facing, bit 2
  * is set while the handset is off the hook.
  */

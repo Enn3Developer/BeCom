@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * One node of a dimension's network, as saved (DESIGN.md 14). Mutable and server-thread only; the routing thread
+ * One node of a dimension's network, as saved. Mutable and server-thread only; the routing thread
  * never sees it.
  */
 public final class NetNode {
@@ -73,7 +73,7 @@ public final class NetNode {
         this.formed = formed;
     }
 
-    /** A Portal Relay's partner on the far side of its portal (DESIGN.md 9.4), or null. */
+    /** A Portal Relay's partner on the far side of its portal, or null. */
     public NodeRef partner() {
         return partner;
     }

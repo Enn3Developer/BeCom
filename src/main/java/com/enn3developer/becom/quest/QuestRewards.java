@@ -7,7 +7,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 
 /**
- * DESIGN.md 15.5: a reward whose item isn't installed is left out. Works on a quest as BetterQuesting saves it, without
+ * A reward whose item isn't installed is left out. Works on a quest as BetterQuesting saves it, without
  * BetterQuesting's classes, so it can be tested on its own.
  */
 public final class QuestRewards {

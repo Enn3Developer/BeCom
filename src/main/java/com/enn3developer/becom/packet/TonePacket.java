@@ -7,7 +7,7 @@ import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
-/** Which call tone the player's handset plays now (DESIGN.md 10, 15.2). Only that player hears it. */
+/** Which call tone the player's handset plays now. Only that player hears it. */
 public final class TonePacket implements IMessage {
 
     /** Saved by ordinal on the wire, so constants are only ever appended. */

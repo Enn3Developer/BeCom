@@ -54,8 +54,8 @@ import betterquesting.questing.QuestLineDatabase;
 import betterquesting.questing.QuestLineEntry;
 
 /**
- * BeCom and BetterQuesting (DESIGN.md 15.5): registers BeCom's task type, puts BeCom's questline into the book once
- * the server has started, brings the quests a world already holds up to the ones BeCom ships (X42), puts it back
+ * BeCom and BetterQuesting: registers BeCom's task type, puts BeCom's questline into the book once
+ * the server has started, brings the quests a world already holds up to the ones BeCom ships, puts it back
  * whenever something removed it, and completes BeCom's tasks.
  * <p>
  * Only ever touches BeCom's own questline and quests, found by their fixed UUIDs. BQ keeps progress inside each quest,
@@ -227,7 +227,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
 
     /**
      * Brings the quests and questline entries of BeCom's that the book already holds up to the ones BeCom ships, and
-     * keeps their progress (X42). Runs at server start, once BQ has loaded the book and, after a pack update, reloaded
+     * keeps their progress. Runs at server start, once BQ has loaded the book and, after a pack update, reloaded
      * it. Each quest is compared as BQ writes it, the shipped one after the installed-rewards filter, so a reward left
      * out for a mod that isn't installed is no change. Only BeCom's own UUIDs are touched.
      *
@@ -297,7 +297,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
         return quest;
     }
 
-    /** DESIGN.md 15.5: a reward whose item isn't installed is left out. */
+    /** A reward whose item isn't installed is left out. */
     private static NBTTagCompound withInstalledRewards(NBTTagCompound quest) {
         return QuestRewards.withInstalled(quest, id -> Item.itemRegistry.getObject(id) != null);
     }
@@ -317,7 +317,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     /**
      * Gives re-added quests their progress back: from BeCom's copy, or from BQ's progress files, read under the
      * definition the world last saved and brought to the one BeCom ships as the refresh brings a quest the book still
-     * holds (X42). A quest the world never saved takes the files' progress as they read.
+     * holds. A quest the world never saved takes the files' progress as they read.
      */
     private void restoreProgress(List<UUID> quests) {
         Set<UUID> players = new HashSet<>();
@@ -555,7 +555,7 @@ public final class BqBackend implements BeComQuests.QuestBackend {
     }
 
     /**
-     * The self-test's look at the refresh BeCom runs at server start (X42). Stores the Portal Relay quest as an older
+     * The self-test's look at the refresh BeCom runs at server start. Stores the Portal Relay quest as an older
      * BeCom might have left it, one relay to hold instead of two and a diamond as well, gives {@code player} both its
      * tasks, its completion and its claim, runs the refresh, and says what came of it.
      */

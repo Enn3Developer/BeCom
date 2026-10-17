@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * The satellites in orbit (DESIGN.md 9.1, D23): each over the dimension it was launched from, until it comes down.
+ * The satellites in orbit: each over the dimension it was launched from, until it comes down.
  * Times are the Overworld's world time in ticks, which only runs while the server does, so decay only advances then.
  * Server thread only; saved by the server.
  */
@@ -27,7 +27,7 @@ public final class Satellites {
     private long version;
 
     /**
-     * How long a satellite stays up (D23): {@code days}, give or take {@code spread} of it, so they don't all come down
+     * How long a satellite stays up: {@code days}, give or take {@code spread} of it, so they don't all come down
      * together. {@code random} is a draw from [0, 1).
      */
     public static long lifetime(double days, double spread, double random) {
@@ -61,7 +61,7 @@ public final class Satellites {
         return lost;
     }
 
-    /** Takes down every satellite over {@code dimension} at once: the admin command's reset (DESIGN.md 12.3). */
+    /** Takes down every satellite over {@code dimension} at once: the admin command's reset. */
     public void clear(int dimension) {
         if (satellites.removeIf(satellite -> satellite.dimension() == dimension)) version++;
         counts.remove(dimension);

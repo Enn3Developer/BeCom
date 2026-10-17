@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic;
 
 /**
- * Work spread over a second's 20 ticks (DESIGN.md 6.5): each thing has its own tick of the second, the same every
+ * Work spread over a second's 20 ticks: each thing has its own tick of the second, the same every
  * second, so once-a-second work for many things never lands in one tick.
  */
 public final class Slots {

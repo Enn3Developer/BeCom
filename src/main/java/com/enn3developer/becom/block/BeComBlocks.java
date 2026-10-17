@@ -3,7 +3,7 @@ package com.enn3developer.becom.block;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.GregTechAPI;
 
-/** BeCom's own blocks: the parts that aren't GT machines (DESIGN.md 15.1). */
+/** BeCom's own blocks: the parts that aren't GT machines. */
 public final class BeComBlocks {
 
     public static BlockTelephone telephone;

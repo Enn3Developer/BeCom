@@ -31,11 +31,11 @@ import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 
 /**
- * Linking nodes with a GT wrench (DESIGN.md 5.1, 12.2): the first node is remembered for the player for a while, and
+ * Linking nodes with a GT wrench: the first node is remembered for the player for a while, and
  * the second one links to it, stringing a span with the first cable in the player's hotbar, one item for every few
  * blocks of span. Wrenching a linked pair again with cable adds it to the span's bundle, or, when the bundle is full,
  * swaps the poorest cable on it for the better one; with no cable in the hotbar it unlinks them, and the cables come
- * back. Anyone may link (D37); only an owner of either end, or their team, may change or unlink a span. Two Portal
+ * back. Anyone may link; only an owner of either end, or their team, may change or unlink a span. Two Portal
  * Relays in different dimensions pair the same way, through their portal (9.4), with no cable.
  */
 public final class LinkService {
@@ -274,7 +274,7 @@ public final class LinkService {
     }
 
     /**
-     * The second relay of a pair is wrenched, on the far side of the portal (DESIGN.md 9.4): they pair, or unpair when
+     * The second relay of a pair is wrenched, on the far side of the portal: they pair, or unpair when
      * paired already. A pair joins the Overworld to a dimension a portal leads to (9.5), and each relay has one
      * partner.
      */
@@ -327,7 +327,7 @@ public final class LinkService {
 
     /**
      * Whether a relay is paired with another: one paired with it in turn, or one in a dimension that isn't loaded,
-     * which can't be told and so is kept. Unlinking someone's pair is for its owners (D37).
+     * which can't be told and so is kept. Unlinking someone's pair is for its owners.
      */
     private boolean taken(NodeRef ref, NetNode relay) {
         NodeRef partner = relay.partner();

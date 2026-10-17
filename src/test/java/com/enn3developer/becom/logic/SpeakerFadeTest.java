@@ -9,7 +9,7 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 13.5: how a walkie or loudspeaker fades with distance, and how a client tells the two apart. */
+/** How a walkie or loudspeaker fades with distance, and how a client tells the two apart. */
 class SpeakerFadeTest {
 
     @Test

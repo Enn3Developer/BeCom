@@ -10,7 +10,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import io.netty.buffer.ByteBuf;
 
 /**
- * The Phone key (DESIGN.md 11.1, D34): answers a ringing phone, hangs up during a call, opens the phone screen
+ * The Phone key: answers a ringing phone, hangs up during a call, opens the phone screen
  * otherwise; with sneak, rejects a ringing call. The server decides which, from its own state.
  */
 public final class PhoneKeyPacket implements IMessage {

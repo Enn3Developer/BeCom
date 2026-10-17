@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 5.6 and X10: the cord reaches 1.2 blocks from the phone's block to the player's body. */
+/** The cord reaches 1.2 blocks from the phone's block to the player's body. */
 class CordTest {
 
     private static final double REACH = 1.2;

@@ -11,7 +11,7 @@ import net.minecraft.item.ItemStack;
 import baubles.api.BaublesApi;
 
 /**
- * Where a player carries a walkie-talkie or a phone (D14, DESIGN.md 8): anywhere in their inventory or in a bauble
+ * Where a player carries a walkie-talkie or a phone: anywhere in their inventory or in a bauble
  * slot. Devices are chosen in one order everywhere: the one in hand, then the rest of the inventory, then the bauble
  * slots.
  */

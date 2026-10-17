@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Synthesizes BeCom's sounds (DESIGN.md 15.2, D53) and encodes them to OGG Vorbis with ffmpeg.
+"""Synthesizes BeCom's sounds and encodes them to OGG Vorbis with ffmpeg.
 
 The call tones follow North America's precise tone plan: dial tone 350 + 440 Hz, ringback 440 + 480 Hz, busy
 480 + 620 Hz, and the three rising special information tones for an unreachable number. Looping tones are cut to a
@@ -119,7 +119,7 @@ def squelch():
     noise = rng.normal(0, 1, len(x))
     spectrum = np.fft.rfft(noise)
     freqs = np.fft.rfftfreq(len(noise), 1 / RATE)
-    # The same band as a radio channel at Medium (DESIGN.md 4.3), so it sounds like the channel it closes.
+    # The same band as a radio channel at Medium, so it sounds like the channel it closes.
     spectrum[(freqs < 300) | (freqs > 3400)] = 0
     hiss = np.fft.irfft(spectrum, len(noise))
     envelope = np.minimum(1, x / 0.004) * np.exp(-x / 0.06)

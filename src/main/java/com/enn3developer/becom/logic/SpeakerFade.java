@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic;
 
 /**
- * How a BeCom speaker gets quieter with distance (DESIGN.md 13.5): a walkie's (D21), or a Transceiver's or Videophone's
+ * How a BeCom speaker gets quieter with distance: a walkie's, or a Transceiver's or Videophone's
  * loudspeaker. The server stops sending at the speaker's range, and voice's own falloff alone would still leave a
  * walkie at about -16 dB there, so each client fades the frame on top of it, to silence at the range.
  * <p>

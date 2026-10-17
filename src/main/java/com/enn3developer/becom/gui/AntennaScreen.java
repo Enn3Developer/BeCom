@@ -39,8 +39,8 @@ import com.enn3developer.becom.server.Ownership;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The antenna screen (DESIGN.md 11.4, 12.2): its state, its links to other antennas on each band, its bridges onto
- * wired lines, the team lock its owner can set, and its coverage map (DESIGN.md 6.6) on either band.
+ * The antenna screen: its state, its links to other antennas on each band, its bridges onto
+ * wired lines, the team lock its owner can set, and its coverage map on either band.
  */
 public final class AntennaScreen {
 
@@ -214,7 +214,7 @@ public final class AntennaScreen {
     }
 
     /**
-     * A band's level and SNR, or a dash below Low. Radio channels stop at Medium (D10); calls go as high as the link.
+     * A band's level and SNR, or a dash below Low. Radio channels stop at Medium; calls go as high as the link.
      */
     private static String band(double snr, SignalLevel cap) {
         LevelScale scale = BeComConfig.get()
@@ -257,7 +257,7 @@ public final class AntennaScreen {
         return pager;
     }
 
-    /** Server side: only the owner, their team or an operator may lock (DESIGN.md 12.2, D38). */
+    /** Server side: only the owner, their team or an operator may lock. */
     public static void setLocked(MTEAntenna antenna, EntityPlayer player, boolean locked) {
         IGregTechTileEntity tile = antenna.getBaseMetaTileEntity();
         if (tile == null || tile.isDead() || !Ownership.mayManage(player, antenna.owner())) return;

@@ -8,7 +8,9 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import org.junit.jupiter.api.Test;
 
-/** DESIGN.md 14.2 in compounds BeCom shares with GT and IC2: a format version, and newer keys kept as they were. */
+/**
+ * Saved-data versioning in compounds BeCom shares with GT and IC2: a format version, and newer keys kept as they were.
+ */
 class BeComNbtTest {
 
     @Test

@@ -22,8 +22,8 @@ import com.enn3developer.gtnhvoice.api.server.group.RoutingContext;
 import com.enn3developer.gtnhvoice.api.server.group.RoutingTestKit;
 
 /**
- * DESIGN.md 13.3: who gets each radio frame and how. Flat to walkie holders, positional around receiving walkies
- * (D21) and Transceivers, nothing for direct hearers (D17), the capture rule (D24) and dropouts.
+ * Who gets each radio frame and how. Flat to walkie holders, positional around receiving walkies
+ * and Transceivers, nothing for direct hearers, the capture rule and dropouts.
  */
 class RadioGroupTest {
 
@@ -193,7 +193,7 @@ class RadioGroupTest {
 
     @Test
     void aSpeakerWhosePositionIsntANumberIsHeardInPersonByNobody() {
-        // Nobody can be close enough to hear a speaker with no position (D17), so BeCom carries Alice to Bob's walkie,
+        // Nobody can be close enough to hear a speaker with no position, so BeCom carries Alice to Bob's walkie,
         // 5 blocks from the origin, and around it.
         UUID alice = fixture.player("alice", Double.NaN, Double.NaN, Double.NaN, 0);
         UUID bob = fixture.player("bob", 5, 64, 0, 0);
@@ -299,7 +299,7 @@ class RadioGroupTest {
     @Test
     void aWalkiesFramesNeverPlayFromABlocksMiddleAndATransceiversAlwaysDo() {
         // A client fades a radio frame from a block's middle over a loudspeaker's range, and any other over a
-        // walkie's (DESIGN.md 13.5). Bob stands on a slab at a block's middle, Close by him, Dan by a Transceiver.
+        // walkie's. Bob stands on a slab at a block's middle, Close by him, Dan by a Transceiver.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID bob = fixture.player("bob", 100.5, 64.5, 0.5, 0);
         UUID close = fixture.player("close", 103, 64, 0, 0);
@@ -668,7 +668,8 @@ class RadioGroupTest {
 
     @Test
     void aListenerHearsOneSpeakerWhicheverDeviceTheirAudioComesThrough() {
-        // D24 is per listener: Bob's own walkie holds Alice, Dan's walkie 4 blocks away is taken by Cat. Bob must not
+        // One speaker per listener: Bob's own walkie holds Alice, Dan's walkie 4 blocks away is taken by Cat. Bob must
+        // not
         // hear Cat through Dan's walkie while Alice has him.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID cat = fixture.player("cat", 300, 64, 0, 0);
@@ -837,7 +838,7 @@ class RadioGroupTest {
 
     @Test
     void someoneHearingTheSpeakerInPersonDoesntHearASecondOneOnTheRadio() {
-        // Bob stands 12 blocks from Alice and hears her directly (D17); Cat reaches Dan's walkie, 5 blocks from Bob.
+        // Bob stands 12 blocks from Alice and hears her directly; Cat reaches Dan's walkie, 5 blocks from Bob.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID cat = fixture.player("cat", 300, 64, 0, 0);
         UUID bob = fixture.player("bob", 12, 64, 0, 0);
@@ -867,7 +868,7 @@ class RadioGroupTest {
     @Test
     void aListenerGetsTheLevelOfTheDeviceTheyActuallyHear() {
         // Bob's own walkie holds Alice, so Cat reaches him only through Dan's walkie: Cat's level for Bob is that
-        // walkie's (DESIGN.md 13.5).
+        // walkie's.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID cat = fixture.player("cat", 300, 64, 0, 0);
         UUID bob = fixture.player("bob", 100, 64, 0, 0);
@@ -924,7 +925,8 @@ class RadioGroupTest {
 
     @Test
     void aStrongerSpeakerTakingADeviceGetsItsLevel() {
-        // Cat holds Bob's walkie at 7 dB when Alice keys up at 20: her first frame takes the walkie (D24's margin), so
+        // Cat holds Bob's walkie at 7 dB when Alice keys up at 20: her first frame takes the walkie (the takeover
+        // margin), so
         // her level for Bob is the walkie's, though its hold on Cat hasn't run out.
         UUID alice = fixture.player("alice", 0, 64, 0, 0);
         UUID cat = fixture.player("cat", 300, 64, 0, 0);
