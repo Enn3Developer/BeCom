@@ -16,6 +16,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
@@ -130,6 +131,9 @@ public final class SelfTest {
     private static final int GROUP_GAP = 80;
     static final int TICKS_PER_SECOND = 20;
     private static final String RELOAD_DATABASE = "becom_selftest_reload";
+    // The first-call quest's reward items from other mods (DESIGN.md 15.5): each is left out where it isn't installed.
+    private static final String LOOTBAG = "enhancedlootbags:lootbag";
+    private static final String LV_COIN = "dreamcraft:CoinTechnician";
     // Enough for every machine to tick, form, scan its cable and send heartbeats, with the 2 s offline window.
     static final int SETTLE_TICKS = 60;
     private static final int TALLEST_STACK = 11;
@@ -1307,14 +1311,19 @@ public final class SelfTest {
             "...with players' progress",
             back != null && Boolean.TRUE.equals(invoke(back, "isComplete", questProbe)),
             "");
-        // Put back from BeCom's files just now, whatever an earlier run left in this world's quest book. The dev
-        // server has neither Enhanced Loot Bags nor the coins' mod, so only BeCom's own option stays (D51, X41).
+        // Put back from BeCom's files just now, whatever an earlier run left in this world's quest book, with each
+        // reward item that isn't installed left out (D51, X41). The dev runs have Enhanced Loot Bags and the coins'
+        // mod, but a server may lack either.
         Object rewards = invoke(quests, "rewardsOf", QuestTask.FIRST_CALL);
+        List<String> expected = new ArrayList<>();
+        if (Item.itemRegistry.getObject(LOOTBAG) != null) expected.add("bq_standard:item " + LOOTBAG);
+        expected.add(
+            "bq_standard:choice " + (Item.itemRegistry.getObject(LV_COIN) != null ? LV_COIN + " " : "")
+                + "gregtech:gt.blockmachines");
         check(
             "...and the first-call quest offers its coins as a choice against two Pylon Heads, without what isn't"
                 + " installed",
-            List.of("bq_standard:choice gregtech:gt.blockmachines")
-                .equals(rewards),
+            expected.equals(rewards),
             String.valueOf(rewards));
         deleteTree(
             new File(
