@@ -313,6 +313,11 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         if (tooNew != null) info.add("becom.info.too_new");
         info.add(working ? "becom.info.online" : "becom.info.offline");
         info.add(meOnline() ? "becom.info.me_online" : "becom.info.me_offline");
+        InfoLines.calls(
+            info,
+            getBaseMetaTileEntity(),
+            BeComConfig.get()
+                .meBridgeCalls());
         return info;
     }
 

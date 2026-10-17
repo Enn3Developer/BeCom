@@ -73,11 +73,12 @@ telefono la mostra a tutto schermo, accende o spegne ogni fotocamera, e nasconde
 
 Il <ItemLink id="becom:me_phone" showIcon="left">Telefono ME</ItemLink> è un Telefono cellulare collegato a una rete ME.
 Collegalo a un Terminale di sicurezza ME, come un Terminale wireless: ha servizio al livello Massimo ovunque arrivino i
-Punti d'accesso wireless ME di quella rete, e da nessun'altra parte, perché antenne e satelliti non lo servono. I
-Telefoni ME della stessa rete ME si chiamano senza antenne. Si carica in un Caricatore.
+Punti d'accesso wireless ME di quella rete. Fuori da quella portata è un Telefono cellulare: lo servono antenne e
+satelliti, con il segnale di un Telefono cellulare, fino all'Alto. I Telefoni ME della stessa rete ME si chiamano senza
+antenne. Si carica in un Caricatore.
 
 Per chiamare qualsiasi altro telefono, la rete ME vuole un
 <ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left">Ponte ME</ItemLink>: mettilo su un cavo ME, dove prende
-un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea o un'antenna entro 16 blocchi. Usa
-512 EU/t, e unisce le due reti al livello Massimo. Una rete ME porta le chiamate solo all'interno di ciascuna
+un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea, una Centrale o un'antenna entro 16
+blocchi. Usa 512 EU/t, unisce le due reti al livello Massimo e porta 8 chiamate insieme. Una rete ME porta le chiamate solo all'interno di ciascuna
 dimensione.

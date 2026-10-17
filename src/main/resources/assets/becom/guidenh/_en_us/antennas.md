@@ -16,7 +16,7 @@ quest_ids:
 
 # Antennas
 
-An antenna serves every radio and phone in its reach, ME Phones aside, repeats all 16 radio channels, links to other
+An antenna serves every radio and phone in its reach, ME Phones in their ME network's range aside, repeats all 16 radio channels, links to other
 antennas, and carries the lines bridged onto it.
 
 ## Building one

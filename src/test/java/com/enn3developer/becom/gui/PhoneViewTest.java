@@ -47,7 +47,9 @@ class PhoneViewTest {
                 new PhoneView.Member(123_456, "bob", SignalLevel.LOW, false),
                 new PhoneView.Member(222_222, "carol", SignalLevel.NONE, true)),
             false,
-            new PhoneView.Video(true, false, true, true, true));
+            new PhoneView.Video(true, false, true, true, true),
+            new PhoneView.Battery(744_000, 1_200_000, 155, 39, true, List.of(42, 24, 21, 9, 4), false, true, true),
+            new PhoneView.Via(PhoneView.Via.Kind.ANTENNA, 2));
     }
 
     private static PhoneView roundTrip(PhoneView view) {

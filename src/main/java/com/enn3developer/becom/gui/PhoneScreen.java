@@ -23,14 +23,16 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.phone.BatteryUse;
 import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
 
 /**
  * The phone screen (DESIGN.md 11.2): keypad, contacts, recent and missed calls, everyone in the call, video, and
- * settings, with the call's state on top. The same screen for a Telephone, a Videophone and a carried phone, which adds
- * power and silent mode. Built on both sides; the server registers the actions and checks each one, the client only
- * draws and asks.
+ * settings, with the call's state on top. A Telephone and a Videophone show them as tabs. A carried phone is a phone:
+ * a status bar with the time, its signal and its charge, a home screen of apps, each opening full screen, and Back and
+ * Home buttons below; it adds power and silent mode, a Battery page and a Signal page. Built on both sides; the server
+ * registers the actions and checks each one, the client only draws and asks.
  */
 public final class PhoneScreen {
 
@@ -60,6 +62,20 @@ public final class PhoneScreen {
     private static final String SILENT = "silent";
     private static final String FRONT = "front";
     private static final String REAR = "rear";
+    private static final String SAVER = "saver";
+    private static final String WARN = "warn";
+    // A carried phone's pages after the six it shares with the desk phones, and the page each goes back to.
+    private static final int SETTINGS_PAGE = 5;
+    private static final int HOME_PAGE = 6;
+    private static final int BATTERY_PAGE = 7;
+    private static final int SIGNAL_PAGE = 8;
+    private static final String[] PAGE_NAMES = { "keypad", "contacts", "recent", "call", "video", "settings", "home",
+        "battery", "signal" };
+    // The home screen's apps, in order, by page.
+    private static final int[] APPS = { 0, 1, 2, 3, 4, SIGNAL_PAGE, SETTINGS_PAGE, BATTERY_PAGE };
+    private static final int APP_COLUMNS = 3;
+    private static final int APP_HEIGHT = 20;
+    private static final long TICKS_PER_DAY = 24_000;
     private static final int TOGGLE_HEIGHT = 14;
 
     private PhoneScreen() {}
@@ -117,9 +133,21 @@ public final class PhoneScreen {
             true,
             buf -> PhoneScreenActions.unblock(player, tile, new UUID(buf.readLong(), buf.readLong())));
 
+        sync.registerSyncedAction(
+            SAVER,
+            false,
+            true,
+            buf -> PhoneScreenActions.setSaver(player, tile, buf.readBoolean()));
+        sync.registerSyncedAction(
+            WARN,
+            false,
+            true,
+            buf -> PhoneScreenActions.setWarns(player, tile, buf.readBoolean()));
+
         Supplier<PhoneView> view = viewSync::view;
         StringBuilder typed = new StringBuilder();
         PagedWidget.Controller tabs = new PagedWidget.Controller();
+        if (tile instanceof PhoneHandle.CarriedPhone) return shell(sync, view, typed, tabs, player);
 
         ModularPanel panel = new ModularPanel("becom_phone").size(WIDTH, HEIGHT);
         Flow column = Flow.column()
@@ -172,70 +200,415 @@ public final class PhoneScreen {
         }
         column.child(tabRow);
         column.child(
-            new PagedWidget<>().controller(tabs)
+            pages(sync, view, typed, tabs, HEIGHT - 12 - 10 - 10 - 14 - 9)
                 // During a video call the screen opens on the video, full size (D44).
-                .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : 0)
-                .widthRel(1f)
-                .height(HEIGHT - 12 - 10 - 10 - 14 - 9)
-                .addPage(keypad(sync, view, typed))
-                .addPage(
-                    rows(
-                        sync,
-                        () -> view.get()
-                            .contacts()
-                            .size(),
-                        i -> {
-                            PhoneView.Contact c = view.get()
-                                .contacts()
-                                .get(i);
-                            return c.name() + "  " + c.number();
-                        },
-                        i -> view.get()
-                            .contacts()
-                            .get(i)
-                            .number(),
-                        (i, n) -> sync.callSyncedAction(BLOCK_CONTACT, buf -> buf.writeInt(n)),
-                        view))
-                .addPage(
-                    rows(
-                        sync,
-                        () -> view.get()
-                            .recent()
-                            .size(),
-                        i -> {
-                            PhoneView.Recent r = view.get()
-                                .recent()
-                                .get(i);
-                            return StatCollector.translateToLocal(
-                                "becom.phone.recent." + r.direction()
-                                    .name()
-                                    .toLowerCase(java.util.Locale.ROOT))
-                                + " "
-                                + r.name()
-                                + "  "
-                                + r.number();
-                        },
-                        i -> view.get()
-                            .recent()
-                            .get(i)
-                            .number(),
-                        (i, n) -> {
-                            long time = view.get()
-                                .recent()
-                                .get(i)
-                                .time();
-                            sync.callSyncedAction(BLOCK_RECENT, buf -> {
-                                buf.writeLong(time);
-                                buf.writeInt(n);
-                            });
-                        },
-                        view))
-                .addPage(members(view))
-                .addPage(video(sync, view))
-                .addPage(settings(sync, view)));
+                .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : 0));
         panel.child(column);
         return panel;
     }
+
+    /** The six pages every phone has, in tab order. */
+    private static PagedWidget<?> pages(PanelSyncManager sync, Supplier<PhoneView> view, StringBuilder typed,
+        PagedWidget.Controller tabs, int height) {
+        return new PagedWidget<>().controller(tabs)
+            .widthRel(1f)
+            .height(height)
+            .addPage(keypad(sync, view, typed))
+            .addPage(
+                rows(
+                    sync,
+                    () -> view.get()
+                        .contacts()
+                        .size(),
+                    i -> {
+                        PhoneView.Contact c = view.get()
+                            .contacts()
+                            .get(i);
+                        return c.name() + "  " + c.number();
+                    },
+                    i -> view.get()
+                        .contacts()
+                        .get(i)
+                        .number(),
+                    (i, n) -> sync.callSyncedAction(BLOCK_CONTACT, buf -> buf.writeInt(n)),
+                    view))
+            .addPage(
+                rows(
+                    sync,
+                    () -> view.get()
+                        .recent()
+                        .size(),
+                    i -> {
+                        PhoneView.Recent r = view.get()
+                            .recent()
+                            .get(i);
+                        return StatCollector.translateToLocal(
+                            "becom.phone.recent." + r.direction()
+                                .name()
+                                .toLowerCase(java.util.Locale.ROOT))
+                            + " "
+                            + r.name()
+                            + "  "
+                            + r.number();
+                    },
+                    i -> view.get()
+                        .recent()
+                        .get(i)
+                        .number(),
+                    (i, n) -> {
+                        long time = view.get()
+                            .recent()
+                            .get(i)
+                            .time();
+                        sync.callSyncedAction(BLOCK_RECENT, buf -> {
+                            buf.writeLong(time);
+                            buf.writeInt(n);
+                        });
+                    },
+                    view))
+            .addPage(members(view))
+            .addPage(video(sync, view))
+            .addPage(settings(sync, view));
+    }
+
+    // region Carried phone
+
+    /** A carried phone's screen: status bar, the open app's name, the app, and Back and Home. */
+    private static ModularPanel shell(PanelSyncManager sync, Supplier<PhoneView> view, StringBuilder typed,
+        PagedWidget.Controller pages, EntityPlayer player) {
+        ModularPanel panel = new ModularPanel("becom_phone").size(WIDTH, HEIGHT);
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .padding(6, 6, 6, 6)
+            .childPadding(3);
+        Flow statusBar = Flow.row()
+            .widthRel(1f)
+            .height(10);
+        int side = 40;
+        statusBar.child(
+            IKey.dynamic(() -> clock(player))
+                .asWidget()
+                .width(side)
+                .height(10));
+        statusBar.child(
+            IKey.dynamic(() -> statusLine(view.get()))
+                .asWidget()
+                .width(WIDTH - 12 - 2 * side - BARS_WIDTH)
+                .height(10));
+        statusBar.child(
+            BeCom.proxy.signalBars(
+                () -> view.get()
+                    .state() == PhoneView.State.CONNECTED ? view.get()
+                        .hearing()
+                        : view.get()
+                            .service())
+                .asWidget()
+                .size(BARS_WIDTH, 10));
+        statusBar.child(IKey.dynamic(() -> {
+            PhoneView.Battery battery = view.get()
+                .battery();
+            return battery.max() <= 0 ? "" : battery.percent() + "%" + (battery.charging() ? "+" : "");
+        })
+            .alignment(com.cleanroommc.modularui.utils.Alignment.CenterRight)
+            .asWidget()
+            .width(side)
+            .height(10));
+        column.child(statusBar);
+        column.child(IKey.dynamic(() -> {
+            int page = pages.isInitialised() ? pages.getActivePageIndex() : HOME_PAGE;
+            if (page == HOME_PAGE) return "";
+            String name = StatCollector.translateToLocal("becom.phone.app." + PAGE_NAMES[page]);
+            return page == BATTERY_PAGE
+                ? StatCollector.translateToLocalFormatted("becom.phone.app.sub", app(SETTINGS_PAGE), name)
+                : name;
+        })
+            .asWidget()
+            .widthRel(1f)
+            .height(10));
+        int pageHeight = HEIGHT - 12 - 10 - 10 - 14 - 9;
+        PagedWidget<?> screen = pages(sync, view, typed, pages, pageHeight)
+            // During a video call the screen opens on the video, full size (D44).
+            .initialPage(BeCom.proxy.inVideoCall() ? VIDEO_PAGE : HOME_PAGE);
+        screen.addPage(home(sync, view, pages, player));
+        screen.addPage(battery(sync, view));
+        screen.addPage(signal(view));
+        column.child(screen);
+        // The phone's two hardware buttons.
+        Flow buttons = Flow.row()
+            .widthRel(1f)
+            .height(14)
+            .childPadding(2);
+        int half = (WIDTH - 12 - 2) / 2;
+        buttons.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.lang("becom.phone.back"))
+                .onMousePressed(button -> {
+                    if (pages.isInitialised()) pages.setPage(parent(pages.getActivePageIndex()));
+                    return true;
+                }));
+        buttons.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.lang("becom.phone.home"))
+                .onMousePressed(button -> {
+                    if (pages.isInitialised()) pages.setPage(HOME_PAGE);
+                    return true;
+                }));
+        column.child(buttons);
+        panel.child(column);
+        return panel;
+    }
+
+    /** Where Back goes from a page: Battery to Settings, everything else home. */
+    private static int parent(int page) {
+        return page == BATTERY_PAGE ? SETTINGS_PAGE : HOME_PAGE;
+    }
+
+    private static String app(int page) {
+        return StatCollector.translateToLocal("becom.phone.app." + PAGE_NAMES[page]);
+    }
+
+    /** The time of day where the player is, as a 24-hour clock: Minecraft's day starts at 06:00. */
+    private static String clock(EntityPlayer player) {
+        long time = Math.floorMod(player.worldObj.getWorldTime() + 6000, TICKS_PER_DAY);
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", time / 1000, time % 1000 * 60 / 1000);
+    }
+
+    /** The status bar's middle: the call while there is one, else nothing, as the home screen says the rest. */
+    private static String statusLine(PhoneView view) {
+        return switch (view.state()) {
+            case RINGING_IN, RINGING_OUT, CONNECTED -> status(view);
+            default -> "";
+        };
+    }
+
+    /** The home screen: the day and the number, the phone's state, answer and hang up, and the apps. */
+    private static ParentWidget<?> home(PanelSyncManager sync, Supplier<PhoneView> view, PagedWidget.Controller pages,
+        EntityPlayer player) {
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .childPadding(2);
+        column.child(
+            IKey.dynamic(
+                () -> StatCollector.translateToLocalFormatted(
+                    "becom.phone.home.day",
+                    player.worldObj.getWorldTime() / TICKS_PER_DAY + 1,
+                    view.get()
+                        .number() < 0 ? "-"
+                            : String.valueOf(
+                                view.get()
+                                    .number())))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        column.child(
+            IKey.dynamic(() -> status(view.get()))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        int half = (WIDTH - 12 - 2) / 2;
+        Flow callRow = Flow.row()
+            .widthRel(1f)
+            .height(14)
+            .childPadding(2);
+        callRow.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.lang("becom.phone.answer"))
+                .setEnabledIf(
+                    w -> view.get()
+                        .state() == PhoneView.State.RINGING_IN)
+                .onMousePressed(button -> {
+                    sync.callSyncedAction(PICK_UP, buf -> {});
+                    return true;
+                }));
+        callRow.child(
+            new ButtonWidget<>().size(half, 14)
+                .overlay(IKey.lang("becom.phone.hang_up"))
+                .setEnabledIf(w -> {
+                    PhoneView.State state = view.get()
+                        .state();
+                    return state == PhoneView.State.RINGING_IN || state == PhoneView.State.RINGING_OUT
+                        || state == PhoneView.State.CONNECTED;
+                })
+                .onMousePressed(button -> {
+                    sync.callSyncedAction(HANG_UP, buf -> {});
+                    return true;
+                }));
+        column.child(callRow);
+        int width = (WIDTH - 12 - 2 * (APP_COLUMNS - 1)) / APP_COLUMNS;
+        Flow row = null;
+        for (int i = 0; i < APPS.length; i++) {
+            if (i % APP_COLUMNS == 0) {
+                row = Flow.row()
+                    .widthRel(1f)
+                    .height(APP_HEIGHT)
+                    .childPadding(2);
+                column.child(row);
+            }
+            int page = APPS[i];
+            row.child(
+                new ButtonWidget<>().size(width, APP_HEIGHT)
+                    .overlay(IKey.lang("becom.phone.app." + PAGE_NAMES[page]))
+                    .onMousePressed(button -> {
+                        if (pages.isInitialised()) pages.setPage(page);
+                        return true;
+                    }));
+        }
+        return column;
+    }
+
+    /** Settings › Battery: the charge, how long it lasts, where it went today, and the saver and warnings. */
+    private static ParentWidget<?> battery(PanelSyncManager sync, Supplier<PhoneView> view) {
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .childPadding(1);
+        column.child(IKey.dynamic(() -> {
+            PhoneView.Battery b = view.get()
+                .battery();
+            return StatCollector
+                .translateToLocalFormatted("becom.phone.battery.charge", b.percent(), eu(b.charge()), eu(b.max()));
+        })
+            .asWidget()
+            .widthRel(1f)
+            .height(10));
+        column.child(IKey.dynamic(() -> {
+            PhoneView.Battery b = view.get()
+                .battery();
+            return StatCollector.translateToLocalFormatted(
+                "becom.phone.battery.lasts",
+                duration(b.standbyMinutes()),
+                duration(b.callMinutes()));
+        })
+            .asWidget()
+            .widthRel(1f)
+            .height(10));
+        column.child(
+            IKey.dynamic(
+                () -> StatCollector.translateToLocal(
+                    view.get()
+                        .battery()
+                        .charging() ? "becom.phone.battery.charging" : "becom.phone.battery.not_charging"))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        column.child(
+            IKey.lang("becom.phone.battery.today")
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        BatteryUse.Use[] uses = BatteryUse.Use.values();
+        for (BatteryUse.Use use : uses) {
+            column.child(IKey.dynamic(() -> {
+                List<Integer> shares = view.get()
+                    .battery()
+                    .shares();
+                int share = use.ordinal() < shares.size() ? shares.get(use.ordinal()) : 0;
+                return StatCollector.translateToLocalFormatted(
+                    "becom.phone.battery.use",
+                    StatCollector.translateToLocal(
+                        "becom.phone.battery.use." + use.name()
+                            .toLowerCase(java.util.Locale.ROOT)),
+                    share,
+                    bar(share));
+            })
+                .asWidget()
+                .widthRel(1f)
+                .height(9));
+        }
+        column.child(
+            new ToggleButton().size(WIDTH - 12, 14)
+                .overlay(
+                    IKey.dynamic(
+                        () -> StatCollector.translateToLocal(
+                            view.get()
+                                .battery()
+                                .saving()
+                                && !view.get()
+                                    .battery()
+                                    .saver() ? "becom.phone.battery.saver_auto" : "becom.phone.battery.saver")))
+                .value(
+                    new BoolValue.Dynamic(
+                        () -> view.get()
+                            .battery()
+                            .saver(),
+                        on -> sync.callSyncedAction(SAVER, buf -> buf.writeBoolean(on)))));
+        column.child(
+            new ToggleButton().size(WIDTH - 12, 14)
+                .overlay(IKey.lang("becom.phone.battery.warn"))
+                .value(
+                    new BoolValue.Dynamic(
+                        () -> view.get()
+                            .battery()
+                            .warns(),
+                        on -> sync.callSyncedAction(WARN, buf -> buf.writeBoolean(on)))));
+        return column;
+    }
+
+    /** EU as the battery page writes it: 744k, 1.2M. */
+    private static String eu(long eu) {
+        if (eu >= 1_000_000) return String.format(java.util.Locale.ROOT, "%.1fM", eu / 1_000_000.0);
+        if (eu >= 1_000) return eu / 1_000 + "k";
+        return String.valueOf(eu);
+    }
+
+    /** Minutes as hours and minutes, or "ever" for a drain of nothing. */
+    private static String duration(long minutes) {
+        if (minutes < 0) return StatCollector.translateToLocal("becom.phone.battery.forever");
+        if (minutes < 60) return StatCollector.translateToLocalFormatted("becom.phone.battery.minutes", minutes);
+        return StatCollector.translateToLocalFormatted("becom.phone.battery.hours", minutes / 60, minutes % 60);
+    }
+
+    /** A share as a bar of up to ten blocks. */
+    private static String bar(int share) {
+        return "|".repeat(Math.max(0, Math.min(10, (share + 5) / 10)));
+    }
+
+    /** The Signal app: the level, what it comes through, and the phone's number. */
+    private static ParentWidget<?> signal(Supplier<PhoneView> view) {
+        Flow column = Flow.column()
+            .sizeRel(1f)
+            .childPadding(2);
+        column.child(
+            IKey.dynamic(
+                () -> StatCollector.translateToLocalFormatted(
+                    "becom.phone.signal.level",
+                    StatCollector.translateToLocal(
+                        "becom.level." + view.get()
+                            .service()
+                            .name()
+                            .toLowerCase(java.util.Locale.ROOT))))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        column.child(IKey.dynamic(() -> {
+            PhoneView.Via via = view.get()
+                .via();
+            return switch (via.kind()) {
+                case NONE -> StatCollector.translateToLocal("becom.phone.signal.via.none");
+                case ANTENNA -> StatCollector.translateToLocalFormatted("becom.phone.signal.via.antenna", via.tier());
+                case SATELLITES -> StatCollector.translateToLocal("becom.phone.signal.via.satellites");
+                case ME_NETWORK -> StatCollector.translateToLocal("becom.phone.signal.via.me_network");
+            };
+        })
+            .asWidget()
+            .widthRel(1f)
+            .height(10));
+        column.child(
+            IKey.dynamic(
+                () -> view.get()
+                    .number() < 0 ? ""
+                        : StatCollector.translateToLocalFormatted(
+                            "becom.phone.title",
+                            view.get()
+                                .number(),
+                            view.get()
+                                .owner()))
+                .asWidget()
+                .widthRel(1f)
+                .height(10));
+        return column;
+    }
+
+    // endregion
 
     private static String status(PhoneView view) {
         String other = view.otherName()

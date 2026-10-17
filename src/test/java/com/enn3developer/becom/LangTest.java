@@ -103,7 +103,7 @@ class LangTest {
         for (LinkRules.Result result : LinkRules.Result.values()) {
             if (result != LinkRules.Result.OK) wanted.add("becom.link.refused." + lower(result));
         }
-        for (NodeKind kind : List.of(NodeKind.PYLON, NodeKind.REPEATER, NodeKind.ROUTER)) {
+        for (NodeKind kind : List.of(NodeKind.PYLON, NodeKind.EXCHANGE)) {
             wanted.add("becom.machine." + lower(kind) + ".type");
             wanted.add("becom.machine." + lower(kind) + ".info");
         }

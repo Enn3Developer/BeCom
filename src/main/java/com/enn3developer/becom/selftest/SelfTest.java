@@ -36,6 +36,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.block.WailaTelephone;
 import com.enn3developer.becom.config.BeComConfig;
@@ -47,9 +48,8 @@ import com.enn3developer.becom.gui.AntennaView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
+import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
-import com.enn3developer.becom.logic.DropoutModel;
-import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Slots;
 import com.enn3developer.becom.logic.SpeakerFade;
@@ -57,9 +57,11 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
@@ -71,6 +73,7 @@ import com.enn3developer.becom.logic.video.VideoPlan;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.InfoLines;
 import com.enn3developer.becom.machine.MTEAntenna;
+import com.enn3developer.becom.machine.MTEExchange;
 import com.enn3developer.becom.machine.MTELineTerminal;
 import com.enn3developer.becom.machine.MTEMeBridge;
 import com.enn3developer.becom.machine.MTEPylonHead;
@@ -84,6 +87,7 @@ import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.CarriedPhones;
 import com.enn3developer.becom.server.LinkService;
+import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.Ownership;
 import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneScreenActions;
@@ -163,17 +167,20 @@ public final class SelfTest {
     private int failed;
 
     // What the steps build and later check.
-    private final Line repeaterLine = new Line();
-    private final Line passive260 = new Line();
-    private final Line passive310 = new Line();
-    private MTEPylonHead powerRepeater;
-    private MTEPylonHead powerRouter;
+    private final Line phoneLine = new Line();
+    private final Line exchangeLine = new Line();
+    private MTEExchange exchange;
+    private MTELineTerminal deviceTerminal;
+    private MTELineTerminal nearTerminal;
+    private final List<TileTelephone> devicePhones = new ArrayList<>();
     private MTEPylonHead shortPylon;
     private MTEPylonHead minPylon;
     private MTEPylonHead clearA;
     private MTEPylonHead clearB;
-    private MTEPylonHead autoA;
-    private MTEPylonHead autoB;
+    private MTEPylonHead bundleA;
+    private MTEPylonHead bundleB;
+    /** Strings a span with cable from their own pocket: the owner, who strings the rest, never runs out. */
+    private FakePlayer rigger;
     private UUID questProbe;
 
     // 0.2's radio checks, in their own areas: two T1 antennas with a line bridged onto each, and the walkies that talk
@@ -253,13 +260,14 @@ public final class SelfTest {
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::formAndLink);
-        steps.add(this::checkHatchPower);
-        steps.add(this::checkRouterWithHatch);
         steps.add(this::checkStructuresAndLines);
+        steps.add(this::checkLineReach);
+        steps.add(this::checkExchange);
+        steps.add(this::checkExchangeWithRack);
         steps.add(this::checkWaila);
         steps.add(this::checkCall);
-        steps.add(this::switchRepeaterOff);
-        steps.add(this::checkRepeaterOff);
+        steps.add(this::switchTerminalOff);
+        steps.add(this::checkTerminalOff);
         steps.add(this::checkQuests);
         steps.add(this::checkQuestReload);
         steps.add(this::checkQuestRefresh);
@@ -552,14 +560,20 @@ public final class SelfTest {
         check("assembler makes Phone Cable x2", cable, "");
         checkCableRecipeDoesNotShadowGt();
         check("assembler makes the Telephone", telephone, "");
-        for (MTEPylonHead head : List
-            .of(BeComMachines.pylonHead, BeComMachines.repeaterHead, BeComMachines.routerHead)) {
-            check("crafting recipe for " + head.getMetaName(), hasCraftingRecipe(head.getStackForm(1)), "");
+        for (IMetaTileEntity machine : List.of(
+            BeComMachines.pylonHead,
+            BeComMachines.lineTerminal,
+            BeComMachines.lineTerminalMV,
+            BeComMachines.lineTerminalHV,
+            BeComMachines.exchange)) {
+            check("crafting recipe for " + machine.getMetaName(), hasCraftingRecipe(machine.getStackForm(1)), "");
         }
-        check(
-            "crafting recipe for " + BeComMachines.lineTerminal.getMetaName(),
-            hasCraftingRecipe(BeComMachines.lineTerminal.getStackForm(1)),
-            "");
+        for (CableTier tier : CableTier.values()) {
+            check(
+                "assembler makes " + tier.configName() + " cable, and Switching Racks of " + tier.voltage(),
+                assembles(BlockPhoneCable.stack(tier, 2)) && assembles(ItemSwitchingRack.stack(tier, 1)),
+                "");
+        }
         return 1;
     }
 
@@ -572,7 +586,9 @@ public final class SelfTest {
         GTRecipe phoneCable = null;
         for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
             for (ItemStack out : recipe.mOutputs) {
-                if (out != null && out.getItem() == itemOf(BeComBlocks.phoneCable)) phoneCable = recipe;
+                // Coaxial and Fibre are the same block at other metadata.
+                if (out != null && out.getItem() == itemOf(BeComBlocks.phoneCable)
+                    && BlockPhoneCable.tierOf(out) == CableTier.PHONE) phoneCable = recipe;
             }
         }
         if (phoneCable == null) {
@@ -606,6 +622,16 @@ public final class SelfTest {
         check("Phone Cable's own inputs make only Phone Cable", ours.size() == 1, matched.toString());
     }
 
+    /** Whether some assembler recipe makes exactly {@code output}, item, damage and count. */
+    private static boolean assembles(ItemStack output) {
+        for (GTRecipe recipe : RecipeMaps.assemblerRecipes.getAllRecipes()) {
+            for (ItemStack out : recipe.mOutputs) {
+                if (out != null && out.isItemEqual(output) && out.stackSize == output.stackSize) return true;
+            }
+        }
+        return false;
+    }
+
     private static net.minecraft.item.Item itemOf(Block block) {
         return net.minecraft.item.Item.getItemFromBlock(block);
     }
@@ -630,23 +656,27 @@ public final class SelfTest {
             }
         }
         clearScratchArea();
+        // The owner strings every span; creative, so the cable it holds never runs out.
+        owner.capabilities.isCreativeMode = true;
+        hold(owner, CableTier.PHONE, 1);
         int z = Z0;
-        // The milestone's "Done when" line: 300 blocks, one repeater halfway, a terminal and Telephone at each end.
-        buildLine(repeaterLine, z, new int[] { 30, 90, 150, 210, 270 }, 300, 2);
+        // 300 blocks of line: too long a run for Phone Cable, until Fibre is strung alongside it.
+        buildLine(phoneLine, z, new int[] { 30, 90, 150, 210, 270 }, 300);
         z += GROUP_GAP;
-        buildLine(passive260, z, new int[] { 50, 110, 170, 230 }, 260, -1);
+        // Two lines of Coaxial into an Exchange halfway between their terminals.
+        buildLine(exchangeLine, z, new int[] { 50, 100, 200, 250 }, 300);
+        exchange = place(BeComMachines.exchange, X0 + 150, Y, z);
+        ((IConstructable) exchange).construct(BeComMachines.exchange.getStackForm(1), false);
+        exchangeHatches(exchange);
         z += GROUP_GAP;
-        buildLine(passive310, z, new int[] { 30, 90, 150, 210, 270 }, 310, -1);
-        z += GROUP_GAP;
-
-        powerRepeater = head(BeComMachines.repeaterHead, X0, Y, z, 1);
-        // Built with casings only; checkHatchPower puts a hatch in once it has seen the head refuse to form.
-        powerRouter = place(BeComMachines.routerHead, X0 + 8, Y, z);
-        // A hatch an earlier run put in its cabinet would form it before checkHatchPower looks.
-        ForgeDirection routerFront = powerRouter.getBaseMetaTileEntity()
-            .getFrontFacing();
-        world.setBlockToAir(X0 + 8 + routerFront.offsetX, Y - poleHeight(1), z + routerFront.offsetZ);
-        ((IConstructable) powerRouter).construct(BeComMachines.routerHead.getStackForm(1), false);
+        // Five Telephones on one LV terminal's cable, and a second terminal at the cable's far end.
+        deviceTerminal = place(BeComMachines.lineTerminal, X0, Y, z);
+        nearTerminal = place(BeComMachines.lineTerminal, X0 + 6, Y, z);
+        powered.add(deviceTerminal.getBaseMetaTileEntity());
+        powered.add(nearTerminal.getBaseMetaTileEntity());
+        devicePhones.clear();
+        for (int i = 0; i <= 6; i++) world.setBlock(X0 + i, Y, z + 1, BeComBlocks.phoneCable);
+        for (int i = 1; i <= 5; i++) devicePhones.add(telephone(X0 + i, Y, z + 2));
         z += GROUP_GAP;
 
         minPylon = head(BeComMachines.pylonHead, X0, Y, z, 1);
@@ -664,9 +694,48 @@ public final class SelfTest {
         world.setBlock(X0 + 20, Y, z, Blocks.stone);
         z += GROUP_GAP;
 
-        autoA = head(BeComMachines.pylonHead, X0, Y, z, TALLEST_STACK);
-        autoB = place(BeComMachines.pylonHead, X0 + 40, Y, z);
+        rigger = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000c1"), "BeComRigger"));
+        Arrays.fill(rigger.inventory.mainInventory, null);
+        rigger.inventory.mainInventory[0] = BlockPhoneCable.stack(CableTier.PHONE, 64);
+        rigger.inventory.mainInventory[9] = BlockPhoneCable.stack(CableTier.FIBRE, 16);
+        bundleA = headAs(rigger, BeComMachines.pylonHead, X0, Y, z, TALLEST_STACK);
+        bundleB = headAs(rigger, BeComMachines.pylonHead, X0 + 40, Y, z, TALLEST_STACK);
         return 2;
+    }
+
+    /** Puts {@code count} cables of a tier in the first hotbar slot, the one a wrench strings spans with. */
+    private static void hold(EntityPlayer player, CableTier tier, int count) {
+        player.inventory.mainInventory[0] = BlockPhoneCable.stack(tier, count);
+    }
+
+    /** How many cables of a tier a player has. */
+    private static int cables(EntityPlayer player, CableTier tier) {
+        int count = 0;
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (BlockPhoneCable.tierOf(stack) == tier) count += stack.stackSize;
+        }
+        return count;
+    }
+
+    /**
+     * An Exchange's energy hatch and input bus, on either side of its controller in place of casings; the test power
+     * supply keeps the hatch full.
+     */
+    private void exchangeHatches(MTEExchange machine) {
+        IGregTechTileEntity tile = machine.getBaseMetaTileEntity();
+        ForgeDirection side = tile.getFrontFacing()
+            .getRotation(ForgeDirection.UP);
+        int x = tile.getXCoord(), y = tile.getYCoord(), z = tile.getZCoord();
+        world.setBlockToAir(x + side.offsetX, y, z + side.offsetZ);
+        world.setBlockToAir(x - side.offsetX, y, z - side.offsetZ);
+        IMetaTileEntity hatch = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
+            .getItemDamage()];
+        IMetaTileEntity bus = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Input_Bus_LV.get(1)
+            .getItemDamage()];
+        powered.add(place(hatch, x + side.offsetX, y, z + side.offsetZ).getBaseMetaTileEntity());
+        place(bus, x - side.offsetX, y, z - side.offsetZ);
+        powered.add(tile);
     }
 
     /**
@@ -682,23 +751,29 @@ public final class SelfTest {
             model.remove(node.pos());
         }
         for (int z = Z0; z <= zEnd; z += GROUP_GAP) {
-            for (int x : new int[] { X0, X0 + 260, X0 + 300, X0 + 310 }) {
+            for (int x = X0; x <= X0 + 6; x++) {
                 world.setBlockToAir(x, Y, z + 2);
                 world.setBlockToAir(x, Y, z + 1);
+            }
+            for (int x : new int[] { X0 + 300 }) {
+                world.setBlockToAir(x, Y, z + 2);
+                world.setBlockToAir(x, Y, z + 1);
+            }
+            // An Exchange an earlier run built, casings and hatches.
+            for (int x = X0 + 149; x <= X0 + 151; x++) {
+                for (int y = Y - 1; y <= Y + 1; y++) for (int dz = -2; dz <= 2; dz++) world.setBlockToAir(x, y, z + dz);
             }
         }
     }
 
     /** Builds one line along x: a terminal at 0, pylon heads at {@code heads}, a terminal at {@code length}. */
-    private void buildLine(Line line, int z, int[] heads, int length, int repeaterAt) {
+    private void buildLine(Line line, int z, int[] heads, int length) {
         line.start = place(BeComMachines.lineTerminal, X0, Y, z);
         line.end = place(BeComMachines.lineTerminal, X0 + length, Y, z);
         powered.add(line.start.getBaseMetaTileEntity());
         powered.add(line.end.getBaseMetaTileEntity());
-        for (int i = 0; i < heads.length; i++) {
-            MTEPylonHead kind = i == repeaterAt ? BeComMachines.repeaterHead : BeComMachines.pylonHead;
-            line.heads.add(head(kind, X0 + heads[i], Y, z, TALLEST_STACK));
-        }
+        line.heads.clear();
+        for (int head : heads) line.heads.add(head(BeComMachines.pylonHead, X0 + head, Y, z, TALLEST_STACK));
         line.phoneStart = telephone(X0, Y, z + 2);
         world.setBlock(X0, Y, z + 1, BeComBlocks.phoneCable);
         line.phoneEnd = telephone(X0 + length, Y, z + 2);
@@ -722,18 +797,14 @@ public final class SelfTest {
         return (T) ((IGregTechTileEntity) tile).getMetaTileEntity();
     }
 
-    /**
-     * Places a head and builds its pole the way the hologram projector does; a Repeater or Router also gets an LV
-     * Energy Hatch in its cabinet, which the test power supply keeps full.
-     */
+    /** Places a head and builds its pole the way the hologram projector does. */
     private MTEPylonHead head(MTEPylonHead machine, int x, int y, int z, int stackSize) {
-        MTEPylonHead head = place(machine, x, y, z);
-        if (stackSize > 0) {
-            ItemStack trigger = machine.getStackForm(stackSize);
-            ((IConstructable) head).construct(trigger, false);
-            if (machine.nodeKind()
-                .powered()) cabinetHatch(head, poleHeight(stackSize));
-        }
+        return headAs(owner, machine, x, y, z, stackSize);
+    }
+
+    private MTEPylonHead headAs(FakePlayer player, MTEPylonHead machine, int x, int y, int z, int stackSize) {
+        MTEPylonHead head = placeAs(machine, x, y, z, player);
+        if (stackSize > 0) ((IConstructable) head).construct(machine.getStackForm(stackSize), false);
         return head;
     }
 
@@ -741,19 +812,6 @@ public final class SelfTest {
     private static int poleHeight(int stackSize) {
         Tunables t = BeComConfig.get();
         return Math.min(t.pylonMaxHeight(), t.pylonMinHeight() + stackSize - 1);
-    }
-
-    /** Puts an energy hatch in the cabinet's lower block in front of the pole's foot, in place of its casing. */
-    private void cabinetHatch(MTEPylonHead head, int poleHeight) {
-        IGregTechTileEntity tile = head.getBaseMetaTileEntity();
-        ForgeDirection front = tile.getFrontFacing();
-        int x = tile.getXCoord() + front.offsetX;
-        int y = tile.getYCoord() - poleHeight;
-        int z = tile.getZCoord() + front.offsetZ;
-        world.setBlockToAir(x, y, z);
-        IMetaTileEntity hatch = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
-            .getItemDamage()];
-        powered.add(place(hatch, x, y, z).getBaseMetaTileEntity());
     }
 
     private TileTelephone telephone(int x, int y, int z) {
@@ -773,19 +831,31 @@ public final class SelfTest {
     }
 
     private int formAndLink() {
-        for (Line line : List.of(repeaterLine, passive260, passive310)) {
+        for (Line line : List.of(phoneLine, exchangeLine)) {
             for (MTEPylonHead head : line.heads) head.refreshStructure();
         }
-        for (MTEPylonHead head : List.of(powerRepeater, powerRouter, minPylon, shortPylon, clearA, clearB, autoA))
+        for (MTEPylonHead head : List.of(minPylon, shortPylon, clearA, clearB, bundleA, bundleB))
             head.refreshStructure();
-        for (Line line : List.of(repeaterLine, passive260, passive310)) {
+        exchange.refreshStructure();
+        for (Line line : List.of(phoneLine, exchangeLine)) {
             line.start.scanCable();
             line.end.scanCable();
-            link(line.start, line.heads.get(0));
-            for (int i = 0; i + 1 < line.heads.size(); i++) link(line.heads.get(i), line.heads.get(i + 1));
-            link(line.heads.get(line.heads.size() - 1), line.end);
         }
+        hold(owner, CableTier.PHONE, 1);
+        stringLine(phoneLine.start, phoneLine.heads, phoneLine.end);
+        hold(owner, CableTier.COAXIAL, 1);
+        List<MTEPylonHead> heads = exchangeLine.heads;
+        stringLine(exchangeLine.start, heads.subList(0, 2), exchange);
+        stringLine(exchange, heads.subList(2, 4), exchangeLine.end);
+        hold(owner, CableTier.FIBRE, 1);
         return SETTLE_TICKS;
+    }
+
+    /** Strings spans from {@code from} over {@code heads} to {@code to} with the cable the owner holds. */
+    private void stringLine(IMetaTileEntity from, List<MTEPylonHead> heads, IMetaTileEntity to) {
+        link(from, heads.get(0));
+        for (int i = 0; i + 1 < heads.size(); i++) link(heads.get(i), heads.get(i + 1));
+        link(heads.get(heads.size() - 1), to);
     }
 
     private static long pos(IMetaTileEntity mte) {
@@ -793,13 +863,18 @@ public final class SelfTest {
         return BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
     }
 
-    /** Links two nodes with the wrench flow, unless forming already linked them. */
+    /** Links two nodes with the wrench flow, unless they're linked already. */
     private LinkService.Outcome link(IMetaTileEntity a, IMetaTileEntity b) {
         NetworkModel model = becom.network.model(world);
         if (model.linked(pos(a), pos(b))) return LinkService.Outcome.LINKED;
-        becom.links.forget(owner.getUniqueID());
-        becom.links.wrench(owner, world, pos(a));
-        return becom.links.wrench(owner, world, pos(b));
+        return wrenchPair(owner, a, b);
+    }
+
+    /** {@code player} wrenches {@code a}, then {@code b}. */
+    private LinkService.Outcome wrenchPair(FakePlayer player, IMetaTileEntity a, IMetaTileEntity b) {
+        becom.links.forget(player.getUniqueID());
+        becom.links.wrench(player, world, pos(a));
+        return becom.links.wrench(player, world, pos(b));
     }
 
     private int checkStructuresAndLines() {
@@ -812,29 +887,46 @@ public final class SelfTest {
             "height " + minPylon.height());
         check("pylon one frame short doesn't form", !shortPylon.refreshStructure(), "height " + shortPylon.height());
         boolean allTall = true;
-        for (MTEPylonHead head : repeaterLine.heads) allTall &= head.height() == t.pylonMaxHeight();
+        for (MTEPylonHead head : phoneLine.heads) allTall &= head.height() == t.pylonMaxHeight();
         check("line pylons of " + t.pylonMaxHeight() + " frames form", allTall, "");
         boolean noProblems = minPylon.getRepairStatus() == minPylon.getIdealStatus();
-        for (MTEPylonHead head : repeaterLine.heads) noProblems &= head.getRepairStatus() == head.getIdealStatus();
-        check("pylon and repeater heads have none of GT's maintenance problems for WAILA to show", noProblems, "");
+        for (MTEPylonHead head : phoneLine.heads) noProblems &= head.getRepairStatus() == head.getIdealStatus();
+        check("pylon heads have none of GT's maintenance problems for WAILA to show", noProblems, "");
 
-        check(
-            "a pylon forming with one pylon in range links to it on its own",
-            model.linked(pos(autoA), pos(autoB)) || formsAndAutoLinks(),
-            "");
-
-        for (Line line : List.of(repeaterLine, passive260, passive310)) {
-            check(
-                "terminal serves the one Telephone on its cable",
-                line.start.phone() == line.phoneStart.number() && line.end.phone() == line.phoneEnd.number(),
-                line.start.phone() + "/" + line.phoneStart.number());
-            boolean chain = model.linked(pos(line.start), pos(line.heads.get(0)))
-                && model.linked(pos(line.heads.get(line.heads.size() - 1)), pos(line.end));
-            for (int i = 0; i + 1 < line.heads.size(); i++) {
-                chain &= model.linked(pos(line.heads.get(i)), pos(line.heads.get(i + 1)));
-            }
-            check("wrench links the whole line", chain, "");
+        List<MTEPylonHead> heads = phoneLine.heads;
+        boolean chain = model.cables(pos(phoneLine.start), pos(heads.get(0)))
+            .equals(List.of(CableTier.PHONE))
+            && model.cables(pos(heads.get(heads.size() - 1)), pos(phoneLine.end))
+                .equals(List.of(CableTier.PHONE));
+        for (int i = 0; i + 1 < heads.size(); i++) {
+            chain &= model.cables(pos(heads.get(i)), pos(heads.get(i + 1)))
+                .equals(List.of(CableTier.PHONE));
         }
+        check("the wrench strings the whole line with the Phone Cable in the owner's hotbar", chain, "");
+        int a = phoneLine.phoneStart.number(), b = phoneLine.phoneEnd.number();
+        check(
+            "terminals find the Telephone on their cable",
+            phoneLine.start.phone() == a && phoneLine.end.phone() == b,
+            phoneLine.start.phone() + "/" + a);
+        double width = becom.network.graph()
+            .width(a, b);
+        check(
+            "a 300-block run of Phone Cable carries nothing: Phone Cable reaches " + t.cableReachPhone(),
+            width == Double.NEGATIVE_INFINITY,
+            "width " + width);
+        // Fibre strung alongside on every span: the bundle carries it, and wire loses nothing.
+        boolean added = true;
+        added &= wrenchPair(owner, phoneLine.start, heads.get(0)) == LinkService.Outcome.CABLE_ADDED;
+        for (int i = 0; i + 1 < heads.size(); i++)
+            added &= wrenchPair(owner, heads.get(i), heads.get(i + 1)) == LinkService.Outcome.CABLE_ADDED;
+        added &= wrenchPair(owner, heads.get(heads.size() - 1), phoneLine.end) == LinkService.Outcome.CABLE_ADDED;
+        check("wrenching each span again with Fibre adds it to the span's bundle", added, "");
+        width = becom.network.graph()
+            .width(a, b);
+        check(
+            "...and the run carries it: Fibre reaches " + t.cableReachFibre() + ", and wire loses no dB",
+            width == Double.POSITIVE_INFINITY,
+            "width " + width);
 
         // Clearance (D20): a block on the line refuses the link; cleared, it links; blocked again, the re-check
         // marks it.
@@ -850,120 +942,170 @@ public final class SelfTest {
         check("the re-check finds the line blocked again", model.isBlocked(pos(clearA), pos(clearB)), "");
 
         // Unlinking is the owner's (D37): a stranger's wrench can't cut it.
-        becom.links.forget(stranger.getUniqueID());
-        becom.links.wrench(stranger, world, pos(clearA));
-        LinkService.Outcome cut = becom.links.wrench(stranger, world, pos(clearB));
+        LinkService.Outcome cut = wrenchPair(stranger, clearA, clearB);
         check(
             "a stranger can't unlink",
             cut == LinkService.Outcome.NOT_ALLOWED && model.linked(pos(clearA), pos(clearB)),
             cut.name());
 
-        LevelScale levels = t.levelScale();
-        DropoutModel dropouts = t.dropoutModel(Tunables.FRAME_MILLIS);
-        double width = becom.network.graph()
-            .width(repeaterLine.phoneStart.number(), repeaterLine.phoneEnd.number());
-        near("300-block line with a repeater: weakest stretch 30 - 0.08 x 150 = 18 dB", 18, width);
+        checkBundle(t, model);
+        checkDevices(t);
+        return SETTLE_TICKS;
+    }
+
+    /**
+     * A span's bundle from a pocket that runs out (DESIGN.md 5.1): stringing costs one cable per few blocks of span,
+     * a bundle holds {@code bundleSize} cables, a better cable then swaps out the poorest, and unlinking gives them
+     * all back.
+     */
+    private void checkBundle(Tunables t, NetworkModel model) {
+        int cost = becom.links.cost(model.node(pos(bundleA)), model.node(pos(bundleB)));
+        Arrays.fill(rigger.inventory.mainInventory, null);
+        rigger.inventory.mainInventory[0] = BlockPhoneCable.stack(CableTier.PHONE, 64);
+        rigger.inventory.mainInventory[9] = BlockPhoneCable.stack(CableTier.FIBRE, 16);
+        becom.links.forget(rigger.getUniqueID());
+        LinkService.Outcome first = wrenchPair(rigger, bundleA, bundleB);
         check(
-            "...which is High, capped at Low by the Telephones",
-            levels.levelOf(width) == SignalLevel.HIGH
-                && SignalLevel.min(levels.levelOf(width), SignalLevel.LOW) == SignalLevel.LOW,
-            "");
-        near("...and loses no frames", 0, dropouts.lossRate(width));
+            "stringing a 40-block span takes " + cost + " Phone Cables",
+            first == LinkService.Outcome.LINKED && cables(rigger, CableTier.PHONE) == 64 - cost,
+            first + ", " + cables(rigger, CableTier.PHONE) + " left");
+        boolean fills = true;
+        for (int i = 1; i < t.bundleSize(); i++)
+            fills &= wrenchPair(rigger, bundleA, bundleB) == LinkService.Outcome.CABLE_ADDED;
+        LinkService.Outcome full = wrenchPair(rigger, bundleA, bundleB);
+        check(
+            "a span holds " + t.bundleSize() + " cables, then refuses another of the same",
+            fills && full == LinkService.Outcome.BUNDLE_FULL
+                && model.cables(pos(bundleA), pos(bundleB))
+                    .size() == t.bundleSize(),
+            full + ", " + model.cables(pos(bundleA), pos(bundleB)));
+        ItemStack fibre = rigger.inventory.mainInventory[9];
+        rigger.inventory.mainInventory[9] = rigger.inventory.mainInventory[0];
+        rigger.inventory.mainInventory[0] = fibre;
+        LinkService.Outcome upgraded = wrenchPair(rigger, bundleA, bundleB);
+        List<CableTier> after = model.cables(pos(bundleA), pos(bundleB));
+        check(
+            "a full span wrenched with Fibre swaps out its poorest cable, which comes back",
+            upgraded == LinkService.Outcome.CABLE_UPGRADED && after.get(0) == CableTier.FIBRE
+                && after.size() == t.bundleSize()
+                && cables(rigger, CableTier.PHONE) == 64 - (t.bundleSize() - 1) * cost,
+            upgraded + ", " + after + ", " + cables(rigger, CableTier.PHONE) + " Phone Cable");
+        Arrays.fill(rigger.inventory.mainInventory, 0, 9, null);
+        rigger.inventory.mainInventory[9] = null;
+        rigger.inventory.mainInventory[10] = BlockPhoneCable.stack(CableTier.PHONE, 64 - (t.bundleSize() - 1) * cost);
+        rigger.inventory.mainInventory[11] = BlockPhoneCable.stack(CableTier.FIBRE, 16 - cost);
+        LinkService.Outcome unlinked = wrenchPair(rigger, bundleA, bundleB);
+        check(
+            "with no cable in the hotbar, the wrench unlinks the span and every cable on it comes back",
+            unlinked == LinkService.Outcome.UNLINKED && cables(rigger, CableTier.PHONE) == 64
+                && cables(rigger, CableTier.FIBRE) == 16,
+            unlinked + ", "
+                + cables(rigger, CableTier.PHONE)
+                + " Phone, "
+                + cables(rigger, CableTier.FIBRE)
+                + " Fibre");
+    }
+
+    /** One LV terminal's cable reaches five Telephones; a second terminal sits at the cable's far end. */
+    private void checkDevices(Tunables t) {
+        deviceTerminal.scanCable();
+        nearTerminal.scanCable();
+        int ports = t.terminalPorts(CableTier.PHONE);
+        int dimension = world.provider.dimensionId;
+        NodeRef self = new NodeRef(dimension, pos(deviceTerminal));
+        List<NetworkService.Device> found = becom.network.devicesOf(dimension, pos(deviceTerminal));
+        List<NetworkService.Device> served = becom.network.served(self, found);
+        check(
+            "an LV terminal finds all five Telephones on its cable and serves the " + ports + " nearest",
+            found.size() == 5 && served.size() == ports
+                && served.get(0)
+                    .phone()
+                    == devicePhones.get(0)
+                        .number(),
+            found + " / " + served);
+        NodeRef near = new NodeRef(dimension, pos(nearTerminal));
+        int first = devicePhones.get(0)
+            .number();
+        int last = devicePhones.get(4)
+            .number();
+        check(
+            "a Telephone on two terminals' cable takes the nearer one",
+            self.equals(becom.network.terminalOf(first)) && near.equals(becom.network.terminalOf(last)),
+            becom.network.terminalOf(first) + " / " + becom.network.terminalOf(last));
+    }
+
+    /** Contacts settle a second after the line changed: the Telephones reach each other now. */
+    private int checkLineReach() {
+        int a = phoneLine.phoneStart.number(), b = phoneLine.phoneEnd.number();
         check(
             "...and each Telephone has the other in its contacts",
-            becom.calls.reachableFrom(repeaterLine.phoneStart.number())
-                .contains(repeaterLine.phoneEnd.number()),
+            becom.calls.reachableFrom(a)
+                .contains(b),
             "");
-        PhoneRegistry registry = becom.phones.registry();
-        List<PhoneRegistry.Contact> contacts = registry.contacts(
-            owner.getUniqueID(),
-            repeaterLine.phoneStart.number(),
-            becom.calls.reachableFrom(repeaterLine.phoneStart.number()));
+        List<PhoneRegistry.Contact> contacts = becom.phones.registry()
+            .contacts(owner.getUniqueID(), a, becom.calls.reachableFrom(a));
         check(
             "contacts list the other phone by its owner's name",
             contacts.size() == 1 && contacts.get(0)
                 .ownerName()
                 .equals(owner.getCommandSenderName()),
             contacts.toString());
-
-        double w260 = becom.network.graph()
-            .width(passive260.phoneStart.number(), passive260.phoneEnd.number());
-        near("260 blocks with no repeater: 30 - 0.08 x 260 = 9.2 dB", 9.2, w260);
-        near("...which loses 14% of frames, in bursts", 0.14, dropouts.lossRate(w260));
-        double w310 = becom.network.graph()
-            .width(passive310.phoneStart.number(), passive310.phoneEnd.number());
-        near("310 blocks with no repeater: 5.2 dB", 5.2, w310);
-        check(
-            "...below Low, so the far phone can't be reached",
-            !becom.calls.reachableFrom(passive310.phoneStart.number())
-                .contains(passive310.phoneEnd.number()),
-            "");
         return 1;
     }
 
-    /**
-     * Repeater and Router heads take power through an Energy Hatch in the cabinet at their pole's foot, like any GT
-     * multiblock: the repeater has one and runs on it, the router has none and must not form until it gets one. Both
-     * must stand the way the plans have them, since the self-test builds and checks them from the same definition:
-     * the cabinet in front of the pole's foot and nothing behind it, the crossarm across the pole under the head.
-     */
-    private int checkHatchPower() {
-        IGregTechTileEntity tile = powerRepeater.getBaseMetaTileEntity();
-        ForgeDirection front = tile.getFrontFacing();
-        ForgeDirection side = front.getRotation(ForgeDirection.UP);
-        int x = tile.getXCoord();
-        int z = tile.getZCoord();
-        int foot = tile.getYCoord() - poleHeight(1);
+    /** An Exchange forms with an energy hatch and an input bus, but switches nothing until it has racks. */
+    private int checkExchange() {
+        int a = exchangeLine.phoneStart.number(), b = exchangeLine.phoneEnd.number();
+        double low = BeComConfig.get()
+            .levelLow();
         check(
-            "a Repeater's cabinet stands in front of its pole's foot, and its crossarm across the pole under the head",
-            !world.isAirBlock(x + front.offsetX, foot + 1, z + front.offsetZ)
-                && world.isAirBlock(x - front.offsetX, foot, z - front.offsetZ)
-                && !world.isAirBlock(x + side.offsetX * 2, tile.getYCoord() - 1, z + side.offsetZ * 2)
-                && !world.isAirBlock(x - side.offsetX * 2, tile.getYCoord() - 1, z - side.offsetZ * 2),
-            "facing " + front);
+            "the Exchange forms and runs, two Coaxial lines wired to it",
+            exchange.mMachine && exchange.isWorking()
+                && becom.network.model(world)
+                    .node(pos(exchange))
+                    .links()
+                    .size() == 2,
+            "formed " + exchange.mMachine + ", working " + exchange.isWorking());
         check(
-            "a Repeater Head with an Energy Hatch in its cabinet forms and runs on it",
-            powerRepeater.mMachine && powerRepeater.isWorking(),
-            "formed " + powerRepeater.mMachine + ", working " + powerRepeater.isWorking());
-        check("a Router Head without an Energy Hatch doesn't form", !powerRouter.mMachine, "");
-        cabinetHatch(powerRouter, poleHeight(1));
-        powerRouter.refreshStructure();
-        return 2;
+            "...but with no Switching Racks it switches no calls: a call through it is busy",
+            exchange.calls() == 0 && becom.calls.width(a, b) >= low && !becom.calls.hasRoomForSelfTest(a, b),
+            exchange.calls() + " calls");
+        exchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.PHONE, 1);
+        return SETTLE_TICKS;
     }
 
-    private int checkRouterWithHatch() {
+    private int checkExchangeWithRack() {
+        int a = exchangeLine.phoneStart.number(), b = exchangeLine.phoneEnd.number();
+        int calls = BeComConfig.get()
+            .rackCalls(CableTier.PHONE);
         check(
-            "a Router Head forms once an Energy Hatch is in its cabinet, and runs on it",
-            powerRouter.mMachine && powerRouter.isWorking(),
-            "formed " + powerRouter.mMachine + ", working " + powerRouter.isWorking());
+            "an LV Switching Rack in its input bus switches " + calls + " calls, and the call finds room",
+            exchange.calls() == calls && becom.calls.hasRoomForSelfTest(a, b),
+            exchange.calls() + " calls");
         return 1;
-    }
-
-    /** autoB had no structure when autoA formed; building its column now must link it to autoA on its own. */
-    private boolean formsAndAutoLinks() {
-        ((IConstructable) autoB).construct(BeComMachines.pylonHead.getStackForm(TALLEST_STACK), false);
-        autoB.refreshStructure();
-        return becom.network.model(world)
-            .linked(pos(autoA), pos(autoB));
     }
 
     /** WAILA asks for a machine's lines on the server thread (DESIGN.md 16.4), so they come with the first look. */
     private int checkWaila() {
-        List<String> terminal = wailaLines(repeaterLine.start);
+        List<String> terminal = wailaLines(phoneLine.start);
         check(
             "WAILA's first look at a Line Terminal gets its lines",
             terminal.contains(StatCollector.translateToLocal("becom.info.online")) && terminal.contains(
-                StatCollector.translateToLocalFormatted("becom.info.phone", repeaterLine.phoneStart.number())),
+                StatCollector.translateToLocalFormatted(
+                    "becom.info.devices",
+                    1,
+                    BeComConfig.get()
+                        .terminalPorts(CableTier.PHONE))),
             terminal.toString());
-        List<String> phone = wailaLines(repeaterLine.phoneStart);
+        List<String> phone = wailaLines(phoneLine.phoneStart);
         check(
             "and the Telephone's number",
             phone.contains(
-                StatCollector.translateToLocalFormatted("becom.mobile.number", repeaterLine.phoneStart.number())),
+                StatCollector.translateToLocalFormatted("becom.mobile.number", phoneLine.phoneStart.number())),
             phone.toString());
         int dimension = world.provider.dimensionId;
-        List<String> far = wailaLines(repeaterLine.start, 14, dimension);
-        List<String> elsewhere = wailaLines(repeaterLine.start, 2, dimension + 1);
+        List<String> far = wailaLines(phoneLine.start, 14, dimension);
+        List<String> elsewhere = wailaLines(phoneLine.start, 2, dimension + 1);
         check(
             "WAILA gives none of BeCom's lines to a player 14 blocks off, or one in another dimension",
             far.isEmpty() && elsewhere.isEmpty(),
@@ -1025,7 +1167,7 @@ public final class SelfTest {
     private int checkCall() {
         CallService calls = becom.calls;
         CallBook book = calls.book();
-        TileTelephone start = repeaterLine.phoneStart, end = repeaterLine.phoneEnd;
+        TileTelephone start = phoneLine.phoneStart, end = phoneLine.phoneEnd;
         int a = start.number(), b = end.number();
         UUID alice = owner.getUniqueID(), bob = stranger.getUniqueID();
         // The fake players have no voice session; the real check would refuse them before anything else.
@@ -1277,17 +1419,16 @@ public final class SelfTest {
         return becom.phones.registry();
     }
 
-    private int switchRepeaterOff() {
-        MTEPylonHead repeater = repeaterLine.heads.get(2);
-        repeater.getBaseMetaTileEntity()
+    private int switchTerminalOff() {
+        phoneLine.end.getBaseMetaTileEntity()
             .disableWorking();
         return SETTLE_TICKS;
     }
 
-    private int checkRepeaterOff() {
-        int a = repeaterLine.phoneStart.number(), b = repeaterLine.phoneEnd.number();
+    private int checkTerminalOff() {
+        int a = phoneLine.phoneStart.number(), b = phoneLine.phoneEnd.number();
         check(
-            "a repeater switched off goes offline and the line goes dead",
+            "a terminal switched off goes offline and its Telephone can't be reached",
             !becom.calls.reachableFrom(a)
                 .contains(b)
                 && becom.network.graph()
@@ -1295,12 +1436,14 @@ public final class SelfTest {
             "width " + becom.network.graph()
                 .width(a, b));
         NetNode node = becom.network.model(world)
-            .node(pos(repeaterLine.heads.get(2)));
+            .node(pos(phoneLine.end));
         check(
-            "...while it keeps its links",
+            "...while it keeps its link",
             node != null && node.links()
-                .size() == 2,
+                .size() == 1,
             "");
+        phoneLine.end.getBaseMetaTileEntity()
+            .enableWorking();
         return 1;
     }
 
@@ -3439,11 +3582,19 @@ public final class SelfTest {
         odo.setPosition(X0 - 60.5, Y, z);
         becom.carried.refreshForSelfTest(odo);
         check(
-            "...but has no service outside its network's wireless range",
+            "...and outside its network's wireless range is a Mobile Phone, capped at High (DESIGN.md 8.3)",
             becom.carried.serviceOf(odoNumber)
                 .entries()
-                .isEmpty(),
-            "");
+                .stream()
+                .noneMatch(e -> e.vertex() instanceof CallGraph.MeVertex)
+                && CarriedPhones.cap(
+                    PhoneKind.ME_PHONE,
+                    becom.carried.serviceOf(odoNumber)
+                        .entries())
+                    == SignalLevel.HIGH,
+            String.valueOf(
+                becom.carried.serviceOf(odoNumber)
+                    .entries()));
         return 1;
     }
 

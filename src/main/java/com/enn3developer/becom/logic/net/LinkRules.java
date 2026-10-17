@@ -1,7 +1,5 @@
 package com.enn3developer.becom.logic.net;
 
-import java.util.function.BiPredicate;
-
 /**
  * Who may link to whom on the wired network (DESIGN.md 5.1, 5.2). Ownership (D37) and clearance (D20) need the
  * world, so callers check those; everything else is here.
@@ -13,7 +11,7 @@ public final class LinkRules {
 
     /**
      * @param spanFactor     how many times the shorter pylon's height two pylons may be apart (DESIGN.md 17)
-     * @param bridgeDistance how far an antenna reaches to bridge a Pylon Head or Line Terminal (DESIGN.md 7)
+     * @param bridgeDistance how far an antenna or a gateway is wired to a pylon, a terminal or an Exchange
      */
     public LinkRules(double spanFactor, double bridgeDistance) {
         this.spanFactor = spanFactor;
@@ -32,9 +30,8 @@ public final class LinkRules {
 
     /**
      * The longest link {@code a} and {@code b} may have: the span factor times the shorter pylon's height. A terminal
-     * on the ground borrows its pylon's height, since only the pylon's end is up in the air. An antenna's bridge
-     * reaches
-     * the bridge distance, and so does an ME Bridge's.
+     * or an Exchange on the ground borrows its pylon's height, since only the pylon's end is up in the air. An
+     * antenna's or a gateway's wiring reaches the bridge distance.
      */
     public double maxSpan(NetNode a, NetNode b) {
         if (a.kind()
@@ -62,73 +59,33 @@ public final class LinkRules {
             || b.kind()
                 .linkSlots() == 0)
             return Result.INCOMPATIBLE;
-        // An ME Bridge bridges a Pylon Head, a Line Terminal or an antenna (DESIGN.md 8.3, X40); two of them would join
-        // ME networks, not lines.
-        if (a.kind() == NodeKind.ME_BRIDGE || b.kind() == NodeKind.ME_BRIDGE) {
-            if (a.kind() == b.kind()) return Result.INCOMPATIBLE;
-            // A dish or a relay links onto an antenna, a Pylon Head or a Line Terminal only (DESIGN.md 9.2, X36).
-            if (a.kind()
-                .gateway()
-                || b.kind()
-                    .gateway())
-                return Result.INCOMPATIBLE;
-        } else if (a.kind()
-            .gateway()
+        if (a.kind()
+            .bridge()
             || b.kind()
-                .gateway()) {
-                    // A dish or a relay bridges onto an antenna, a Pylon Head or a Line Terminal (DESIGN.md 9.2, X36):
-                    // dishes reach each other through the satellites, relays their partners through a portal.
-                    NetNode other = a.kind()
-                        .gateway() ? b : a;
-                    if (!other.kind()
-                        .antenna()
-                        && !other.kind()
-                            .pylonHead()
-                        && other.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
-                } else
+                .bridge()) {
+            // Antennas, ME Bridges, dishes and relays are wired to a pylon, a terminal or an Exchange (DESIGN.md 7,
+            // 8.3, 9.2, X36), or the last three to an antenna: antennas reach each other by radio, dishes through the
+            // satellites, relays their partners through a portal, and ME Bridges join ME networks, not lines.
             if (a.kind()
-                .antenna()
-                || b.kind()
-                    .antenna()) {
-                        // An antenna bridges a Pylon Head or a Line Terminal (DESIGN.md 7); antennas reach each other
-                        // by
-                        // radio.
-                        NetNode wired = a.kind()
-                            .antenna() ? b : a;
-                        if (!wired.kind()
-                            .pylonHead() && wired.kind() != NodeKind.TERMINAL) return Result.INCOMPATIBLE;
-                    } else
-                if (!a.kind()
-                    .pylonHead()
-                    && !b.kind()
-                        .pylonHead()) {
-                            // A line runs over pylon heads; a terminal only ends one (DESIGN.md 5.2).
-                            return Result.INCOMPATIBLE;
-                        }
+                .bridge()
+                && b.kind()
+                    .bridge()
+                && a.kind()
+                    .antenna()
+                    == b.kind()
+                        .antenna())
+                return Result.INCOMPATIBLE;
+        } else if (!a.kind()
+            .pylonHead()
+            && !b.kind()
+                .pylonHead()) {
+                    // A line runs over pylon heads; terminals and Exchanges only end one (DESIGN.md 5.2).
+                    return Result.INCOMPATIBLE;
+                }
         if (!a.formed() || !b.formed()) return Result.NOT_FORMED;
         if (!a.hasFreeSlot() || !b.hasFreeSlot()) return Result.NO_FREE_SLOT;
         if (a.distanceTo(b) > maxSpan(a, b)) return Result.TOO_FAR;
         return Result.OK;
     }
 
-    /**
-     * The pylon a newly formed pylon links to on its own: the one formed pylon in range with a free slot, or null
-     * when there are none or several (DESIGN.md 5.1).
-     *
-     * @param clear the clearance check between two heads
-     */
-    public NetNode autoLinkTarget(NetworkModel model, NetNode formed, BiPredicate<NetNode, NetNode> clear) {
-        if (!formed.kind()
-            .pylonHead()) return null;
-        NetNode only = null;
-        for (NetNode other : model.nodes()) {
-            if (!other.kind()
-                .pylonHead()) continue;
-            if (check(model, formed, other) != Result.OK) continue;
-            if (!clear.test(formed, other)) continue;
-            if (only != null) return null;
-            only = other;
-        }
-        return only;
-    }
 }

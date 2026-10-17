@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
+      "desc:8": "Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links carry little. Wire it to a pylon, a terminal or an Exchange within 16 blocks, with cable in your hotbar, and it carries all 4 of its calls over the wire.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -120,14 +120,15 @@ class TunablesTest {
     @Test
     void theCeilingsThemselvesAreAllowed() throws Exception {
         assertDoesNotThrow(with("pylonMaxHeight", 255)::validate);
-        assertDoesNotThrow(with("phoneCableLength", 256)::validate);
+        assertDoesNotThrow(with("cableReachFibre", Tunables.MAX_CABLE)::validate);
     }
 
     @Test
     void cableLengthHasACeiling() throws Exception {
         // Past it, a scan would walk hundreds of thousands of blocks, and the cable cap would overflow.
-        refused("phoneCableLength", 1 << 30);
-        refused("phoneCableLength", 0);
+        refused("cableReachFibre", 1 << 30);
+        refused("cableReachPhone", 0);
+        refused("terminalCableBudget", Tunables.MAX_CABLE + 1);
     }
 
     @Test
@@ -147,7 +148,7 @@ class TunablesTest {
             Tunables.defaults()
                 .toMap());
         values.remove("ringSeconds");
-        values.put("lineBudget", "loud");
+        values.put("cableRateFibre", "loud");
         values.put("notAKey", 3);
         assertEquals(Tunables.defaults(), Tunables.fromMap(values));
     }

@@ -16,7 +16,7 @@ quest_ids:
 
 # Antenne
 
-Un'antenna serve ogni radio e ogni telefono nel suo raggio, tranne i Telefoni ME, ripete tutti i 16 canali radio, si
+Un'antenna serve ogni radio e ogni telefono nel suo raggio, tranne i Telefoni ME nella portata della loro rete ME, ripete tutti i 16 canali radio, si
 collega alle altre antenne e porta le linee agganciate a lei.
 
 ## Costruirne una

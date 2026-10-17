@@ -1,14 +1,14 @@
 {
   "preRequisites:9": {
     "0:10": {
-      "questIDHigh:4": -222294113885793163,
-      "questIDLow:4": -4860476363550805366
+      "questIDHigh:4": -65402956228896849,
+      "questIDLow:4": -8945519870335909461
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "A pylon line joins two terminals. To join more, wire them all to an Exchange: a 3x3x3 building of LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to 15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack switches 8 calls at once, MV 32, HV 128.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -17,10 +17,10 @@
         "id:8": "gregtech:gt.blockmachines"
       },
       "isGlobal:1": 0,
-      "isMain:1": 0,
+      "isMain:1": 1,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "\u00a72\u00a7lKeeping the Signal Alive",
+      "name:8": "\u00a72\u00a7lSwitchboard",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,
@@ -32,8 +32,8 @@
       "visibility:8": "NORMAL"
     }
   },
-  "questIDHigh:4": 1370545556679056938,
-  "questIDLow:4": -7320922553454584615,
+  "questIDHigh:4": 999082999515141095,
+  "questIDLow:4": -8275097584676031454,
   "rewards:9": {
     "0:10": {
       "ignoreDisabled:1": 0,
@@ -45,6 +45,19 @@
           "Damage:2": 4,
           "OreDict:8": "",
           "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    },
+    "1:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 1,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 15,
+          "Damage:2": 0,
+          "OreDict:8": "",
+          "id:8": "dreamcraft:CoinTechnician"
         }
       }
     }

@@ -11,6 +11,8 @@ item_ids:
   - gregtech:gt.blockmachines:25010
   - gregtech:gt.blockmachines:25011
   - gregtech:gt.blockmachines:25012
+  - gregtech:gt.blockmachines:25014
+  - gregtech:gt.blockmachines:25015
 quest_ids:
   - "oNm-cIc3Xoy6hejGu6UM7Q"
   - "78j3bHKHWF6_v27ljQ8cYg"
@@ -43,7 +45,8 @@ dimensione e quando scende il prossimo.
 ## Salti ai satelliti
 
 Con 5 satelliti sopra una dimensione, ogni Telefono cellulare e ogni radio sotto il suo cielo aperto li raggiunge, al
-livello Basso. I Telefoni ME non li usano. Più satelliti danno un segnale più forte:
+livello Basso. I Telefoni ME li usano solo fuori dalla portata della loro rete ME. Più satelliti danno un segnale più
+forte:
 
 | Satelliti | Livello |
 | --- | --- |
@@ -57,6 +60,9 @@ o neve, e sotto terra sparisce. Con soli 5 satelliti il salto sta proprio al lim
 qualsiasi di queste cose lo taglia; 14 lo tengono al Medio. Le radio a cielo aperto si sentono attraverso i satelliti, a
 qualsiasi distanza. Le dimensioni senza cielo, come il Nether, non ne hanno.
 
+Ogni satellite porta 2 chiamate, condivise da tutto ciò che sta sotto quel cielo: telefoni, parabole e ricevitori. 18
+satelliti portano 36 chiamate insieme, e la chiamata successiva trova occupato finché una non finisce.
+
 ## Parabola satellitare
 
 Una <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Parabola satellitare</ItemLink> collega la sua rete a
@@ -68,12 +74,15 @@ cielo aperto sopra tutta la parabola. Collegala con la chiave a un'antenna,
 una Testa di traliccio o un Terminale di linea. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 
+Una parabola porta al massimo 32 chiamate, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
+porta 4 KB/s, posto per 2 chiamate, al Medio 16 KB/s, all'Alto 64 e al Massimo 256, a 2 KB/s per chiamata.
+
 ## Ricevitore radio per razzi
 
 Metti un <ItemLink id="becom:rocket_radio_receiver" showIcon="left">Ricevitore radio per razzi</ItemLink> nella stiva di
 un razzo di Galacticraft fermo su una piattaforma di lancio di Galacticraft, su una luna, un pianeta o una stazione
 spaziale. Il razzo diventa lì un'antenna T1, con una portata di circa 64 blocchi, e il collegamento di quel mondo con i
-satelliti dell'Overworld, al livello Alto. Il razzo ha una stiva solo se è costruito con dei bauli, e conta solo finché
+satelliti dell'Overworld, al livello Alto. Porta 4 chiamate insieme. Il razzo ha una stiva solo se è costruito con dei bauli, e conta solo finché
 il suo chunk è caricato. Un razzo su cui voli tu arriva come oggetto nella sua Cassa del razzo: piazzalo su una
 piattaforma e mettici dentro il ricevitore.
 
@@ -87,9 +96,17 @@ un'antenna a portata del razzo.
 
 Un <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Ripetitore di portale</ItemLink> funziona entro 4
 blocchi da un portale del Nether, un portale dell'End, un portale del Twilight Forest o un portale di Personal Space,
-con 32 EU/t di corrente MV. Collegalo con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea della
-tua rete. Poi usa la chiave su di lui, attraversa il portale e usala su un ripetitore dall'altra parte entro 5 minuti:
-la coppia unisce le due reti al livello Alto.
+Collegalo con la chiave a un'antenna, una Testa di traliccio, un Terminale di linea o una Centrale della tua rete. Poi
+usa la chiave su di lui, attraversa il portale e usala su un ripetitore dall'altra parte entro 5 minuti: la coppia
+unisce le due reti al livello Alto.
+
+Ne esistono tre livelli, e una coppia lavora al livello del ripetitore più basso:
+
+| Ripetitore | Corrente | Chiamate | Velocità |
+| --- | --- | --- | --- |
+| <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Ripetitore di portale</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
+| <ItemLink id="gregtech:gt.blockmachines:25014" showIcon="left">Ripetitore di portale (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
+| <ItemLink id="gregtech:gt.blockmachines:25015" showIcon="left">Ripetitore di portale (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
 
 I due ripetitori devono stare ai due lati dello stesso portale. Attraverso il Nether, quello lontano sta dove porta il
 portale, a un ottavo della distanza dal centro del mondo; attraverso il Twilight Forest, vicino allo stesso punto. Un

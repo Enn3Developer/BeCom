@@ -1,10 +1,13 @@
 # Blocks and machines
 tile.becom.telephone.name=Telephone
 tile.becom.phone_cable.name=Phone Cable
+tile.becom.coaxial_cable.name=Coaxial Cable
+tile.becom.fibre_cable.name=Fibre Cable
 gt.blockmachines.becom.pylon_head.name=Pylon Head
-gt.blockmachines.becom.repeater_head.name=Repeater Head
-gt.blockmachines.becom.router_head.name=Router Head
+gt.blockmachines.becom.exchange.name=Exchange
 gt.blockmachines.becom.line_terminal.name=Line Terminal
+gt.blockmachines.becom.line_terminal_mv.name=Line Terminal (MV)
+gt.blockmachines.becom.line_terminal_hv.name=Line Terminal (HV)
 gt.blockmachines.becom.antenna_t1.name=Antenna T1 Head
 gt.blockmachines.becom.antenna_t2.name=Antenna T2 Head
 gt.blockmachines.becom.antenna_t3.name=Antenna T3 Head
@@ -14,6 +17,8 @@ gt.blockmachines.becom.videophone.name=Videophone
 gt.blockmachines.becom.launch_pad.name=Satellite Launch Pad
 gt.blockmachines.becom.satellite_dish.name=Satellite Dish
 gt.blockmachines.becom.portal_relay.name=Portal Relay
+gt.blockmachines.becom.portal_relay_hv.name=Portal Relay (HV)
+gt.blockmachines.becom.portal_relay_ev.name=Portal Relay (EV)
 item.becom.walkie_talkie.name=Walkie-Talkie
 item.becom.signal_analyzer.name=Signal Analyzer
 item.becom.mobile_phone.name=Mobile Phone
@@ -21,28 +26,34 @@ item.becom.me_phone.name=ME Phone
 item.becom.satellite.name=Satellite
 item.becom.satellite_rocket.name=Satellite Rocket
 item.becom.rocket_radio_receiver.name=Rocket Radio Receiver
+item.becom.switching_rack_lv.name=Switching Rack (LV)
+item.becom.switching_rack_mv.name=Switching Rack (MV)
+item.becom.switching_rack_hv.name=Switching Rack (HV)
+becom.cable.tooltip=%s cable: %s KB/s, on runs up to %s blocks
+becom.cable.tooltip_span=Strings pylon spans: hold it in your hotbar and wrench two nodes.
+becom.switching_rack.info=Switches %s calls at once, in an Exchange's input bus
 
 # Machine tooltips
 becom.machine.pylon.type=Pylon
-becom.machine.pylon.info=Carries a telephone line between Line Terminals. Works without power, even unloaded.
-becom.machine.repeater.type=Pylon, Repeater
-becom.machine.repeater.info=Regenerates the line signal, so line loss starts over. Takes power from an Energy Hatch in the cabinet at its foot.
-becom.machine.router.type=Pylon, Router
-becom.machine.router.info=Joins lines into a network, so any phone on it can dial any other. Takes power from an Energy Hatch in the exchange cabinet at its foot.
-becom.machine.pylon.span=Links to pylons up to %s times the shorter one's height away, %s links at most
-becom.machine.pylon.wrench=Wrench a node, then another, to link them; again to unlink. Sneak to turn it.
+becom.machine.pylon.info=Holds the cables of a line's spans. Works without power, even unloaded.
+becom.machine.pylon.span=Links to pylons up to %s times the shorter one's height away, %s links at most, %s cables a span
+becom.machine.pylon.wrench=With cable in your hotbar, wrench a node, then another, to string a span; again to add a cable. With none, to unlink. Sneak to turn it.
 becom.machine.pylon.controller=Top of the column
 becom.machine.pylon.frames=Wood Frame Box, in a pole below the head
-becom.machine.pylon.hatch=Any cabinet block, in front of the pole's foot
 becom.machine.pylon.arm=Wood Frame Box, a crossarm right under the head
-becom.machine.pylon.arms=Wood Frame Box, a crossarm right under the head and another two below it
 becom.machine.power=Uses %s EU/t at %s while working
-becom.machine.terminal.info=Where a telephone line starts or ends. Links to one Pylon Head and serves exactly one phone.
-becom.machine.terminal.cable=Reaches its phone through up to %s blocks of Phone Cable
+becom.machine.terminal.info=Where a building's line starts. Links to one pylon and serves every device on its cable, the nearest first.
+becom.machine.terminal.ports=Serves up to %s devices, which share its line
+becom.machine.exchange.type=Exchange
+becom.machine.exchange.info=Switches calls between every line wired to it.
+becom.machine.exchange.racks=Up to %s Switching Racks in its input buses: %s calls each for LV, %s for MV, %s for HV
+becom.machine.exchange.links=Wired to %s lines at most
+becom.machine.exchange.controller=Middle of the front face
+becom.machine.exchange.hatch=Any casing
 becom.machine.antenna.type=Antenna
 becom.machine.antenna.info=Serves radios in range and repeats all 16 radio channels. Links to other antennas on its own, and carries calls between lines bridged onto them.
 becom.machine.antenna.range=Reaches about %s blocks to Low on open ground (%s dB link budget). Height and hills matter.
-becom.machine.antenna.bridge=Wrench it to a Pylon Head or Line Terminal within %s blocks to bridge that line, %s bridges at most
+becom.machine.antenna.bridge=Wire it to a pylon, a Line Terminal or an Exchange within %s blocks for its backhaul, %s at most
 becom.machine.antenna.controller=Top of the mast
 becom.machine.antenna.mast=%s, in a mast below the head
 becom.machine.antenna.rigging.1=%s, for the dipole under the head and three guys
@@ -61,7 +72,7 @@ becom.machine.launch_pad.tank=Propellant tank, beside the pad
 becom.machine.launch_pad.front=Pad's front edge, beside the controller
 becom.machine.satellite_dish.type=Satellite Dish
 becom.machine.satellite_dish.info=Joins its network to the satellites over this dimension: to every other dish here and, in the Overworld, to every planet with a Rocket Radio Receiver.
-becom.machine.satellite_dish.link=Wrench-link it to an antenna, a Pylon Head or a Line Terminal within %s blocks. Needs at least %s satellites over this dimension, and open sky above the whole dish, which faces straight up; rain weakens it.
+becom.machine.satellite_dish.link=Wire it to an antenna, a pylon, a Line Terminal or an Exchange within %s blocks. Needs at least %s satellites over this dimension, and open sky above the whole dish
 becom.machine.satellite_dish.maintenance=Each maintenance problem costs its hop %s dB.
 becom.machine.satellite_dish.controller=Front of the plinth at the foot
 becom.machine.satellite_dish.hatch=Any plinth casing
@@ -71,7 +82,8 @@ becom.machine.satellite_dish.frames=%s, for the pedestal and the feed horn's str
 becom.machine.portal_relay.info=Joins its network to the one on the far side of a portal, through a relay there.
 becom.machine.portal_relay.portal=Works within %s blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal.
 becom.machine.portal_relay.pair=To pair: wrench it, go through the portal, and wrench the relay on the far side within %s minutes.
-becom.machine.portal_relay.link=Wrench-link it to an antenna, a Pylon Head or a Line Terminal within %s blocks to join its network.
+becom.machine.portal_relay.link=Wire it to an antenna, a pylon, a Line Terminal or an Exchange within %s blocks to join its network.
+becom.machine.portal_relay.calls=Carries %s calls, %s KB/s. A pair works at its lower relay's tier.
 becom.relay.no_portal=No portal in reach
 becom.relay.portal=In reach: %s
 becom.relay.leads_into=Its Personal Space portal leads into dimension %s
@@ -86,7 +98,7 @@ becom.portal.personal_space=a Personal Space portal
 becom.dish.too_few=Too few satellites for a hop: it needs %s
 becom.dish.hop=Hop to the satellites: %s dB, %s
 becom.dish.problems=%s maintenance problems: -%s dB
-becom.dish.unlinked=Not linked: wrench it to an antenna, a Pylon Head or a Line Terminal
+becom.dish.unlinked=Not wired: wire it to an antenna, a pylon, a Line Terminal or an Exchange
 becom.dish.linked=Linked to %s
 becom.launch_pad.queue=Rockets waiting to launch: %s
 becom.launch_pad.held=On hold: something covers the pad. The launch goes on once the sky is clear.
@@ -99,7 +111,7 @@ GT5U.gui.text.recipe_result.becom_no_fuel=Not enough rocket fuel in the input ha
 becom.machine.transceiver.info=A radio on a block. Hold push-to-talk within reach to transmit through it; its loudspeaker plays its channel.
 becom.machine.transceiver.range=Reaches about %s blocks directly. Talk within %s blocks; the loudspeaker carries %s.
 becom.machine.me_bridge.info=Joins its ME network to BeCom's, so ME Phones on it can call any phone. Takes ME cable on any side and one channel.
-becom.machine.me_bridge.link=Wrench-link it to a Pylon Head, a Line Terminal or an antenna within %s blocks.
+becom.machine.me_bridge.link=Wire it to a pylon, a Line Terminal, an Exchange or an antenna within %s blocks.
 becom.machine.videophone.info=A video speakerphone for wired networks. Give it Phone Cable to a Line Terminal, like a Telephone.
 becom.machine.videophone.room=Everyone within %s blocks is in its call, and its loudspeaker carries %s. It hangs up after %s s with nobody near.
 becom.videophone.step_closer=Stand within %s blocks of the Videophone to use it: its calls are for the people around it.
@@ -110,14 +122,24 @@ becom.info.online=Online
 becom.info.me_online=ME network: online
 becom.info.me_offline=ME network: offline
 becom.info.offline=Offline: unformed, unpowered or switched off
+becom.info.calls=Calls: %s of %s
 becom.info.links=Links: %s of %s
 becom.info.link=Linked to %s, %s blocks
 becom.info.link_blocked=Linked to %s, %s blocks: blocked
+becom.info.span_bare=  no cable: carries nothing
+becom.info.span_cables=  %s× %s
+becom.exchange.no_racks=No Switching Racks: it switches no calls
+becom.exchange.racks=Switching Racks: %s of %s
+becom.exchange.rack=  %s× %s: %s calls each
+becom.exchange.calls=Calls: %s of %s
 becom.info.phone=Serving phone %s
-becom.info.no_phone=No phone on the cable
-becom.info.too_many_phones=%s phones on the cable: a terminal serves exactly one
-becom.info.too_much_cable=More than %s blocks of Phone Cable in all: a terminal takes no more
-becom.info.phone_shared=Phone %s is on another terminal's cable too: a phone hangs off exactly one terminal
+becom.info.no_phone=No device on the cable
+becom.info.too_much_cable=More than %s blocks of cable in all: a terminal walks no more
+becom.info.devices=Devices: %s of %s ports
+becom.info.device=%s: %s, %s of %s blocks
+becom.info.device_too_far=%s: %s blocks of cable, more than its %s
+becom.info.device_no_port=%1$s: no free port, %2$s blocks away
+becom.info.device_nearer=%s: served by a nearer terminal
 becom.info.mast=Mast height: %s
 becom.info.locked=Locked to its owner's team
 becom.info.too_new=Saved by a newer BeCom: update BeCom to use it
@@ -130,15 +152,21 @@ becom.info.off_hook=Handset lifted
 
 # Linking
 becom.link.no_node=This node isn't ready yet. Try again in a moment.
-becom.link.selected=Selected the node at %s. Wrench another node to link or unlink them.
+becom.link.selected=Selected the node at %s. Wrench another node to string a span, holding cable in your hotbar, or with none to unlink them.
 becom.link.cancelled=Link cancelled.
-becom.link.linked=Linked, %s blocks.
+becom.link.linked=Strung, %s blocks, with %s.
+becom.link.needs_cable=Hold cable in your hotbar to string this span: it takes %s.
+becom.link.short_of_cable=This span takes %s %s.
+becom.link.cable_added=Added %s: %s of %s cables on this span.
+becom.link.cable_upgraded=Swapped %s for %s.
+becom.link.bundle_full=This span holds %s cables already, none worse than that one.
+becom.call.network_busy=Every way there is full: the network is busy.
 becom.link.unlinked=Unlinked.
-becom.link.not_yours=Only an owner of either end, or their team, can unlink this.
+becom.link.not_yours=Only an owner of either end, or their team, can change or unlink this.
 becom.link.blocked=Something solid is in the way of the line.
 becom.link.refused.same_node=That's the same node.
 becom.link.refused.already_linked=Those are already linked.
-becom.link.refused.incompatible=These two can't be linked. Lines run over Pylon Heads; an antenna bridges a Pylon Head or a Line Terminal, and a dish or a relay an antenna, a Pylon Head or a Line Terminal.
+becom.link.refused.incompatible=These two can't be linked. Lines run over pylons between terminals and Exchanges; antennas, dishes, relays and ME Bridges are wired to a pylon, a terminal or an Exchange.
 becom.link.refused.relay_dimensions=Portal Relays pair the Overworld with the Nether, the End, the Twilight Forest or a personal dimension.
 becom.link.refused.relay_portal=These two relays aren't on the two sides of one portal: the far one stands where a different portal leads.
 becom.link.refused.relay_paired=One of these relays is already paired. Unpair it first: wrench it and then its partner.
@@ -218,6 +246,42 @@ becom.phone.dnd=Do not disturb
 becom.phone.hidden=Hide from contacts
 becom.phone.blocked=Blocked players
 becom.phone.not_owner=Only the owner or their team can change these.
+becom.phone.back=Back
+becom.phone.home=Home
+becom.phone.app.keypad=Phone
+becom.phone.app.contacts=Contacts
+becom.phone.app.recent=Recent
+becom.phone.app.call=Call
+becom.phone.app.video=Video
+becom.phone.app.settings=Settings
+becom.phone.app.home=Home
+becom.phone.app.battery=Battery
+becom.phone.app.signal=Signal
+becom.phone.app.sub=%s > %s
+becom.phone.home.day=Day %s, phone %s
+becom.phone.battery.charge=%s%%: %s of %s EU
+becom.phone.battery.lasts=Lasts %s on standby, %s in calls
+becom.phone.battery.charging=Charging
+becom.phone.battery.not_charging=Not charging: a charger or battery buffer charges it
+becom.phone.battery.today=Used today
+becom.phone.battery.use=%s: %s%% %s
+becom.phone.battery.use.standby=Standby
+becom.phone.battery.use.calls=Calls
+becom.phone.battery.use.video=Video
+becom.phone.battery.use.screen=Screen
+becom.phone.battery.use.apps=Apps
+becom.phone.battery.saver=Battery saver: no video
+becom.phone.battery.saver_auto=Battery saver: on, the charge is low
+becom.phone.battery.warn=Low battery warnings
+becom.phone.battery.forever=no limit
+becom.phone.battery.minutes=%s min
+becom.phone.battery.hours=%s h %s min
+becom.phone.battery.low=Your phone's battery is down to %s%%.
+becom.phone.signal.level=Signal: %s
+becom.phone.signal.via.none=No service here
+becom.phone.signal.via.antenna=Through an Antenna T%s
+becom.phone.signal.via.satellites=Through the satellites
+becom.phone.signal.via.me_network=Through its ME network
 
 # Antenna screen
 becom.antenna.title=Antenna T%s
@@ -226,12 +290,13 @@ becom.antenna.unformed=Incomplete structure
 becom.antenna.surveyed=Surveyed.
 becom.antenna.surveying=Surveying...
 becom.antenna.owner=Owner: %s
+becom.antenna.owner_calls=Owner: %s. Calls: %s of %s
 becom.antenna.lock=Serve only its owner's team
 becom.antenna.coverage=Coverage, %s blocks out
 becom.antenna.coverage_radio=Radio (VHF)
 becom.antenna.coverage_calls=Calls (UHF)
 becom.antenna.link=Antenna at %s, %s, %s, %s blocks. Radio %s, calls %s
-becom.antenna.bridge=Bridge to %s, %s, %s, %s blocks
+becom.antenna.bridge=Wired to %s, %s, %s, %s blocks: %s KB/s
 becom.antenna.no_links=No other antenna in reach yet.
 
 # Radios
@@ -305,21 +370,21 @@ becom.command.signal.antenna=Antenna T%s at %s: %s dB
 betterquesting.questline.7dZOq4U1Vfa2Yr9apUvsiQ.name=Better Communications
 betterquesting.questline.7dZOq4U1Vfa2Yr9apUvsiQ.desc=Telephones on pylon lines, radios, mobile phones and satellites, carried by voice chat.
 betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.name=§2§lWired for Sound
-betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.desc=Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 32 blocks of it, and the signal loses nothing on the way. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.desc=Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 128 blocks of it. Wire is digital: it loses nothing on the way, rain or shine. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.name=§2§lRing, Ring
 betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.desc=A circuit, a note block for the bell and a steel body, put together in the Assembler with a cord of Phone Cable: that's a Telephone.%n%nRight-click it to pick up the handset. It's yours, and so is its six-digit number.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.name=§2§lEnd of the Line
-betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=Every line starts and ends at a Line Terminal. Give it LV power, just 4 EU/t, and run Phone Cable from it to a Telephone. A terminal serves exactly one phone.%n%nTo put it on a line, wrench the terminal, then a Pylon Head.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=Every building's line starts at a Line Terminal. Give it LV power, just 4 EU/t, and run cable from it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a Pylon Head, with cable in your hotbar.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest._OpArmItVHW8jB5_z18yig.name=§2§lUp on the Pole
-betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater at least every 225 blocks.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=To carry a line between buildings, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Put cable in your hotbar, then wrench one head and the other: that strings the span, one cable for every 4 blocks of it.%n%nPylons need no power and keep working in unloaded chunks. A run of Phone Cable reaches 128 blocks, terminal to terminal; past that it carries nothing.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.name=§2§lHello? Can You Hear Me?
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and gritty. But it carries your voice as far as the line goes.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.name=§2§lKeeping the Signal Alive
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It only works while it's loaded and powered, so keep your repeaters chunkloaded.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.name=§2§lSwitchboard
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and takes 16 EU/t of LV power through an Energy Hatch in the exchange cabinet at the pole's foot: three across, two high, with a second crossarm up top for all those lines.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.name=§6§lBigger Pipes
+betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.desc=Phone Cable carries 16 KB/s, enough for 8 calls. Coaxial carries 64 KB/s over runs up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene.%n%nA span holds up to 4 cables, and their rates add up. Wrench a strung span again with cable in your hotbar to add it; once the span is full, a better cable swaps out the poorest one, and you get that one back.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.name=§2§lSwitchboard
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=A pylon line joins two terminals. To join more, wire them all to an Exchange: a 3x3x3 building of LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to 15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack switches 8 calls at once, MV 32, HV 128.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lOn the Air
-betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links carry little. Wire it to a pylon, a terminal or an Exchange within 16 blocks, with cable in your hotbar, and it carries all 4 of its calls over the wire.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lBase Station
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.desc=A Transceiver is a radio in a block. It runs on MV, 32 EU/t, and reaches about 125 blocks on open ground on its own.%n%nStand within 2 blocks of it and hold the radio push-to-talk key (Caps Lock, unless you changed it) to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks.%n%nMore in the guide: [guide page=becom:radios.md]Radios[/guide].
 betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.name=§6§lReading the Air
@@ -341,13 +406,13 @@ betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.desc=A phone that goes where you go.
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.name=§5§lCan You Hear Me Now?
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.desc=Make or take a call on a Mobile Phone. Hold it to see your bars.%n%nBad weather hurts: rain costs a phone 3 dB of service, a thunderstorm 6. Not sure where you have coverage? An antenna's screen maps where its signal reaches.%n%nIn a call, add more phones from the keypad: up to 8 people can talk together.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=§8§lWireless Everywhere
-betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
+betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. Anywhere else it's a Mobile Phone, with a Mobile Phone's signal. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=§8§lBridging the Networks
-betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
+betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal, an Exchange or an antenna within 16 blocks. It uses 512 EU/t and carries 8 calls at once.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.name=§8§lLong Distance
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Your ME Phone can reach past your ME network. From an ME Phone, call a Telephone on a line, a Mobile Phone or a Videophone, through an ME Bridge.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.name=§6§lThrough the Portal
-betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench the relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair joins the two networks at High.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
+betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power.%n%nWrench-link it to an antenna, a Pylon Head, a Line Terminal or an Exchange of your network. Then wrench the relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair joins the two networks at High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at its lower relay's tier.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.name=§5§lPayload
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.desc=A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 rocket parts in the Assembler, and you've got a Satellite Rocket.%n%nDon't bother with Galacticraft's launch pads: this rocket only flies from a Satellite Launch Pad.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].
 betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.name=§5§lLiftoff

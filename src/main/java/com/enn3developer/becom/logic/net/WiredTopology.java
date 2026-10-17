@@ -4,45 +4,49 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongPredicate;
 
-import com.enn3developer.becom.logic.LineModel;
+import com.enn3developer.becom.logic.Tunables;
 
 /**
- * Collapses the wired network into the hops a call travels (DESIGN.md 5.7): from each working powered node, along
- * passive pylons, to the next working powered node. Each stretch's SNR comes from its length since the powered node
- * that drove it, which is why passive pylons aren't vertices of their own.
+ * Collapses the wired network into the runs a call travels (DESIGN.md 5.7): from each working powered node, along
+ * passive pylons, to the next working powered node. Wire is digital, so a run loses nothing; what it has is a data
+ * rate, from the cables on its spans. A cable counts on a run only if the whole run is within its reach, and a run
+ * carries what its thinnest span does, which is why passive pylons aren't vertices of their own.
  */
 public final class WiredTopology {
 
     private WiredTopology() {}
 
-    /** One stretch of line between two powered nodes, as seen from {@code from}. */
-    public record Segment(long from, long to, double length, double snr) {}
+    /**
+     * One run between two powered nodes, as seen from {@code from}: {@code rate} is what it carries in KB/s, 0 when
+     * no span has a cable that reaches the whole run.
+     */
+    public record Segment(long from, long to, double length, int rate) {}
 
     /**
-     * Every stretch leaving every working powered node; a stretch between two working nodes shows up once from each
-     * end.
+     * Every run leaving every working powered node; a run between two working nodes shows up once from each end.
      *
      * @param working whether the powered node at a position is formed, loaded and powered (D11)
      * @param rules   the span limit, checked against each pylon's height now rather than when it was linked
      */
-    public static List<Segment> segments(NetworkModel model, LongPredicate working, LineModel line, LinkRules rules) {
+    public static List<Segment> segments(NetworkModel model, LongPredicate working, Tunables cables, LinkRules rules) {
         List<Segment> segments = new ArrayList<>();
         for (NetNode start : model.nodes()) {
             if (!start.kind()
                 .powered() || !working.test(start.pos())) continue;
             for (long first : start.links()) {
-                Segment segment = walk(model, start, first, working, line, rules);
+                Segment segment = walk(model, start, first, working, cables, rules);
                 if (segment != null) segments.add(segment);
             }
         }
         return segments;
     }
 
-    private static Segment walk(NetworkModel model, NetNode start, long first, LongPredicate working, LineModel line,
+    private static Segment walk(NetworkModel model, NetNode start, long first, LongPredicate working, Tunables cables,
         LinkRules rules) {
         long prev = start.pos();
         long cur = first;
         double length = 0;
+        List<List<CableTier>> spans = new ArrayList<>();
         // A chain of passive pylons visits each at most once; anything longer is a loop of pylons with no
         // powered node, which carries nothing.
         for (int steps = 0; steps <= model.size(); steps++) {
@@ -54,9 +58,10 @@ public final class WiredTopology {
             // A pylon cut down after linking can't hold the spans it held when it was taller.
             if (span > rules.maxSpan(from, node)) return null;
             length += span;
+            spans.add(model.cables(prev, cur));
             if (node.kind()
                 .powered()) {
-                return working.test(cur) ? new Segment(start.pos(), cur, length, line.snr(length)) : null;
+                return working.test(cur) ? new Segment(start.pos(), cur, length, rate(spans, length, cables)) : null;
             }
             if (!node.formed()) return null;
             long next = otherLink(node, prev);
@@ -65,6 +70,20 @@ public final class WiredTopology {
             cur = next;
         }
         return null;
+    }
+
+    /** What a run of {@code length} blocks over these spans carries: its thinnest span's cables that reach it all. */
+    public static int rate(List<List<CableTier>> spans, double length, Tunables cables) {
+        int rate = Integer.MAX_VALUE;
+        for (List<CableTier> span : spans) rate = Math.min(rate, spanRate(span, length, cables));
+        return spans.isEmpty() ? 0 : rate;
+    }
+
+    /** What one span's cables carry on a run of {@code length} blocks. */
+    public static int spanRate(List<CableTier> span, double length, Tunables cables) {
+        int rate = 0;
+        for (CableTier cable : span) if (length <= cables.cableReach(cable)) rate += cables.cableRate(cable);
+        return rate;
     }
 
     /** The passive pylon's link that isn't {@code from}, or {@link Long#MIN_VALUE} at a dead end. */

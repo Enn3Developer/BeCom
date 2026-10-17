@@ -101,10 +101,12 @@ public final class BeComServer {
         this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
         // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range (DESIGN.md
         // 8.3); ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2
-        // checks the range in the holder's dimension, so that's the part of the network it joins.
+        // checks the range in the holder's dimension, so that's the part of the network it joins. Out of range it is
+        // a Mobile Phone, with a Mobile Phone's signal.
+        CarriedPhones.Access mobile = carried.accessOf(PhoneKind.MOBILE);
         carried.setAccess(PhoneKind.ME_PHONE, (holder, stack) -> {
             IGrid grid = MeAccess.gridInRange(((ItemMePhone) stack.getItem()).getEncryptionKey(stack), holder);
-            if (grid == null) return List.of();
+            if (grid == null) return mobile.entries(holder, stack);
             return List.of(
                 new CallGraph.Entry(
                     new CallGraph.MeVertex(meGrids.idOf(grid), holder.dimension),
@@ -112,6 +114,9 @@ public final class BeComServer {
         });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
         this.video = new VideoService(calls, tunables);
+        carried.setWatching(
+            id -> video.plan()
+                .sees(id));
     }
 
     /** Whether rain or snow falls at a column, so the weather can cost a link there (DESIGN.md 6.1, D26). */

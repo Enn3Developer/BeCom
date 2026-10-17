@@ -3,7 +3,7 @@ package com.enn3developer.becom.machine;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.CableTier;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
@@ -19,8 +19,8 @@ public final class BeComMachines {
     public static final int LAST_ID = 25199;
 
     public static final int PYLON_HEAD_ID = 25000;
-    public static final int REPEATER_HEAD_ID = 25001;
-    public static final int ROUTER_HEAD_ID = 25002;
+    public static final int EXCHANGE_ID = 25001;
+    public static final int LINE_TERMINAL_MV_ID = 25002;
     public static final int LINE_TERMINAL_ID = 25003;
     public static final int ANTENNA_T1_ID = 25004;
     public static final int ANTENNA_T2_ID = 25005;
@@ -31,11 +31,15 @@ public final class BeComMachines {
     public static final int LAUNCH_PAD_ID = 25010;
     public static final int SATELLITE_DISH_ID = 25011;
     public static final int PORTAL_RELAY_ID = 25012;
+    public static final int LINE_TERMINAL_HV_ID = 25013;
+    public static final int PORTAL_RELAY_HV_ID = 25014;
+    public static final int PORTAL_RELAY_EV_ID = 25015;
 
     public static MTEPylonHead pylonHead;
-    public static MTEPylonHead repeaterHead;
-    public static MTEPylonHead routerHead;
+    public static MTEExchange exchange;
     public static MTELineTerminal lineTerminal;
+    public static MTELineTerminal lineTerminalMV;
+    public static MTELineTerminal lineTerminalHV;
     public static MTEAntenna antennaT1;
     public static MTEAntenna antennaT2;
     public static MTEAntenna antennaT3;
@@ -45,6 +49,8 @@ public final class BeComMachines {
     public static MTELaunchPad launchPad;
     public static MTESatelliteDish satelliteDish;
     public static MTEPortalRelay portalRelay;
+    public static MTEPortalRelay portalRelayHV;
+    public static MTEPortalRelay portalRelayEV;
 
     private BeComMachines() {}
 
@@ -52,8 +58,8 @@ public final class BeComMachines {
     public static Map<Integer, String> ids() {
         Map<Integer, String> ids = new LinkedHashMap<>();
         ids.put(PYLON_HEAD_ID, "becom.pylon_head");
-        ids.put(REPEATER_HEAD_ID, "becom.repeater_head");
-        ids.put(ROUTER_HEAD_ID, "becom.router_head");
+        ids.put(EXCHANGE_ID, "becom.exchange");
+        ids.put(LINE_TERMINAL_MV_ID, "becom.line_terminal_mv");
         ids.put(LINE_TERMINAL_ID, "becom.line_terminal");
         ids.put(ANTENNA_T1_ID, "becom.antenna_t1");
         ids.put(ANTENNA_T2_ID, "becom.antenna_t2");
@@ -64,6 +70,9 @@ public final class BeComMachines {
         ids.put(LAUNCH_PAD_ID, "becom.launch_pad");
         ids.put(SATELLITE_DISH_ID, "becom.satellite_dish");
         ids.put(PORTAL_RELAY_ID, "becom.portal_relay");
+        ids.put(LINE_TERMINAL_HV_ID, "becom.line_terminal_hv");
+        ids.put(PORTAL_RELAY_HV_ID, "becom.portal_relay_hv");
+        ids.put(PORTAL_RELAY_EV_ID, "becom.portal_relay_ev");
         return ids;
     }
 
@@ -103,10 +112,19 @@ public final class BeComMachines {
     public static void register() {
         checkIds();
         BeComTextures.init();
-        pylonHead = new MTEPylonHead(PYLON_HEAD_ID, "becom.pylon_head", "Pylon Head", NodeKind.PYLON);
-        repeaterHead = new MTEPylonHead(REPEATER_HEAD_ID, "becom.repeater_head", "Repeater Head", NodeKind.REPEATER);
-        routerHead = new MTEPylonHead(ROUTER_HEAD_ID, "becom.router_head", "Router Head", NodeKind.ROUTER);
-        lineTerminal = new MTELineTerminal(LINE_TERMINAL_ID, "becom.line_terminal", "Line Terminal");
+        pylonHead = new MTEPylonHead(PYLON_HEAD_ID, "becom.pylon_head", "Pylon Head");
+        exchange = new MTEExchange(EXCHANGE_ID, "becom.exchange", "Exchange");
+        lineTerminal = new MTELineTerminal(LINE_TERMINAL_ID, "becom.line_terminal", "Line Terminal", CableTier.PHONE);
+        lineTerminalMV = new MTELineTerminal(
+            LINE_TERMINAL_MV_ID,
+            "becom.line_terminal_mv",
+            "Line Terminal (MV)",
+            CableTier.COAXIAL);
+        lineTerminalHV = new MTELineTerminal(
+            LINE_TERMINAL_HV_ID,
+            "becom.line_terminal_hv",
+            "Line Terminal (HV)",
+            CableTier.FIBRE);
         antennaT1 = new MTEAntenna(ANTENNA_T1_ID, "becom.antenna_t1", "Antenna T1 Head", 1);
         antennaT2 = new MTEAntenna(ANTENNA_T2_ID, "becom.antenna_t2", "Antenna T2 Head", 2);
         antennaT3 = new MTEAntenna(ANTENNA_T3_ID, "becom.antenna_t3", "Antenna T3 Head", 3);
@@ -115,6 +133,8 @@ public final class BeComMachines {
         videophone = new MTEVideophone(VIDEOPHONE_ID, "becom.videophone", "Videophone");
         launchPad = new MTELaunchPad(LAUNCH_PAD_ID, "becom.launch_pad", "Satellite Launch Pad");
         satelliteDish = new MTESatelliteDish(SATELLITE_DISH_ID, "becom.satellite_dish", "Satellite Dish");
-        portalRelay = new MTEPortalRelay(PORTAL_RELAY_ID, "becom.portal_relay", "Portal Relay");
+        portalRelay = new MTEPortalRelay(PORTAL_RELAY_ID, "becom.portal_relay", "Portal Relay", 2);
+        portalRelayHV = new MTEPortalRelay(PORTAL_RELAY_HV_ID, "becom.portal_relay_hv", "Portal Relay (HV)", 3);
+        portalRelayEV = new MTEPortalRelay(PORTAL_RELAY_EV_ID, "becom.portal_relay_ev", "Portal Relay (EV)", 4);
     }
 }

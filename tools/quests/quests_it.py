@@ -5,44 +5,47 @@ LINE_IT = ("Better Communications",
 QUESTS_IT = {
     "phone_cable": ("Cablato per il suono",
         "Ogni rete telefonica comincia da un filo. Il Cavo telefonico è filo di red alloy avvolto nella gomma, e si "
-        "fa nell'Assembler.%n%nVa da un Telefono al suo Terminale di linea, fino a 32 blocchi, e il segnale non "
-        "perde nulla per strada. Fanne un paio per cominciare."),
+        "fa nell'Assembler.%n%nVa da un Telefono al suo Terminale di linea, fino a 128 blocchi. Il filo è digitale: "
+        "non perde nulla per strada, con la pioggia o col sole. Fanne un paio per cominciare."),
     "telephone": ("Driin, driin",
         "Un circuito, un note block per la suoneria e un corpo d'acciaio, messi insieme nell'Assembler con un filo "
         "di Cavo telefonico: ecco un Telefono.%n%nClic destro per alzare la cornetta. È tuo, e lo è anche il suo "
         "numero di sei cifre."),
     "line_terminal": ("Capolinea",
-        "Ogni linea inizia e finisce in un Terminale di linea. Dagli corrente LV, bastano 4 EU/t, e collegalo con "
-        "il Cavo telefonico a un Telefono. Un terminale serve un solo telefono.%n%nPer metterlo su una linea, usa "
-        "la chiave sul terminale, poi su una Testa di traliccio."),
+        "La linea di ogni edificio parte da un Terminale di linea. Dagli corrente LV, bastano 4 EU/t, e collegalo "
+        "con il cavo ai tuoi Telefoni. Serve ogni telefono sul suo cavo, dal più vicino: 4 per il terminale LV, 8 "
+        "per quello MV, 16 per quello HV. Tutti dividono la sua linea.%n%nPer metterlo su una linea, con del cavo "
+        "nella barra rapida usa la chiave sul terminale, poi su una Testa di traliccio."),
     "pylon": ("Sul palo",
-        "Il Cavo telefonico arriva solo a 32 blocchi. Per andare più lontano servono i tralicci: una Testa di "
-        "traliccio in cima a un palo di 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la "
-        "testa.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a "
-        "quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Usa la chiave su una testa, "
-        "poi sull'altra, per collegarli.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk "
-        "scaricati. Il segnale però cala con la distanza, quindi ti serve un ripetitore almeno ogni 225 blocchi."),
+        "Per portare una linea tra gli edifici servono i tralicci: una Testa di traliccio in cima a un palo di 6-16 "
+        "Wood Frame Box, con una traversa di altre 4 subito sotto la testa.%n%nPiù è alto, meglio è. Due tralicci "
+        "si collegano fino a quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Metti del "
+        "cavo nella barra rapida, poi usa la chiave su una testa e sull'altra: così tendi la campata, un cavo ogni 4 "
+        "blocchi.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk scaricati. Una tratta di Cavo "
+        "telefonico arriva a 128 blocchi, da terminale a terminale; oltre non porta niente."),
     "first_call": ("Pronto? Mi senti?",
         "È ora della prima chiamata! Ti servono due Telefoni, ognuno sul suo Terminale di linea, con i tralicci tra "
         "i terminali.%n%nAlza la cornetta. Se sulla linea c'è un solo altro telefono, squilla subito. Altrimenti "
         "componi il suo numero o scegli un contatto.%n%nNon aspettarti l'alta fedeltà: al Telefono la voce è "
         "stretta e ruvida. Però arriva fin dove arriva la linea."),
-    "repeater": ("Tenere vivo il segnale",
-        "Le linee lunghe si fanno silenziose. Una Testa ripetitore è una Testa di traliccio che ripulisce il "
-        "segnale, così la perdita di linea riparte da zero dopo di lei.%n%nA differenza di un traliccio semplice "
-        "vuole corrente: 4 EU/t di LV, da un Energy Hatch in un armadio alla base del palo. Funziona solo se è caricata e alimentata, "
-        "quindi tieni caricati i chunk dei ripetitori."),
-    "router": ("Centralino",
-        "Una linea semplice unisce esattamente due telefoni. Ne vuoi di più? Una Testa router ha 15 collegamenti e "
-        "trasforma le tue linee in una rete, dove ogni telefono può chiamare qualsiasi altro.%n%nRipulisce il "
-        "segnale come un ripetitore e prende 16 EU/t di corrente LV da un Energy Hatch nell'armadio di centrale alla base del palo: "
-        "tre blocchi di larghezza, due di altezza, con una seconda traversa in cima per tutte quelle linee."),
+    "coaxial": ("Tubi più grossi",
+        "Il Cavo telefonico porta 16 KB/s, abbastanza per 8 chiamate. Il Cavo coassiale porta 64 KB/s su tratte "
+        "fino a 512 blocchi, e si fa nell'Assembler con rame ricotto, lamina d'alluminio e polietilene.%n%nUna "
+        "campata regge fino a 4 cavi, e le loro velocità si sommano. Con del cavo nella barra rapida, usa di nuovo "
+        "la chiave su una campata tesa per aggiungerlo; quando è piena, un cavo migliore prende il posto del più "
+        "scarso, che ti torna indietro."),
+    "exchange": ("Centralino",
+        "Una linea di tralicci unisce due terminali. Per unirne di più, collegali tutti a una Centrale: un edificio "
+        "3x3x3 di LV Machine Casing con un Energy Hatch e un Input Bus, che consuma 64 EU/t. Smista le chiamate tra "
+        "fino a 15 linee.%n%nSenza Rack di commutazione non smista niente. Mettine fino a 8 nel suo Input Bus: ogni "
+        "rack LV smista 8 chiamate insieme, MV 32, HV 128."),
     "antenna_t1": ("In onda",
         "È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame "
         "Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va "
         "nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. "
-        "L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, e collegandone una con "
-        "la chiave a una Testa di traliccio o a un Terminale di linea entro 16 blocchi porti quella linea via radio."),
+        "L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, ma i collegamenti "
+        "radio portano poco. Collegala con il cavo a un traliccio, a un terminale o a una Centrale entro 16 blocchi, "
+        "con del cavo nella barra rapida, e porta tutte e 4 le sue chiamate sul filo."),
     "transceiver": ("Stazione base",
         "Un Ricetrasmettitore è una radio in un blocco. Va a MV, 32 EU/t, e da solo arriva a circa 125 blocchi in "
         "campo aperto.%n%nStagli entro 2 blocchi e tieni premuto il tasto per parlare della radio (Bloc Maiusc, se "
@@ -100,21 +103,24 @@ QUESTS_IT = {
         "Hai una rete ME con i punti d'accesso wireless? Allora la copertura ce l'hai già. Un Telefono ME è un "
         "Telefono cellulare collegato a una rete ME.%n%nCollegalo a un Terminale di sicurezza ME, come un Terminale "
         "wireless. Ovunque arrivino i Punti d'accesso wireless ME di quella rete, amplificatori compresi, ha "
-        "servizio al livello Massimo. Si carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si "
+        "servizio al livello Massimo. Altrove è un Telefono cellulare, con il segnale di un Telefono cellulare. Si "
+        "carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si "
         "chiamano senza nessuna antenna."),
     "me_bridge": ("Unire le reti",
         "Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi "
         "telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con la chiave a una Testa di "
-        "traliccio, un Terminale di linea o un'antenna entro 16 blocchi. Usa 512 EU/t."),
+        "traliccio, un Terminale di linea, una Centrale o un'antenna entro 16 blocchi. Usa 512 EU/t e porta 8 "
+        "chiamate insieme."),
     "me_bridge_call": ("Interurbana",
         "Il tuo Telefono ME può arrivare oltre la tua rete ME. Da un Telefono ME, chiama un Telefono su una linea, "
         "un Telefono cellulare o un Videotelefono, attraverso un Ponte ME."),
     "portal_relay": ("Attraverso il portale",
         "La radio da sola non passa da una dimensione all'altra. Un Ripetitore di portale funziona entro 4 blocchi "
         "da un portale del Nether, dell'End, del Twilight Forest o di Personal Space, con 32 EU/t di corrente "
-        "MV.%n%nCollegalo con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea della tua "
-        "rete. Poi usa la chiave sul ripetitore, attraversa il portale e usala su un ripetitore dall'altra parte "
-        "entro 5 minuti. La coppia unisce le due reti al livello Alto."),
+        "MV.%n%nCollegalo con la chiave a un'antenna, una Testa di traliccio, un Terminale di linea o una Centrale "
+        "della tua rete. Poi usa la chiave sul ripetitore, attraversa il portale e usala su un ripetitore "
+        "dall'altra parte entro 5 minuti. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI "
+        "ripetitori HV ed EV ne portano 48 e 128; una coppia lavora al livello del ripetitore più basso."),
     "satellite_rocket": ("Carico utile",
         "Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 "
         "di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di "

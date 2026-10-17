@@ -8,37 +8,45 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.machine.MTEVideophone;
+import com.enn3developer.becom.server.NetworkService;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
  * The world side of {@link CableWalk}: what a Line Terminal's cable reaches (DESIGN.md 5.2, 5.5), Telephones and
- * Videophones alike (DESIGN.md 10.2). Only loaded chunks are walked.
+ * Videophones alike (DESIGN.md 10.2), over cable of any tier. Only loaded chunks are walked.
  */
 public final class PhoneCables {
 
     private PhoneCables() {}
 
     /**
-     * How much cable a terminal walks in all, past its length: room for branches, but a cap, so a blob of cable can't
-     * make a scan read thousands of blocks (X15).
+     * The walk from the terminal at x, y, z: the devices its cable reaches within {@code maxLength} blocks, or that
+     * touch it directly, walking at most {@code maxCables} blocks of cable in all (X15).
      */
-    public static final int CABLES_PER_LENGTH = 4;
+    public static CableWalk.Result walk(World world, int x, int y, int z, int maxLength, int maxCables) {
+        return CableWalk.walk(x, y, z, maxLength, maxCables, new CableWalk.Probe() {
 
-    /** The walk from the terminal at x, y, z: the phones its cable reaches, or that touch it directly. */
-    public static CableWalk.Result walk(World world, int x, int y, int z, int maxLength) {
-        return CableWalk.walk(x, y, z, maxLength, maxLength * CABLES_PER_LENGTH, (nx, ny, nz) -> {
-            if (ny < 0 || ny >= world.getHeight()
-                || !world.getChunkProvider()
-                    .chunkExists(nx >> 4, nz >> 4))
+            @Override
+            public CableWalk.Block at(int nx, int ny, int nz) {
+                if (ny < 0 || ny >= world.getHeight()
+                    || !world.getChunkProvider()
+                        .chunkExists(nx >> 4, nz >> 4))
+                    return CableWalk.Block.OTHER;
+                Block block = world.getBlock(nx, ny, nz);
+                if (block instanceof BlockTelephone) return CableWalk.Block.PHONE;
+                if (block instanceof BlockPhoneCable) return CableWalk.Block.CABLE;
+                if (isVideophone(world.getTileEntity(nx, ny, nz))) return CableWalk.Block.PHONE;
                 return CableWalk.Block.OTHER;
-            Block block = world.getBlock(nx, ny, nz);
-            if (block instanceof BlockTelephone) return CableWalk.Block.PHONE;
-            if (block instanceof BlockPhoneCable) return CableWalk.Block.CABLE;
-            if (isVideophone(world.getTileEntity(nx, ny, nz))) return CableWalk.Block.PHONE;
-            return CableWalk.Block.OTHER;
+            }
+
+            @Override
+            public CableTier tier(int nx, int ny, int nz) {
+                return BlockPhoneCable.tierOf(world.getBlockMetadata(nx, ny, nz));
+            }
         });
     }
 
@@ -47,17 +55,20 @@ public final class PhoneCables {
     }
 
     /**
-     * The numbers of the phones a walk found, -1 for one without a number yet or saved by a newer BeCom: it still
-     * counts against the terminal's one phone (D19).
+     * The devices a walk found, nearest first, by number: -1 for one without a number yet or saved by a newer BeCom,
+     * which still takes a port.
      */
-    public static List<Integer> phonesOf(World world, CableWalk.Result walk) {
-        List<Integer> phones = new ArrayList<>();
-        for (long pos : walk.phones()) {
+    public static List<NetworkService.Device> devicesOf(World world, CableWalk.Result walk) {
+        List<NetworkService.Device> devices = new ArrayList<>();
+        for (CableWalk.Found found : walk.devices()) {
+            long pos = found.pos();
             TileEntity tile = world.getTileEntity(BlockPos.x(pos), BlockPos.y(pos), BlockPos.z(pos));
-            if (tile instanceof TileTelephone phone) phones.add(phone.number());
+            int number = -1;
+            if (tile instanceof TileTelephone phone) number = phone.number();
             else if (tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof MTEVideophone phone)
-                phones.add(phone.number());
+                number = phone.number();
+            devices.add(new NetworkService.Device(number, found.length(), found.cable()));
         }
-        return phones;
+        return devices;
     }
 }

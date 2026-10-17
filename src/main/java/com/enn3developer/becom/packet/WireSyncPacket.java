@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.net.CableTier;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -16,11 +18,14 @@ import io.netty.buffer.ByteBuf;
  */
 public final class WireSyncPacket implements IMessage {
 
-    /** One wire between two heads; a blocked one renders broken (D20). */
-    public record Wire(long a, long b, boolean blocked) {}
+    /**
+     * One span between two nodes and the cables strung on it, best first; a blocked one renders broken (D20), and one
+     * with no cable as a bare line.
+     */
+    public record Wire(long a, long b, boolean blocked, List<CableTier> cables) {}
 
-    // A wire is 17 bytes; this keeps one packet well under the 2 MB a server packet may carry.
-    private static final int MAX_WIRES = 100_000;
+    // A wire is at most 26 bytes; this keeps one packet well under the 2 MB a server packet may carry.
+    private static final int MAX_WIRES = 60_000;
 
     private int dimension;
     private List<Wire> wires;
@@ -45,7 +50,19 @@ public final class WireSyncPacket implements IMessage {
         dimension = buf.readInt();
         int count = Math.min(buf.readInt(), MAX_WIRES);
         wires = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) wires.add(new Wire(buf.readLong(), buf.readLong(), buf.readBoolean()));
+        for (int i = 0; i < count; i++) {
+            long a = buf.readLong();
+            long b = buf.readLong();
+            boolean blocked = buf.readBoolean();
+            int cables = Math.min(buf.readUnsignedByte(), Tunables.MAX_BUNDLE);
+            List<CableTier> tiers = new ArrayList<>(cables);
+            for (int j = 0; j < cables; j++) {
+                // A cable a newer server knows draws as the best this client does.
+                CableTier tier = CableTier.byOrdinal(buf.readUnsignedByte());
+                tiers.add(tier == null ? CableTier.FIBRE : tier);
+            }
+            wires.add(new Wire(a, b, blocked, tiers));
+        }
     }
 
     @Override
@@ -56,6 +73,15 @@ public final class WireSyncPacket implements IMessage {
             buf.writeLong(wire.a());
             buf.writeLong(wire.b());
             buf.writeBoolean(wire.blocked());
+            int cables = Math.min(
+                wire.cables()
+                    .size(),
+                Tunables.MAX_BUNDLE);
+            buf.writeByte(cables);
+            for (int j = 0; j < cables; j++) buf.writeByte(
+                wire.cables()
+                    .get(j)
+                    .ordinal());
         }
     }
 

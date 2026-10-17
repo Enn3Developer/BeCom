@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 
 /**
  * A call's best path (DESIGN.md 14): the one whose weakest hop is strongest. A Dijkstra variant over directed edges
@@ -40,6 +42,14 @@ public final class WidestPath {
 
     /** Best paths from {@code source} to every vertex. */
     public Result solve(int source) {
+        return solve(source, edge -> true, vertex -> true);
+    }
+
+    /**
+     * Best paths from {@code source} to every vertex over only the edges {@code edgeOk} allows, entering only the
+     * vertices {@code vertexOk} allows: what's left of the network once other calls took their share.
+     */
+    public Result solve(int source, Predicate<Edge> edgeOk, IntPredicate vertexOk) {
         double[] best = new double[vertexCount];
         int[] prev = new int[vertexCount];
         Edge[] via = new Edge[vertexCount];
@@ -55,6 +65,7 @@ public final class WidestPath {
             if (done[u]) continue;
             done[u] = true;
             for (Edge e : out.get(u)) {
+                if (!edgeOk.test(e) || !vertexOk.test(e.to)) continue;
                 double width = Math.min(best[u], e.snr);
                 if (width > best[e.to]) {
                     best[e.to] = width;

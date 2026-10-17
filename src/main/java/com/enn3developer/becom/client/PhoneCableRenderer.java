@@ -12,7 +12,9 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
-/** Phone Cable (DESIGN.md 15.1): a cord on the floor, with an arm toward each neighbour it joins. */
+/**
+ * The cables (DESIGN.md 15.1): a cord on the floor in its tier's colour, with an arm toward each neighbour it joins.
+ */
 public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
 
     private final int id;
@@ -29,17 +31,17 @@ public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
         GL11.glTranslatef(-0.5f, -0.5f, -0.5f);
         tess.startDrawingQuads();
         tess.setNormal(0, -1, 0);
-        renderer.renderFaceYNeg(block, 0, 0, 0, block.getIcon(0, 0));
+        renderer.renderFaceYNeg(block, 0, 0, 0, block.getIcon(0, metadata));
         tess.setNormal(0, 1, 0);
-        renderer.renderFaceYPos(block, 0, 0, 0, block.getIcon(1, 0));
+        renderer.renderFaceYPos(block, 0, 0, 0, block.getIcon(1, metadata));
         tess.setNormal(0, 0, -1);
-        renderer.renderFaceZNeg(block, 0, 0, 0, block.getIcon(2, 0));
+        renderer.renderFaceZNeg(block, 0, 0, 0, block.getIcon(2, metadata));
         tess.setNormal(0, 0, 1);
-        renderer.renderFaceZPos(block, 0, 0, 0, block.getIcon(3, 0));
+        renderer.renderFaceZPos(block, 0, 0, 0, block.getIcon(3, metadata));
         tess.setNormal(-1, 0, 0);
-        renderer.renderFaceXNeg(block, 0, 0, 0, block.getIcon(4, 0));
+        renderer.renderFaceXNeg(block, 0, 0, 0, block.getIcon(4, metadata));
         tess.setNormal(1, 0, 0);
-        renderer.renderFaceXPos(block, 0, 0, 0, block.getIcon(5, 0));
+        renderer.renderFaceXPos(block, 0, 0, 0, block.getIcon(5, metadata));
         tess.draw();
         GL11.glTranslatef(0.5f, 0.5f, 0.5f);
         renderer.setRenderBounds(0, 0, 0, 1, 1, 1);

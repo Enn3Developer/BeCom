@@ -8,7 +8,10 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 
 import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.item.BeComItems;
+import com.enn3developer.becom.item.ItemSwitchingRack;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.machine.BeComMachines;
 
 import appeng.api.AEApi;
@@ -40,12 +43,46 @@ public final class BeComRecipes {
     private static final int MOBILE_SECONDS = 30;
     private static final int ME_PHONE_EUT = 1920;
     private static final int ME_PHONE_SECONDS = 30;
+    private static final int COAXIAL_EUT = 120;
+    private static final int FIBRE_EUT = 480;
+    private static final int CABLE_TIER_SECONDS = 10;
+    private static final int RACK_SECONDS = 20;
     private static final int SPACE_EUT = 480;
     private static final int SATELLITE_SECONDS = 40;
     private static final int SATELLITE_ROCKET_SECONDS = 60;
     private static final int RECEIVER_SECONDS = 30;
 
     private BeComRecipes() {}
+
+    private static void terminal(gregtech.api.metatileentity.MetaTileEntity machine, CableTier tier, Materials circuit,
+        ItemList hull) {
+        GTModHandler.addCraftingRecipe(
+            machine.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "WCW", "PHP", 'W', OrePrefixes.wireGt01.get(Materials.Steel), 'C',
+                OrePrefixes.circuit.get(circuit), 'P', BlockPhoneCable.stack(tier, 1), 'H', hull });
+    }
+
+    private static void relay(gregtech.api.metatileentity.MetaTileEntity machine, ItemList emitter, Materials circuit,
+        ItemList hull, Materials cable, ItemList sensor) {
+        GTModHandler.addCraftingRecipe(
+            machine.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "YEY", "CHC", "TST", 'Y', new ItemStack(Items.ender_eye), 'E', emitter, 'C',
+                OrePrefixes.circuit.get(circuit), 'H', hull, 'T', OrePrefixes.cableGt01.get(cable), 'S', sensor });
+    }
+
+    private static void rack(CableTier tier, Materials circuit, Materials plate, int eut) {
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.circuit, circuit, 2),
+                GTOreDictUnificator.get(OrePrefixes.plate, plate, 4),
+                BlockPhoneCable.stack(tier, 4))
+            .itemOutputs(ItemSwitchingRack.stack(tier, 1))
+            .duration(RACK_SECONDS * SECONDS)
+            .eut(eut)
+            .addTo(assemblerRecipes);
+    }
 
     public static void register() {
         ItemStack cable = new ItemStack(BeComBlocks.phoneCable);
@@ -61,6 +98,35 @@ public final class BeComRecipes {
             .duration(PHONE_CABLE_SECONDS * SECONDS)
             .eut(PHONE_CABLE_EUT)
             .addTo(assemblerRecipes);
+
+        // Coaxial ×2: an annealed copper core, an aluminium foil shield, polyethylene between and around.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.AnnealedCopper, 1),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.Aluminium, 1))
+            .circuit(PHONE_CABLE_CIRCUIT)
+            .fluidInputs(Materials.Polyethylene.getMolten(PHONE_CABLE_RUBBER_L))
+            .itemOutputs(BlockPhoneCable.stack(CableTier.COAXIAL, 2))
+            .duration(CABLE_TIER_SECONDS * SECONDS)
+            .eut(COAXIAL_EUT)
+            .addTo(assemblerRecipes);
+
+        // Fibre ×2: drawn glass for the core, aluminium foil for strength, a PVC jacket.
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Circuit_Parts_Glass_Tube.get(1),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.Aluminium, 2))
+            .circuit(PHONE_CABLE_CIRCUIT)
+            .fluidInputs(Materials.PolyvinylChloride.getMolten(PHONE_CABLE_RUBBER_L))
+            .itemOutputs(BlockPhoneCable.stack(CableTier.FIBRE, 2))
+            .duration(CABLE_TIER_SECONDS * SECONDS)
+            .eut(FIBRE_EUT)
+            .addTo(assemblerRecipes);
+
+        // Switching Racks: the tier's circuits on a rack of its plates, patched with its cable.
+        rack(CableTier.PHONE, Materials.LV, Materials.Steel, TELEPHONE_EUT);
+        rack(CableTier.COAXIAL, Materials.MV, Materials.Aluminium, COAXIAL_EUT);
+        rack(CableTier.FIBRE, Materials.HV, Materials.StainlessSteel, FIBRE_EUT);
 
         // Telephone: the circuit, a note block for the bell, a steel body and the cord.
         GTValues.RA.stdBuilder()
@@ -82,27 +148,17 @@ public final class BeComRecipes {
                 OrePrefixes.plate.get(Materials.Steel), 'G', OrePrefixes.plate.get(Materials.Glass), 'F',
                 OrePrefixes.frameGt.get(Materials.Steel) });
 
-        // Line Terminal: an LV hull with the circuit, two cables to the phone and two wires to the line.
-        GTModHandler.addCraftingRecipe(
-            BeComMachines.lineTerminal.getStackForm(1),
-            GTModHandler.RecipeBits.BUFFERED,
-            new Object[] { "WCW", "PHP", 'W', OrePrefixes.wireGt01.get(Materials.Steel), 'C',
-                OrePrefixes.circuit.get(Materials.LV), 'P', cable.copy(), 'H', ItemList.Hull_LV });
+        // Line Terminals: a hull of the tier with its circuit, two of its cables to the devices and two wires to the
+        // line.
+        terminal(BeComMachines.lineTerminal, CableTier.PHONE, Materials.LV, ItemList.Hull_LV);
+        terminal(BeComMachines.lineTerminalMV, CableTier.COAXIAL, Materials.MV, ItemList.Hull_MV);
+        terminal(BeComMachines.lineTerminalHV, CableTier.FIBRE, Materials.HV, ItemList.Hull_HV);
 
-        // Repeater Head: a Pylon Head on an LV hull, powered by tin cable.
+        // Exchange: an LV hull among circuits and the lines it switches.
         GTModHandler.addCraftingRecipe(
-            BeComMachines.repeaterHead.getStackForm(1),
+            BeComMachines.exchange.getStackForm(1),
             GTModHandler.RecipeBits.BUFFERED,
-            new Object[] { "CYC", "THT", 'C', OrePrefixes.circuit.get(Materials.LV), 'Y',
-                BeComMachines.pylonHead.getStackForm(1), 'T', OrePrefixes.cableGt01.get(Materials.Tin), 'H',
-                ItemList.Hull_LV });
-
-        // Router Head: as the repeater, with twice the circuits for its fifteen links.
-        GTModHandler.addCraftingRecipe(
-            BeComMachines.routerHead.getStackForm(1),
-            GTModHandler.RecipeBits.BUFFERED,
-            new Object[] { "CYC", "THT", "C C", 'C', OrePrefixes.circuit.get(Materials.LV), 'Y',
-                BeComMachines.pylonHead.getStackForm(1), 'T', OrePrefixes.cableGt01.get(Materials.Tin), 'H',
+            new Object[] { "CPC", "PHP", "CPC", 'C', OrePrefixes.circuit.get(Materials.LV), 'P', cable.copy(), 'H',
                 ItemList.Hull_LV });
 
         // Antenna heads (DESIGN.md 3.1): a hull of the tier with an emitter to transmit and a sensor to receive, the
@@ -236,14 +292,29 @@ public final class BeComRecipes {
                 OrePrefixes.circuit.get(Materials.HV), 'H', ItemList.Hull_HV, 'T',
                 OrePrefixes.cableGt01.get(Materials.Gold) });
 
-        // Portal Relay (DESIGN.md 3.1): an MV hull with an emitter and a sensor, its circuits, copper cables, and two
-        // Eyes of Ender to find the portal.
-        GTModHandler.addCraftingRecipe(
-            BeComMachines.portalRelay.getStackForm(1),
-            GTModHandler.RecipeBits.BUFFERED,
-            new Object[] { "YEY", "CHC", "TST", 'Y', new ItemStack(Items.ender_eye), 'E', ItemList.Emitter_MV, 'C',
-                OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'T',
-                OrePrefixes.cableGt01.get(Materials.Copper), 'S', ItemList.Sensor_MV });
+        // Portal Relays (DESIGN.md 3.1): a hull of the tier with an emitter and a sensor, its circuits and cables, and
+        // two Eyes of Ender to find the portal.
+        relay(
+            BeComMachines.portalRelay,
+            ItemList.Emitter_MV,
+            Materials.MV,
+            ItemList.Hull_MV,
+            Materials.Copper,
+            ItemList.Sensor_MV);
+        relay(
+            BeComMachines.portalRelayHV,
+            ItemList.Emitter_HV,
+            Materials.HV,
+            ItemList.Hull_HV,
+            Materials.Gold,
+            ItemList.Sensor_HV);
+        relay(
+            BeComMachines.portalRelayEV,
+            ItemList.Emitter_EV,
+            Materials.EV,
+            ItemList.Hull_EV,
+            Materials.Aluminium,
+            ItemList.Sensor_EV);
 
         // Satellite Dish (DESIGN.md 3.1): an HV hull with two emitters and two sensors, its circuits and gold cables.
         GTModHandler.addCraftingRecipe(

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Every line starts and ends at a Line Terminal. Give it LV power, just 4 EU/t, and run Phone Cable from it to a Telephone. A terminal serves exactly one phone.%n%nTo put it on a line, wrench the terminal, then a Pylon Head.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every building's line starts at a Line Terminal. Give it LV power, just 4 EU/t, and run cable from it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a Pylon Head, with cable in your hotbar.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -1,10 +1,13 @@
 # Blocks and machines
 tile.becom.telephone.name=Telefono
 tile.becom.phone_cable.name=Cavo telefonico
+tile.becom.coaxial_cable.name=Cavo coassiale
+tile.becom.fibre_cable.name=Cavo in fibra
 gt.blockmachines.becom.pylon_head.name=Testa di traliccio
-gt.blockmachines.becom.repeater_head.name=Testa ripetitore
-gt.blockmachines.becom.router_head.name=Testa router
+gt.blockmachines.becom.exchange.name=Centrale
 gt.blockmachines.becom.line_terminal.name=Terminale di linea
+gt.blockmachines.becom.line_terminal_mv.name=Terminale di linea (MV)
+gt.blockmachines.becom.line_terminal_hv.name=Terminale di linea (HV)
 gt.blockmachines.becom.antenna_t1.name=Testa d'antenna T1
 gt.blockmachines.becom.antenna_t2.name=Testa d'antenna T2
 gt.blockmachines.becom.antenna_t3.name=Testa d'antenna T3
@@ -14,6 +17,8 @@ gt.blockmachines.becom.videophone.name=Videotelefono
 gt.blockmachines.becom.launch_pad.name=Rampa di lancio per satelliti
 gt.blockmachines.becom.satellite_dish.name=Parabola satellitare
 gt.blockmachines.becom.portal_relay.name=Ripetitore di portale
+gt.blockmachines.becom.portal_relay_hv.name=Ripetitore di portale (HV)
+gt.blockmachines.becom.portal_relay_ev.name=Ripetitore di portale (EV)
 item.becom.walkie_talkie.name=Walkie-talkie
 item.becom.signal_analyzer.name=Analizzatore di segnale
 item.becom.mobile_phone.name=Telefono cellulare
@@ -21,28 +26,34 @@ item.becom.me_phone.name=Telefono ME
 item.becom.satellite.name=Satellite
 item.becom.satellite_rocket.name=Razzo per satelliti
 item.becom.rocket_radio_receiver.name=Ricevitore radio per razzi
+item.becom.switching_rack_lv.name=Rack di commutazione (LV)
+item.becom.switching_rack_mv.name=Rack di commutazione (MV)
+item.becom.switching_rack_hv.name=Rack di commutazione (HV)
+becom.cable.tooltip=Cavo %s: %s KB/s, su tratte fino a %s blocchi
+becom.cable.tooltip_span=Tende le campate dei tralicci: tienilo nella barra rapida e usa la chiave su due nodi.
+becom.switching_rack.info=Smista %s chiamate insieme, nell'input bus di una Centrale
 
 # Machine tooltips
 becom.machine.pylon.type=Traliccio
-becom.machine.pylon.info=Porta una linea telefonica tra due Terminali di linea. Funziona senza corrente, anche nei chunk scaricati.
-becom.machine.repeater.type=Traliccio, ripetitore
-becom.machine.repeater.info=Rigenera il segnale della linea, così la perdita di linea riparte da zero. Prende corrente da un Energy Hatch nell'armadio alla sua base.
-becom.machine.router.type=Traliccio, router
-becom.machine.router.info=Unisce le linee in una rete, dove ogni telefono può chiamare qualsiasi altro. Prende corrente da un Energy Hatch nell'armadio di centrale alla sua base.
-becom.machine.pylon.span=Si collega a tralicci distanti fino a %s volte l'altezza del più basso, al massimo %s collegamenti
-becom.machine.pylon.wrench=Usa la chiave su un nodo e poi su un altro per collegarli; di nuovo per scollegarli. Accovacciati per ruotarlo.
+becom.machine.pylon.info=Regge i cavi delle campate di una linea. Funziona senza corrente, anche nei chunk scaricati.
+becom.machine.pylon.span=Si collega a tralicci fino a %s volte l'altezza del più basso, al massimo %s collegamenti, %s cavi per campata
+becom.machine.pylon.wrench=Con del cavo nella barra rapida, usa la chiave su un nodo e poi su un altro per tendere una campata; di nuovo per aggiungere un cavo. Senza, per scollegarli. Accovacciati per ruotarla.
 becom.machine.pylon.controller=In cima alla colonna
 becom.machine.pylon.frames=Wood Frame Box, in un palo sotto la testa
-becom.machine.pylon.hatch=Qualsiasi blocco dell'armadio, davanti alla base del palo
 becom.machine.pylon.arm=Wood Frame Box, una traversa subito sotto la testa
-becom.machine.pylon.arms=Wood Frame Box, una traversa subito sotto la testa e un'altra due più in basso
 becom.machine.power=Consuma %s EU/t a %s mentre lavora
-becom.machine.terminal.info=Dove una linea telefonica inizia o finisce. Si collega a una Testa di traliccio e serve un solo telefono.
-becom.machine.terminal.cable=Raggiunge il suo telefono con fino a %s blocchi di Cavo telefonico
+becom.machine.terminal.info=Dove parte la linea di un edificio. Si collega a un traliccio e serve ogni dispositivo sul suo cavo, dal più vicino.
+becom.machine.terminal.ports=Serve fino a %s dispositivi, che dividono la sua linea
+becom.machine.exchange.type=Centrale
+becom.machine.exchange.info=Smista le chiamate tra tutte le linee collegate.
+becom.machine.exchange.racks=Fino a %s Rack di commutazione nei suoi input bus: %s chiamate l'uno per LV, %s per MV, %s per HV
+becom.machine.exchange.links=Collegata al massimo a %s linee
+becom.machine.exchange.controller=Al centro della facciata
+becom.machine.exchange.hatch=Qualsiasi casing
 becom.machine.antenna.type=Antenna
 becom.machine.antenna.info=Serve le radio nel suo raggio e ripete tutti i 16 canali radio. Si collega da sola alle altre antenne e porta le chiamate tra le linee agganciate alle antenne.
 becom.machine.antenna.range=Arriva a circa %s blocchi al livello Basso in campo aperto (%s dB di bilancio di collegamento). Altezza e colline contano.
-becom.machine.antenna.bridge=Usa la chiave sull'antenna e su una Testa di traliccio o un Terminale di linea entro %s blocchi per agganciare quella linea, al massimo %s agganci
+becom.machine.antenna.bridge=Collegala con il cavo a un traliccio, a un Terminale di linea o a una Centrale entro %s blocchi, al massimo %s
 becom.machine.antenna.controller=In cima all'albero
 becom.machine.antenna.mast=%s, nell'albero sotto la testa
 becom.machine.antenna.rigging.1=%s, per il dipolo sotto la testa e tre stralli
@@ -61,7 +72,7 @@ becom.machine.launch_pad.tank=Serbatoio del propellente, accanto alla rampa
 becom.machine.launch_pad.front=Bordo anteriore della rampa, accanto al controller
 becom.machine.satellite_dish.type=Parabola satellitare
 becom.machine.satellite_dish.info=Collega la sua rete ai satelliti sopra questa dimensione: a ogni altra parabola qui e, nell'Overworld, a ogni pianeta con un Ricevitore radio per razzi.
-becom.machine.satellite_dish.link=Collegala con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea entro %s blocchi. Servono almeno %s satelliti sopra questa dimensione e cielo aperto sopra tutta la parabola, che guarda dritta in alto; la pioggia la indebolisce.
+becom.machine.satellite_dish.link=Collegala con il cavo a un'antenna, a un traliccio, a un Terminale di linea o a una Centrale entro %s blocchi. Servono almeno %s satelliti sopra questa dimensione, e cielo aperto sopra tutta la parabola
 becom.machine.satellite_dish.maintenance=Ogni problema di manutenzione toglie %s dB al suo collegamento.
 becom.machine.satellite_dish.controller=Davanti al basamento, ai piedi della parabola
 becom.machine.satellite_dish.hatch=Qualsiasi involucro del basamento
@@ -71,7 +82,8 @@ becom.machine.satellite_dish.frames=%s, per il piedistallo e i sostegni dell'ill
 becom.machine.portal_relay.info=Collega la sua rete a quella dall'altra parte di un portale, attraverso un ripetitore di là.
 becom.machine.portal_relay.portal=Funziona entro %s blocchi da un portale del Nether, un portale dell'End, un portale del Twilight Forest o un portale di Personal Space.
 becom.machine.portal_relay.pair=Per accoppiarlo: usa la chiave su questo ripetitore, attraversa il portale e usa la chiave su quello dall'altra parte entro %s minuti.
-becom.machine.portal_relay.link=Collegalo con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea entro %s blocchi per unirlo alla sua rete.
+becom.machine.portal_relay.link=Collegalo con il cavo a un'antenna, a un traliccio, a un Terminale di linea o a una Centrale entro %s blocchi per unirlo alla sua rete.
+becom.machine.portal_relay.calls=Porta %s chiamate, %s KB/s. Una coppia lavora al livello del ripetitore più basso.
 becom.relay.no_portal=Nessun portale a portata
 becom.relay.portal=A portata: %s
 becom.relay.leads_into=Il suo portale di Personal Space porta nella dimensione %s
@@ -86,7 +98,7 @@ becom.portal.personal_space=un portale di Personal Space
 becom.dish.too_few=Troppo pochi satelliti per un collegamento: ne servono %s
 becom.dish.hop=Collegamento ai satelliti: %s dB, %s
 becom.dish.problems=%s problemi di manutenzione: -%s dB
-becom.dish.unlinked=Non collegata: usa la chiave per collegarla a un'antenna, una Testa di traliccio o un Terminale di linea
+becom.dish.unlinked=Non collegata: collegala con il cavo a un'antenna, a un traliccio, a un Terminale di linea o a una Centrale
 becom.dish.linked=Collegata a %s
 becom.launch_pad.queue=Razzi in attesa di lancio: %s
 becom.launch_pad.held=In pausa: qualcosa copre la rampa. Il lancio riprende appena il cielo è libero.
@@ -99,7 +111,7 @@ GT5U.gui.text.recipe_result.becom_no_fuel=Non c'è abbastanza carburante per raz
 becom.machine.transceiver.info=Una radio su un blocco. Per trasmettere, tieni premuto il tasto per parlare entro la sua portata di voce; l'altoparlante riproduce il suo canale.
 becom.machine.transceiver.range=Arriva a circa %s blocchi da sola. Si parla entro %s blocchi; l'altoparlante arriva a %s.
 becom.machine.me_bridge.info=Unisce la sua rete ME a quella di BeCom, così i Telefoni ME collegati possono chiamare qualsiasi telefono. Prende cavi ME su ogni lato e un canale.
-becom.machine.me_bridge.link=Collegalo con la chiave a una Testa di traliccio, un Terminale di linea o un'antenna entro %s blocchi.
+becom.machine.me_bridge.link=Collegalo con il cavo a un traliccio, a un Terminale di linea, a una Centrale o a un'antenna entro %s blocchi.
 becom.machine.videophone.info=Un vivavoce con video per le reti cablate. Collegalo con Cavo telefonico a un Terminale di linea, come un Telefono.
 becom.machine.videophone.room=Chiunque sia entro %s blocchi è nella sua chiamata, e il suo altoparlante arriva a %s. Riaggancia dopo %s s senza nessuno vicino.
 becom.videophone.step_closer=Avvicinati al Videotelefono entro %s blocchi per usarlo: le sue chiamate sono per chi gli sta intorno.
@@ -110,14 +122,24 @@ becom.info.online=In funzione
 becom.info.me_online=Rete ME: collegata
 becom.info.me_offline=Rete ME: scollegata
 becom.info.offline=Fermo: struttura incompleta, senza corrente o spento
+becom.info.calls=Chiamate: %s di %s
 becom.info.links=Collegamenti: %s di %s
 becom.info.link=Collegato a %s, %s blocchi
 becom.info.link_blocked=Collegato a %s, %s blocchi: ostruito
+becom.info.span_bare=  nessun cavo: non porta niente
+becom.info.span_cables=  %s× %s
+becom.exchange.no_racks=Nessun Rack di commutazione: non smista chiamate
+becom.exchange.racks=Rack di commutazione: %s di %s
+becom.exchange.rack=  %s× %s: %s chiamate l'uno
+becom.exchange.calls=Chiamate: %s di %s
 becom.info.phone=Serve il telefono %s
-becom.info.no_phone=Nessun telefono sul cavo
-becom.info.too_many_phones=%s telefoni sul cavo: un terminale ne serve uno solo
-becom.info.too_much_cable=Più di %s blocchi di Cavo telefonico in tutto: un terminale non ne prende di più
-becom.info.phone_shared=Il telefono %s è anche sul cavo di un altro terminale: un telefono dipende da un solo terminale
+becom.info.no_phone=Nessun dispositivo sul cavo
+becom.info.too_much_cable=Più di %s blocchi di cavo in tutto: un terminale non ne percorre di più
+becom.info.devices=Dispositivi: %s di %s porte
+becom.info.device=%s: %s, %s di %s blocchi
+becom.info.device_too_far=%s: %s blocchi di cavo, oltre i suoi %s
+becom.info.device_no_port=%1$s: nessuna porta libera, a %2$s blocchi
+becom.info.device_nearer=%s: servito da un terminale più vicino
 becom.info.mast=Altezza dell'albero: %s
 becom.info.locked=Riservata alla squadra del proprietario
 becom.info.too_new=Salvato da un BeCom più recente: aggiorna BeCom per usarlo
@@ -130,15 +152,21 @@ becom.info.off_hook=Cornetta alzata
 
 # Linking
 becom.link.no_node=Questo nodo non è ancora pronto. Riprova tra un momento.
-becom.link.selected=Selezionato il nodo in %s. Usa la chiave su un altro nodo per collegarli o scollegarli.
+becom.link.selected=Selezionato il nodo a %s. Usa la chiave su un altro nodo per tendere una campata, con del cavo nella barra rapida, o senza per scollegarli.
 becom.link.cancelled=Collegamento annullato.
-becom.link.linked=Collegati, %s blocchi.
+becom.link.linked=Campata tesa, %s blocchi, con %s.
+becom.link.needs_cable=Tieni del cavo nella barra rapida per tendere questa campata: ne servono %s.
+becom.link.short_of_cable=Questa campata vuole %s %s.
+becom.link.cable_added=Aggiunto %s: %s cavi su %s in questa campata.
+becom.link.cable_upgraded=Sostituito %s con %s.
+becom.link.bundle_full=Questa campata ha già %s cavi, nessuno peggiore di quello.
+becom.call.network_busy=Tutte le strade sono piene: la rete è occupata.
 becom.link.unlinked=Scollegati.
-becom.link.not_yours=Solo un proprietario di uno dei due capi, o la sua squadra, può scollegarlo.
+becom.link.not_yours=Solo un proprietario di uno dei due capi, o la sua squadra, può cambiarlo o scollegarlo.
 becom.link.blocked=C'è qualcosa di solido lungo la linea.
 becom.link.refused.same_node=È lo stesso nodo.
 becom.link.refused.already_linked=Sono già collegati.
-becom.link.refused.incompatible=Questi due non si possono collegare. Le linee corrono sulle Teste di traliccio; un'antenna aggancia una Testa di traliccio o un Terminale di linea, e una parabola o un ripetitore di portale un'antenna, una Testa di traliccio o un Terminale di linea.
+becom.link.refused.incompatible=Questi due non si possono collegare. Le linee passano sui tralicci tra terminali e Centrali; antenne, parabole, ripetitori di portale e ME Bridge si collegano con il cavo a un traliccio, a un terminale o a una Centrale.
 becom.link.refused.relay_dimensions=I Ripetitori di portale accoppiano l'Overworld con il Nether, l'End, il Twilight Forest o una dimensione personale.
 becom.link.refused.relay_portal=Questi due ripetitori non stanno ai due lati dello stesso portale: quello lontano sta dove porta un altro portale.
 becom.link.refused.relay_paired=Uno dei due ripetitori è già accoppiato. Prima disaccoppialo: usa la chiave su di lui e poi sul suo compagno.
@@ -218,6 +246,42 @@ becom.phone.dnd=Non disturbare
 becom.phone.hidden=Nascondi dai contatti
 becom.phone.blocked=Giocatori bloccati
 becom.phone.not_owner=Solo il proprietario o la sua squadra può cambiarle.
+becom.phone.back=Indietro
+becom.phone.home=Home
+becom.phone.app.keypad=Telefono
+becom.phone.app.contacts=Contatti
+becom.phone.app.recent=Recenti
+becom.phone.app.call=Chiamata
+becom.phone.app.video=Video
+becom.phone.app.settings=Impostazioni
+becom.phone.app.home=Home
+becom.phone.app.battery=Batteria
+becom.phone.app.signal=Segnale
+becom.phone.app.sub=%s > %s
+becom.phone.home.day=Giorno %s, telefono %s
+becom.phone.battery.charge=%s%%: %s di %s EU
+becom.phone.battery.lasts=Dura %s in attesa, %s in chiamata
+becom.phone.battery.charging=In carica
+becom.phone.battery.not_charging=Non in carica: la carica un caricatore o un battery buffer
+becom.phone.battery.today=Usata oggi
+becom.phone.battery.use=%s: %s%% %s
+becom.phone.battery.use.standby=Attesa
+becom.phone.battery.use.calls=Chiamate
+becom.phone.battery.use.video=Video
+becom.phone.battery.use.screen=Schermo
+becom.phone.battery.use.apps=App
+becom.phone.battery.saver=Risparmio batteria: niente video
+becom.phone.battery.saver_auto=Risparmio batteria: attivo, la carica è bassa
+becom.phone.battery.warn=Avvisi di batteria scarica
+becom.phone.battery.forever=senza limite
+becom.phone.battery.minutes=%s min
+becom.phone.battery.hours=%s h %s min
+becom.phone.battery.low=La batteria del telefono è scesa al %s%%.
+becom.phone.signal.level=Segnale: %s
+becom.phone.signal.via.none=Nessun servizio qui
+becom.phone.signal.via.antenna=Attraverso un'Antenna T%s
+becom.phone.signal.via.satellites=Attraverso i satelliti
+becom.phone.signal.via.me_network=Attraverso la sua rete ME
 
 # Antenna screen
 becom.antenna.title=Antenna T%s
@@ -226,12 +290,13 @@ becom.antenna.unformed=Struttura incompleta
 becom.antenna.surveyed=Rilevamento fatto.
 becom.antenna.surveying=Rilevamento in corso...
 becom.antenna.owner=Proprietario: %s
+becom.antenna.owner_calls=Proprietario: %s. Chiamate: %s di %s
 becom.antenna.lock=Servi solo la squadra del proprietario
 becom.antenna.coverage=Copertura, fino a %s blocchi
 becom.antenna.coverage_radio=Radio (VHF)
 becom.antenna.coverage_calls=Chiamate (UHF)
 becom.antenna.link=Antenna in %s, %s, %s, %s blocchi. Radio %s, chiamate %s
-becom.antenna.bridge=Aggancio a %s, %s, %s, %s blocchi
+becom.antenna.bridge=Collegata a %s, %s, %s, %s blocchi: %s KB/s
 becom.antenna.no_links=Ancora nessun'altra antenna a portata.
 
 # Radios
@@ -305,21 +370,21 @@ becom.command.signal.antenna=Antenna T%s in %s: %s dB
 betterquesting.questline.7dZOq4U1Vfa2Yr9apUvsiQ.name=Better Communications
 betterquesting.questline.7dZOq4U1Vfa2Yr9apUvsiQ.desc=Telefoni su linee di tralicci, radio, telefoni cellulari e satelliti, portati dalla chat vocale.
 betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.name=§2§lCablato per il suono
-betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.desc=Ogni rete telefonica comincia da un filo. Il Cavo telefonico è filo di red alloy avvolto nella gomma, e si fa nell'Assembler.%n%nVa da un Telefono al suo Terminale di linea, fino a 32 blocchi, e il segnale non perde nulla per strada. Fanne un paio per cominciare.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.IHTr1EMRVx6vQQ7722eirw.desc=Ogni rete telefonica comincia da un filo. Il Cavo telefonico è filo di red alloy avvolto nella gomma, e si fa nell'Assembler.%n%nVa da un Telefono al suo Terminale di linea, fino a 128 blocchi. Il filo è digitale: non perde nulla per strada, con la pioggia o col sole. Fanne un paio per cominciare.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.name=§2§lDriin, driin
 betterquesting.quest.b14IecXxXxuWU8oeGOPcNw.desc=Un circuito, un note block per la suoneria e un corpo d'acciaio, messi insieme nell'Assembler con un filo di Cavo telefonico: ecco un Telefono.%n%nClic destro per alzare la cornetta. È tuo, e lo è anche il suo numero di sei cifre.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.name=§2§lCapolinea
-betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=Ogni linea inizia e finisce in un Terminale di linea. Dagli corrente LV, bastano 4 EU/t, e collegalo con il Cavo telefonico a un Telefono. Un terminale serve un solo telefono.%n%nPer metterlo su una linea, usa la chiave sul terminale, poi su una Testa di traliccio.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.mXRjCMiFWsyGTG0Id2bbig.desc=La linea di ogni edificio parte da un Terminale di linea. Dagli corrente LV, bastano 4 EU/t, e collegalo con il cavo ai tuoi Telefoni. Serve ogni telefono sul suo cavo, dal più vicino: 4 per il terminale LV, 8 per quello MV, 16 per quello HV. Tutti dividono la sua linea.%n%nPer metterlo su una linea, con del cavo nella barra rapida usa la chiave sul terminale, poi su una Testa di traliccio.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest._OpArmItVHW8jB5_z18yig.name=§2§lSul palo
-betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Il Cavo telefonico arriva solo a 32 blocchi. Per andare più lontano servono i tralicci: una Testa di traliccio in cima a un palo di 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la testa.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Usa la chiave su una testa, poi sull'altra, per collegarli.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk scaricati. Il segnale però cala con la distanza, quindi ti serve un ripetitore almeno ogni 225 blocchi.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest._OpArmItVHW8jB5_z18yig.desc=Per portare una linea tra gli edifici servono i tralicci: una Testa di traliccio in cima a un palo di 6-16 Wood Frame Box, con una traversa di altre 4 subito sotto la testa.%n%nPiù è alto, meglio è. Due tralicci si collegano fino a quattro volte l'altezza del più basso, se in mezzo non c'è niente di solido. Metti del cavo nella barra rapida, poi usa la chiave su una testa e sull'altra: così tendi la campata, un cavo ogni 4 blocchi.%n%nI tralicci non vogliono corrente e funzionano anche nei chunk scaricati. Una tratta di Cavo telefonico arriva a 128 blocchi, da terminale a terminale; oltre non porta niente.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.name=§2§lPronto? Mi senti?
 betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=È ora della prima chiamata! Ti servono due Telefoni, ognuno sul suo Terminale di linea, con i tralicci tra i terminali.%n%nAlza la cornetta. Se sulla linea c'è un solo altro telefono, squilla subito. Altrimenti componi il suo numero o scegli un contatto.%n%nNon aspettarti l'alta fedeltà: al Telefono la voce è stretta e ruvida. Però arriva fin dove arriva la linea.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.name=§2§lTenere vivo il segnale
-betterquesting.quest.EwUn7B5YXiqaZtu5vTGc2Q.desc=Le linee lunghe si fanno silenziose. Una Testa ripetitore è una Testa di traliccio che ripulisce il segnale, così la perdita di linea riparte da zero dopo di lei.%n%nA differenza di un traliccio semplice vuole corrente: 4 EU/t di LV, da un Energy Hatch in un armadio alla base del palo. Funziona solo se è caricata e alimentata, quindi tieni caricati i chunk dei ripetitori.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.name=§2§lCentralino
-betterquesting.quest.ARn2PctkVOe0cqI7997r1Q.desc=Una linea semplice unisce esattamente due telefoni. Ne vuoi di più? Una Testa router ha 15 collegamenti e trasforma le tue linee in una rete, dove ogni telefono può chiamare qualsiasi altro.%n%nRipulisce il segnale come un ripetitore e prende 16 EU/t di corrente LV da un Energy Hatch nell'armadio di centrale alla base del palo: tre blocchi di larghezza, due di altezza, con una seconda traversa in cima per tutte quelle linee.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.name=§6§lTubi più grossi
+betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.desc=Il Cavo telefonico porta 16 KB/s, abbastanza per 8 chiamate. Il Cavo coassiale porta 64 KB/s su tratte fino a 512 blocchi, e si fa nell'Assembler con rame ricotto, lamina d'alluminio e polietilene.%n%nUna campata regge fino a 4 cavi, e le loro velocità si sommano. Con del cavo nella barra rapida, usa di nuovo la chiave su una campata tesa per aggiungerlo; quando è piena, un cavo migliore prende il posto del più scarso, che ti torna indietro.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.name=§2§lCentralino
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=Una linea di tralicci unisce due terminali. Per unirne di più, collegali tutti a una Centrale: un edificio 3x3x3 di LV Machine Casing con un Energy Hatch e un Input Bus, che consuma 64 EU/t. Smista le chiamate tra fino a 15 linee.%n%nSenza Rack di commutazione non smista niente. Mettine fino a 8 nel suo Input Bus: ogni rack LV smista 8 chiamate insieme, MV 32, HV 128.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lIn onda
-betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, e collegandone una con la chiave a una Testa di traliccio o a un Terminale di linea entro 16 blocchi porti quella linea via radio.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
+betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, ma i collegamenti radio portano poco. Collegala con il cavo a un traliccio, a un terminale o a una Centrale entro 16 blocchi, con del cavo nella barra rapida, e porta tutte e 4 le sue chiamate sul filo.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lStazione base
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.desc=Un Ricetrasmettitore è una radio in un blocco. Va a MV, 32 EU/t, e da solo arriva a circa 125 blocchi in campo aperto.%n%nStagli entro 2 blocchi e tieni premuto il tasto per parlare della radio (Bloc Maiusc, se non l'hai cambiato) per parlare sul suo canale. Il suo altoparlante riproduce il canale a chiunque sia entro 16 blocchi.%n%nAltro nella guida: [guide page=becom:radios.md]Radio[/guide].
 betterquesting.quest.8sQY72VCXU2ZURqIKp1zVw.name=§6§lLeggere l'aria
@@ -341,13 +406,13 @@ betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.desc=Un telefono che va dove vai tu.
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.name=§5§lMi senti adesso?
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.desc=Fai o ricevi una chiamata con un Telefono cellulare. Tienilo in mano per vedere le tacche.%n%nIl maltempo si fa sentire: la pioggia toglie 3 dB al servizio di un telefono, un temporale 6. Non sai dove c'è copertura? Lo schermo di un'antenna mostra fin dove arriva il suo segnale.%n%nIn chiamata, aggiungi altri telefoni dalla tastiera: si parla fino in 8.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=§8§lSenza fili dappertutto
-betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Hai una rete ME con i punti d'accesso wireless? Allora la copertura ce l'hai già. Un Telefono ME è un Telefono cellulare collegato a una rete ME.%n%nCollegalo a un Terminale di sicurezza ME, come un Terminale wireless. Ovunque arrivino i Punti d'accesso wireless ME di quella rete, amplificatori compresi, ha servizio al livello Massimo. Si carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si chiamano senza nessuna antenna.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
+betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Hai una rete ME con i punti d'accesso wireless? Allora la copertura ce l'hai già. Un Telefono ME è un Telefono cellulare collegato a una rete ME.%n%nCollegalo a un Terminale di sicurezza ME, come un Terminale wireless. Ovunque arrivino i Punti d'accesso wireless ME di quella rete, amplificatori compresi, ha servizio al livello Massimo. Altrove è un Telefono cellulare, con il segnale di un Telefono cellulare. Si carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si chiamano senza nessuna antenna.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=§8§lUnire le reti
-betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea o un'antenna entro 16 blocchi. Usa 512 EU/t.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
+betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea, una Centrale o un'antenna entro 16 blocchi. Usa 512 EU/t e porta 8 chiamate insieme.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.name=§8§lInterurbana
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Il tuo Telefono ME può arrivare oltre la tua rete ME. Da un Telefono ME, chiama un Telefono su una linea, un Telefono cellulare o un Videotelefono, attraverso un Ponte ME.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.name=§6§lAttraverso il portale
-betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=La radio da sola non passa da una dimensione all'altra. Un Ripetitore di portale funziona entro 4 blocchi da un portale del Nether, dell'End, del Twilight Forest o di Personal Space, con 32 EU/t di corrente MV.%n%nCollegalo con la chiave a un'antenna, una Testa di traliccio o un Terminale di linea della tua rete. Poi usa la chiave sul ripetitore, attraversa il portale e usala su un ripetitore dall'altra parte entro 5 minuti. La coppia unisce le due reti al livello Alto.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
+betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.desc=La radio da sola non passa da una dimensione all'altra. Un Ripetitore di portale funziona entro 4 blocchi da un portale del Nether, dell'End, del Twilight Forest o di Personal Space, con 32 EU/t di corrente MV.%n%nCollegalo con la chiave a un'antenna, una Testa di traliccio, un Terminale di linea o una Centrale della tua rete. Poi usa la chiave sul ripetitore, attraversa il portale e usala su un ripetitore dall'altra parte entro 5 minuti. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI ripetitori HV ed EV ne portano 48 e 128; una coppia lavora al livello del ripetitore più basso.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.name=§5§lCarico utile
 betterquesting.quest.78j3bHKHWF6_v27ljQ8cYg.desc=Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di Galacticraft: questo razzo parte solo da una Rampa di lancio per satelliti.%n%nAltro nella guida: [guide page=becom:space.md]Lo spazio e le altre dimensioni[/guide].
 betterquesting.quest.CW6Vyi4yXYClMf9my2HQKQ.name=§5§lDecollo

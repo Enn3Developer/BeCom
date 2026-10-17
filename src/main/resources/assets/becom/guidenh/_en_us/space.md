@@ -11,6 +11,8 @@ item_ids:
   - gregtech:gt.blockmachines:25010
   - gregtech:gt.blockmachines:25011
   - gregtech:gt.blockmachines:25012
+  - gregtech:gt.blockmachines:25014
+  - gregtech:gt.blockmachines:25015
 quest_ids:
   - "oNm-cIc3Xoy6hejGu6UM7Q"
   - "78j3bHKHWF6_v27ljQ8cYg"
@@ -43,7 +45,7 @@ satellites and when the next comes down.
 ## Sky hops
 
 With 5 satellites over a dimension, every Mobile Phone and radio under its open sky reaches them, at Low. ME Phones
-don't use them. More satellites give a stronger signal:
+use them only outside their ME network's range. More satellites give a stronger signal:
 
 | Satellites | Level |
 | --- | --- |
@@ -57,6 +59,9 @@ it's gone. With only 5 satellites the hop sits right at Low's edge, so any of th
 Radios under open sky hear each other through the satellites, however far apart. Dimensions without a sky, like the
 Nether, have none.
 
+Each satellite carries 2 calls, shared by everything under that sky: phones, dishes and receivers alike. 18 satellites
+carry 36 calls at once, and the next call is busy until one ends.
+
 ## Satellite Dish
 
 A <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
@@ -66,11 +71,15 @@ rim, with a feed horn held over it by four struts of Stainless Steel Frame Boxes
 in a plinth at its foot, with the energy hatch and maintenance hatch beside it. It needs open sky over the whole dish. Wrench-link it to an antenna, a Pylon Head or a Line
 Terminal. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
+A dish carries 32 calls at most, and never more than its hop's level has room for: a hop at Low carries 4 KB/s, room
+for 2 calls, Medium 16 KB/s, High 64 and Max 256, at 2 KB/s a call.
+
 ## Rocket Radio Receiver
 
 Put a <ItemLink id="becom:rocket_radio_receiver" showIcon="left">Rocket Radio Receiver</ItemLink> in the cargo of a
 Galacticraft rocket standing on a Galacticraft launch pad, on a moon, a planet or a space station. The rocket becomes a
-T1 antenna there, reaching about 64 blocks, and that world's link to the Overworld's satellites, at High. The rocket
+T1 antenna there, reaching about 64 blocks, and that world's link to the Overworld's satellites, at High. It carries
+4 calls at once. The rocket
 needs chests to have cargo, and counts only while its chunk is loaded. A rocket you fly yourself arrives as an item in
 its Parachest: place it on a pad and put the receiver in.
 
@@ -82,9 +91,17 @@ wired lines in, bridge them onto an antenna within reach of the rocket.
 ## Portal Relay
 
 A <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Portal Relay</ItemLink> works within 4 blocks of a
-Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power. Wrench-link
-it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench it, go through the portal, and wrench a
-relay on the other side within 5 minutes: the pair joins the two networks at High.
+Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal. Wrench-link it to an antenna, a Pylon
+Head, a Line Terminal or an Exchange of your network. Then wrench it, go through the portal, and wrench a relay on the
+other side within 5 minutes: the pair joins the two networks at High.
+
+It comes in three tiers, and a pair works at its lower relay's:
+
+| Relay | Power | Calls | Rate |
+| --- | --- | --- | --- |
+| <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Portal Relay</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
+| <ItemLink id="gregtech:gt.blockmachines:25014" showIcon="left">Portal Relay (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
+| <ItemLink id="gregtech:gt.blockmachines:25015" showIcon="left">Portal Relay (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
 
 The two relays must stand on the two sides of one portal. Through the Nether, the far relay stands where the portal
 leads, an eighth of the distance from the world's center; through the Twilight Forest, near the same spot. A Personal

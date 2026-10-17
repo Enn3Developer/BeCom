@@ -2,17 +2,22 @@ package com.enn3developer.becom.server;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentTranslation;
 
 import com.enn3developer.becom.item.Carried;
 import com.enn3developer.becom.item.ItemCarriedPhone;
@@ -20,6 +25,7 @@ import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.CallGraph;
+import com.enn3developer.becom.logic.phone.BatteryUse;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
@@ -39,6 +45,7 @@ import com.enn3developer.becom.packet.PhoneStatusPacket;
 public final class CarriedPhones {
 
     private static final int TICKS_PER_SECOND = 20;
+    private static final long TICKS_PER_DAY = 24_000;
 
     /** What the calls need to hear about carried phones. */
     public interface Calls {
@@ -82,6 +89,13 @@ public final class CarriedPhones {
     private final Map<Integer, Service> service = new HashMap<>();
     // The service level each player's client last heard of, for their signal bars.
     private final Map<UUID, SignalLevel> shown = new HashMap<>();
+    // Each carried phone's charge at the last second, which phones gained charge since, and whose saver is on.
+    private final Map<Integer, Double> lastCharge = new HashMap<>();
+    private final Set<Integer> charging = new HashSet<>();
+    private final Set<Integer> savers = new HashSet<>();
+    // Phones whose screen is open now.
+    private final Set<Integer> screens = new HashSet<>();
+    private Predicate<UUID> watching = id -> false;
     private long ticks;
 
     /** @param endOf where a holder hears and talks from, or null when they have no position */
@@ -121,6 +135,11 @@ public final class CarriedPhones {
         });
     }
 
+    /** Where phones of {@code kind} get service, or null for a kind with none set. */
+    public Access accessOf(PhoneKind kind) {
+        return access.get(kind);
+    }
+
     /** Where phones of {@code kind} get service; the ME Phone's comes from its ME network. */
     public void setAccess(PhoneKind kind, Access way) {
         access.put(kind, way);
@@ -147,6 +166,16 @@ public final class CarriedPhones {
     public Service serviceOf(int number) {
         Service found = service.get(number);
         return found == null ? Service.NONE : found;
+    }
+
+    /**
+     * The best level a call through a phone of {@code kind} with this service reaches: an ME Phone reaches Max only
+     * through its ME network, and out of its range is a Mobile Phone (DESIGN.md 8.3).
+     */
+    public static SignalLevel cap(PhoneKind kind, List<CallGraph.Entry> entries) {
+        if (kind != PhoneKind.ME_PHONE) return kind.cap();
+        for (CallGraph.Entry entry : entries) if (entry.vertex() instanceof CallGraph.MeVertex) return kind.cap();
+        return SignalLevel.min(kind.cap(), PhoneKind.MOBILE.cap());
     }
 
     /** Every carried phone working now: carried, switched on and charged, with or without an antenna in reach. */
@@ -218,9 +247,7 @@ public final class CarriedPhones {
             SignalLevel level = SignalLevel.NONE;
             if (!entries.isEmpty()) {
                 PhoneRecord record = phones.record(number);
-                SignalLevel cap = record == null ? SignalLevel.NONE
-                    : record.kind()
-                        .cap();
+                SignalLevel cap = record == null ? SignalLevel.NONE : cap(record.kind(), entries);
                 level = SignalLevel
                     .min(levels.next(previous.level(), new Service(entries, SignalLevel.NONE).best()), cap);
             }
@@ -273,23 +300,95 @@ public final class CarriedPhones {
     }
 
     /**
-     * Phones drain their charge while switched on, more in a call, and switch off when it's flat (D36, DESIGN.md
-     * 11.3). Once a second, the second's worth.
+     * Phones drain their charge while switched on, more in a call, more with video and with their screen open, and
+     * switch off when it's flat (D36, DESIGN.md 11.3). Once a second, the second's worth, kept by what used it. A drop
+     * past 20% or 5% warns the holder; a charge that went up since the last second is charging.
      */
     private void drain(List<EntityPlayerMP> players) {
+        long day = server.worldServers.length == 0 ? 0 : server.worldServers[0].getWorldTime() / TICKS_PER_DAY;
+        Set<Integer> seen = new HashSet<>();
         for (EntityPlayerMP player : players) {
             for (ItemStack stack : Carried.stacks(player)) {
-                if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack) || !ItemCarriedPhone.on(stack))
-                    continue;
-                int number = ItemCarriedPhone.number(stack);
-                boolean talking = number >= 0 && calls != null && calls.inCall(number);
-                double wanted = (double) (talking ? tunables.phoneCallDrain() : tunables.phoneStandbyDrain())
-                    * TICKS_PER_SECOND;
-                if (wanted <= 0) continue;
+                if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack)) continue;
                 ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
-                if (item.drain(stack, wanted) < wanted) ItemCarriedPhone.setOn(stack, false);
+                int number = ItemCarriedPhone.number(stack);
+                double max = item.maxCharge(stack);
+                double before = item.charge(stack);
+                if (number >= 0) {
+                    seen.add(number);
+                    Double last = lastCharge.put(number, before);
+                    if (last != null && before > last) charging.add(number);
+                    else if (last != null && before < last) charging.remove(number);
+                }
+                if (!ItemCarriedPhone.on(stack)) continue;
+                boolean saving = BatteryUse
+                    .saving(ItemCarriedPhone.saver(stack), before, max, tunables.phoneSaverPercent());
+                if (number >= 0) {
+                    if (saving) savers.add(number);
+                    else savers.remove(number);
+                }
+                boolean talking = number >= 0 && calls != null && calls.inCall(number);
+                EnumMap<BatteryUse.Use, Integer> rates = new EnumMap<>(BatteryUse.Use.class);
+                rates.put(BatteryUse.Use.STANDBY, tunables.phoneStandbyDrain());
+                if (talking) {
+                    rates.put(
+                        BatteryUse.Use.CALLS,
+                        Math.max(0, tunables.phoneCallDrain() - tunables.phoneStandbyDrain()));
+                }
+                if (talking && !saving && watching.test(player.getUniqueID())) {
+                    rates.put(BatteryUse.Use.VIDEO, tunables.phoneVideoDrain());
+                }
+                if (number >= 0 && screens.contains(number))
+                    rates.put(BatteryUse.Use.SCREEN, tunables.phoneScreenDrain());
+                double wanted = 0;
+                for (int rate : rates.values()) wanted += (double) rate * TICKS_PER_SECOND;
+                if (wanted <= 0) continue;
+                double took = item.drain(stack, wanted);
+                BatteryUse use = ItemCarriedPhone.use(stack);
+                for (Map.Entry<BatteryUse.Use, Integer> entry : rates.entrySet()) {
+                    use.add(day, entry.getKey(), Math.round(took * entry.getValue() * TICKS_PER_SECOND / wanted));
+                }
+                ItemCarriedPhone.setUse(stack, use);
+                double after = before - took;
+                if (number >= 0) lastCharge.put(number, after);
+                if (took < wanted) ItemCarriedPhone.setOn(stack, false);
+                int mark = BatteryUse.crossed(before, after, max);
+                if (mark >= 0 && ItemCarriedPhone.warns(stack)) warn(player, mark);
             }
         }
+        lastCharge.keySet()
+            .retainAll(seen);
+        charging.retainAll(seen);
+        savers.retainAll(seen);
+    }
+
+    /** The low-battery warning: on screen, and a beep only its holder hears. */
+    private static void warn(EntityPlayerMP player, int percent) {
+        player.addChatComponentMessage(new ChatComponentTranslation("becom.phone.battery.low", percent));
+        player.playerNetServerHandler
+            .sendPacket(new S29PacketSoundEffect("note.pling", player.posX, player.posY, player.posZ, 0.6f, 1.6f));
+    }
+
+    /** Whether the phone's charge went up over the last second: on a charger, a battery buffer or a worn batpack. */
+    public boolean charging(int number) {
+        return charging.contains(number);
+    }
+
+    /** Whether the phone's battery saver is on, by hand or by itself: no video, and later no background apps. */
+    public boolean saving(int number) {
+        return savers.contains(number);
+    }
+
+    /** Whether the phone's screen is open, which costs it charge. */
+    public void screenOpen(int number, boolean open) {
+        if (number < 0) return;
+        if (open) screens.add(number);
+        else screens.remove(number);
+    }
+
+    /** Who sees video right now, which costs their phone charge. */
+    public void setWatching(Predicate<UUID> watching) {
+        this.watching = watching;
     }
 
     public void stop() {
@@ -298,6 +397,10 @@ public final class CarriedPhones {
         service.clear();
         shown.clear();
         selfTestPlayers.clear();
+        lastCharge.clear();
+        charging.clear();
+        savers.clear();
+        screens.clear();
     }
 
     // endregion

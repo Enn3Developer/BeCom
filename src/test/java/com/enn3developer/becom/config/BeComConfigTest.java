@@ -50,13 +50,13 @@ class BeComConfigTest {
     @Test
     void cappedValuesAreClampedIntoTheirRange(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        Files.write(file.toPath(), "wired {\n    I:phoneCableLength=100000\n    I:pylonMaxHeight=4000\n}\n".getBytes());
+        Files.write(file.toPath(), "wired {\n    I:cableReachFibre=100000\n    I:pylonMaxHeight=4000\n}\n".getBytes());
         BeComConfig.load(file);
         BeComConfig.useFileValues();
         assertEquals(
             Tunables.MAX_CABLE,
             BeComConfig.get()
-                .phoneCableLength());
+                .cableReachFibre());
         assertEquals(
             Tunables.MAX_COLUMN,
             BeComConfig.get()

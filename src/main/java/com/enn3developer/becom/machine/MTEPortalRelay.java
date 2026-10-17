@@ -33,6 +33,7 @@ import com.enn3developer.becom.logic.space.Portals;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NodeHost;
 
+import gregtech.api.enums.GTValues;
 import gregtech.api.enums.Textures;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
@@ -48,13 +49,13 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  * portal, a Twilight Forest portal or a Personal Space portal, telling the last two by their block classes. Two relays
  * on opposite sides of a portal pair the way pylons link, through the portal, and a pair is a fixed High hop between
  * the two dimensions' networks. Each joins its own network by a wrench link to an antenna, a Pylon Head or a Line
- * Terminal within 16 blocks (X36). Mid MV, 32 EU/t.
+ * Terminal within 16 blocks (X36). Built in MV, HV and EV: the tier sets the calls it carries and the KB/s of its
+ * pair, which works at its lower relay's tier.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
 
-    private static final int TIER = 2;
     private static final int TICKS_PER_SECOND = 20;
     public static final int FORMAT = 1;
 
@@ -68,8 +69,8 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     // network, which may still hold what this relay saw before its chunk unloaded.
     private Set<Integer> personalTargets;
 
-    public MTEPortalRelay(int id, String name, String regionalName) {
-        super(id, name, regionalName, TIER, 0, (String) null);
+    public MTEPortalRelay(int id, String name, String regionalName, int tier) {
+        super(id, name, regionalName, tier, 0, (String) null);
     }
 
     public MTEPortalRelay(String name, int tier, String[] description, ITexture[][][] textures) {
@@ -124,17 +125,26 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             look();
         }
         if (tick % TICKS_PER_SECOND == 0) look();
-        long power = BeComConfig.get()
-            .relayPower();
+        long power = power(BeComConfig.get());
         boolean powered = tile.isAllowedToWork() && tile.getStoredEU() >= power
             && tile.decreaseStoredEnergyUnits(power, false);
         working = powered && !portals.isEmpty();
         if (working) {
-            becom.network.relay(world, pos, portals);
+            becom.network.relay(world, pos, portals, mTier);
         } else {
             becom.network.relayOff(world, pos);
         }
         tile.setActive(working);
+    }
+
+    /** Its GT voltage tier: 2 for MV to 4 for EV. */
+    public int tier() {
+        return mTier;
+    }
+
+    /** What it draws: relayPower at MV, four times as much each tier up, like GT's own machines. */
+    private long power(Tunables t) {
+        return (long) t.relayPower() << 2 * (mTier - Tunables.RELAY_MIN_TIER);
     }
 
     /** Looks for portals within its reach (DESIGN.md 9.4), in loaded chunks only. The self-test calls this directly. */
@@ -241,7 +251,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
 
     @Override
     public long maxEUInput() {
-        return V[TIER];
+        return V[mTier];
     }
 
     @Override
@@ -252,7 +262,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     @Override
     public long maxEUStore() {
         // Like GT's own hulls: room for a couple of seconds of input.
-        return 512 + V[TIER] * 50L;
+        return 512 + V[mTier] * 50L;
     }
 
     @Override
@@ -288,7 +298,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
     @Override
     public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int colorIndex,
         boolean active, boolean redstoneLevel) {
-        ITexture casing = Textures.BlockIcons.MACHINE_CASINGS[TIER][colorIndex + 1];
+        ITexture casing = Textures.BlockIcons.MACHINE_CASINGS[mTier][colorIndex + 1];
         if (side != facing) return new ITexture[] { casing };
         ITexture overlay = TextureFactory.builder()
             .addIcon(BeComTextures.PORTAL_RELAY)
@@ -311,7 +321,9 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
                 String.format(Locale.ROOT, "%.0f", t.relayPortalDistance())),
             StatCollector.translateToLocalFormatted("becom.machine.portal_relay.pair", t.halfLinkSeconds() / 60),
             StatCollector.translateToLocalFormatted("becom.machine.portal_relay.link", (int) t.wrenchLinkDistance()),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.relayPower(), "MV") };
+            StatCollector
+                .translateToLocalFormatted("becom.machine.portal_relay.calls", t.relayCalls(mTier), t.relayRate(mTier)),
+            StatCollector.translateToLocalFormatted("becom.machine.power", power(t), GTValues.VN[mTier]) };
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -361,6 +373,11 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost {
             NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
             NetNode node = model == null ? null : model.node(ref().pos());
             NodeRef kept = node == null ? null : node.partner();
+            InfoLines.calls(
+                info,
+                tile,
+                BeComConfig.get()
+                    .relayCalls(partner == null ? mTier : becom.network.pairTier(ref(), partner)));
             if (partner != null) {
                 info.add("becom.relay.paired", BlockPos.toString(partner.pos()), partner.dimension());
             } else if (kept != null && becom.network.model(kept.dimension()) == null) {

@@ -68,8 +68,8 @@ GUIDE_PAGE = {
     "line_terminal": "wired.md",
     "pylon": "wired.md",
     "first_call": "wired.md",
-    "repeater": "wired.md",
-    "router": "wired.md",
+    "coaxial": "wired.md",
+    "exchange": "wired.md",
     "antenna_t1": "antennas.md",
     "antenna_t2": "antennas.md",
     "antenna_t3": "antennas.md",
@@ -114,8 +114,8 @@ QUESTS = [
         "tier": "LV",
         "name": "Wired for Sound",
         "desc": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you "
-        "make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 32 blocks of it, and the "
-        "signal loses nothing on the way. Make a couple to get started.",
+        "make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 128 blocks of it. Wire is "
+        "digital: it loses nothing on the way, rain or shine. Make a couple to get started.",
         "icon": ("becom:phone_cable", 0),
         "pre": [],
         "tasks": [("item", "becom:phone_cable", 0, 2)],
@@ -139,9 +139,10 @@ QUESTS = [
         "key": "line_terminal",
         "tier": "LV",
         "name": "End of the Line",
-        "desc": "Every line starts and ends at a Line Terminal. Give it LV power, just 4 EU/t, and run Phone Cable "
-        "from it to a Telephone. A terminal serves exactly one phone.%n%nTo put it on a line, wrench the terminal, "
-        "then a Pylon Head.",
+        "desc": "Every building's line starts at a Line Terminal. Give it LV power, just 4 EU/t, and run cable from "
+        "it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for "
+        "the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a "
+        "Pylon Head, with cable in your hotbar.",
         "icon": (GT_MACHINE, 25003),
         "pre": ["phone_cable"],
         "tasks": [("item", GT_MACHINE, 25003, 1)],
@@ -152,11 +153,12 @@ QUESTS = [
         "key": "pylon",
         "tier": "LV",
         "name": "Up on the Pole",
-        "desc": "Phone Cable only reaches 32 blocks. For anything farther, put up pylons: a Pylon Head on top of a "
-        "pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height "
-        "apart, if nothing solid is in between. Wrench one head, then the other, to link them.%n%nPylons need no "
-        "power and keep working in unloaded chunks. The signal still fades with distance, so you'll want a repeater "
-        "at least every 225 blocks.",
+        "desc": "To carry a line between buildings, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood "
+        "Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to "
+        "four times the shorter one's height apart, if nothing solid is in between. Put cable in your hotbar, then "
+        "wrench one head and the other: that strings the span, one cable for every 4 blocks of it.%n%nPylons need "
+        "no power and keep working in unloaded chunks. A run of Phone Cable reaches 128 blocks, terminal to "
+        "terminal; past that it carries nothing.",
         "icon": (GT_MACHINE, 25000),
         "pre": ["line_terminal"],
         "tasks": [("item", GT_MACHINE, 25000, 2)],
@@ -178,29 +180,30 @@ QUESTS = [
         "pos": (144, 48),
     },
     {
-        "key": "repeater",
-        "tier": "LV",
-        "name": "Keeping the Signal Alive",
-        "desc": "Long lines get quiet. A Repeater Head is a Pylon Head that cleans up the signal, so line loss "
-        "starts over after it.%n%nUnlike a plain pylon it needs power: 4 EU/t of LV, through an Energy Hatch in a cabinet at the pole's foot. It "
-        "only works while it's loaded and powered, so keep your repeaters chunkloaded.",
-        "icon": (GT_MACHINE, 25001),
+        "key": "coaxial",
+        "tier": "MV",
+        "name": "Bigger Pipes",
+        "desc": "Phone Cable carries 16 KB/s, enough for 8 calls. Coaxial carries 64 KB/s over runs up to 512 "
+        "blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene.%n%nA span "
+        "holds up to 4 cables, and their rates add up. Wrench a strung span again with cable in your hotbar to add "
+        "it; once the span is full, a better cable swaps out the poorest one, and you get that one back.",
+        "icon": ("becom:phone_cable", 1),
         "pre": ["pylon"],
-        "tasks": [("item", GT_MACHINE, 25001, 1)],
+        "tasks": [("item", "becom:phone_cable", 1, 4)],
         "big": False,
         "pos": (96, 120),
     },
     {
-        "key": "router",
+        "key": "exchange",
         "tier": "LV",
         "name": "Switchboard",
-        "desc": "A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your "
-        "lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and "
-        "takes 16 EU/t of LV power through an Energy Hatch in the exchange cabinet at the pole's foot: three "
-        "across, two high, with a second crossarm up top for all those lines.",
-        "icon": (GT_MACHINE, 25002),
-        "pre": ["repeater"],
-        "tasks": [("item", GT_MACHINE, 25002, 1)],
+        "desc": "A pylon line joins two terminals. To join more, wire them all to an Exchange: a 3x3x3 building of "
+        "LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to "
+        "15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack "
+        "switches 8 calls at once, MV 32, HV 128.",
+        "icon": (GT_MACHINE, 25001),
+        "pre": ["first_call"],
+        "tasks": [("item", GT_MACHINE, 25001, 1)],
         "big": True,
         "pos": (144, 120),
     },
@@ -211,8 +214,9 @@ QUESTS = [
         "desc": "Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole "
         "under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment "
         "shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
-        "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, and "
-        "wrenching one to a Pylon Head or Line Terminal within 16 blocks carries that line over the air.",
+        "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links "
+        "carry little. Wire it to a pylon, a terminal or an Exchange within 16 blocks, with cable in your hotbar, "
+        "and it carries all 4 of its calls over the wire.",
         "icon": (GT_MACHINE, 25004),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25004, 1)],
@@ -362,8 +366,8 @@ QUESTS = [
         "name": "Wireless Everywhere",
         "desc": "Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a "
         "Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. "
-        "Wherever that network's access points reach, boosters included, it has service at Max. It charges in an "
-        "AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.",
+        "Wherever that network's access points reach, boosters included, it has service at Max. Anywhere else it's "
+        "a Mobile Phone, with a Mobile Phone's signal. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.",
         "icon": ("becom:me_phone", 0),
         "pre": ["mobile_call"],
         "tasks": [("item", "becom:me_phone", 0, 1)],
@@ -375,8 +379,8 @@ QUESTS = [
         "tier": "EV",
         "name": "Bridging the Networks",
         "desc": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it "
-        "on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna "
-        "within 16 blocks. It uses 512 EU/t.",
+        "on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal, an Exchange "
+        "or an antenna within 16 blocks. It uses 512 EU/t and carries 8 calls at once.",
         "icon": (GT_MACHINE, 25008),
         "pre": ["me_phone"],
         "tasks": [("item", GT_MACHINE, 25008, 1)],
@@ -401,9 +405,10 @@ QUESTS = [
         "name": "Through the Portal",
         "desc": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether "
         "portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV "
-        "power.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal of your network. Then wrench the "
-        "relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair joins the "
-        "two networks at High.",
+        "power.%n%nWrench-link it to an antenna, a Pylon Head, a Line Terminal or an Exchange of your network. Then "
+        "wrench the relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair "
+        "joins the two networks at High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at "
+        "its lower relay's tier.",
         "icon": (GT_MACHINE, 25012),
         "pre": ["first_call"],
         "tasks": [("item", GT_MACHINE, 25012, 2), ("becom", "PORTAL_RELAY_PAIR")],

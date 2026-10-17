@@ -2,7 +2,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 32 blocks of it, and the signal loses nothing on the way. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 128 blocks of it. Wire is digital: it loses nothing on the way, rain or shine. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

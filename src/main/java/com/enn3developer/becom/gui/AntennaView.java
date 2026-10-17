@@ -9,12 +9,13 @@ import net.minecraft.network.PacketBuffer;
 import com.enn3developer.becom.logic.radio.Coverage;
 
 /**
- * What the antenna screen shows (DESIGN.md 11.4): its state, its links to other antennas on each band, its bridges
- * onto wired lines, the team lock, and its coverage map on each band. Built on the server, formatted on the client.
+ * What the antenna screen shows (DESIGN.md 11.4): its state, the calls through it out of those it carries, its links
+ * to other antennas on each band, its wiring onto lines and what each span carries, the team lock, and its coverage
+ * map on each band. Built on the server, formatted on the client.
  */
 public record AntennaView(int tier, boolean formed, boolean working, int mast, int range, boolean surveyed,
-    boolean locked, boolean mayManage, String owner, List<Link> links, List<Bridge> bridges, int mapRange,
-    byte[] vhfMap, byte[] uhfMap) {
+    boolean locked, boolean mayManage, String owner, int calls, int callSlots, List<Link> links, List<Bridge> bridges,
+    int mapRange, byte[] vhfMap, byte[] uhfMap) {
 
     // A dimension rarely has more antennas in reach than this; the screen lists the strongest.
     public static final int MAX_LINKS = 64;
@@ -30,6 +31,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         false,
         false,
         "",
+        0,
+        0,
         Collections.emptyList(),
         Collections.emptyList(),
         0,
@@ -41,8 +44,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
     /** A link to another antenna: where, how far, and its SNR on each band (negative infinity below Low). */
     public record Link(int x, int y, int z, int distance, double vhf, double uhf) {}
 
-    /** A bridge onto a wired line: where, and how far. */
-    public record Bridge(int x, int y, int z, int distance) {}
+    /** Its wiring onto a line: where, how far, and the KB/s its span's cables carry. */
+    public record Bridge(int x, int y, int z, int distance, int rate) {}
 
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
@@ -54,6 +57,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         buf.writeBoolean(locked);
         buf.writeBoolean(mayManage);
         writeString(buf, owner);
+        buf.writeShort(calls);
+        buf.writeShort(callSlots);
         int links = Math.min(this.links.size(), MAX_LINKS);
         buf.writeShort(links);
         for (int i = 0; i < links; i++) {
@@ -73,6 +78,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             buf.writeShort(bridge.y);
             buf.writeInt(bridge.z);
             buf.writeInt(bridge.distance);
+            buf.writeInt(bridge.rate);
         }
         buf.writeShort(mapRange);
         writeMap(buf, vhfMap);
@@ -101,6 +107,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         boolean locked = buf.readBoolean();
         boolean mayManage = buf.readBoolean();
         String owner = readString(buf);
+        int calls = buf.readShort();
+        int callSlots = buf.readShort();
         int count = Math.min(buf.readShort(), MAX_LINKS);
         List<Link> links = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -116,7 +124,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         count = Math.min(buf.readShort(), MAX_BRIDGES);
         List<Bridge> bridges = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            bridges.add(new Bridge(buf.readInt(), buf.readShort(), buf.readInt(), buf.readInt()));
+            bridges.add(new Bridge(buf.readInt(), buf.readShort(), buf.readInt(), buf.readInt(), buf.readInt()));
         }
         int mapRange = buf.readShort();
         byte[] vhfMap = readMap(buf);
@@ -131,6 +139,8 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             locked,
             mayManage,
             owner,
+            calls,
+            callSlots,
             links,
             bridges,
             mapRange,

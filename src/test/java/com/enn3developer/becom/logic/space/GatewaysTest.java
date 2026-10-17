@@ -163,7 +163,8 @@ class GatewaysTest {
             .twoWay(terminalA, relayA, 28, CallGraph.HopKind.LINE)
             .twoWay(relayB, terminalB, 28, CallGraph.HopKind.LINE)
             .twoWay(new CallGraph.PhoneVertex(222222), terminalB, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE);
-        gateways.addTo(builder, d -> 0, List.of(), List.of(), List.of(new Gateways.RelayPair(OVERWORLD, 2, NETHER, 3)));
+        gateways
+            .addTo(builder, d -> 0, List.of(), List.of(), List.of(new Gateways.RelayPair(OVERWORLD, 2, NETHER, 3, 2)));
         CallGraph graph = builder.build();
         assertEquals(high, graph.width(111111, 222222), 1e-9);
         assertTrue(
@@ -192,9 +193,80 @@ class GatewaysTest {
             d -> d == OVERWORLD ? 100 : 0,
             List.of(new Gateways.Dish(OVERWORLD, 4, 0)),
             List.of(new Gateways.Receiver(MOON, 7)),
-            List.of(new Gateways.RelayPair(NETHER, 2, OVERWORLD, 3)));
+            List.of(new Gateways.RelayPair(NETHER, 2, OVERWORLD, 3, 2)));
         CallGraph graph = builder.build();
         List<CallGraph.Entry> moon = List.of(new CallGraph.Entry(node(MOON, 7), 30));
         assertEquals(high, graph.width(CallGraph.Entry.of(111111), moon), 1e-9);
+    }
+
+    @Test
+    void aRelayPairWorksAtItsLowerRelaysTier() {
+        CallGraph.Builder builder = CallGraph.builder();
+        gateways
+            .addTo(builder, d -> 0, List.of(), List.of(), List.of(new Gateways.RelayPair(OVERWORLD, 2, NETHER, 3, 3)));
+        CallGraph graph = builder.build();
+        // An HV pair: 48 calls a side.
+        assertEquals(t.relayCalls(3), graph.slots(node(OVERWORLD, 2)));
+        assertEquals(t.relayCalls(3), graph.slots(node(NETHER, 3)));
+        assertEquals(48, t.relayCalls(3));
+        assertEquals(256, t.relayRate(3));
+        assertEquals(1024, t.relayRate(4));
+        // Below MV and above EV clamp to the ends.
+        assertEquals(t.relayCalls(2), t.relayCalls(1));
+        assertEquals(t.relayCalls(4), t.relayCalls(9));
+    }
+
+    @Test
+    void theSatellitesCarryTwoCallsEachAndADishItsOwn() {
+        CallGraph graph = graph(
+            Map.of(OVERWORLD, 18),
+            List.of(new Gateways.Dish(OVERWORLD, 1, 0)),
+            List.of(),
+            List.of());
+        assertEquals(36, graph.slots(new CallGraph.SkyVertex(OVERWORLD)));
+        assertEquals(t.dishCalls(), graph.slots(node(OVERWORLD, 1)));
+        // Too few satellites carry nothing.
+        assertEquals(0, gateways.skyCalls(4));
+    }
+
+    @Test
+    void aReceiverCarriesItsOwnCalls() {
+        CallGraph graph = graph(Map.of(OVERWORLD, 100), List.of(), List.of(new Gateways.Receiver(MOON, 7)), List.of());
+        assertEquals(t.receiverCalls(), graph.slots(node(MOON, 7)));
+    }
+
+    @Test
+    void aDishUnderALowSkyCarriesWhatLowsRateHasRoomFor() {
+        // Six satellites are Low: 4 KB/s up through each dish, room for two voice calls (DESIGN.md 6, 9.2).
+        List<Gateways.Dish> dishes = List.of(new Gateways.Dish(OVERWORLD, 1, 0), new Gateways.Dish(OVERWORLD, 2, 0));
+        CallGraph.Builder builder = CallGraph.builder();
+        for (int i = 0; i < 3; i++) {
+            builder.twoWay(
+                new CallGraph.PhoneVertex(100 + i),
+                node(OVERWORLD, 1),
+                Double.POSITIVE_INFINITY,
+                CallGraph.HopKind.CABLE);
+            builder.twoWay(
+                new CallGraph.PhoneVertex(200 + i),
+                node(OVERWORLD, 2),
+                Double.POSITIVE_INFINITY,
+                CallGraph.HopKind.CABLE);
+        }
+        gateways.addTo(builder, d -> 6, dishes, List.of(), List.of());
+        CallGraph graph = builder.build();
+        List<CallGraph.Demand> demands = new java.util.ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            demands.add(new CallGraph.Demand(i, i, CallGraph.Entry.of(100 + i), CallGraph.Entry.of(200 + i), 2));
+        }
+        CallGraph.Routing routing = graph.route(demands);
+        assertTrue(
+            routing.route(0)
+                .routed());
+        assertTrue(
+            routing.route(1)
+                .routed());
+        assertTrue(
+            !routing.route(2)
+                .routed());
     }
 }

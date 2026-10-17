@@ -270,11 +270,92 @@ public final class CallService implements CallBook.Listener {
         return CallGraph.Entry.of(phone);
     }
 
-    /** The weakest hop on the best path from one phone to another, whatever kind each is. */
+    /** The weakest hop on the best path from one phone to another, whatever kind each is, capacity aside. */
     public double width(int from, int to) {
         return network.graph()
             .width(entriesOf(from), entriesOf(to));
     }
+
+    // region Capacity
+
+    /** One stream of a call: between two of its phones, the lower number first. */
+    private record Stream(long call, int a, int b) {
+
+        static Stream of(long call, int x, int y) {
+            return x <= y ? new Stream(call, x, y) : new Stream(call, y, x);
+        }
+    }
+
+    // How the calls share the network (DESIGN.md 5.4, 5.5, 7): rebuilt as the graph or the calls change, and every
+    // second, as carried phones move.
+    private CallGraph.Routing routing;
+    private CallGraph routedGraph;
+    private long routedBook = -1;
+    private long routedTick = -1;
+
+    /** Where every call's streams go now, oldest call first: a newer call never pushes an older one out. */
+    private CallGraph.Routing routing() {
+        CallGraph graph = network.graph();
+        if (routing == null || graph != routedGraph
+            || book.version() != routedBook
+            || ticks / TICKS_PER_SECOND != routedTick) {
+            List<CallGraph.Demand> demands = new ArrayList<>();
+            for (Call call : book.calls()) {
+                List<Call.Leg> legs = call.legs();
+                for (int i = 0; i < legs.size(); i++) {
+                    for (int j = i + 1; j < legs.size(); j++) {
+                        int a = legs.get(i)
+                            .phone();
+                        int b = legs.get(j)
+                            .phone();
+                        demands.add(
+                            new CallGraph.Demand(
+                                call.id(),
+                                Stream.of(call.id(), a, b),
+                                entriesOf(a),
+                                entriesOf(b),
+                                tunables.voiceRate()));
+                    }
+                }
+            }
+            routing = graph.route(demands);
+            routedGraph = graph;
+            routedBook = book.version();
+            routedTick = ticks / TICKS_PER_SECOND;
+        }
+        return routing;
+    }
+
+    /** The weakest hop on the route a call's stream between two of its phones got; none when nothing had room. */
+    private double routedWidth(Call call, int from, int to) {
+        return routing().route(Stream.of(call.id(), from, to))
+            .width();
+    }
+
+    /** Whether a new stream from {@code from} to {@code to}, of {@code call} or of a new one, would find room now. */
+    private boolean hasRoom(Call call, int from, int to) {
+        Object id = call == null ? new Object() : call.id();
+        return routing()
+            .probe(new CallGraph.Demand(id, new Object(), entriesOf(from), entriesOf(to), tunables.voiceRate()))
+            .routed();
+    }
+
+    /** Whether a new call between two phones would find room now; for the self-test. */
+    public boolean hasRoomForSelfTest(int from, int to) {
+        return hasRoom(null, from, to);
+    }
+
+    /** How many calls go through a node now: an Exchange's or an antenna's. */
+    public int callsAt(int dimension, long pos) {
+        return routing().calls(new CallGraph.NodeVertex(dimension, pos));
+    }
+
+    /** The KB/s calls take of a run of wire between two powered nodes now. */
+    public int usedOn(Object link) {
+        return routing().used(link);
+    }
+
+    // endregion
 
     /** A phone's reachable phones, and the tick they were found. */
     private record Reachable(long tick, List<Integer> phones) {}
@@ -368,6 +449,11 @@ public final class CallService implements CallBook.Listener {
         // Someone holding the other handset without a call is dialling out (DESIGN.md 10: busy).
         if (handsets.containsKey(to)) return CallBook.Check.BUSY;
         if (width(from, to) < levels.threshold(SignalLevel.LOW)) return CallBook.Check.UNREACHABLE;
+        // Reachable, but every way there is full: the network is busy (DESIGN.md 5.4).
+        if (!hasRoom(book.callOf(caller.getUniqueID()), from, to)) {
+            tell(caller, "becom.call.network_busy");
+            return CallBook.Check.BUSY;
+        }
         return CallBook.Check.OK;
     }
 
@@ -1109,7 +1195,7 @@ public final class CallService implements CallBook.Listener {
 
         @Override
         public double snr(Call call, Call.Leg speaker, Call.Leg listener) {
-            return width(speaker.phone(), listener.phone());
+            return routedWidth(call, speaker.phone(), listener.phone());
         }
 
         @Override
@@ -1121,8 +1207,10 @@ public final class CallService implements CallBook.Listener {
     private SignalLevel capOf(int phone) {
         PhoneRecord record = phones.record(phone);
         return record == null ? SignalLevel.NONE
-            : record.kind()
-                .cap();
+            : CarriedPhones.cap(
+                record.kind(),
+                carried.serviceOf(phone)
+                    .entries());
     }
 
     private void checkCords() {
@@ -1270,6 +1358,11 @@ public final class CallService implements CallBook.Listener {
     public PhoneKind kindOf(int phone) {
         PhoneRecord record = phones.record(phone);
         return record == null ? null : record.kind();
+    }
+
+    /** The kind of phone video sees: none for a carried phone whose battery saver is on (video off). */
+    public PhoneKind videoKindOf(int phone) {
+        return carried.saving(phone) ? null : kindOf(phone);
     }
 
     /** A player's name: as they took their handset, else online, else the last one Forge saw, else {@code fallback}. */

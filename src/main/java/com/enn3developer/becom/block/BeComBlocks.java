@@ -17,7 +17,7 @@ public final class BeComBlocks {
         telephone.setCreativeTab(GregTechAPI.TAB_GREGTECH);
         phoneCable.setCreativeTab(GregTechAPI.TAB_GREGTECH);
         GameRegistry.registerBlock(telephone, "telephone");
-        GameRegistry.registerBlock(phoneCable, "phone_cable");
+        GameRegistry.registerBlock(phoneCable, ItemBlockCable.class, "phone_cable");
         GameRegistry.registerTileEntity(TileTelephone.class, "becom.telephone");
     }
 }

@@ -11,8 +11,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 
-/** DESIGN.md 5.5: up to 32 blocks of Phone Cable between a terminal and its phone, and no more work than that. */
+/** DESIGN.md 5.5: the devices within a walk's length of cable from a terminal, and no more work than that. */
 class CableWalkTest {
 
     private final Map<Long, CableWalk.Block> world = new HashMap<>();
@@ -94,5 +95,34 @@ class CableWalkTest {
         assertTrue(result.overflow());
         // At most 129 cables are walked, each probing its 6 sides.
         assertTrue(probes <= 6 * 130, probes + " probes");
+    }
+
+    @Test
+    void devicesComeNearestFirstWithTheirRunAndPoorestCable() {
+        // Fibre out to x = 10, Phone Cable after it; a Telephone above x = 3 and another at the end.
+        Map<Long, CableTier> tiers = new HashMap<>();
+        for (int x = 1; x <= 20; x++) {
+            world.put(BlockPos.pack(x, 64, 0), CableWalk.Block.CABLE);
+            tiers.put(BlockPos.pack(x, 64, 0), x <= 10 ? CableTier.FIBRE : CableTier.PHONE);
+        }
+        world.put(BlockPos.pack(21, 64, 0), CableWalk.Block.PHONE);
+        world.put(BlockPos.pack(3, 65, 0), CableWalk.Block.PHONE);
+        CableWalk.Result result = CableWalk.walk(0, 64, 0, 32, 128, new CableWalk.Probe() {
+
+            @Override
+            public CableWalk.Block at(int x, int y, int z) {
+                return world.getOrDefault(BlockPos.pack(x, y, z), CableWalk.Block.OTHER);
+            }
+
+            @Override
+            public CableTier tier(int x, int y, int z) {
+                return tiers.get(BlockPos.pack(x, y, z));
+            }
+        });
+        assertEquals(
+            List.of(
+                new CableWalk.Found(BlockPos.pack(3, 65, 0), 3, CableTier.FIBRE),
+                new CableWalk.Found(BlockPos.pack(21, 64, 0), 20, CableTier.PHONE)),
+            result.devices());
     }
 }

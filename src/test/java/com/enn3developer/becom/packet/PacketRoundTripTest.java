@@ -166,8 +166,10 @@ class PacketRoundTripTest {
             false,
             true,
             "Alice",
+            3,
+            12,
             List.of(new AntennaView.Link(1, 2, 3, 100, 12.5, Double.NEGATIVE_INFINITY)),
-            List.of(new AntennaView.Bridge(4, 5, 6, 10)),
+            List.of(new AntennaView.Bridge(4, 5, 6, 10, 80)),
             256,
             vhf,
             uhf);
@@ -176,6 +178,8 @@ class PacketRoundTripTest {
         AntennaView read = AntennaView.read(buf);
         assertEquals(view.links(), read.links());
         assertEquals(view.bridges(), read.bridges());
+        assertEquals(view.calls(), read.calls());
+        assertEquals(view.callSlots(), read.callSlots());
         assertEquals(view.mapRange(), read.mapRange());
         assertArrayEquals(vhf, read.vhfMap());
         assertArrayEquals(uhf, read.uhfMap());

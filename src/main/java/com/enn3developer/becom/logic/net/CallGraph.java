@@ -2,16 +2,20 @@ package com.enn3developer.becom.logic.net;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.enn3developer.becom.logic.WidestPath;
 
 /**
  * The graph calls are routed over (DESIGN.md 14: path finding): working powered nodes of every dimension, the phones
- * hanging off them, and the hops between, each weighted by its SNR. Built when the network changes, then queried; each
- * source's best paths are solved once and kept until the next rebuild.
+ * hanging off them, and the hops between, each weighted by its SNR. Each hop also has a data rate, shared by every call
+ * crossing its link, and some vertices a number of calls they carry at once (DESIGN.md 5.4, 7). Built when the network
+ * changes, then queried; each source's best paths, capacity aside, are solved once and kept until the next rebuild,
+ * and {@link #route} shares the capacity out among calls.
  * <p>
  * A phone is where a path starts or ends, never a way through: inside, each phone is two vertices, one that only has
  * hops out and one that only has hops in. A phone touching two lines can call either, but doesn't join them (D19).
@@ -52,6 +56,15 @@ public final class CallGraph {
 
     private record PhoneIn(int number) {}
 
+    /**
+     * One hop as routing sees it: its kind, the link whose rate it shares with the hop back the other way and any
+     * other hop of the same link, and that rate in KB/s.
+     */
+    public record Hop(HopKind kind, Object link, int rate) {}
+
+    /** No limit on a hop's rate, or on a vertex's calls. */
+    public static final int UNLIMITED = Integer.MAX_VALUE;
+
     /** What a hop is, for anything that cares which kinds of hop a path crossed. */
     public enum HopKind {
         LINE,
@@ -71,12 +84,14 @@ public final class CallGraph {
     private final Map<Object, Integer> index;
     private final List<Object> vertices;
     private final WidestPath paths;
+    private final int[] slots;
     private final Map<Integer, WidestPath.Result> solved = new HashMap<>();
 
-    private CallGraph(Map<Object, Integer> index, List<Object> vertices, WidestPath paths) {
+    private CallGraph(Map<Object, Integer> index, List<Object> vertices, WidestPath paths, int[] slots) {
         this.index = index;
         this.vertices = vertices;
         this.paths = paths;
+        this.slots = slots;
     }
 
     public static Builder builder() {
@@ -158,7 +173,7 @@ public final class CallGraph {
         Integer to = index.get(head(toVertex));
         List<HopKind> hops = new ArrayList<>();
         if (from == null || to == null || from.equals(to)) return hops;
-        for (WidestPath.Edge edge : result(from).edges(to)) hops.add((HopKind) edge.tag());
+        for (WidestPath.Edge edge : result(from).edges(to)) hops.add(((Hop) edge.tag()).kind());
         return hops;
     }
 
@@ -191,11 +206,139 @@ public final class CallGraph {
         return solved.computeIfAbsent(from, paths::solve);
     }
 
+    // region Capacity
+
+    /**
+     * One stream a call needs: between two of its phones, joining the graph through their entries, at {@code rate}
+     * KB/s. Streams of one {@code call} share each vertex's call slot.
+     */
+    public record Demand(Object call, Object key, List<Entry> from, List<Entry> to, int rate) {}
+
+    /** Where a stream went: its weakest hop's SNR, negative infinity when nothing had room, and its hops. */
+    public record Route(double width, List<HopKind> hops) {
+
+        public static final Route NONE = new Route(Double.NEGATIVE_INFINITY, List.of());
+
+        public boolean routed() {
+            return width != Double.NEGATIVE_INFINITY;
+        }
+    }
+
+    /**
+     * Routes {@code demands} in order, each over the best path that still has room for it after the ones before:
+     * {@code rate} on every hop's link and a call slot at every vertex with a limit. The first calls keep their
+     * route; a call made when the network was full doesn't push one out.
+     */
+    public Routing route(List<Demand> demands) {
+        Routing routing = new Routing();
+        for (Demand demand : demands) routing.add(demand);
+        return routing;
+    }
+
+    /** What calls took of the network's capacity, and where each stream went. */
+    public final class Routing {
+
+        private final Map<Object, Integer> used = new HashMap<>();
+        private final int[] callsAt = new int[vertices.size()];
+        private final Map<Object, Set<Integer>> verticesOf = new HashMap<>();
+        private final Map<Object, Route> routes = new LinkedHashMap<>();
+
+        private Routing() {}
+
+        /** Where the stream {@code key} went; {@link Route#NONE} for one never routed. */
+        public Route route(Object key) {
+            return routes.getOrDefault(key, Route.NONE);
+        }
+
+        /** The KB/s calls take of a link. */
+        public int used(Object link) {
+            return used.getOrDefault(link, 0);
+        }
+
+        /** The calls through a vertex; 0 for one the graph doesn't have. */
+        public int calls(Object vertex) {
+            Integer i = index.get(vertex);
+            return i == null ? 0 : callsAt[i];
+        }
+
+        /** The best route a stream would get now, without taking it: whether a new call would find room. */
+        public Route probe(Demand demand) {
+            return best(demand, null);
+        }
+
+        /** Routes one more stream over what's left, and takes its share. */
+        public Route add(Demand demand) {
+            Route route = best(demand, demand);
+            routes.put(demand.key(), route);
+            return route;
+        }
+
+        private Route best(Demand demand, Demand taking) {
+            Set<Integer> own = verticesOf.getOrDefault(demand.call(), Set.of());
+            double bestWidth = Double.NEGATIVE_INFINITY;
+            List<WidestPath.Edge> bestEdges = null;
+            List<Integer> bestPath = null;
+            for (Entry a : demand.from()) {
+                Integer tail = index.get(tail(a.vertex()));
+                if (tail == null || !hasRoom(tail, own)) continue;
+                WidestPath.Result result = paths
+                    .solve(tail, edge -> fits((Hop) edge.tag(), demand.rate()), vertex -> hasRoom(vertex, own));
+                for (Entry b : demand.to()) {
+                    Integer head = index.get(head(b.vertex()));
+                    if (head == null) continue;
+                    double width;
+                    if (head.equals(tail)) {
+                        // Two phones joining at one vertex, as at one antenna, lose nothing between.
+                        if (a.vertex() instanceof PhoneVertex) continue;
+                        width = Math.min(a.snr(), b.snr());
+                    } else {
+                        if (!result.reachable(head)) continue;
+                        width = Math.min(Math.min(a.snr(), b.snr()), result.width(head));
+                    }
+                    if (width > bestWidth) {
+                        bestWidth = width;
+                        bestEdges = head.equals(tail) ? List.of() : result.edges(head);
+                        bestPath = head.equals(tail) ? List.of(tail) : result.path(head);
+                    }
+                }
+            }
+            if (bestEdges == null) return Route.NONE;
+            List<HopKind> kinds = new ArrayList<>();
+            for (WidestPath.Edge edge : bestEdges) kinds.add(((Hop) edge.tag()).kind());
+            if (taking != null) {
+                for (WidestPath.Edge edge : bestEdges) {
+                    Hop hop = (Hop) edge.tag();
+                    if (hop.rate() != UNLIMITED) used.merge(hop.link(), taking.rate(), Integer::sum);
+                }
+                Set<Integer> mine = verticesOf.computeIfAbsent(taking.call(), k -> new HashSet<>());
+                for (int vertex : bestPath) if (mine.add(vertex)) callsAt[vertex]++;
+            }
+            return new Route(bestWidth, kinds);
+        }
+
+        private boolean fits(Hop hop, int rate) {
+            return hop.rate() == UNLIMITED || used(hop.link()) + rate <= hop.rate();
+        }
+
+        private boolean hasRoom(int vertex, Set<Integer> own) {
+            return slots[vertex] == UNLIMITED || own.contains(vertex) || callsAt[vertex] < slots[vertex];
+        }
+    }
+
+    /** How many calls a vertex carries at once; {@link #UNLIMITED} for most. */
+    public int slots(Object vertex) {
+        Integer i = index.get(vertex);
+        return i == null ? UNLIMITED : slots[i];
+    }
+
+    // endregion
+
     public static final class Builder {
 
         private final Map<Object, Integer> index = new HashMap<>();
         private final List<Object> vertices = new ArrayList<>();
         private final List<Object[]> edges = new ArrayList<>();
+        private final Map<Object, Integer> slots = new HashMap<>();
 
         private int vertex(Object key) {
             return index.computeIfAbsent(key, k -> {
@@ -204,11 +347,19 @@ public final class CallGraph {
             });
         }
 
-        /** A one-way hop: line stretches are found from each end, so each end adds its own. */
+        /** A one-way hop with no limit on what it carries. */
         public Builder hop(Object from, Object to, double snr, HopKind kind) {
+            return hop(from, to, snr, kind, null, UNLIMITED);
+        }
+
+        /**
+         * A one-way hop carrying {@code rate} KB/s, shared with every other hop of the same {@code link}: runs of wire
+         * are found from each end, so each end adds its own, of one link.
+         */
+        public Builder hop(Object from, Object to, double snr, HopKind kind, Object link, int rate) {
             Object tail = from instanceof PhoneVertex phone ? new PhoneOut(phone.number()) : from;
             Object head = to instanceof PhoneVertex phone ? new PhoneIn(phone.number()) : to;
-            edges.add(new Object[] { vertex(tail), vertex(head), snr, kind });
+            edges.add(new Object[] { vertex(tail), vertex(head), snr, new Hop(kind, link, rate) });
             return this;
         }
 
@@ -217,10 +368,27 @@ public final class CallGraph {
             return hop(b, a, snr, kind);
         }
 
+        /** A hop each way sharing one link of {@code rate} KB/s. */
+        public Builder twoWay(Object a, Object b, double snr, HopKind kind, Object link, int rate) {
+            hop(a, b, snr, kind, link, rate);
+            return hop(b, a, snr, kind, link, rate);
+        }
+
+        /** {@code vertex} carries at most {@code calls} calls at once: an Exchange's racks, an antenna's radio. */
+        public Builder slots(Object vertex, int calls) {
+            vertex(vertex);
+            slots.merge(vertex, calls, Math::min);
+            return this;
+        }
+
         public CallGraph build() {
             WidestPath paths = new WidestPath(vertices.size());
             for (Object[] edge : edges) paths.addEdge((int) edge[0], (int) edge[1], (double) edge[2], edge[3]);
-            return new CallGraph(index, vertices, paths);
+            int[] limits = new int[vertices.size()];
+            java.util.Arrays.fill(limits, UNLIMITED);
+            for (Map.Entry<Object, Integer> entry : slots.entrySet())
+                limits[index.get(entry.getKey())] = entry.getValue();
+            return new CallGraph(index, vertices, paths, limits);
         }
     }
 }

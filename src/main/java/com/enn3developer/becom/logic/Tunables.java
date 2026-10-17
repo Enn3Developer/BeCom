@@ -1,5 +1,6 @@
 package com.enn3developer.becom.logic;
 
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.radio.Band;
 import com.enn3developer.becom.logic.radio.RadioModel;
 
@@ -13,8 +14,11 @@ public record Tunables(
     double dropoutMaxLoss, double dropoutFullLossSnr, double dropoutCleanSnr, double dropoutMeanBurstMillis,
     double dropAfterSeconds,
     // Wired network (DESIGN.md 5)
-    int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, double lineBudget,
-    double lineLossPerBlock, int phoneCableLength, int terminalPower, int repeaterPower, int routerPower,
+    int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, int cableRatePhone,
+    int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial, int cableReachFibre,
+    int bundleSize, int cableBlocksPerItem, int terminalPower, int terminalPortsLV, int terminalPortsMV,
+    int terminalPortsHV, int terminalCableBudget, int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV,
+    int voiceRate, int videoRate,
     // Calls (DESIGN.md 8.2, 10, 12)
     double directHearingRange, int sessionGraceSeconds, int halfLinkSeconds, int ringSeconds, int callAttemptsPerMinute,
     // Radio simulation (DESIGN.md 6)
@@ -24,32 +28,41 @@ public record Tunables(
     // Antennas (DESIGN.md 7)
     double antennaBudgetT1, double antennaBudgetT2, double antennaBudgetT3, int antennaPowerT1, int antennaPowerT2,
     int antennaPowerT3, int antennaMastMinT1, int antennaMastMinT2, int antennaMastMinT3, int antennaMastMax,
-    double wrenchLinkDistance,
+    double wrenchLinkDistance, int antennaCallsT1, int antennaCallsT2, int antennaCallsT3, int radioRateLow,
+    int radioRateMedium, int radioRateHigh, int radioRateMax,
     // Radios (DESIGN.md 8, 11.3, 11.4)
     double transceiverBudget, double walkieBudget, int transceiverPower, double loudspeakerRange, double talkRange,
     double walkieSpeakerRange, int captureHoldMillis, double captureMargin, int walkieBattery, int walkieStandbyDrain,
     int walkieReceiveDrain, int walkieTransmitDrain, int analyzerRefreshSeconds,
     // Phones (DESIGN.md 6.1, 8.2, 11.2, D26, D36)
-    int groupCallSize, int phoneBattery, int phoneStandbyDrain, int phoneCallDrain, double weatherRainLoss,
-    double weatherStormLoss,
+    int groupCallSize, int phoneBattery, int phoneStandbyDrain, int phoneCallDrain, int phoneVideoDrain,
+    int phoneScreenDrain, int phoneSaverPercent, double weatherRainLoss, double weatherStormLoss,
     // Video (DESIGN.md 10.1, 10.2, 14)
     int videoPoseRate, int videoHeightMedium, int videoHeightHigh, int videoHeightMax, int videoFpsMedium,
     int videoFpsHigh, int videoFpsMax, int rearWidthHigh, int rearHeightHigh, int rearFpsHigh, int rearWidthMax,
     int rearHeightMax, int rearFpsMax, int rearMaxBytes, int rearMaxFps, int videophonePower, double videophoneRoom,
     double videophoneLoudspeaker, int videophoneEmptySeconds,
     // ME (DESIGN.md 8.3)
-    int meBridgePower, int meBridgeChannels,
+    int meBridgePower, int meBridgeChannels, int meBridgeCalls,
     // Space (DESIGN.md 9): levels by number, 1 Low to 4 Max
     int satellitesLow, int satellitesMax, double satelliteLifetimeDays, double satelliteLifetimeSpread,
     int launchSeconds, int launchPower, int launchFuel, int dishPower, double dishMaintenanceLoss,
-    int receiverUplinkLevel, int relayPower, double relayPortalDistance, int relayHopLevel,
+    int receiverUplinkLevel, int relayPower, double relayPortalDistance, int relayHopLevel, int satelliteCalls,
+    int dishCalls, int receiverCalls, int relayCallsMV, int relayCallsHV, int relayCallsEV, int relayRateMV,
+    int relayRateHV, int relayRateEV,
     // Quests (DESIGN.md 15.5)
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
     // Ceilings no sensible config reaches, which keep a hostile server's values from hanging a client: no frame column
     // is taller than the world, and a terminal's cable scan stays bounded.
     public static final int MAX_COLUMN = 255;
-    public static final int MAX_CABLE = 256;
+    public static final int MAX_CABLE = 16_384;
+    // A span holds at most this many cables, so a hostile value can't make a wire packet huge.
+    public static final int MAX_BUNDLE = 8;
+    // Portal Relays come in MV, HV and EV (DESIGN.md 9.4).
+    public static final int RELAY_MIN_TIER = 2;
+    public static final int RELAY_MAX_TIER = 4;
+    private static final String[] RELAY_VOLTAGES = { "MV", "HV", "EV" };
     // Radio work grows with range and bearings: a survey reads bearings x range / step heights, a direct link
     // range / step. Far past DESIGN.md's numbers (256 blocks, 64 bearings), these keep one survey or link bounded.
     public static final int MAX_RADIO_RANGE = 4096;
@@ -95,12 +108,25 @@ public record Tunables(
         d.put("pylonMaxHeight", 16);
         d.put("pylonSpanFactor", 4.0);
         d.put("pylonClearanceSeconds", 60);
-        d.put("lineBudget", 30.0);
-        d.put("lineLossPerBlock", 0.08);
-        d.put("phoneCableLength", 32);
+        d.put("cableRatePhone", 16);
+        d.put("cableRateCoaxial", 64);
+        d.put("cableRateFibre", 256);
+        d.put("cableReachPhone", 128);
+        d.put("cableReachCoaxial", 512);
+        d.put("cableReachFibre", 4096);
+        d.put("bundleSize", 4);
+        d.put("cableBlocksPerItem", 4);
         d.put("terminalPower", 4);
-        d.put("repeaterPower", 4);
-        d.put("routerPower", 16);
+        d.put("terminalPortsLV", 4);
+        d.put("terminalPortsMV", 8);
+        d.put("terminalPortsHV", 16);
+        d.put("terminalCableBudget", 2048);
+        d.put("exchangePower", 64);
+        d.put("rackCallsLV", 8);
+        d.put("rackCallsMV", 32);
+        d.put("rackCallsHV", 128);
+        d.put("voiceRate", 2);
+        d.put("videoRate", 8);
         d.put("directHearingRange", 16.0);
         d.put("sessionGraceSeconds", 10);
         d.put("halfLinkSeconds", 5 * 60);
@@ -128,6 +154,13 @@ public record Tunables(
         d.put("antennaMastMinT3", 10);
         d.put("antennaMastMax", 32);
         d.put("wrenchLinkDistance", 16.0);
+        d.put("antennaCallsT1", 4);
+        d.put("antennaCallsT2", 12);
+        d.put("antennaCallsT3", 32);
+        d.put("radioRateLow", 4);
+        d.put("radioRateMedium", 16);
+        d.put("radioRateHigh", 64);
+        d.put("radioRateMax", 256);
         d.put("transceiverBudget", 48.0);
         d.put("walkieBudget", 44.0);
         d.put("transceiverPower", 32);
@@ -145,6 +178,9 @@ public record Tunables(
         d.put("phoneBattery", 1_200_000);
         d.put("phoneStandbyDrain", 4);
         d.put("phoneCallDrain", 16);
+        d.put("phoneVideoDrain", 16);
+        d.put("phoneScreenDrain", 2);
+        d.put("phoneSaverPercent", 15);
         d.put("weatherRainLoss", 3.0);
         d.put("weatherStormLoss", 6.0);
         d.put("videoPoseRate", 10);
@@ -169,6 +205,7 @@ public record Tunables(
         d.put("videophoneEmptySeconds", 30);
         d.put("meBridgePower", 512);
         d.put("meBridgeChannels", 1);
+        d.put("meBridgeCalls", 8);
         d.put("satellitesLow", 5);
         d.put("satellitesMax", 100);
         d.put("satelliteLifetimeDays", 100.0);
@@ -182,6 +219,15 @@ public record Tunables(
         d.put("relayPower", 32);
         d.put("relayPortalDistance", 4.0);
         d.put("relayHopLevel", 3);
+        d.put("satelliteCalls", 2);
+        d.put("dishCalls", 32);
+        d.put("receiverCalls", 4);
+        d.put("relayCallsMV", 16);
+        d.put("relayCallsHV", 48);
+        d.put("relayCallsEV", 128);
+        d.put("relayRateMV", 64);
+        d.put("relayRateHV", 256);
+        d.put("relayRateEV", 1024);
         d.put("questlineEnabled", true);
         d.put("questlineRecheckSeconds", 60);
     }
@@ -233,12 +279,42 @@ public record Tunables(
         if (pylonMinHeight < 1) throw invalid("pylonMinHeight", pylonMinHeight, "at least 1");
         if (pylonMaxHeight < pylonMinHeight) throw invalid("pylonMaxHeight", pylonMaxHeight, "at least pylonMinHeight");
         if (pylonMaxHeight > MAX_COLUMN) throw invalid("pylonMaxHeight", pylonMaxHeight, "at most " + MAX_COLUMN);
-        if (phoneCableLength < 1 || phoneCableLength > MAX_CABLE) {
-            throw invalid("phoneCableLength", phoneCableLength, "1 to " + MAX_CABLE);
+        for (CableTier tier : CableTier.values()) {
+            String name = tier.configName();
+            if (cableRate(tier) < 1) throw invalid("cableRate" + name, cableRate(tier), "at least 1");
+            if (cableReach(tier) < 1 || cableReach(tier) > MAX_CABLE) {
+                throw invalid("cableReach" + name, cableReach(tier), "1 to " + MAX_CABLE);
+            }
+            if (terminalPorts(tier) < 1)
+                throw invalid("terminalPorts" + tier.voltage(), terminalPorts(tier), "at least 1");
+            if (rackCalls(tier) < 1) throw invalid("rackCalls" + tier.voltage(), rackCalls(tier), "at least 1");
+        }
+        if (bundleSize < 1 || bundleSize > MAX_BUNDLE) throw invalid("bundleSize", bundleSize, "1 to " + MAX_BUNDLE);
+        if (cableBlocksPerItem < 1) throw invalid("cableBlocksPerItem", cableBlocksPerItem, "at least 1");
+        if (terminalCableBudget < 1 || terminalCableBudget > MAX_CABLE) {
+            throw invalid("terminalCableBudget", terminalCableBudget, "1 to " + MAX_CABLE);
+        }
+        if (exchangePower < 0) throw invalid("exchangePower", exchangePower, "0 or more");
+        if (voiceRate < 1) throw invalid("voiceRate", voiceRate, "at least 1");
+        if (videoRate < voiceRate) throw invalid("videoRate", videoRate, "at least voiceRate");
+        for (int tier = 1; tier <= 3; tier++) {
+            if (antennaCalls(tier) < 1) throw invalid("antennaCallsT" + tier, antennaCalls(tier), "at least 1");
+        }
+        if (radioRateLow < 1) throw invalid("radioRateLow", radioRateLow, "at least 1");
+        if (radioRateMedium < radioRateLow) throw invalid("radioRateMedium", radioRateMedium, "at least radioRateLow");
+        if (radioRateHigh < radioRateMedium) throw invalid("radioRateHigh", radioRateHigh, "at least radioRateMedium");
+        if (radioRateMax < radioRateHigh) throw invalid("radioRateMax", radioRateMax, "at least radioRateHigh");
+        if (meBridgeCalls < 1) throw invalid("meBridgeCalls", meBridgeCalls, "at least 1");
+        if (satelliteCalls < 1) throw invalid("satelliteCalls", satelliteCalls, "at least 1");
+        if (dishCalls < 1) throw invalid("dishCalls", dishCalls, "at least 1");
+        if (receiverCalls < 1) throw invalid("receiverCalls", receiverCalls, "at least 1");
+        for (int tier = RELAY_MIN_TIER; tier <= RELAY_MAX_TIER; tier++) {
+            String voltage = RELAY_VOLTAGES[tier - RELAY_MIN_TIER];
+            if (relayCalls(tier) < 1) throw invalid("relayCalls" + voltage, relayCalls(tier), "at least 1");
+            if (relayRate(tier) < 1) throw invalid("relayRate" + voltage, relayRate(tier), "at least 1");
         }
         if (pylonSpanFactor <= 0) throw invalid("pylonSpanFactor", pylonSpanFactor, "more than 0");
         if (pylonClearanceSeconds < 1) throw invalid("pylonClearanceSeconds", pylonClearanceSeconds, "at least 1");
-        if (lineLossPerBlock < 0) throw invalid("lineLossPerBlock", lineLossPerBlock, "0 or more");
         if (dropAfterSeconds < 0) throw invalid("dropAfterSeconds", dropAfterSeconds, "0 or more");
         if (directHearingRange < 0) throw invalid("directHearingRange", directHearingRange, "0 or more");
         if (ringSeconds < 1) throw invalid("ringSeconds", ringSeconds, "at least 1");
@@ -283,6 +359,11 @@ public record Tunables(
         if (phoneBattery < 1) throw invalid("phoneBattery", phoneBattery, "at least 1");
         if (phoneStandbyDrain < 0) throw invalid("phoneStandbyDrain", phoneStandbyDrain, "0 or more");
         if (phoneCallDrain < 0) throw invalid("phoneCallDrain", phoneCallDrain, "0 or more");
+        if (phoneVideoDrain < 0) throw invalid("phoneVideoDrain", phoneVideoDrain, "0 or more");
+        if (phoneScreenDrain < 0) throw invalid("phoneScreenDrain", phoneScreenDrain, "0 or more");
+        if (phoneSaverPercent < 0 || phoneSaverPercent > 100) {
+            throw invalid("phoneSaverPercent", phoneSaverPercent, "0 to 100");
+        }
         if (weatherRainLoss < 0) throw invalid("weatherRainLoss", weatherRainLoss, "0 or more");
         if (weatherStormLoss < weatherRainLoss)
             throw invalid("weatherStormLoss", weatherStormLoss, "at least weatherRainLoss");
@@ -364,6 +445,24 @@ public record Tunables(
         return SignalLevel.byOrdinal(receiverUplinkLevel);
     }
 
+    /** How many calls a Portal Relay of a GT voltage tier carries at once, MV to EV (DESIGN.md 9.4). */
+    public int relayCalls(int voltageTier) {
+        return switch (Math.max(RELAY_MIN_TIER, Math.min(RELAY_MAX_TIER, voltageTier))) {
+            case 2 -> relayCallsMV;
+            case 3 -> relayCallsHV;
+            default -> relayCallsEV;
+        };
+    }
+
+    /** A Portal Relay pair's data rate in KB/s, by the GT voltage tier it works at, MV to EV (DESIGN.md 9.4). */
+    public int relayRate(int voltageTier) {
+        return switch (Math.max(RELAY_MIN_TIER, Math.min(RELAY_MAX_TIER, voltageTier))) {
+            case 2 -> relayRateMV;
+            case 3 -> relayRateHV;
+            default -> relayRateEV;
+        };
+    }
+
     /** The level of the hop between a linked pair of Portal Relays (DESIGN.md 9.4). */
     public SignalLevel relayHop() {
         return SignalLevel.byOrdinal(relayHopLevel);
@@ -429,8 +528,60 @@ public record Tunables(
             frameMillis);
     }
 
-    public LineModel lineModel() {
-        return new LineModel(lineBudget, lineLossPerBlock);
+    /** A cable's data rate in KB/s (DESIGN.md 5.5). */
+    public int cableRate(CableTier tier) {
+        return switch (tier) {
+            case PHONE -> cableRatePhone;
+            case COAXIAL -> cableRateCoaxial;
+            case FIBRE -> cableRateFibre;
+        };
+    }
+
+    /** The longest run a cable carries, in blocks (DESIGN.md 5.5). */
+    public int cableReach(CableTier tier) {
+        return switch (tier) {
+            case PHONE -> cableReachPhone;
+            case COAXIAL -> cableReachCoaxial;
+            case FIBRE -> cableReachFibre;
+        };
+    }
+
+    /** How many devices a Line Terminal of a cable tier's voltage serves (DESIGN.md 5.2). */
+    public int terminalPorts(CableTier tier) {
+        return switch (tier) {
+            case PHONE -> terminalPortsLV;
+            case COAXIAL -> terminalPortsMV;
+            case FIBRE -> terminalPortsHV;
+        };
+    }
+
+    /** How many calls a Switching Rack of a cable tier's voltage switches at once (DESIGN.md 5.4). */
+    public int rackCalls(CableTier tier) {
+        return switch (tier) {
+            case PHONE -> rackCallsLV;
+            case COAXIAL -> rackCallsMV;
+            case FIBRE -> rackCallsHV;
+        };
+    }
+
+    /** How many calls an antenna carries at once, by tier 1 to 3 (DESIGN.md 7). */
+    public int antennaCalls(int tier) {
+        return switch (tier) {
+            case 1 -> antennaCallsT1;
+            case 2 -> antennaCallsT2;
+            default -> antennaCallsT3;
+        };
+    }
+
+    /** A radio hop's data rate in KB/s at a level; nothing below Low (DESIGN.md 6). */
+    public int radioRate(SignalLevel level) {
+        return switch (level) {
+            case NONE -> 0;
+            case LOW -> radioRateLow;
+            case MEDIUM -> radioRateMedium;
+            case HIGH -> radioRateHigh;
+            case MAX -> radioRateMax;
+        };
     }
 
     /** Radio channels' band (DESIGN.md 6.1): longer waves bend over hills better. */

@@ -30,6 +30,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NodeRef;
+import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.server.BeComServer;
@@ -92,9 +93,13 @@ public final class AntennaScreen {
         column.child(
             IKey.dynamic(
                 () -> StatCollector.translateToLocalFormatted(
-                    "becom.antenna.owner",
+                    "becom.antenna.owner_calls",
                     view.get()
-                        .owner()))
+                        .owner(),
+                    view.get()
+                        .calls(),
+                    view.get()
+                        .callSlots()))
                 .asWidget()
                 .widthRel(1f)
                 .height(10));
@@ -202,7 +207,8 @@ public final class AntennaScreen {
                 bridge.x(),
                 bridge.y(),
                 bridge.z(),
-                bridge.distance());
+                bridge.distance(),
+                bridge.rate());
         }
         return i == 0 && links.isEmpty() ? StatCollector.translateToLocal("becom.antenna.no_links") : "";
     }
@@ -298,7 +304,12 @@ public final class AntennaScreen {
                         BlockPos.x(other),
                         BlockPos.y(other),
                         BlockPos.z(other),
-                        (int) Math.round(BlockPos.distance(ref.pos(), other))));
+                        (int) Math.round(BlockPos.distance(ref.pos(), other)),
+                        WiredTopology.spanRate(
+                            becom.network.model(tile.getWorld())
+                                .cables(ref.pos(), other),
+                            BlockPos.distance(ref.pos(), other),
+                            t)));
             }
         }
         UUID owner = antenna.owner();
@@ -315,6 +326,8 @@ public final class AntennaScreen {
             antenna.isLocked(),
             Ownership.mayManage(player, owner),
             ownerName == null ? "-" : ownerName,
+            becom.calls.callsAt(ref.dimension(), ref.pos()),
+            t.antennaCalls(antenna.tier()),
             links,
             bridges,
             (int) Math.round(t.rangeToHold(t.antennaBudget(antenna.tier()))),

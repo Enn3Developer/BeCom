@@ -4,18 +4,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Every node and link of one dimension's network (DESIGN.md 14), and which links a clearance check found blocked
- * (D20). Server-thread only. {@link #version()} goes up on every change that can move a call's path, so path finding
+ * Every node and link of one dimension's network (DESIGN.md 14), the cables each link's span holds (DESIGN.md 5.1),
+ * and which links a clearance check found blocked (D20). Server-thread only. {@link #version()} goes up on every change
+ * that can move a call's path, so path finding
  * reruns only when it has to.
  */
 public final class NetworkModel {
 
     private final Map<Long, NetNode> nodes = new HashMap<>();
     private final Set<LinkKey> blocked = new HashSet<>();
+    // Each link's cables, best first; a link with none carries nothing.
+    private final Map<LinkKey, List<CableTier>> bundles = new HashMap<>();
     private long version;
 
     public NetNode node(long pos) {
@@ -46,20 +50,42 @@ public final class NetworkModel {
             NetNode neighbour = nodes.get(other);
             if (neighbour != null) neighbour.removeLink(pos);
             blocked.remove(LinkKey.of(pos, other));
+            bundles.remove(LinkKey.of(pos, other));
             node.removeLink(other);
         }
         changed();
         return node;
     }
 
-    /** Links two nodes both ways. No rules are checked here; see {@link LinkRules}. */
+    /** Links two nodes both ways, with no cable yet. No rules are checked here; see {@link LinkRules}. */
     public boolean link(long a, long b) {
+        return link(a, b, List.of());
+    }
+
+    /** Links two nodes both ways with {@code cables} strung between them. No rules are checked here. */
+    public boolean link(long a, long b, List<CableTier> cables) {
         NetNode na = nodes.get(a);
         NetNode nb = nodes.get(b);
         if (na == null || nb == null || a == b) return false;
         boolean added = na.addLink(b) | nb.addLink(a);
         if (added) changed();
+        setCables(a, b, cables);
         return added;
+    }
+
+    /** The cables on the span between two linked nodes, best first; empty when none or not linked. */
+    public List<CableTier> cables(long a, long b) {
+        return bundles.getOrDefault(LinkKey.of(a, b), List.of());
+    }
+
+    /** Replaces the cables on a link's span; nothing for nodes that aren't linked. */
+    public void setCables(long a, long b, List<CableTier> cables) {
+        if (!linked(a, b)) return;
+        List<CableTier> sorted = new java.util.ArrayList<>(cables);
+        sorted.sort(java.util.Comparator.reverseOrder());
+        List<CableTier> before = sorted.isEmpty() ? bundles.remove(LinkKey.of(a, b))
+            : bundles.put(LinkKey.of(a, b), List.copyOf(sorted));
+        if (!sorted.equals(before == null ? List.of() : before)) changed();
     }
 
     public boolean unlink(long a, long b) {
@@ -69,6 +95,7 @@ public final class NetworkModel {
         if (na != null) removed |= na.removeLink(b);
         if (nb != null) removed |= nb.removeLink(a);
         blocked.remove(LinkKey.of(a, b));
+        bundles.remove(LinkKey.of(a, b));
         if (removed) changed();
         return removed;
     }

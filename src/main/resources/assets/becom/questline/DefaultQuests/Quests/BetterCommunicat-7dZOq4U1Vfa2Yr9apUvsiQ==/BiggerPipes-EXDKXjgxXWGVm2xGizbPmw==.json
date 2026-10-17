@@ -1,26 +1,26 @@
 {
   "preRequisites:9": {
     "0:10": {
-      "questIDHigh:4": 1370545556679056938,
-      "questIDLow:4": -7320922553454584615
+      "questIDHigh:4": -222294113885793163,
+      "questIDLow:4": -4860476363550805366
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A plain line joins exactly two phones. Want more? A Router Head has 15 link slots and turns your lines into a network, where any phone can dial any other.%n%nIt cleans up the signal like a repeater, and takes 16 EU/t of LV power through an Energy Hatch in the exchange cabinet at the pole's foot: three across, two high, with a second crossarm up top for all those lines.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Phone Cable carries 16 KB/s, enough for 8 calls. Coaxial carries 64 KB/s over runs up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene.%n%nA span holds up to 4 cables, and their rates add up. Wrench a strung span again with cable in your hotbar to add it; once the span is full, a better cable swaps out the poorest one, and you get that one back.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
-        "Damage:2": 25002,
+        "Damage:2": 1,
         "OreDict:8": "",
-        "id:8": "gregtech:gt.blockmachines"
+        "id:8": "becom:phone_cable"
       },
       "isGlobal:1": 0,
-      "isMain:1": 1,
+      "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "\u00a72\u00a7lSwitchboard",
+      "name:8": "\u00a76\u00a7lBigger Pipes",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,
@@ -32,8 +32,8 @@
       "visibility:8": "NORMAL"
     }
   },
-  "questIDHigh:4": 79365213721482471,
-  "questIDLow:4": -5444110621092156459,
+  "questIDHigh:4": 1256726802054864225,
+  "questIDLow:4": -7666414890429001829,
   "rewards:9": {
     "0:10": {
       "ignoreDisabled:1": 0,
@@ -42,22 +42,9 @@
       "rewards:9": {
         "0:10": {
           "Count:3": 1,
-          "Damage:2": 4,
+          "Damage:2": 5,
           "OreDict:8": "",
           "id:8": "enhancedlootbags:lootbag"
-        }
-      }
-    },
-    "1:10": {
-      "ignoreDisabled:1": 0,
-      "index:3": 1,
-      "rewardID:8": "bq_standard:item",
-      "rewards:9": {
-        "0:10": {
-          "Count:3": 15,
-          "Damage:2": 0,
-          "OreDict:8": "",
-          "id:8": "dreamcraft:CoinTechnician"
         }
       }
     }
@@ -73,10 +60,10 @@
       "requireOnlyOneItem:1": 0,
       "requiredItems:9": {
         "0:10": {
-          "Count:3": 1,
-          "Damage:2": 25002,
+          "Count:3": 4,
+          "Damage:2": 1,
           "OreDict:8": "",
-          "id:8": "gregtech:gt.blockmachines"
+          "id:8": "becom:phone_cable"
         }
       },
       "taskID:8": "bq_standard:retrieval"

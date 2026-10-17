@@ -503,6 +503,11 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         info.add(working ? "becom.info.online" : "becom.info.offline");
         // GT's scanner reads on the server and sends its text as it is; WAILA translates on the client.
         lines(view(), info);
+        InfoLines.calls(
+            info,
+            getBaseMetaTileEntity(),
+            BeComConfig.get()
+                .dishCalls());
         return info;
     }
 

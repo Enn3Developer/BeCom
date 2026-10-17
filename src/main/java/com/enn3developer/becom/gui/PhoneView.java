@@ -18,7 +18,7 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
 public record PhoneView(int number, String owner, boolean mayManage, State state, String otherName, int otherNumber,
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
     List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members,
-    boolean offline, Video video) {
+    boolean offline, Video video, Battery battery, Via via) {
 
     // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
     // players, and the whole history.
@@ -46,7 +46,9 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         SignalLevel.NONE,
         Collections.emptyList(),
         false,
-        Video.NONE);
+        Video.NONE,
+        Battery.NONE,
+        Via.NONE);
 
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum State {
@@ -83,6 +85,45 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
 
         public static final Video NONE = new Video(false, true, false, false, false);
     }
+
+    /**
+     * A carried phone's battery (the Battery settings page): its charge, how long that lasts on standby and in calls
+     * (-1 for ever), whether it's charging, each use's share of today's drain by {@link
+     * com.enn3developer.becom.logic.phone.BatteryUse.Use} ordinal, and the saver and warning switches.
+     */
+    public record Battery(long charge, long max, long standbyMinutes, long callMinutes, boolean charging,
+        List<Integer> shares, boolean saver, boolean saving, boolean warns) {
+
+        public static final Battery NONE = new Battery(0, 0, -1, -1, false, List.of(), false, false, true);
+
+        public int percent() {
+            return max <= 0 ? 0 : (int) Math.min(100, charge * 100 / max);
+        }
+    }
+
+    /** What a carried phone's service comes through: the best of its ways in, and an antenna's tier. */
+    public record Via(Kind kind, int tier) {
+
+        public static final Via NONE = new Via(Kind.NONE, 0);
+
+        /** Ordinals go on the wire, so constants are only ever appended. */
+        public enum Kind {
+
+            NONE,
+            ANTENNA,
+            SATELLITES,
+            ME_NETWORK;
+
+            private static final Kind[] VALUES = values();
+
+            static Kind byOrdinal(int ordinal) {
+                return ordinal >= 0 && ordinal < VALUES.length ? VALUES[ordinal] : NONE;
+            }
+        }
+    }
+
+    // A battery's use shares go on the wire as bytes, at most this many.
+    private static final int MAX_SHARES = 16;
 
     public void write(PacketBuffer buf) {
         buf.writeInt(number);
@@ -141,6 +182,21 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         buf.writeBoolean(video.rear());
         buf.writeBoolean(video.rearPossible());
         buf.writeBoolean(video.active());
+        buf.writeLong(battery.charge());
+        buf.writeLong(battery.max());
+        buf.writeLong(battery.standbyMinutes());
+        buf.writeLong(battery.callMinutes());
+        buf.writeBoolean(battery.charging());
+        List<Integer> shares = cap(battery.shares(), MAX_SHARES);
+        buf.writeByte(shares.size());
+        for (int share : shares) buf.writeByte(share);
+        buf.writeBoolean(battery.saver());
+        buf.writeBoolean(battery.saving());
+        buf.writeBoolean(battery.warns());
+        buf.writeByte(
+            via.kind()
+                .ordinal());
+        buf.writeByte(via.tier());
     }
 
     public static PhoneView read(PacketBuffer buf) {
@@ -188,6 +244,25 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             buf.readBoolean(),
             buf.readBoolean(),
             buf.readBoolean());
+        long charge = buf.readLong();
+        long max = buf.readLong();
+        long standby = buf.readLong();
+        long inCalls = buf.readLong();
+        boolean charging = buf.readBoolean();
+        count = Math.min(buf.readUnsignedByte(), MAX_SHARES);
+        List<Integer> shares = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) shares.add((int) buf.readUnsignedByte());
+        Battery battery = new Battery(
+            charge,
+            max,
+            standby,
+            inCalls,
+            charging,
+            shares,
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean());
+        Via via = new Via(Via.Kind.byOrdinal(buf.readByte()), buf.readByte());
         return new PhoneView(
             number,
             owner,
@@ -207,7 +282,9 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             service,
             members,
             offline,
-            video);
+            video,
+            battery,
+            via);
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

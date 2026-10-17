@@ -105,19 +105,32 @@ public final class BeComConfig {
         integer(config, v, WIRED, "pylonMaxHeight", 1, Tunables.MAX_COLUMN, "Tallest pylon, in frame boxes.");
         dbl(config, v, WIRED, "pylonSpanFactor", "Span limit, times the shorter pylon's height.");
         integer(config, v, WIRED, "pylonClearanceSeconds", "Seconds between line checks.");
-        dbl(config, v, WIRED, "lineBudget", "dB every powered node drives the line at.");
-        dbl(config, v, WIRED, "lineLossPerBlock", "dB the line loses per block of span.");
+        integer(config, v, WIRED, "cableRatePhone", "KB/s a Phone Cable carries.");
+        integer(config, v, WIRED, "cableRateCoaxial", "KB/s a Coaxial cable carries.");
+        integer(config, v, WIRED, "cableRateFibre", "KB/s a Fibre cable carries.");
+        integer(config, v, WIRED, "cableReachPhone", 1, Tunables.MAX_CABLE, "Longest run of Phone Cable, in blocks.");
+        integer(config, v, WIRED, "cableReachCoaxial", 1, Tunables.MAX_CABLE, "Longest run of Coaxial, in blocks.");
+        integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Longest run of Fibre, in blocks.");
+        integer(config, v, WIRED, "bundleSize", 1, Tunables.MAX_BUNDLE, "Most cables a pylon span holds.");
+        integer(config, v, WIRED, "cableBlocksPerItem", "Blocks of span one cable item strings.");
+        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
+        integer(config, v, WIRED, "terminalPortsLV", "Devices an LV Line Terminal serves.");
+        integer(config, v, WIRED, "terminalPortsMV", "Devices an MV Line Terminal serves.");
+        integer(config, v, WIRED, "terminalPortsHV", "Devices an HV Line Terminal serves.");
         integer(
             config,
             v,
             WIRED,
-            "phoneCableLength",
+            "terminalCableBudget",
             1,
             Tunables.MAX_CABLE,
-            "Most Phone Cable from phone to terminal.");
-        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
-        integer(config, v, WIRED, "repeaterPower", "EU/t a Repeater Head draws.");
-        integer(config, v, WIRED, "routerPower", "EU/t a Router Head draws.");
+            "Most blocks of cable a Line Terminal walks to find its devices.");
+        integer(config, v, WIRED, "exchangePower", "EU/t an Exchange draws.");
+        integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
+        integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");
+        integer(config, v, WIRED, "rackCallsHV", "Calls an HV Switching Rack switches at once.");
+        integer(config, v, WIRED, "voiceRate", "KB/s a voice call takes on every hop.");
+        integer(config, v, WIRED, "videoRate", "KB/s a video call takes on every hop.");
         dbl(
             config,
             v,
@@ -145,6 +158,13 @@ public final class BeComConfig {
         integer(config, v, ANTENNAS, "antennaPowerT1", "EU/t an Antenna T1 draws.");
         integer(config, v, ANTENNAS, "antennaPowerT2", "EU/t an Antenna T2 draws.");
         integer(config, v, ANTENNAS, "antennaPowerT3", "EU/t an Antenna T3 draws.");
+        integer(config, v, ANTENNAS, "antennaCallsT1", "Calls an Antenna T1 carries at once.");
+        integer(config, v, ANTENNAS, "antennaCallsT2", "Calls an Antenna T2 carries at once.");
+        integer(config, v, ANTENNAS, "antennaCallsT3", "Calls an Antenna T3 carries at once.");
+        integer(config, v, RADIO, "radioRateLow", "KB/s a radio hop carries at Low.");
+        integer(config, v, RADIO, "radioRateMedium", "KB/s a radio hop carries at Medium.");
+        integer(config, v, RADIO, "radioRateHigh", "KB/s a radio hop carries at High.");
+        integer(config, v, RADIO, "radioRateMax", "KB/s a radio hop carries at Max.");
         integer(config, v, ANTENNAS, "antennaMastMinT1", "Shortest Antenna T1 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMinT2", "Shortest Antenna T2 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMinT3", "Shortest Antenna T3 mast, in frame boxes.");
@@ -172,6 +192,16 @@ public final class BeComConfig {
         integer(config, v, PHONES, "phoneBattery", "EU a Mobile Phone holds.");
         integer(config, v, PHONES, "phoneStandbyDrain", "EU/t a phone uses switched on.");
         integer(config, v, PHONES, "phoneCallDrain", "EU/t a phone uses in a call.");
+        integer(config, v, PHONES, "phoneVideoDrain", "EU/t more a phone uses while it shows video.");
+        integer(config, v, PHONES, "phoneScreenDrain", "EU/t more a phone uses while its screen is open.");
+        integer(
+            config,
+            v,
+            PHONES,
+            "phoneSaverPercent",
+            0,
+            100,
+            "Charge left, in percent, at which a phone's battery saver comes on by itself.");
         dbl(config, v, PHONES, "weatherRainLoss", "dB rain costs calls and satellite hops.");
         dbl(config, v, PHONES, "weatherStormLoss", "dB a thunderstorm costs them, rain included.");
         integer(config, v, VIDEO, "videoPoseRate", 1, Tunables.MAX_POSE_RATE, "Front-camera updates a second.");
@@ -209,6 +239,7 @@ public final class BeComConfig {
         integer(config, v, VIDEO, "videophoneEmptySeconds", "Seconds with nobody in the room before it hangs up.");
         integer(config, v, ME, "meBridgePower", "EU/t an ME Bridge draws.");
         integer(config, v, ME, "meBridgeChannels", 0, 1, "ME channels an ME Bridge uses.");
+        integer(config, v, ME, "meBridgeCalls", "Calls an ME Bridge carries at once.");
         integer(config, v, SPACE, "satellitesLow", "Satellites over a dimension for its sky hops to reach Low.");
         integer(config, v, SPACE, "satellitesMax", "Satellites over a dimension for its sky hops to reach Max.");
         dbl(config, v, SPACE, "satelliteLifetimeDays", "Minecraft days a satellite stays in orbit.");
@@ -241,6 +272,20 @@ public final class BeComConfig {
             1,
             4,
             "Level of the hop between a linked pair of Portal Relays: 1 Low, 2 Medium, 3 High, 4 Max.");
+        integer(
+            config,
+            v,
+            SPACE,
+            "satelliteCalls",
+            "Calls each satellite carries, shared by everything under its sky.");
+        integer(config, v, SPACE, "dishCalls", "Calls a Satellite Dish carries at once.");
+        integer(config, v, SPACE, "receiverCalls", "Calls a Rocket Radio Receiver carries at once.");
+        integer(config, v, SPACE, "relayCallsMV", "Calls an MV Portal Relay carries at once.");
+        integer(config, v, SPACE, "relayCallsHV", "Calls an HV Portal Relay carries at once.");
+        integer(config, v, SPACE, "relayCallsEV", "Calls an EV Portal Relay carries at once.");
+        integer(config, v, SPACE, "relayRateMV", "KB/s a pair of Portal Relays carries at MV.");
+        integer(config, v, SPACE, "relayRateHV", "KB/s a pair of Portal Relays carries at HV.");
+        integer(config, v, SPACE, "relayRateEV", "KB/s a pair of Portal Relays carries at EV.");
         v.put(
             "questlineEnabled",
             config.getBoolean(

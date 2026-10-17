@@ -18,10 +18,11 @@ import net.minecraftforge.common.DimensionManager;
 
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.data.NetworkSavedData;
-import com.enn3developer.becom.logic.LineModel;
+import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.Sweep;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.Clearance;
 import com.enn3developer.becom.logic.net.LinkRules;
@@ -39,9 +40,9 @@ import com.enn3developer.becom.packet.WireSyncPacket;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The live side of every loaded dimension's network (DESIGN.md 14): which powered nodes are working, which phone hangs
- * off which terminal, the clearance re-checks (D20), the graph calls are routed over, and the wires clients draw.
- * Server thread only.
+ * The live side of every loaded dimension's network (DESIGN.md 14): which powered nodes are working, which devices hang
+ * off which terminal, how many calls each Exchange switches, the clearance re-checks (D20), the graph calls are routed
+ * over, and the wires clients draw. Server thread only.
  */
 public final class NetworkService {
 
@@ -53,11 +54,13 @@ public final class NetworkService {
 
     private final Tunables tunables;
     private final LinkRules rules;
-    private final LineModel line;
+    private final LevelScale levels;
     private final Map<Integer, NetworkModel> models = new HashMap<>();
     private final Map<NodeRef, Long> lastHeard = new HashMap<>();
-    private final Map<NodeRef, Integer> attachments = new HashMap<>();
-    private final Map<NodeRef, Integer> phonesSeen = new HashMap<>();
+    // What each terminal's last cable scan found: every device it reaches, nearest first (DESIGN.md 5.2).
+    private final Map<NodeRef, List<Device>> attachments = new HashMap<>();
+    // How many calls each working Exchange's racks switch at once (DESIGN.md 5.4).
+    private final Map<NodeRef, Integer> exchanges = new HashMap<>();
     // Each working ME Bridge's ME network, by grid id (DESIGN.md 8.3).
     private final Map<NodeRef, Integer> meBridges = new HashMap<>();
     // Each working Satellite Dish, and what its hop up to the satellites loses (DESIGN.md 9.2).
@@ -66,6 +69,8 @@ public final class NetworkService {
     private final Set<NodeRef> receivers = new HashSet<>();
     // Each working Portal Relay, and the kinds of portal in its reach (DESIGN.md 9.4).
     private final Map<NodeRef, Set<Portals.Kind>> relays = new HashMap<>();
+    // Each Portal Relay's GT voltage tier, as it last said (DESIGN.md 9.4).
+    private final Map<NodeRef, Integer> relayTiers = new HashMap<>();
     // Where the Personal Space portals by each relay lead, at its last look, working or not.
     private final Map<NodeRef, Set<Integer>> personalTargets = new HashMap<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
@@ -92,7 +97,7 @@ public final class NetworkService {
         this.space = space;
         this.gateways = Gateways.of(tunables);
         this.rules = new LinkRules(tunables.pylonSpanFactor(), tunables.wrenchLinkDistance());
-        this.line = tunables.lineModel();
+        this.levels = tunables.levelScale();
         this.nextClearanceTick = (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
     }
 
@@ -125,7 +130,9 @@ public final class NetworkService {
             .removeIf(ref -> ref.dimension() == dimension);
         attachments.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
-        phonesSeen.keySet()
+        exchanges.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
+        terminalTiers.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
         meBridges.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
@@ -133,6 +140,8 @@ public final class NetworkService {
             .removeIf(ref -> ref.dimension() == dimension);
         receivers.removeIf(ref -> ref.dimension() == dimension);
         relays.keySet()
+            .removeIf(ref -> ref.dimension() == dimension);
+        relayTiers.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
         personalTargets.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
@@ -184,36 +193,36 @@ public final class NetworkService {
         model.remove(pos);
         lastHeard.remove(ref);
         attachments.remove(ref);
-        phonesSeen.remove(ref);
+        exchanges.remove(ref);
+        terminalTiers.remove(ref);
         meBridges.remove(ref);
         dishes.remove(ref);
         relays.remove(ref);
+        relayTiers.remove(ref);
         personalTargets.remove(ref);
         version++;
     }
 
-    /** A pylon head finished its structure check. A newly formed pylon links on its own if it can (DESIGN.md 5.1). */
+    /** A machine with a structure finished its structure check. */
     public void setFormed(World world, long pos, boolean formed, int height) {
         NetworkModel model = model(world);
         NetNode node = model.node(pos);
         if (node == null || node.formed() == formed && node.height() == height) return;
-        boolean wasFormed = node.formed();
         node.setFormed(formed);
         node.setHeight(height);
         model.changed();
-        if (formed && !wasFormed
-            && node.kind()
-                .pylonHead()) {
-            NetNode target = rules
-                .autoLinkTarget(model, node, (a, b) -> clearance(world, a.pos(), b.pos()) != Clearance.Result.BLOCKED);
-            if (target != null) {
-                model.link(node.pos(), target.pos());
-                BeCom.LOG.debug(
-                    "Pylon at {} linked on its own to {}",
-                    BlockPos.toString(pos),
-                    BlockPos.toString(target.pos()));
-            }
-        }
+    }
+
+    /** A working Exchange's racks switch {@code calls} calls at once this tick (DESIGN.md 5.4). */
+    public void exchange(World world, long pos, int calls) {
+        heartbeat(world, pos);
+        Integer before = exchanges.put(new NodeRef(world.provider.dimensionId, pos), calls);
+        if (before == null || before != calls) version++;
+    }
+
+    /** The calls a working Exchange's racks switch at once; 0 for one not heard from. */
+    public int exchangeCalls(int dimension, long pos) {
+        return working(dimension, pos) ? exchanges.getOrDefault(new NodeRef(dimension, pos), 0) : 0;
     }
 
     /** A powered node is formed, loaded and powered this tick (D11). */
@@ -264,11 +273,23 @@ public final class NetworkService {
         if (lastHeard.remove(ref) != null) version++;
     }
 
-    /** A Portal Relay is powered this tick, with these kinds of portal in its reach (DESIGN.md 9.4). */
-    public void relay(World world, long pos, Set<Portals.Kind> portals) {
+    /**
+     * A Portal Relay of GT voltage tier {@code tier} is powered this tick, with these kinds of portal in its reach
+     * (DESIGN.md 9.4).
+     */
+    public void relay(World world, long pos, Set<Portals.Kind> portals, int tier) {
         heartbeat(world, pos);
-        Set<Portals.Kind> before = relays.put(new NodeRef(world.provider.dimensionId, pos), portals);
-        if (!portals.equals(before)) version++;
+        NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
+        Set<Portals.Kind> before = relays.put(ref, portals);
+        Integer tierBefore = relayTiers.put(ref, tier);
+        if (!portals.equals(before) || tierBefore == null || tierBefore != tier) version++;
+    }
+
+    /** The GT voltage tier a relay pair works at: its lower relay's (DESIGN.md 9.4). */
+    public int pairTier(NodeRef a, NodeRef b) {
+        return Math.min(
+            relayTiers.getOrDefault(a, Tunables.RELAY_MIN_TIER),
+            relayTiers.getOrDefault(b, Tunables.RELAY_MIN_TIER));
     }
 
     /** A Portal Relay looked again at where the Personal Space portals in its reach lead. */
@@ -361,26 +382,66 @@ public final class NetworkService {
     }
 
     /**
-     * What a terminal's last cable scan found: the one phone it serves, or none when it found no phone or more than
-     * one (D19).
+     * A device a terminal's cable reaches (DESIGN.md 5.2): its number, -1 for one without a number yet; how many
+     * blocks of cable lead to it; and the poorest cable on the way, which sets its rate and reach.
      */
-    public void attach(World world, long terminalPos, int phone, int phonesFound) {
+    public record Device(int phone, int length, CableTier cable) {}
+
+    /** What a terminal's last cable scan found: every device its cable reaches, nearest first. */
+    public void attach(World world, long terminalPos, List<Device> devices) {
         NodeRef ref = new NodeRef(world.provider.dimensionId, terminalPos);
-        phonesSeen.put(ref, phonesFound);
-        Integer before = phone < 0 ? attachments.remove(ref) : attachments.put(ref, phone);
-        if (before == null ? phone >= 0 : before != phone) version++;
+        List<Device> before = devices.isEmpty() ? attachments.remove(ref) : attachments.put(ref, List.copyOf(devices));
+        if (!devices.equals(before == null ? List.of() : before)) version++;
     }
 
-    /** The number of phones a terminal's last scan saw on its cable. */
-    public int phonesSeen(int dimension, long terminalPos) {
-        return phonesSeen.getOrDefault(new NodeRef(dimension, terminalPos), 0);
+    /** What a terminal's last scan found on its cable, nearest first. */
+    public List<Device> devicesOf(int dimension, long terminalPos) {
+        return attachments.getOrDefault(new NodeRef(dimension, terminalPos), List.of());
     }
 
-    /** How many terminals found {@code phone} on their cable; a phone on more than one is served by none (D19). */
-    public int terminalsOf(int phone) {
-        int found = 0;
-        for (int attached : attachments.values()) if (attached == phone) found++;
-        return found;
+    /**
+     * The terminal serving {@code phone}, or null: of the terminals whose cable reaches it within their ports, the
+     * nearest (DESIGN.md 5.2), then the one that sorts first.
+     */
+    public NodeRef terminalOf(int phone) {
+        NodeRef best = null;
+        int bestLength = Integer.MAX_VALUE;
+        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
+            for (Device device : served(entry.getKey(), entry.getValue())) {
+                if (device.phone() != phone) continue;
+                if (device.length() < bestLength
+                    || device.length() == bestLength && best != null && compare(entry.getKey(), best) < 0) {
+                    best = entry.getKey();
+                    bestLength = device.length();
+                }
+            }
+        }
+        return best;
+    }
+
+    /** The devices a terminal gives a line: the nearest ones, as many as its ports, within their cable's reach. */
+    public List<Device> served(NodeRef terminal, List<Device> devices) {
+        int ports = tunables.terminalPorts(terminalTier(terminal));
+        List<Device> served = new ArrayList<>();
+        for (Device device : devices) {
+            if (served.size() >= ports) break;
+            if (device.length() > tunables.cableReach(device.cable())) continue;
+            served.add(device);
+        }
+        return served;
+    }
+
+    // Each terminal's tier, as its machine says when it's placed or loaded.
+    private final Map<NodeRef, CableTier> terminalTiers = new HashMap<>();
+
+    /** A terminal's tier, which sets its ports. */
+    public void terminalTier(World world, long pos, CableTier tier) {
+        CableTier before = terminalTiers.put(new NodeRef(world.provider.dimensionId, pos), tier);
+        if (before != tier) version++;
+    }
+
+    private CableTier terminalTier(NodeRef terminal) {
+        return terminalTiers.getOrDefault(terminal, CableTier.PHONE);
     }
 
     // endregion
@@ -419,53 +480,94 @@ public final class NetworkService {
         return version;
     }
 
+    /** The link a run of wire shares its rate on: the same from either end. */
+    private record RunLink(int dimension, NetworkModel.LinkKey key) {}
+
+    /** The link a UHF hop between two antennas shares its rate on. */
+    private record RadioLink(int dimension, NetworkModel.LinkKey key) {}
+
+    /** The link a device's own cable to its terminal is. */
+    private record DeviceLink(int phone) {}
+
     private CallGraph build() {
         CallGraph.Builder builder = CallGraph.builder();
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
             int dimension = entry.getKey();
+            NetworkModel model = entry.getValue();
             for (WiredTopology.Segment segment : WiredTopology
-                .segments(entry.getValue(), pos -> working(dimension, pos), line, rules)) {
+                .segments(model, pos -> working(dimension, pos), tunables, rules)) {
+                // A run no cable reaches the whole of carries nothing (DESIGN.md 5.5).
+                if (segment.rate() <= 0) continue;
                 builder.hop(
                     new CallGraph.NodeVertex(dimension, segment.from()),
                     new CallGraph.NodeVertex(dimension, segment.to()),
-                    segment.snr(),
-                    CallGraph.HopKind.LINE);
+                    Double.POSITIVE_INFINITY,
+                    CallGraph.HopKind.LINE,
+                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to())),
+                    segment.rate());
             }
-            // Calls travel between antennas on UHF (DESIGN.md 7), once both are working.
+            // Calls travel between antennas on UHF (DESIGN.md 7), once both are working, at their level's rate.
             antennas.forEachUhfLink(dimension, (a, b, snr) -> {
                 if (working(dimension, a) && working(dimension, b)) {
                     builder.twoWay(
                         new CallGraph.NodeVertex(dimension, a),
                         new CallGraph.NodeVertex(dimension, b),
                         snr,
-                        CallGraph.HopKind.RADIO);
+                        CallGraph.HopKind.RADIO,
+                        new RadioLink(dimension, NetworkModel.LinkKey.of(a, b)),
+                        tunables.radioRate(levels.levelOf(snr)));
                 }
             });
+            for (NetNode node : model.nodes()) {
+                if (!working(dimension, node.pos())) continue;
+                CallGraph.NodeVertex vertex = new CallGraph.NodeVertex(dimension, node.pos());
+                if (node.kind()
+                    .antenna())
+                    builder.slots(
+                        vertex,
+                        tunables.antennaCalls(
+                            node.kind()
+                                .antennaTier()));
+                if (node.kind() == NodeKind.EXCHANGE) builder.slots(vertex, exchangeCalls(dimension, node.pos()));
+            }
         }
-        // An ME Bridge joins its ME network to the line it bridges, losing nothing (DESIGN.md 8.3: a Max hop).
+        // An ME Bridge joins its ME network to the line it bridges, losing nothing (DESIGN.md 8.3: a Max hop), and
+        // carries a few calls over its one channel.
         for (Map.Entry<NodeRef, Integer> entry : meBridges.entrySet()) {
             NodeRef bridge = entry.getKey();
             if (!working(bridge.dimension(), bridge.pos())) continue;
+            CallGraph.NodeVertex vertex = new CallGraph.NodeVertex(bridge.dimension(), bridge.pos());
             builder.twoWay(
                 new CallGraph.MeVertex(entry.getValue(), bridge.dimension()),
-                new CallGraph.NodeVertex(bridge.dimension(), bridge.pos()),
+                vertex,
                 Double.POSITIVE_INFINITY,
                 CallGraph.HopKind.ME_BRIDGE);
+            builder.slots(vertex, tunables.meBridgeCalls());
+        }
+        // The satellites over each dimension carry a few calls each, shared by the phones under its sky and every
+        // dish and receiver up to it (DESIGN.md 9.1).
+        Set<Integer> skies = new HashSet<>(models.keySet());
+        skies.add(Gateways.OVERWORLD);
+        for (int dimension : skies) {
+            builder.slots(new CallGraph.SkyVertex(dimension), gateways.skyCalls(satellitesOver(dimension)));
         }
         gateways.addTo(builder, this::satellitesOver, workingDishes(), workingReceivers(), workingRelayPairs());
-        Map<Integer, Integer> terminalsPerPhone = new HashMap<>();
-        for (int phone : attachments.values()) terminalsPerPhone.merge(phone, 1, Integer::sum);
-        for (Map.Entry<NodeRef, Integer> entry : attachments.entrySet()) {
-            NodeRef terminal = entry.getKey();
-            if (!working(terminal.dimension(), terminal.pos())) continue;
-            // Strictly one phone per terminal and one terminal per phone (D19): a phone on two cables gets neither.
-            if (terminalsPerPhone.get(entry.getValue()) > 1) continue;
-            // Phone Cable is lossless (DESIGN.md 5.5).
+        Set<Integer> phones = new HashSet<>();
+        for (List<Device> devices : attachments.values()) for (Device device : devices) phones.add(device.phone());
+        for (int phone : phones) {
+            if (phone < 0) continue;
+            NodeRef terminal = terminalOf(phone);
+            if (terminal == null || !working(terminal.dimension(), terminal.pos())) continue;
+            Device device = null;
+            for (Device d : devicesOf(terminal.dimension(), terminal.pos())) if (d.phone() == phone) device = d;
+            // Each device's own cable is lossless, and carries its poorest cable's rate (DESIGN.md 5.5).
             builder.twoWay(
-                new CallGraph.PhoneVertex(entry.getValue()),
+                new CallGraph.PhoneVertex(phone),
                 new CallGraph.NodeVertex(terminal.dimension(), terminal.pos()),
                 Double.POSITIVE_INFINITY,
-                CallGraph.HopKind.CABLE);
+                CallGraph.HopKind.CABLE,
+                new DeviceLink(phone),
+                tunables.cableRate(device.cable()));
         }
         return builder.build();
     }
@@ -506,7 +608,7 @@ public final class NetworkService {
             NodeRef overworld = a.dimension() == Portals.OVERWORLD ? a : b;
             NodeRef far = overworld == a ? b : a;
             if (!Portals.leadsInto(portal, personalTargetsOf(overworld), far.dimension())) continue;
-            pairs.add(new Gateways.RelayPair(a.dimension(), a.pos(), b.dimension(), b.pos()));
+            pairs.add(new Gateways.RelayPair(a.dimension(), a.pos(), b.dimension(), b.pos(), pairTier(a, b)));
         }
         return pairs;
     }
@@ -674,7 +776,7 @@ public final class NetworkService {
                 // A wire hangs broken while blocked, or while its pylons are too short for its span.
                 boolean down = model.isBlocked(key.a(), key.b())
                     || a != null && b != null && a.distanceTo(b) > rules.maxSpan(a, b);
-                wires.add(new WireSyncPacket.Wire(key.a(), key.b(), down));
+                wires.add(new WireSyncPacket.Wire(key.a(), key.b(), down, model.cables(key.a(), key.b())));
             }
         }
         return new WireSyncPacket(dimension, wires);

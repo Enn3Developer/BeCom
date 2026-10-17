@@ -1,9 +1,6 @@
 package com.enn3developer.becom.machine;
 
-import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
-import static gregtech.api.enums.HatchElement.Energy;
-import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
 import java.util.List;
@@ -35,8 +32,6 @@ import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 
 import gregtech.api.casing.Casings;
 import gregtech.api.enums.Materials;
-import gregtech.api.enums.Textures;
-import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -49,14 +44,12 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * A Pylon Head and its powered variants (DESIGN.md 5.1, 5.3, 5.4): the controller on top of a telephone pole, a column
- * of wood frame boxes with a crossarm across it right under the head. A plain head is passive and keeps working
- * unloaded. A Repeater stands a cabinet at the pole's foot, and a Router a wider one and a second crossarm; they take
- * LV power through an Energy Hatch in the cabinet, the way every GT multiblock takes it, and work only while loaded and
- * powered (D11).
+ * A Pylon Head (DESIGN.md 5.1): the controller on top of a telephone pole, a column of wood frame boxes with a crossarm
+ * across it right under the head. It's passive and keeps working unloaded: it holds the cables strung on its two
+ * spans, up to a bundle each.
  * <p>
- * It isn't a recipe machine, so it skips GT's processing loop: it checks its structure on GT's schedule, drains its
- * power each tick, and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
+ * It isn't a recipe machine, so it skips GT's processing loop: it checks its structure on GT's schedule and tells the
+ * network.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -64,56 +57,38 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
 
     private static final String PIECE_FRAME = "frame";
     private static final String PIECE_ARM = "arm";
-    private static final String PIECE_CABINET = "cabinet";
-    private static final String PIECE_EXCHANGE = "exchange";
-    // LV, as D29 has it: an LV machine drawing a few EU/t, not a ULV one.
-    private static final int VOLTAGE_TIER = 1;
     private static final int TICKS_PER_SECOND = 20;
     // Each crossarm reaches this far out on either side of the pole.
     private static final int ARM_REACH = 2;
-    // The Router's second crossarm hangs this far under the head; the first is right under it.
-    private static final int SECOND_ARM = 3;
-    private static final Casings CABINET_CASING = Casings.LVMachineCasing;
+    private static final NodeKind KIND = NodeKind.PYLON;
 
-    // Layers run top to bottom and rows from the head's front backwards. A cabinet stands in front of the pole's two
-    // lowest frames: one block for a Repeater, three across for a Router's exchange.
+    // Layers run top to bottom and rows from the head's front backwards.
     private static final IStructureDefinition<MTEPylonHead> STRUCTURE = StructureDefinition.<MTEPylonHead>builder()
         .addShape(PIECE_FRAME, new String[][] { { "F" } })
         .addShape(PIECE_ARM, transpose(new String[][] { { "FFFFF" } }))
-        .addShape(PIECE_CABINET, transpose(new String[][] { { "E" }, { "E" } }))
-        .addShape(PIECE_EXCHANGE, transpose(new String[][] { { "EEE" }, { "EEE" } }))
         .addElement('F', ofFrame(Materials.Wood))
-        .addElement(
-            'E',
-            buildHatchAdder(MTEPylonHead.class).atLeast(Energy)
-                .casingIndex(CABINET_CASING.getTextureId())
-                .hint(1)
-                .buildAndChain(onElementPass(x -> {}, CABINET_CASING.asElement())))
         .build();
 
-    private final NodeKind kind;
     private int height;
     private boolean working;
     private boolean registered;
 
-    public MTEPylonHead(int id, String name, String regionalName, NodeKind kind) {
+    public MTEPylonHead(int id, String name, String regionalName) {
         super(id, name, regionalName);
-        this.kind = kind;
     }
 
-    public MTEPylonHead(String name, NodeKind kind) {
+    public MTEPylonHead(String name) {
         super(name);
-        this.kind = kind;
     }
 
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
-        return new MTEPylonHead(mName, kind);
+        return new MTEPylonHead(mName);
     }
 
     @Override
     public NodeKind nodeKind() {
-        return kind;
+        return KIND;
     }
 
     /** The frame column's height at the last structure check. */
@@ -156,25 +131,7 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
             errors.add(StructureErrorRegistry.TOO_SHORT_HEIGHT);
             return;
         }
-        if (!checkPiece(PIECE_ARM, ARM_REACH, -1, 0, errors)) return;
-        if (kind == NodeKind.ROUTER && !checkPiece(PIECE_ARM, ARM_REACH, -SECOND_ARM, 0, errors)) return;
-        if (!kind.powered()) return;
-        if (!checkCabinet(found, errors)) return;
-        checkHasEnergyHatch(errors);
-    }
-
-    /** The cabinet's top block sits in front of the pole's second-lowest frame. */
-    private boolean checkCabinet(int poleHeight, List<StructureError> errors) {
-        return kind == NodeKind.ROUTER ? checkPiece(PIECE_EXCHANGE, 1, -(poleHeight - 1), 1, errors)
-            : checkPiece(PIECE_CABINET, 0, -(poleHeight - 1), 1, errors);
-    }
-
-    private String cabinetPiece() {
-        return kind == NodeKind.ROUTER ? PIECE_EXCHANGE : PIECE_CABINET;
-    }
-
-    private int cabinetOffset() {
-        return kind == NodeKind.ROUTER ? 1 : 0;
+        checkPiece(PIECE_ARM, ARM_REACH, -1, 0, errors);
     }
 
     /** The height a hologram or the build tool makes: the shortest pylon, plus one per extra item in the stack. */
@@ -189,8 +146,6 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         int target = buildHeight(trigger);
         for (int i = 1; i <= target; i++) buildPiece(PIECE_FRAME, trigger, hintsOnly, 0, -i, 0);
         buildPiece(PIECE_ARM, trigger, hintsOnly, ARM_REACH, -1, 0);
-        if (kind == NodeKind.ROUTER) buildPiece(PIECE_ARM, trigger, hintsOnly, ARM_REACH, -SECOND_ARM, 0);
-        if (kind.powered()) buildPiece(cabinetPiece(), trigger, hintsOnly, cabinetOffset(), -(target - 1), 1);
     }
 
     @Override
@@ -205,31 +160,6 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         }
         int placed = survivalBuildPiece(PIECE_ARM, trigger, ARM_REACH, -1, 0, elementBudget - built, env, false);
         if (placed > 0) built += placed;
-        if (kind == NodeKind.ROUTER && built < elementBudget) {
-            placed = survivalBuildPiece(
-                PIECE_ARM,
-                trigger,
-                ARM_REACH,
-                -SECOND_ARM,
-                0,
-                elementBudget - built,
-                env,
-                false);
-            if (placed > 0) built += placed;
-        }
-        if (kind.powered() && built < elementBudget) {
-            placed = survivalBuildPiece(
-                cabinetPiece(),
-                trigger,
-                cabinetOffset(),
-                -(target - 1),
-                1,
-                elementBudget - built,
-                env,
-                false,
-                true);
-            if (placed > 0) built += placed;
-        }
         return built > 0 ? built : -1;
     }
 
@@ -245,7 +175,7 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
-            becom.network.ensureNode(world, pos, kind, tile.getOwnerUuid());
+            becom.network.ensureNode(world, pos, KIND, tile.getOwnerUuid());
             registered = true;
         }
         // GT's structure check schedule: on start-up, when a nearby block changes, and every so often after.
@@ -254,9 +184,7 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
             mUpdated = false;
         }
         if (--mUpdate == 0 || --mStartUpCheck == 0 || tick % (TICKS_PER_SECOND * 5) == 0) refreshStructure();
-        working = mMachine && (!kind.powered() || tile.isAllowedToWork() && drainPower());
-        if (working && kind.powered()) becom.network.heartbeat(world, pos);
-        tile.setActive(working && kind.powered());
+        working = mMachine;
     }
 
     /** Runs the structure check now and tells the network; the self-test calls this directly. */
@@ -266,20 +194,11 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
             long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-            becom.network.ensureNode(tile.getWorld(), pos, kind, tile.getOwnerUuid());
+            becom.network.ensureNode(tile.getWorld(), pos, KIND, tile.getOwnerUuid());
             becom.network.setFormed(tile.getWorld(), pos, mMachine, mMachine ? height : 0);
             registered = true;
         }
         return mMachine;
-    }
-
-    private boolean drainPower() {
-        return EnergyHatches.drain(this, power());
-    }
-
-    private long power() {
-        Tunables t = BeComConfig.get();
-        return kind == NodeKind.ROUTER ? t.routerPower() : t.repeaterPower();
     }
 
     @Override
@@ -287,6 +206,8 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         BeComServer becom = BeComServer.get();
         if (becom != null && tile != null && tile.isServerSide()) {
+            becom.links
+                .dropCables(tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             becom.network
                 .removeNode(tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         }
@@ -313,76 +234,36 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
     @Override
     public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int colorIndex,
         boolean active, boolean redstoneLevel) {
-        ITexture casing = kind.powered() ? Textures.BlockIcons.MACHINE_CASINGS[VOLTAGE_TIER][colorIndex + 1]
-            : Casings.SolidSteelMachineCasing.getCasingTexture();
+        ITexture casing = Casings.SolidSteelMachineCasing.getCasingTexture();
         if (side != facing) return new ITexture[] { casing };
-        IIconContainer overlay = switch (kind) {
-            case REPEATER -> BeComTextures.REPEATER_HEAD;
-            case ROUTER -> BeComTextures.ROUTER_HEAD;
-            default -> BeComTextures.PYLON_HEAD;
-        };
-        IIconContainer glow = switch (kind) {
-            case REPEATER -> BeComTextures.REPEATER_HEAD_GLOW;
-            case ROUTER -> BeComTextures.ROUTER_HEAD_GLOW;
-            default -> null;
-        };
-        if (!active || glow == null) return new ITexture[] { casing, TextureFactory.builder()
-            .addIcon(overlay)
+        return new ITexture[] { casing, TextureFactory.builder()
+            .addIcon(BeComTextures.PYLON_HEAD)
             .extFacing()
             .build() };
-        return new ITexture[] { casing, TextureFactory.builder()
-            .addIcon(overlay)
-            .extFacing()
-            .build(),
-            TextureFactory.builder()
-                .addIcon(glow)
-                .extFacing()
-                .glow()
-                .build() };
     }
 
     @Override
     protected MultiblockTooltipBuilder createTooltip() {
         Tunables t = BeComConfig.get();
-        String key = "becom.machine." + kind.name()
-            .toLowerCase(java.util.Locale.ROOT);
         MultiblockTooltipBuilder tt = new MultiblockTooltipBuilder();
-        tt.addMachineType(StatCollector.translateToLocal(key + ".type"))
-            .addInfo(StatCollector.translateToLocal(key + ".info"))
+        tt.addMachineType(StatCollector.translateToLocal("becom.machine.pylon.type"))
+            .addInfo(StatCollector.translateToLocal("becom.machine.pylon.info"))
             .addInfo(
-                StatCollector
-                    .translateToLocalFormatted("becom.machine.pylon.span", (int) t.pylonSpanFactor(), kind.linkSlots()))
+                StatCollector.translateToLocalFormatted(
+                    "becom.machine.pylon.span",
+                    (int) t.pylonSpanFactor(),
+                    KIND.linkSlots(),
+                    t.bundleSize()))
             .addInfo(StatCollector.translateToLocal("becom.machine.pylon.wrench"));
-        if (kind.powered()) {
-            tt.addInfo(StatCollector.translateToLocalFormatted("becom.machine.power", power(), "LV"));
-        }
         int width = 2 * ARM_REACH + 1;
-        int depth = kind.powered() ? 2 : 1;
-        int arms = kind == NodeKind.ROUTER ? 2 : 1;
-        tt.beginVariableStructureBlock(
-            width,
-            width,
-            t.pylonMinHeight() + 1,
-            t.pylonMaxHeight() + 1,
-            depth,
-            depth,
-            false)
+        tt.beginVariableStructureBlock(width, width, t.pylonMinHeight() + 1, t.pylonMaxHeight() + 1, 1, 1, false)
             .addController(StatCollector.translateToLocal("becom.machine.pylon.controller"))
             .addCasingInfoRange(
                 StatCollector.translateToLocal("becom.machine.pylon.frames"),
                 t.pylonMinHeight(),
                 t.pylonMaxHeight(),
                 false)
-            .addCasingInfoExactly(
-                StatCollector.translateToLocal(arms == 1 ? "becom.machine.pylon.arm" : "becom.machine.pylon.arms"),
-                arms * 2 * ARM_REACH,
-                false);
-        if (kind.powered()) {
-            // A one-block cabinet, or a three-wide exchange, two high: all casings but the hatch.
-            int cabinet = (kind == NodeKind.ROUTER ? 3 : 1) * 2;
-            tt.addCasingInfoExactly(CABINET_CASING.getLocalizedName(), cabinet - 1, false)
-                .addEnergyHatch(StatCollector.translateToLocal("becom.machine.pylon.hatch"), 1);
-        }
+            .addCasingInfoExactly(StatCollector.translateToLocal("becom.machine.pylon.arm"), 2 * ARM_REACH, false);
         tt.toolTipFinisher();
         return tt;
     }
@@ -412,7 +293,6 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
     private InfoLines info() {
         InfoLines info = new InfoLines();
         info.add("becom.info.formed", mMachine ? height : 0);
-        if (kind.powered()) info.add(working ? "becom.info.online" : "becom.info.offline");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (becom != null && tile != null) {
@@ -425,13 +305,8 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
                     "becom.info.links",
                     node.links()
                         .size(),
-                    kind.linkSlots());
-                for (long other : node.links()) {
-                    info.detail(
-                        model.isBlocked(node.pos(), other) ? "becom.info.link_blocked" : "becom.info.link",
-                        BlockPos.toString(other),
-                        (int) Math.round(BlockPos.distance(node.pos(), other)));
-                }
+                    KIND.linkSlots());
+                for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
             }
         }
         return info;

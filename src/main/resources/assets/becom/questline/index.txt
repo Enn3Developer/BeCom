@@ -9,10 +9,10 @@ DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/UponthePole-_
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/UponthePole-_OpArmItVHW8jB5_z18yig==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/HelloCanYouHearM-_xekW5q3V6-D2yESxW4Bqw==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/HelloCanYouHearM-_xekW5q3V6-D2yESxW4Bqw==.json
-DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/KeepingtheSignal-EwUn7B5YXiqaZtu5vTGc2Q==.json
-DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/KeepingtheSignal-EwUn7B5YXiqaZtu5vTGc2Q==.json
-DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-ARn2PctkVOe0cqI7997r1Q==.json
-DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-ARn2PctkVOe0cqI7997r1Q==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BiggerPipes-EXDKXjgxXWGVm2xGizbPmw==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BiggerPipes-EXDKXjgxXWGVm2xGizbPmw==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-Dd10sdc7U-eNKPKXD7E0Ig==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/Switchboard-Dd10sdc7U-eNKPKXD7E0Ig==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OntheAir-UYdKN4lyUKWOiqsyX6luCQ==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/OntheAir-UYdKN4lyUKWOiqsyX6luCQ==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BaseStation-VdecT0iBUsCxBEbIo6xNeA==.json

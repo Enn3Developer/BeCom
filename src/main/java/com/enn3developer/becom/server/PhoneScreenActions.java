@@ -15,7 +15,12 @@ import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
+import com.enn3developer.becom.logic.net.CallGraph;
+import com.enn3developer.becom.logic.net.NetNode;
+import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.phone.BatteryUse;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
@@ -133,7 +138,50 @@ public final class PhoneScreenActions {
                 .level() : SignalLevel.NONE,
             members,
             offline,
-            videoOf(becom, player, record, call, own));
+            videoOf(becom, player, record, call, own),
+            stack == null ? PhoneView.Battery.NONE : batteryOf(becom, number, stack),
+            carried ? viaOf(becom, number) : PhoneView.Via.NONE);
+    }
+
+    /** A carried phone's battery page: its charge, how long it lasts, where it went today and its switches. */
+    private static PhoneView.Battery batteryOf(BeComServer becom, int number, ItemStack stack) {
+        ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
+        Tunables t = becom.tunables;
+        double charge = item.charge(stack);
+        return new PhoneView.Battery(
+            (long) charge,
+            (long) item.maxCharge(stack),
+            BatteryUse.minutesLeft(charge, t.phoneStandbyDrain()),
+            BatteryUse.minutesLeft(charge, Math.max(t.phoneCallDrain(), t.phoneStandbyDrain())),
+            becom.carried.charging(number),
+            java.util.Arrays.stream(
+                ItemCarriedPhone.use(stack)
+                    .shares())
+                .boxed()
+                .toList(),
+            ItemCarriedPhone.saver(stack),
+            becom.carried.saving(number),
+            ItemCarriedPhone.warns(stack));
+    }
+
+    /** What a carried phone's service comes through: the way in with the best SNR. */
+    private static PhoneView.Via viaOf(BeComServer becom, int number) {
+        CallGraph.Entry best = null;
+        for (CallGraph.Entry entry : becom.carried.serviceOf(number)
+            .entries()) if (best == null || entry.snr() > best.snr()) best = entry;
+        if (best == null) return PhoneView.Via.NONE;
+        if (best.vertex() instanceof CallGraph.SkyVertex) return new PhoneView.Via(PhoneView.Via.Kind.SATELLITES, 0);
+        if (best.vertex() instanceof CallGraph.MeVertex) return new PhoneView.Via(PhoneView.Via.Kind.ME_NETWORK, 0);
+        if (best.vertex() instanceof CallGraph.NodeVertex node) {
+            NetworkModel model = becom.network.model(node.dimension());
+            NetNode antenna = model == null ? null : model.node(node.pos());
+            return new PhoneView.Via(
+                PhoneView.Via.Kind.ANTENNA,
+                antenna == null ? 0
+                    : antenna.kind()
+                        .antennaTier());
+        }
+        return PhoneView.Via.NONE;
     }
 
     /** The video part of the screen: the player's own switches, on a phone with a camera (DESIGN.md 10.1, 11.2). */
@@ -249,6 +297,27 @@ public final class PhoneScreenActions {
         player.inventory.markDirty();
         // Now, not at the next second: a phone switched off can't ring or stay in its call (DESIGN.md 11.3).
         becom.carried.refresh(mp);
+    }
+
+    /** Switches a carried phone's battery saver by hand (the Battery settings page). */
+    public static void setSaver(EntityPlayer player, PhoneHandle handle, boolean on) {
+        ItemStack stack = carriedStack(player, handle);
+        if (stack == null || !mayChange(player)) return;
+        ItemCarriedPhone.setSaver(stack, on);
+        player.inventory.markDirty();
+    }
+
+    /** Switches a carried phone's low-battery warnings. */
+    public static void setWarns(EntityPlayer player, PhoneHandle handle, boolean on) {
+        ItemStack stack = carriedStack(player, handle);
+        if (stack == null || !mayChange(player)) return;
+        ItemCarriedPhone.setWarns(stack, on);
+        player.inventory.markDirty();
+    }
+
+    private static ItemStack carriedStack(EntityPlayer player, PhoneHandle handle) {
+        if (BeComServer.get() == null || !(handle instanceof PhoneHandle.CarriedPhone phone)) return null;
+        return phone.stack(player);
     }
 
     // Settings and block-list changes are cheap one by one, but each recomputes contacts or the view: a client that

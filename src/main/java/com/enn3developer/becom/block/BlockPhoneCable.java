@@ -1,15 +1,22 @@
 package com.enn3developer.becom.block;
 
+import java.util.List;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.machine.MTELineTerminal;
 
 import cpw.mods.fml.relauncher.Side;
@@ -17,9 +24,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * Phone Cable (DESIGN.md 5.5): connects a Telephone to a Line Terminal, losslessly, over a limited length. It joins
- * other cable, Telephones and Line Terminals on any side. It's a thin cord lying on the floor, climbing straight up the
- * middle of its block where it joins something above; nothing bumps into it.
+ * The cables (DESIGN.md 5.5), one block with a tier each by metadata: Phone Cable, Coaxial and Fibre. They connect
+ * devices to a Line Terminal, losslessly, each over its own reach and at its own rate, and are what pylon spans are
+ * strung with. Cable joins cable of any tier, Telephones, Videophones and Line Terminals on any side. It's a thin cord
+ * lying on the floor, climbing straight up the middle of its block where it joins something above; nothing bumps into
+ * it.
  */
 public class BlockPhoneCable extends Block {
 
@@ -33,12 +42,52 @@ public class BlockPhoneCable extends Block {
 
     public static int renderId = -1;
 
+    /** Each tier's name, for its item and its texture, by ordinal. */
+    private static final String[] NAMES = { "phone_cable", "coaxial_cable", "fibre_cable" };
+
+    @SideOnly(Side.CLIENT)
+    private IIcon[] icons;
+
     public BlockPhoneCable() {
         super(Material.circuits);
         setBlockName(BeCom.MODID + ".phone_cable");
         setBlockTextureName(BeCom.MODID + ":phone_cable");
         setHardness(0.5f);
         setStepSound(soundTypeCloth);
+    }
+
+    /** The tier of cable a block's metadata stands for; Phone Cable for any this BeCom doesn't know. */
+    public static CableTier tierOf(int meta) {
+        CableTier tier = CableTier.byOrdinal(meta);
+        return tier == null ? CableTier.PHONE : tier;
+    }
+
+    /** The name of a tier's item and texture: phone_cable, coaxial_cable, fibre_cable. */
+    public static String nameOf(CableTier tier) {
+        return NAMES[tier.ordinal()];
+    }
+
+    /** An item stack of {@code count} cables of a tier. */
+    public static ItemStack stack(CableTier tier, int count) {
+        return new ItemStack(BeComBlocks.phoneCable, count, tier.ordinal());
+    }
+
+    /** The tier of a stack of cable, or null when it isn't cable. */
+    public static CableTier tierOf(ItemStack stack) {
+        if (stack == null || !(Block.getBlockFromItem(stack.getItem()) instanceof BlockPhoneCable)) return null;
+        return CableTier.byOrdinal(stack.getItemDamage());
+    }
+
+    @Override
+    public int damageDropped(int meta) {
+        return tierOf(meta).ordinal();
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void getSubBlocks(Item item, CreativeTabs tab, List list) {
+        for (CableTier tier : CableTier.values()) list.add(new ItemStack(item, 1, tier.ordinal()));
     }
 
     /** Whether the cable at x, y, z joins whatever is on {@code side}. */
@@ -110,6 +159,14 @@ public class BlockPhoneCable extends Block {
     @Override
     @SideOnly(Side.CLIENT)
     public void registerBlockIcons(IIconRegister register) {
-        blockIcon = register.registerIcon(BeCom.MODID + ":phone_cable");
+        icons = new IIcon[NAMES.length];
+        for (int i = 0; i < NAMES.length; i++) icons[i] = register.registerIcon(BeCom.MODID + ":" + NAMES[i]);
+        blockIcon = icons[0];
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public IIcon getIcon(int side, int meta) {
+        return icons[tierOf(meta).ordinal()];
     }
 }

@@ -70,10 +70,10 @@ switches each camera, and hides or shows the window.
 
 <ItemLink id="becom:me_phone" showIcon="left">ME Phone</ItemLink> is a Mobile Phone with an ME network's link. Link it
 at an ME Security Terminal, like a Wireless Terminal: it has service at Max wherever that network's wireless access
-points reach, and none anywhere else, since antennas and satellites don't serve it. ME Phones on one ME network call
-each other with no antenna. It charges in an ME charger.
+points reach. Out of that range it is a Mobile Phone: antennas and satellites serve it, at a Mobile Phone's signal, up
+to High. ME Phones on one ME network call each other with no antenna. It charges in an ME charger.
 
 To call any other phone, the ME network needs an
 <ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left">ME Bridge</ItemLink>: put it on ME cable, where it takes
-one channel, and wrench-link it to a Pylon Head, a Line Terminal or an antenna within 16 blocks. It uses 512 EU/t, and
-joins the two networks at Max. An ME network carries calls only within each dimension.
+one channel, and wrench-link it to a Pylon Head, a Line Terminal, an Exchange or an antenna within 16 blocks. It uses
+512 EU/t, joins the two networks at Max, and carries 8 calls at once. An ME network carries calls only within each dimension.

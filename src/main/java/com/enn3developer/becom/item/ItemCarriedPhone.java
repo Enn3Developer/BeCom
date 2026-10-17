@@ -21,6 +21,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.PhoneScreen;
+import com.enn3developer.becom.logic.phone.BatteryUse;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.PhoneHandle;
@@ -42,6 +43,10 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
 
     private static final String NUMBER = "becomNumber";
     private static final String ON = "becomOn";
+    private static final String USE_DAY = "becomUseDay";
+    private static final String USE = "becomUse";
+    private static final String SAVER = "becomSaver";
+    private static final String WARN = "becomWarn";
     public static final int FORMAT = 1;
 
     protected ItemCarriedPhone(String name) {
@@ -88,6 +93,49 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     public static void setOn(ItemStack stack, boolean on) {
         if (isTooNew(stack)) return;
         tag(stack).setBoolean(ON, on);
+    }
+
+    /** Where its charge went today (the Battery settings page). */
+    public static BatteryUse use(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        if (tag == null || !tag.hasKey(USE)) return BatteryUse.empty(tag == null ? 0 : tag.getLong(USE_DAY));
+        int[] saved = tag.getIntArray(USE);
+        long[] eu = new long[saved.length];
+        for (int i = 0; i < saved.length; i++) eu[i] = saved[i] & 0xFFFFFFFFL;
+        return new BatteryUse(tag.getLong(USE_DAY), eu);
+    }
+
+    public static void setUse(ItemStack stack, BatteryUse use) {
+        if (isTooNew(stack)) return;
+        long[] eu = use.eu();
+        int[] saved = new int[eu.length];
+        // A day's drain stays far below 2^32 EU; past it, it stops counting rather than wrap.
+        for (int i = 0; i < eu.length; i++) saved[i] = (int) Math.min(eu[i], 0xFFFFFFFFL);
+        NBTTagCompound tag = tag(stack);
+        tag.setLong(USE_DAY, use.day());
+        tag.setIntArray(USE, saved);
+    }
+
+    /** The battery saver switched on by hand; it also comes on by itself when the charge runs low. */
+    public static boolean saver(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        return tag != null && tag.getBoolean(SAVER);
+    }
+
+    public static void setSaver(ItemStack stack, boolean on) {
+        if (isTooNew(stack)) return;
+        tag(stack).setBoolean(SAVER, on);
+    }
+
+    /** Warns its holder as the charge drops past 20% and 5%; a new phone does. */
+    public static boolean warns(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        return tag == null || !tag.hasKey(WARN) || tag.getBoolean(WARN);
+    }
+
+    public static void setWarns(ItemStack stack, boolean on) {
+        if (isTooNew(stack)) return;
+        tag(stack).setBoolean(WARN, on);
     }
 
     /** Its state was written by a newer BeCom: this one leaves it alone (X16). */
@@ -159,8 +207,12 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         BeComServer becom = player.worldObj.isRemote ? null : BeComServer.get();
         ItemStack stack = data.getUsedItemStack();
         int number;
-        if (becom != null && player instanceof EntityPlayerMP mp) number = becom.carried.numberFor(mp, stack);
-        else number = stack == null || !is(stack) ? -1 : number(stack);
+        if (becom != null && player instanceof EntityPlayerMP mp) {
+            number = becom.carried.numberFor(mp, stack);
+            // An open screen costs charge.
+            sync.addOpenListener(p -> becom.carried.screenOpen(number, true));
+            sync.addCloseListener(p -> becom.carried.screenOpen(number, false));
+        } else number = stack == null || !is(stack) ? -1 : number(stack);
         return PhoneScreen.build(new PhoneHandle.CarriedPhone(number), player, sync);
     }
 

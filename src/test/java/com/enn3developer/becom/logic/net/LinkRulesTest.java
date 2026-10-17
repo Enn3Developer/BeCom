@@ -1,7 +1,6 @@
 package com.enn3developer.becom.logic.net;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,18 +41,18 @@ class LinkRulesTest {
     }
 
     @Test
-    void plainHeadsHaveTwoSlotsRoutersFifteen() {
+    void headsHaveTwoSlotsExchangesFifteen() {
         NetNode head = node(0, 0, NodeKind.PYLON, 16);
         model.link(head.pos(), node(10, 0, NodeKind.PYLON, 16).pos());
         model.link(head.pos(), node(20, 0, NodeKind.PYLON, 16).pos());
         assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, head, node(30, 0, NodeKind.PYLON, 16)));
-        NetNode router = node(0, 100, NodeKind.ROUTER, 16);
+        NetNode exchange = node(0, 100, NodeKind.EXCHANGE, 16);
         for (int i = 0; i < 15; i++) {
             NetNode other = node(5 + i, 110, NodeKind.PYLON, 16);
-            assertEquals(LinkRules.Result.OK, rules.check(model, router, other));
-            model.link(router.pos(), other.pos());
+            assertEquals(LinkRules.Result.OK, rules.check(model, exchange, other));
+            model.link(exchange.pos(), other.pos());
         }
-        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, router, node(40, 110, NodeKind.PYLON, 16)));
+        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, exchange, node(40, 110, NodeKind.PYLON, 16)));
     }
 
     @Test
@@ -82,26 +81,6 @@ class LinkRulesTest {
     }
 
     @Test
-    void autoLinksOnlyWhenExactlyOnePylonIsInRange() {
-        NetNode first = node(0, 0, NodeKind.PYLON, 16);
-        NetNode formed = node(50, 0, NodeKind.PYLON, 16);
-        assertEquals(first, rules.autoLinkTarget(model, formed, (x, y) -> true));
-        // A second candidate in range makes it ambiguous: link by hand.
-        node(50, 40, NodeKind.PYLON, 16);
-        assertNull(rules.autoLinkTarget(model, formed, (x, y) -> true));
-    }
-
-    @Test
-    void autoLinkSkipsBlockedAndFullPylons() {
-        NetNode first = node(0, 0, NodeKind.PYLON, 16);
-        NetNode formed = node(50, 0, NodeKind.PYLON, 16);
-        assertNull(rules.autoLinkTarget(model, formed, (x, y) -> false));
-        model.link(first.pos(), node(-20, 0, NodeKind.PYLON, 16).pos());
-        model.link(first.pos(), node(-40, 0, NodeKind.PYLON, 16).pos());
-        assertNull(rules.autoLinkTarget(model, formed, (x, y) -> true));
-    }
-
-    @Test
     void antennasBridgePylonHeadsAndTerminalsWithinTheBridgeDistance() {
         NetNode antenna = node(0, 0, NodeKind.ANTENNA_T1, 8);
         NetNode pylon = node(16, 0, NodeKind.PYLON, 6);
@@ -109,7 +88,7 @@ class LinkRulesTest {
         assertEquals(16, rules.maxSpan(antenna, pylon), 1e-9);
         assertEquals(LinkRules.Result.OK, rules.check(model, antenna, pylon));
         assertEquals(LinkRules.Result.OK, rules.check(model, terminal, antenna));
-        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, antenna, node(17, 0, NodeKind.ROUTER, 16)));
+        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, antenna, node(17, 0, NodeKind.EXCHANGE, 16)));
     }
 
     @Test
@@ -132,16 +111,16 @@ class LinkRulesTest {
     @Test
     void anMeBridgeBridgesAnyOtherNodeWithinTheBridgeDistance() {
         NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
-        NetNode router = node(10, 0, NodeKind.ROUTER, 16);
+        NetNode exchange = node(10, 0, NodeKind.EXCHANGE, 16);
         NetNode antenna = node(0, 12, NodeKind.ANTENNA_T1, 0);
         NetNode far = node(20, 0, NodeKind.TERMINAL, 0);
         NetNode other = node(0, 5, NodeKind.ME_BRIDGE, 0);
-        assertEquals(LinkRules.Result.OK, rules.check(model, bridge, router));
+        assertEquals(LinkRules.Result.OK, rules.check(model, bridge, exchange));
         assertEquals(LinkRules.Result.OK, rules.check(model, antenna, bridge));
         assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, bridge, far));
         // Two ME Bridges would join two ME networks, which is AE2's business.
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, other));
-        model.link(bridge.pos(), router.pos());
+        model.link(bridge.pos(), exchange.pos());
         // One link only.
         assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, bridge, antenna));
     }
@@ -151,7 +130,7 @@ class LinkRulesTest {
         // DESIGN.md 9.2: wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks.
         NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
         assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(16, 0, NodeKind.ANTENNA_T3, 8)));
-        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 16, NodeKind.REPEATER, 6), dish));
+        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 16, NodeKind.PYLON, 6), dish));
         assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(-10, 0, NodeKind.TERMINAL, 0)));
         assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, dish, node(17, 0, NodeKind.PYLON, 16)));
         // Dishes reach each other through the satellites; Transceivers take no links.
@@ -166,7 +145,7 @@ class LinkRulesTest {
         NetNode relay = node(0, 0, NodeKind.PORTAL_RELAY, 0);
         assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(16, 0, NodeKind.TERMINAL, 0)));
         assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 9, NodeKind.ANTENNA_T2, 8), relay));
-        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(-9, 0, NodeKind.ROUTER, 16)));
+        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(-9, 0, NodeKind.EXCHANGE, 16)));
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(3, 3, NodeKind.PORTAL_RELAY, 0)));
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(-3, 3, NodeKind.SATELLITE_DISH, 0)));
         assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, relay, node(0, -17, NodeKind.PYLON, 16)));

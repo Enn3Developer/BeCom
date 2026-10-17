@@ -1,6 +1,8 @@
 package com.enn3developer.becom.data;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -11,6 +13,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -139,7 +142,17 @@ public final class NetworkSavedData extends WorldSavedData {
                     notUnderstood(nbt, "a " + a.kind() + " with more links than this BeCom gives it");
                     return;
                 }
-                model.link(pos, other);
+                List<CableTier> cables = new ArrayList<>();
+                for (byte ordinal : links.getCompoundTagAt(j)
+                    .getByteArray("cables")) {
+                    CableTier cable = CableTier.byOrdinal(ordinal);
+                    if (cable == null) {
+                        notUnderstood(nbt, "a cable it doesn't know, " + ordinal);
+                        return;
+                    }
+                    cables.add(cable);
+                }
+                model.link(pos, other, cables);
             }
         }
         NBTTagList blocked = nbt.getTagList("blocked", Constants.NBT.TAG_COMPOUND);
@@ -212,6 +225,11 @@ public final class NetworkSavedData extends WorldSavedData {
             for (long other : node.links()) {
                 NBTTagCompound link = new NBTTagCompound();
                 link.setLong("pos", other);
+                List<CableTier> cables = model.cables(node.pos(), other);
+                byte[] ordinals = new byte[cables.size()];
+                for (int i = 0; i < ordinals.length; i++) ordinals[i] = (byte) cables.get(i)
+                    .ordinal();
+                link.setByteArray("cables", ordinals);
                 links.appendTag(link);
             }
             tag.setTag("links", links);

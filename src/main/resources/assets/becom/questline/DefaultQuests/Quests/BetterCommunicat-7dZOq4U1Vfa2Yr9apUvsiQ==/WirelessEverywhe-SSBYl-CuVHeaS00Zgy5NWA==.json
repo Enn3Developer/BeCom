@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
+      "desc:8": "Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. Anywhere else it's a Mobile Phone, with a Mobile Phone's signal. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

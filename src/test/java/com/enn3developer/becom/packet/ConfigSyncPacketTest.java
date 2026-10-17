@@ -20,7 +20,7 @@ class ConfigSyncPacketTest {
         Map<String, Object> values = Tunables.defaults()
             .toMap();
         values.put("pylonMaxHeight", 20);
-        values.put("lineLossPerBlock", 0.05);
+        values.put("weatherRainLoss", 2.5);
         values.put("questlineEnabled", false);
         Tunables server = Tunables.fromMap(values);
         ByteBuf buf = Unpooled.buffer();

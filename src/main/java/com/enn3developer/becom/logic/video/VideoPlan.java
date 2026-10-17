@@ -110,6 +110,11 @@ public final class VideoPlan {
         return found == null ? Collections.emptyList() : Collections.unmodifiableList(found);
     }
 
+    /** Whether {@code player} sees anyone. */
+    public boolean sees(UUID player) {
+        return tiles.containsKey(player);
+    }
+
     /** Everyone who sees anyone. */
     public Iterable<UUID> viewers() {
         return Collections.unmodifiableSet(tiles.keySet());

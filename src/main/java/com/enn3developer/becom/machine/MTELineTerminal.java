@@ -17,11 +17,14 @@ import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.NodeHost;
 
 import gregtech.api.enums.Textures;
@@ -34,24 +37,23 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Line Terminal (DESIGN.md 5.2): where a line starts or ends. An LV machine drawing a few EU/t (D29) that links to
- * one Pylon Head and serves exactly one phone on its Phone Cable (D19), a Telephone or a Videophone (DESIGN.md 10.2).
+ * The Line Terminal (DESIGN.md 5.2): where a building's line starts. An LV, MV or HV machine drawing a few EU/t (D29)
+ * that links to one pylon and serves every device on its cable, Telephones and Videophones (DESIGN.md 10.2), as many as
+ * its tier has ports: the nearest first. Its devices share its uplink's rate.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
 
-    private static final int TIER = 1;
     private static final int TICKS_PER_SECOND = 20;
 
     private boolean working;
     private boolean registered;
-    private int phone = -1;
-    private int phonesSeen;
+    private List<NetworkService.Device> devices = List.of();
     private boolean tooMuchCable;
 
-    public MTELineTerminal(int id, String name, String regionalName) {
-        super(id, name, regionalName, TIER, 0, (String) null);
+    public MTELineTerminal(int id, String name, String regionalName, CableTier tier) {
+        super(id, name, regionalName, tier.voltageTier(), 0, (String) null);
     }
 
     public MTELineTerminal(String name, int tier, String[] description, ITexture[][][] textures) {
@@ -72,9 +74,23 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         return working;
     }
 
-    /** The phone this terminal serves after its last scan, or -1. */
+    /** Its tier, which sets its ports. */
+    public CableTier tier() {
+        return CableTier.ofVoltage(mTier);
+    }
+
+    /** The phones this terminal found on its cable at its last scan, nearest first, whether it serves them or not. */
+    public List<Integer> phones() {
+        List<Integer> phones = new java.util.ArrayList<>();
+        for (NetworkService.Device device : devices) phones.add(device.phone());
+        return phones;
+    }
+
+    /** The first phone this terminal found on its cable at its last scan, or -1. */
     public int phone() {
-        return phone;
+        return devices.isEmpty() ? -1
+            : devices.get(0)
+                .phone();
     }
 
     @Override
@@ -86,6 +102,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
             becom.network.ensureNode(world, pos, NodeKind.TERMINAL, tile.getOwnerUuid());
+            becom.network.terminalTier(world, pos, tier());
             registered = true;
         }
         long power = BeComConfig.get()
@@ -96,23 +113,24 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         if (tick % TICKS_PER_SECOND == 0) scanCable();
     }
 
-    /** Finds the phone on this terminal's cable and tells the network; the self-test calls this directly. */
+    /** Finds the devices on this terminal's cable and tells the network; the self-test calls this directly. */
     public void scanCable() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         BeComServer becom = BeComServer.get();
         if (becom == null || tile == null || !tile.isServerSide()) return;
         Tunables t = BeComConfig.get();
-        CableWalk.Result walk = PhoneCables
-            .walk(tile.getWorld(), tile.getXCoord(), tile.getYCoord(), tile.getZCoord(), t.phoneCableLength());
-        tooMuchCable = walk.overflow();
-        List<Integer> phones = PhoneCables.phonesOf(tile.getWorld(), walk);
-        phonesSeen = phones.size();
-        phone = phones.size() == 1 ? phones.get(0) : -1;
-        becom.network.attach(
+        CableWalk.Result walk = PhoneCables.walk(
             tile.getWorld(),
-            BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()),
-            phone,
-            phonesSeen);
+            tile.getXCoord(),
+            tile.getYCoord(),
+            tile.getZCoord(),
+            t.cableReach(CableTier.FIBRE),
+            t.terminalCableBudget());
+        tooMuchCable = walk.overflow();
+        devices = PhoneCables.devicesOf(tile.getWorld(), walk);
+        long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
+        becom.network.terminalTier(tile.getWorld(), pos, tier());
+        becom.network.attach(tile.getWorld(), pos, devices);
     }
 
     @Override
@@ -158,7 +176,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
 
     @Override
     public long maxEUInput() {
-        return V[TIER];
+        return V[mTier];
     }
 
     @Override
@@ -169,7 +187,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     @Override
     public long maxEUStore() {
         // Like GT's own hulls: room for a couple of seconds of input.
-        return 512 + V[TIER] * 50L;
+        return 512 + V[mTier] * 50L;
     }
 
     @Override
@@ -205,7 +223,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     @Override
     public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int colorIndex,
         boolean active, boolean redstoneLevel) {
-        ITexture casing = Textures.BlockIcons.MACHINE_CASINGS[TIER][colorIndex + 1];
+        ITexture casing = Textures.BlockIcons.MACHINE_CASINGS[mTier][colorIndex + 1];
         if (side != facing) return new ITexture[] { casing };
         ITexture overlay = TextureFactory.builder()
             .addIcon(BeComTextures.LINE_TERMINAL)
@@ -223,8 +241,8 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     public String[] getDescription() {
         Tunables t = BeComConfig.get();
         return new String[] { StatCollector.translateToLocal("becom.machine.terminal.info"),
-            StatCollector.translateToLocalFormatted("becom.machine.terminal.cable", t.phoneCableLength()),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.terminalPower(), "LV") };
+            StatCollector.translateToLocalFormatted("becom.machine.terminal.ports", t.terminalPorts(tier())),
+            StatCollector.translateToLocalFormatted("becom.machine.power", t.terminalPower(), tier().voltage()) };
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -252,33 +270,46 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         InfoLines info = new InfoLines();
         info.add(working ? "becom.info.online" : "becom.info.offline");
         BeComServer becom = BeComServer.get();
-        if (phone >= 0 && becom != null && becom.network.terminalsOf(phone) > 1)
-            info.add("becom.info.phone_shared", phone);
-        else if (phone >= 0) info.add("becom.info.phone", phone);
-        else if (tooMuchCable) info.add(
-            "becom.info.too_much_cable",
-            BeComConfig.get()
-                .phoneCableLength() * PhoneCables.CABLES_PER_LENGTH);
-        else if (phonesSeen > 1) info.add("becom.info.too_many_phones", phonesSeen);
-        else info.add("becom.info.no_phone");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
+        Tunables t = BeComConfig.get();
+        if (tooMuchCable) info.add("becom.info.too_much_cable", t.terminalCableBudget());
+        else if (devices.isEmpty()) info.add("becom.info.no_phone");
         if (becom != null && tile != null) {
+            NetworkService.Device[] all = devices.toArray(new NetworkService.Device[0]);
+            NodeRef self = new NodeRef(
+                tile.getWorld().provider.dimensionId,
+                BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
+            List<NetworkService.Device> served = becom.network.served(self, devices);
+            if (!devices.isEmpty()) info.add("becom.info.devices", served.size(), t.terminalPorts(tier()));
+            for (NetworkService.Device device : all) {
+                if (!served.contains(device)) {
+                    info.detail(
+                        device.length() > t.cableReach(device.cable()) ? "becom.info.device_too_far"
+                            : "becom.info.device_no_port",
+                        device.phone(),
+                        device.length(),
+                        t.cableReach(device.cable()));
+                } else if (!self.equals(becom.network.terminalOf(device.phone()))) {
+                    info.detail("becom.info.device_nearer", device.phone());
+                } else {
+                    info.detail(
+                        "becom.info.device",
+                        device.phone(),
+                        InfoLines.cableName(device.cable()),
+                        device.length(),
+                        t.cableReach(device.cable()));
+                }
+            }
             // Only a loaded dimension's model: asking by world would load one that isn't.
-            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
-            NetNode node = model == null ? null
-                : model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
+            NetworkModel model = becom.network.model(self.dimension());
+            NetNode node = model == null ? null : model.node(self.pos());
             if (node != null) {
                 info.add(
                     "becom.info.links",
                     node.links()
                         .size(),
                     1);
-                for (long other : node.links()) {
-                    info.detail(
-                        "becom.info.link",
-                        BlockPos.toString(other),
-                        (int) Math.round(BlockPos.distance(node.pos(), other)));
-                }
+                for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
             }
         }
         return info;
@@ -286,7 +317,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        // Nothing to keep: the phone is found again by the next cable scan, the links live in the network data.
+        // Nothing to keep: the devices are found again by the next cable scan, the links live in the network data.
     }
 
     @Override

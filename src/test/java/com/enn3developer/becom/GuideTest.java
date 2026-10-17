@@ -116,6 +116,20 @@ class GuideTest {
         if (id.startsWith(machines)) return "gt.blockmachines." + BeComMachines.ids()
             .get(Integer.parseInt(id.substring(machines.length()))) + ".name";
         String name = id.substring("becom:".length());
+        // A tiered item names its tier by its damage: phone_cable:1 is Coaxial, switching_rack:2 the HV rack.
+        int colon = name.indexOf(':');
+        if (colon >= 0) {
+            com.enn3developer.becom.logic.net.CableTier tier = com.enn3developer.becom.logic.net.CableTier
+                .byOrdinal(Integer.parseInt(name.substring(colon + 1)));
+            String base = name.substring(0, colon);
+            if (base.equals("phone_cable"))
+                return "tile.becom." + com.enn3developer.becom.block.BlockPhoneCable.nameOf(tier) + ".name";
+            return "item.becom." + base
+                + "_"
+                + tier.voltage()
+                    .toLowerCase(java.util.Locale.ROOT)
+                + ".name";
+        }
         return lang.containsKey("tile.becom." + name + ".name") ? "tile.becom." + name + ".name"
             : "item.becom." + name + ".name";
     }

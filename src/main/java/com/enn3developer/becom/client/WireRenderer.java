@@ -8,13 +8,15 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import org.lwjgl.opengl.GL11;
 
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.packet.WireSyncPacket;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * Draws pylon wires as sagging lines between linked heads (DESIGN.md 5.1). A blocked link (D20) renders broken: each
- * end hangs down limp from its head.
+ * Draws pylon spans as sagging lines between linked heads (DESIGN.md 5.1): one strand per cable on the span, side by
+ * side along the crossarms, in its cable's colour, and a thin dark line for a span with none. A blocked link (D20)
+ * renders broken: each end hangs down limp from its head.
  */
 public final class WireRenderer {
 
@@ -26,6 +28,10 @@ public final class WireRenderer {
     private static final float LINE_WIDTH = 2.0f;
     private static final int WIRE_COLOR = 0x2A2A2A;
     private static final int BROKEN_COLOR = 0x7A3A1A;
+    // Each cable's colour, as its block draws it, by tier.
+    private static final int[] CABLE_COLOR = { 0xB2201E, 0x8A8D92, 0x3A8AC0 };
+    // Strands of one span hang this far apart along the crossarm.
+    private static final double STRAND_GAP = 0.6;
 
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event) {
@@ -57,15 +63,44 @@ public final class WireRenderer {
                 hang(tess, bx, by, bz, ax, ay, az, length);
                 continue;
             }
-            tess.startDrawing(GL11.GL_LINE_STRIP);
-            tess.setColorOpaque_I(WIRE_COLOR);
-            for (int i = 0; i <= SEGMENTS; i++) {
-                double t = (double) i / SEGMENTS;
-                tess.addVertex(ax + (bx - ax) * t, ay + (by - ay) * t - 4 * sag * t * (1 - t), az + (bz - az) * t);
+            if (wire.cables()
+                .isEmpty()) {
+                strand(tess, WIRE_COLOR, ax, ay, az, bx, by, bz, sag);
+                continue;
             }
-            tess.draw();
+            // Across the span, level: along the crossarms the heads stand under.
+            double flat = Math.hypot(bx - ax, bz - az);
+            double px = flat == 0 ? 1 : -(bz - az) / flat, pz = flat == 0 ? 0 : (bx - ax) / flat;
+            int n = wire.cables()
+                .size();
+            for (int i = 0; i < n; i++) {
+                double off = (i - (n - 1) / 2.0) * STRAND_GAP;
+                CableTier cable = wire.cables()
+                    .get(i);
+                strand(
+                    tess,
+                    CABLE_COLOR[cable.ordinal()],
+                    ax + px * off,
+                    ay,
+                    az + pz * off,
+                    bx + px * off,
+                    by,
+                    bz + pz * off,
+                    sag);
+            }
         }
         GL11.glPopAttrib();
+    }
+
+    private static void strand(Tessellator tess, int color, double ax, double ay, double az, double bx, double by,
+        double bz, double sag) {
+        tess.startDrawing(GL11.GL_LINE_STRIP);
+        tess.setColorOpaque_I(color);
+        for (int i = 0; i <= SEGMENTS; i++) {
+            double t = (double) i / SEGMENTS;
+            tess.addVertex(ax + (bx - ax) * t, ay + (by - ay) * t - 4 * sag * t * (1 - t), az + (bz - az) * t);
+        }
+        tess.draw();
     }
 
     /** A broken wire's end: a short run toward the other head, then straight down. */

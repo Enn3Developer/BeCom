@@ -26,6 +26,7 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.enn3developer.becom.block.BeComBlocks;
+import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
@@ -39,6 +40,7 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
@@ -1368,6 +1370,9 @@ final class SpaceSelfTest {
     private void link(FakePlayer player, WorldServer world, IMetaTileEntity a, IMetaTileEntity b) {
         if (becom.network.model(world)
             .linked(pos(a), pos(b))) return;
+        // Strung with Fibre, which carries the most; creative, so it never runs out.
+        player.capabilities.isCreativeMode = true;
+        player.inventory.mainInventory[0] = BlockPhoneCable.stack(CableTier.FIBRE, 1);
         becom.links.forget(player.getUniqueID());
         becom.links.wrench(player, world, pos(a));
         becom.links.wrench(player, world, pos(b));
