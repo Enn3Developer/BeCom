@@ -121,20 +121,7 @@ class Canvas:
         return any(role == "l" for row in self.px for role in row)
 
 
-def repeater_head():
-    """An amplifier: signal in on the left, out of the triangle's tip on the right, and a lamp."""
-    c = Canvas()
-    c.panel(1, 1, 14, 14)
-    c.lamp(10, 3)
-    for i, half in enumerate((0, 1, 2, 3, 2, 1, 0)):
-        y = 5 + i
-        c.rect(5, y, 5 + (3 - abs(3 - i)), y, "h")
-    c.rect(2, 8, 4, 8, "s")
-    c.rect(9, 8, 12, 8, "s")
-    return c
-
-
-def router_head():
+def router():
     """A hub with four spokes to four lamps, one per direction a call can take."""
     c = Canvas()
     c.panel(1, 1, 14, 14)
@@ -147,17 +134,19 @@ def router_head():
     return c
 
 
-def router():
-    """A junction block: two rows of screw terminals where the line lands, and a lamp."""
+def exchange():
+    """A switchboard: two rows of jacks, each under its lamp, and a patch cord joining two of them in a call."""
     c = Canvas()
     c.panel(1, 1, 14, 14)
-    for y in (5, 9):
+    for y in (4, 8):
         for x in (3, 6, 9):
+            c.lamp(x, y - 1, 2, 1)
             c.rect(x, y, x + 1, y + 1, "r")
             c.set(x + 1, y + 1, "k")
-        c.rect(3, y + 2, 10, y + 2, "d")
-    c.rect(12, 6, 12, 11, "s")
-    c.lamp(11, 3, 2, 1)
+    c.rect(4, 10, 4, 11, "h")
+    c.rect(4, 12, 10, 12, "h")
+    c.rect(10, 10, 10, 11, "h")
+    c.rect(12, 3, 12, 12, "s")
     return c
 
 
@@ -328,8 +317,7 @@ def portal_relay():
 
 
 OVERLAYS = {
-    "OVERLAY_REPEATER_HEAD": repeater_head,
-    "OVERLAY_ROUTER_HEAD": router_head,
+    "OVERLAY_EXCHANGE": exchange,
     "OVERLAY_ROUTER": router,
     "OVERLAY_LINE_HATCH": line_hatch,
     "OVERLAY_SWITCHING_RACK_LV": switching_rack(1),
@@ -481,9 +469,18 @@ DIAL = {
     "default": {"ring": (170, 170, 170), "face": (226, 222, 210), "hole": (20, 20, 20), "hub": (120, 120, 120)},
     "modernity": {"ring": (176, 166, 146), "face": (232, 224, 204), "hole": (30, 26, 22), "hub": (130, 120, 104)},
 }
+# Each cable's insulation, by tier: Phone Cable copper-orange, Coaxial grey, Fibre blue.
 CABLE = {
-    "default": ((178, 32, 30), (118, 18, 18), (214, 70, 64)),
-    "modernity": ((168, 52, 40), (108, 32, 26), (204, 92, 74)),
+    "default": {
+        "phone_cable": ((224, 138, 58), (138, 74, 26), (244, 176, 112)),
+        "coaxial_cable": ((154, 154, 154), (90, 90, 90), (192, 192, 192)),
+        "fibre_cable": ((90, 160, 208), (42, 104, 144), (138, 208, 255)),
+    },
+    "modernity": {
+        "phone_cable": ((204, 128, 64), (130, 76, 34), (230, 166, 104)),
+        "coaxial_cable": ((150, 146, 138), (92, 90, 84), (186, 180, 170)),
+        "fibre_cable": ((96, 150, 186), (50, 98, 128), (140, 192, 226)),
+    },
 }
 
 
@@ -527,8 +524,8 @@ def dial(style):
     return img
 
 
-def cable(style):
-    base, shade, light = CABLE[style]
+def cable(style, name):
+    base, shade, light = CABLE[style][name]
     img = Image.new("RGBA", (SIZE, SIZE))
     for y in range(SIZE):
         for x in range(SIZE):
@@ -556,7 +553,8 @@ def generate():
         written.append(save(bakelite(style, False), root, "telephone_body.png"))
         written.append(save(bakelite(style, True), root, "telephone_handset.png"))
         written.append(save(dial(style), root, "telephone_dial.png"))
-        written.append(save(cable(style), root, "phone_cable.png"))
+        for name in CABLE[style]:
+            written.append(save(cable(style, name), root, name + ".png"))
     for root, palette in ((JAR_ITEMS, DEFAULT), (PACK_ITEMS, MODERNITY)):
         for name, draw in ITEMS.items():
             written.append(save(draw().render(palette), root, name + ".png"))
@@ -582,7 +580,8 @@ def preview(out_dir, casings):
                     row.append(lit)
             rows.append(row)
         rows.append(
-            [bakelite(style, False), bakelite(style, True), dial(style), cable(style)]
+            [bakelite(style, False), bakelite(style, True), dial(style)]
+            + [cable(style, name) for name in CABLE[style]]
             + [draw().render(palette) for draw in ITEMS.values()]
         )
     width = max(len(r) for r in rows) * (SIZE + 2)
