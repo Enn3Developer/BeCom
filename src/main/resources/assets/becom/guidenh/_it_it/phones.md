@@ -87,5 +87,5 @@ antenne. Si carica in un Caricatore.
 
 Per chiamare qualsiasi altro telefono, la rete ME vuole un
 <ItemLink id="becom:machine:25008" showIcon="left">Ponte ME</ItemLink>: mettilo su un cavo ME, dove prende
-un canale, e collegalo con il cavo, su qualsiasi faccia, a un Router o a una Centrale: il livello del cavo ne decide la velocità. Usa 512 EU/t, unisce le due reti al livello Massimo e porta 8 chiamate insieme. Una rete ME porta le chiamate solo all'interno di ciascuna
+un canale, e collegalo con il cavo, su qualsiasi faccia, a un Router o a una Centrale: il livello del cavo ne decide la velocità. Va con l'energia della sua rete ME, 64 AE/t e 16 in più per chiamata, unisce le due reti al livello Massimo e porta 8 chiamate insieme. Una rete ME porta le chiamate solo all'interno di ciascuna
 dimensione.

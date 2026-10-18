@@ -72,10 +72,10 @@ Fibre reaches, calls go by radio, through antennas, or through an ME network.
 
 ## Router
 
-A <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> runs on 4 EU/t and routes the calls of every bus
-joining it. It takes cable up to its tier, on any face: the LV one Phone Cable and carries 8 calls at once, the
-<ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink> up to Coaxial and 32 calls, the
-<ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink> up to Fibre and 128 calls.
+A <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> routes the calls of every bus joining it. It
+takes cable up to its tier, on any face: the LV one Phone Cable, 8 calls at once on 8 EU/t, the
+<ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink> up to Coaxial, 16 calls on 32 EU/t, the
+<ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink> up to Fibre, 32 calls on 128 EU/t.
 
 Right-click it for its screen: the calls it carries, a row for each bus joining it, with its cable, its length against
 the longest bus and what it carries, then what's on those buses: each phone by number with what it's doing, then the
@@ -96,7 +96,7 @@ Satellite Dish as its backhaul. Its lamp is lit while that multiblock works. Out
 ## Exchange
 
 An <ItemLink id="becom:machine:25001" showIcon="left">Exchange</ItemLink> is a big router: a hall of switching racks. It
-draws 64 EU/t and switches calls between every bus its Line Hatches join.
+switches calls between every bus its Line Hatches join.
 
 The hall is 3 blocks wide, 5 tall and 5 to 19 deep:
 
@@ -114,11 +114,15 @@ Projector builds it: its stack size, or the length channel, sets the slices, and
 
 **Switching Racks** are hatches on its side walls:
 <ItemLink id="becom:machine:25019" showIcon="left">Switching Rack (LV)</ItemLink> switches 8 calls at once,
-<ItemLink id="becom:machine:25020" showIcon="left">Switching Rack (MV)</ItemLink> 32 and
-<ItemLink id="becom:machine:25021" showIcon="left">Switching Rack (HV)</ItemLink> 128. The hall switches as many calls as
+<ItemLink id="becom:machine:25020" showIcon="left">Switching Rack (MV)</ItemLink> 16 and
+<ItemLink id="becom:machine:25021" showIcon="left">Switching Rack (HV)</ItemLink> 32. The hall switches as many calls as
 its racks add up to; with none it switches nothing. Racks fill from the front, and a rack's lamps are lit while calls use
 it, so you can see from outside how busy it is. When every way between two phones is full, the next caller hears busy.
 Calls already going keep their way.
+
+It draws for its length and its racks: 8 EU/t a slice in an LV hall, 32 in MV and 128 in HV, and 4, 16 or 64 EU/t for
+each LV, MV or HV rack. An Energy Hatch below the hall's tier keeps it from forming. Each tier its lowest Energy Hatch
+is above the hall's is a perfect overclock: four times the calls for four times the power.
 
 Right-click its controller for its own screen, in place of GT's terminal: its tier and whether it works, then its calls,
 "9 of 72", with a bar, its data in KB/s over how many routes, and how many numbers it reaches through how many

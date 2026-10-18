@@ -1,7 +1,5 @@
 package com.enn3developer.becom.machine;
 
-import static gregtech.api.enums.GTValues.V;
-
 import java.util.EnumSet;
 import java.util.List;
 
@@ -48,8 +46,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 /**
  * The ME Bridge: joins an ME network to a BeCom network, so ME Phones on it can call any phone.
  * It connects to ME cable on any side the way GT's ME hatches do, with an AE2 grid proxy of its own that takes one
- * channel, and joins BeCom by cable to an Exchange. Late EV, 512
- * EU/t; works only while loaded, powered and online in its ME network.
+ * channel, and joins BeCom by cable to an Exchange. Late EV; it draws its power from
+ * its ME network, more for each call it carries, and works only while loaded and online there.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -175,9 +173,15 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             becom.network.ensureNode(world, pos, NodeKind.ME_BRIDGE, tile.getOwnerUuid());
             registered = true;
         }
-        long power = BeComConfig.get()
-            .meBridgePower();
-        powered = tile.isAllowedToWork() && tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
+        Tunables t = BeComConfig.get();
+        AENetworkProxy p = getProxy();
+        boolean on = tile.isAllowedToWork();
+        // Its ME network powers it: a little while idle, more for each call it carries.
+        double draw = on
+            ? t.meBridgePower() + (double) t.meBridgeCallPower() * becom.calls.callsAt(world.provider.dimensionId, pos)
+            : 0;
+        if (draw != p.getIdlePowerUsage()) p.setIdlePowerUsage(draw);
+        powered = on && p.getNode() != null && p.isPowered();
         working = powered && meOnline();
         if (working) {
             becom.network.heartbeat(world, pos);
@@ -224,37 +228,12 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     // endregion
 
-    // region Power
+    // region Machine
 
+    /** Its ME network powers it, not EU. */
     @Override
     public boolean isElectric() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnetInput() {
-        return true;
-    }
-
-    @Override
-    public boolean isInputFacing(ForgeDirection side) {
-        return side != getBaseMetaTileEntity().getFrontFacing();
-    }
-
-    @Override
-    public long maxEUInput() {
-        return V[TIER];
-    }
-
-    @Override
-    public long maxAmperesIn() {
-        return 1;
-    }
-
-    @Override
-    public long maxEUStore() {
-        // Like GT's own hulls: room for a couple of seconds of input.
-        return 512 + V[TIER] * 50L;
+        return false;
     }
 
     @Override
@@ -310,7 +289,10 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         return Tips.wrap(
             Tips.MACHINE,
             StatCollector.translateToLocal("becom.machine.me_bridge.info"),
-            Tips.power(t.meBridgePower(), "EV"));
+            StatCollector.translateToLocalFormatted(
+                "becom.machine.me_bridge.power",
+                Tips.number(t.meBridgePower() + " AE/t"),
+                Tips.number(t.meBridgeCallPower() + " AE/t")));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -343,10 +325,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             .status();
         else info.problem("becom.bridge.status_no_channel")
             .status();
-        info.add(
-            "becom.info.eu_t",
-            working ? BeComConfig.get()
-                .meBridgePower() : 0)
+        info.add("becom.info.ae_t", working ? Math.round(getProxy().getIdlePowerUsage()) : 0)
             .right();
         if (meOnline()) info.add("becom.bridge.channel_held")
             .row("becom.info.row.me_network");

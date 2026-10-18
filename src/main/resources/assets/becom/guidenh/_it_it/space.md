@@ -36,7 +36,9 @@ dietro la rampa, con un bus d'ingresso per i razzi alla base e due bracci mobili
 del propellente accanto, con un portello d'ingresso per il carburante; e i parafulmini sugli angoli anteriori. Un lancio
 dura 30 s a 480 EU/t con 1.000 L di carburante, e mette un satellite sopra la dimensione della rampa. Il razzo sta nella
 fossa durante il conto alla rovescia e decolla quando finisce. I problemi di manutenzione lo allungano, e qualsiasi
-blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no.
+blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no. Ogni tier di cui la
+sua energy hatch più bassa supera HV è un overclock: metà del tempo per quattro volte l'energia. Una sotto HV non la fa
+formare.
 
 I satelliti scendono dopo circa 100 giorni di Minecraft, un quinto in più o in meno: circa 33 ore di server acceso.
 Dormire la notte non li fa scendere prima. Continua a lanciarne.
@@ -74,18 +76,19 @@ satelliti portano 36 chiamate insieme, e la chiamata successiva trova occupato f
 
 Una <ItemLink id="becom:machine:25011" showIcon="left">Parabola satellitare</ItemLink> collega la sua rete a
 ogni altra parabola della sua dimensione, attraverso i satelliti, e nell'Overworld a ogni pianeta con un Ricevitore
-radio per razzi. È una stazione di terra a 512 EU/t: una parabola di Clean Stainless Steel Machine Casing rivolta dritta in
+radio per razzi. È una stazione di terra a 384 EU/t: una parabola di Clean Stainless Steel Machine Casing rivolta dritta in
 alto, larga 7 al bordo, con un illuminatore tenuto sopra di lei da quattro sostegni di Stainless Steel Frame Box, su un
 piedistallo. Il controller sta in un basamento ai suoi piedi, con accanto l'energy hatch, il maintenance hatch e una Line
 Hatch. Vuole cielo aperto sopra tutta la parabola. Collega con un cavo la sua Line Hatch a un Router o a una Centrale:
 quel bus è la sua dorsale, e il livello del suo cavo ne decide la velocità. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 
-Una parabola porta al massimo 32 chiamate, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
+Una parabola porta al massimo 32 chiamate, il doppio per ogni tier di cui la sua energy hatch più bassa supera HV a
+quattro volte l'energia, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
 porta 4 KB/s, posto per 2 chiamate, al Medio 16 KB/s, all'Alto 64 e al Massimo 256, a 2 KB/s per chiamata.
 
-Il suo schermo mostra il suo salto in dB, con le tacche di segnale e il suo livello, e quante delle sue 32 chiamate sono
-in uso. Poi vengono i satelliti sopra di lei e quante chiamate del cielo sono in uso, **Cielo** libero in verde o
+Il suo schermo mostra il suo salto in dB, con le tacche di segnale e il suo livello, e quante delle sue chiamate sono in
+uso. Poi vengono i satelliti sopra di lei e quante chiamate del cielo sono in uso, **Cielo** libero in verde o
 coperto in rosso, **Manutenzione** con i problemi e i dB che costano, e la sua dorsale (**Backhaul**).
 
 ## Ricevitore radio per razzi
@@ -116,8 +119,8 @@ Ne esistono tre livelli, e una coppia lavora al livello del ripetitore più bass
 | Ripetitore | Corrente | Chiamate | Velocità |
 | --- | --- | --- | --- |
 | <ItemLink id="becom:machine:25012" showIcon="left">Ripetitore di portale</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
-| <ItemLink id="becom:machine:25014" showIcon="left">Ripetitore di portale (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
-| <ItemLink id="becom:machine:25015" showIcon="left">Ripetitore di portale (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
+| <ItemLink id="becom:machine:25014" showIcon="left">Ripetitore di portale (HV)</ItemLink> | 128 EU/t, HV | 32 | 128 KB/s |
+| <ItemLink id="becom:machine:25015" showIcon="left">Ripetitore di portale (EV)</ItemLink> | 512 EU/t, EV | 64 | 256 KB/s |
 
 I due ripetitori devono stare ai due lati dello stesso portale. Attraverso il Nether, quello lontano sta dove porta il
 portale, a un ottavo della distanza dal centro del mondo; attraverso il Twilight Forest, vicino allo stesso punto. Un

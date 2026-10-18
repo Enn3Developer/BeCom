@@ -143,9 +143,9 @@ QUESTS = [
         "key": "router",
         "tier": "LV",
         "name": "End of the Line",
-        "desc": "Every building's network starts at a Router. Give it LV power, just 4 EU/t, and cable your "
+        "desc": "Every building's network starts at a Router. Give it LV power, just 8 EU/t, and cable your "
         "Telephones to it, on any face. The LV Router takes Phone Cable and switches 8 calls at once; the MV one "
-        "takes Coaxial too and switches 32, the HV one Fibre and 128.%n%nThe cable on each of its faces is a bus, and "
+        "takes Coaxial too and switches 16, the HV one Fibre and 32.%n%nThe cable on each of its faces is a bus, and "
         "everything on a bus shares its rate. A bus works only with a working router on it, and up to 128 blocks of "
         "Phone Cable. A router starts the count again, so cable between two routers joins them, building to "
         "building.",
@@ -205,8 +205,9 @@ QUESTS = [
         "desc": "One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 "
         "wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its "
         "ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel "
-        "frames.%n%nIt draws 64 EU/t through an Energy Hatch and joins a bus at each Line Hatch, on its caps, roof or "
-        "floor. Each LV rack switches 8 calls at once, MV 32, HV 128; racks and hatches go up to the hall's tier.",
+        "frames.%n%nIt draws power through an Energy Hatch for its length and its racks, and joins a bus at each Line "
+        "Hatch, on its caps, roof or floor. Each LV rack switches 8 calls at once, MV 16, HV 32; racks and hatches go "
+        "up to the hall's tier.",
         "icon": (MACHINE, 25001),
         "pre": ["first_call", "line_hatch"],
         "tasks": [("item", MACHINE, 25001, 1), ("item", MACHINE, 25019, 1)],
@@ -219,7 +220,7 @@ QUESTS = [
         "name": "On the Air",
         "desc": "Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole "
         "under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment "
-        "shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
+        "shelter in front. It uses 24 EU/t.%n%nIt reaches about 64 blocks on open "
         "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links "
         "carry little. Put a Line Hatch in its shelter and cable your Router to it: the antenna then carries your "
         "network's calls over the air, 4 at once.",
@@ -289,7 +290,7 @@ QUESTS = [
         "tier": "MV",
         "name": "A Taller Mast",
         "desc": "Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame "
-        "Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
+        "Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 96 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
         "doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls "
         "between the buses cabled to them.",
         "icon": (MACHINE, 25005),
@@ -303,7 +304,7 @@ QUESTS = [
         "tier": "HV",
         "name": "Across the Valley",
         "desc": "An Antenna T3 Head tops a self-supporting lattice tower of Stainless Steel Frame Boxes on HV "
-        "Machine Casings, panel antennas round its top, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
+        "Machine Casings, panel antennas round its top, uses 384 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
         "and a hill in the way can cost you more than the distance does.",
         "icon": (MACHINE, 25006),
         "pre": ["antenna_t2"],
@@ -400,7 +401,7 @@ QUESTS = [
         "name": "Bridging the Networks",
         "desc": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it "
         "on ME cable, where it takes one channel, and cable it, on any face, to a Router or an Exchange: that "
-        "cable carries its calls. It uses 512 EU/t and carries 8 calls at once.",
+        "cable carries its calls. It runs on its ME network's power and carries 8 calls at once.",
         "icon": (MACHINE, 25008),
         "pre": ["me_phone"],
         "tasks": [("item", MACHINE, 25008, 1)],
@@ -427,7 +428,7 @@ QUESTS = [
         "portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV "
         "power.%n%nCable it, on any face, to a Router or an Exchange of your network. Then go through the "
         "portal and place a relay by the other side, cabled to one there: the two pair by themselves. The pair joins the two networks at "
-        "High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at "
+        "High, and carries 16 calls.%n%nHV and EV relays carry 32 and 64; a pair works at "
         "its lower relay's tier.",
         "icon": (MACHINE, 25012),
         "pre": ["first_call"],
@@ -484,7 +485,7 @@ QUESTS = [
         "other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel "
         "Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame "
         "Boxes; the Energy Hatch, the Maintenance Hatch and one Line Hatch go in the plinth at its foot, by the "
-        "controller. It uses 512 EU/t.%n%nCable its Line Hatch to a Router or an Exchange: that bus is its backhaul. "
+        "controller. It uses 384 EU/t.%n%nCable its Line Hatch to a Router or an Exchange: that bus is its backhaul. "
         "Keep up its maintenance: each problem costs it 2 dB.",
         "icon": (MACHINE, 25011),
         "pre": ["five_satellites"],

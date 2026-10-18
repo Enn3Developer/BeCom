@@ -180,7 +180,7 @@ public final class ExchangeUi extends CanvasScreen {
             CableTier rack = CableTier.byOrdinal(tier);
             boolean lit = now > 0;
             now -= BeComConfig.get()
-                .rackCalls(rack);
+                .rackCalls(rack) << 2 * v.overclocks();
             rack(c, rack, lit, x, ry, w, CELL);
         }
         return rows[3] + CELL;

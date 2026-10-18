@@ -36,7 +36,8 @@ rockets in its base and two swing arms reaching over the pad; a propellant tank 
 rocket fuel; and lightning masts on the pad's front corners. A launch takes 30 s at 480 EU/t and 1,000 L of fuel, and
 puts one satellite over the pad's dimension. The rocket stands in the pit while the launch counts down, and lifts off
 when it ends. Maintenance problems make it take longer, and any light-blocking block over the pit holds the launch until
-it's clear; glass doesn't.
+it's clear; glass doesn't. Each tier its lowest energy hatch is above HV is an overclock: half the time for four times
+the power. One below HV keeps it from forming.
 
 Satellites come down after about 100 Minecraft days, give or take a fifth: about 33 hours of the server running.
 Sleeping through the night doesn't bring them down sooner. Keep launching.
@@ -73,15 +74,16 @@ carry 36 calls at once, and the next call is busy until one ends.
 
 A <ItemLink id="becom:machine:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
 other dish in its dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver.
-It's a ground station on 512 EU/t: a bowl of Clean Stainless Steel Machine Casings facing straight up, 7 across at the
+It's a ground station on 384 EU/t: a bowl of Clean Stainless Steel Machine Casings facing straight up, 7 across at the
 rim, with a feed horn held over it by four struts of Stainless Steel Frame Boxes, on a pedestal. The controller stands
 in a plinth at its foot, with the energy hatch, the maintenance hatch and one Line Hatch beside it. It needs open sky over the whole dish. Cable its Line
 Hatch to a Router or an Exchange: that bus is its backhaul, and its cable's tier sets its rate. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
-A dish carries 32 calls at most, and never more than its hop's level has room for: a hop at Low carries 4 KB/s, room
+A dish carries 32 calls at most, twice as many for each tier its lowest energy hatch is above HV at four times the
+power, and never more than its hop's level has room for: a hop at Low carries 4 KB/s, room
 for 2 calls, Medium 16 KB/s, High 64 and Max 256, at 2 KB/s a call.
 
-Its screen shows its hop in dB, with signal bars and its level, and how many of its 32 calls are in use. Then come the
+Its screen shows its hop in dB, with signal bars and its level, and how many of its calls are in use. Then come the
 satellites overhead and how many of the sky's calls are in use, **Sky** clear in green or covered in red,
 **Maintenance** problems and the dB they cost, and its **Backhaul**.
 
@@ -111,8 +113,8 @@ It comes in three tiers, and a pair works at its lower relay's:
 | Relay | Power | Calls | Rate |
 | --- | --- | --- | --- |
 | <ItemLink id="becom:machine:25012" showIcon="left">Portal Relay</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
-| <ItemLink id="becom:machine:25014" showIcon="left">Portal Relay (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
-| <ItemLink id="becom:machine:25015" showIcon="left">Portal Relay (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
+| <ItemLink id="becom:machine:25014" showIcon="left">Portal Relay (HV)</ItemLink> | 128 EU/t, HV | 32 | 128 KB/s |
+| <ItemLink id="becom:machine:25015" showIcon="left">Portal Relay (EV)</ItemLink> | 512 EU/t, EV | 64 | 256 KB/s |
 
 The two relays must stand on the two sides of one portal. Through the Nether, the far relay stands where the portal
 leads, an eighth of the distance from the world's center; through the Twilight Forest, near the same spot. A Personal

@@ -27,13 +27,15 @@ l'energy hatch. T1 e T2 sono alberi strallati, tenuti su da tre stralli di frame
 dietro e ai lati; T3 è un traliccio autoportante. Più è alta la testa, più lontano vede: un albero alto su una collina
 copre molto più della stessa antenna in una valle. L'anteprima di NEI le mostra blocco per blocco.
 
-| Antenna | Testa | Struttura | Casing | Albero | Corrente | Portata in campo aperto |
-| --- | --- | --- | --- | --- | --- | --- |
-| T1 (fine LV) | <ItemImage id="becom:machine:25004">Testa d'antenna T1</ItemImage> | Albero strallato, un dipolo | LV Machine Casing | 6-32 Steel Frame Box | 32 EU/t | circa 64 blocchi |
-| T2 (metà MV) | <ItemImage id="becom:machine:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
-| T3 (metà HV) | <ItemImage id="becom:machine:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
+| Antenna | Testa | Struttura | Casing | Albero | Corrente | Chiamate | Portata in campo aperto |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T1 (fine LV) | <ItemImage id="becom:machine:25004">Testa d'antenna T1</ItemImage> | Albero strallato, un dipolo | LV Machine Casing | 6-32 Steel Frame Box | 24 EU/t | 4 | circa 64 blocchi |
+| T2 (metà MV) | <ItemImage id="becom:machine:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 96 EU/t | 8 | circa 128 blocchi |
+| T3 (metà HV) | <ItemImage id="becom:machine:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 384 EU/t | 16 | circa 256 blocchi |
 
-Un'antenna funziona solo se caricata e alimentata.
+Un'antenna funziona solo se caricata e alimentata. Una Energy Hatch sotto il tier dei suoi casing non la fa formare.
+Ogni tier di cui la sua Energy Hatch più bassa li supera è un overclock: il doppio delle chiamate per quattro volte
+l'energia, con la stessa portata.
 
 ## Cosa fa
 

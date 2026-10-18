@@ -27,13 +27,15 @@ T2 are guyed masts, held up by three guys of frame boxes running down to casing 
 self-supporting lattice tower. The higher the head, the further it sees: a tall mast on a hill covers far more than the
 same antenna in a valley. NEI's preview shows each one block by block.
 
-| Antenna | Head | Build | Casings | Mast | Power | Reach on open ground |
-| --- | --- | --- | --- | --- | --- | --- |
-| T1 (late LV) | <ItemImage id="becom:machine:25004">Antenna T1 Head</ItemImage> | Guyed mast, one dipole | LV Machine Casings | 6 to 32 Steel Frame Boxes | 32 EU/t | about 64 blocks |
-| T2 (mid MV) | <ItemImage id="becom:machine:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
-| T3 (mid HV) | <ItemImage id="becom:machine:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
+| Antenna | Head | Build | Casings | Mast | Power | Calls | Reach on open ground |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T1 (late LV) | <ItemImage id="becom:machine:25004">Antenna T1 Head</ItemImage> | Guyed mast, one dipole | LV Machine Casings | 6 to 32 Steel Frame Boxes | 24 EU/t | 4 | about 64 blocks |
+| T2 (mid MV) | <ItemImage id="becom:machine:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 96 EU/t | 8 | about 128 blocks |
+| T3 (mid HV) | <ItemImage id="becom:machine:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 384 EU/t | 16 | about 256 blocks |
 
-An antenna works only while it's loaded and powered.
+An antenna works only while it's loaded and powered. An Energy Hatch below its casings' tier keeps it from forming.
+Each tier its lowest Energy Hatch is above them is an overclock: twice the calls for four times the power, with the same
+reach.
 
 ## What it does
 

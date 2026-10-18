@@ -20,7 +20,7 @@ public final class Gateways {
     public static final int OVERWORLD = 0;
 
     /** A working Satellite Dish, and what its hop up loses: rain at the dish and its maintenance problems (9.2). */
-    public record Dish(int dimension, long pos, double loss) {}
+    public record Dish(int dimension, long pos, double loss, int calls) {}
 
     /** A working Rocket Radio Receiver, by the dimension and spot its rocket stands at. */
     public record Receiver(int dimension, long pos) {}
@@ -82,7 +82,7 @@ public final class Gateways {
                 t.radioRate(
                     t.levelScale()
                         .levelOf(snr)));
-            builder.slots(vertex, t.dishCalls());
+            builder.slots(vertex, dish.calls());
             builder.slots(new CallGraph.SkyVertex(dish.dimension()), skyCalls(count));
         }
         // Planets reach the Overworld's satellites only while it has enough of them.

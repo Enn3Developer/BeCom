@@ -13,9 +13,9 @@ QUESTS_IT = {
         "di Cavo telefonico: ecco un Telefono.%n%nClic destro per alzare la cornetta. È tuo, e lo è anche il suo "
         "numero di sei cifre."),
     "router": ("Capolinea",
-        "La rete di ogni edificio parte da un Router. Dagli corrente LV, bastano 4 EU/t, e collegagli con il cavo i "
+        "La rete di ogni edificio parte da un Router. Dagli corrente LV, bastano 8 EU/t, e collegagli con il cavo i "
         "tuoi Telefoni, su qualsiasi faccia. Il Router LV prende il Cavo telefonico e smista 8 chiamate insieme; "
-        "quello MV prende anche il coassiale e ne smista 32, quello HV la fibra e 128.%n%nIl cavo su ognuna delle sue "
+        "quello MV prende anche il coassiale e ne smista 16, quello HV la fibra e 32.%n%nIl cavo su ognuna delle sue "
         "facce è un bus, e tutto quel che sta su un bus ne divide la velocità. Un bus funziona solo con un router in "
         "funzione sopra, e fino a 128 blocchi di Cavo telefonico. Un router fa ripartire il conto, così il cavo tra "
         "due router li unisce, da un edificio all'altro."),
@@ -39,13 +39,14 @@ QUESTS_IT = {
         "Un Router smista 8 chiamate. Per un'intera città costruisci una Centrale: una sala di Rack di "
         "commutazione, larga 3 e alta 5, con fino a 8 sezioni di 4 rack tra le sue due testate e una passerella di "
         "frame box lungo il colmo. Costruiscila tutta di un livello: LV, MV o HV Machine Casing, con Frame Box di "
-        "Steel, Aluminium o Stainless Steel.%n%nConsuma 64 EU/t tramite un Energy Hatch e collega un bus a ogni Line "
-        "Hatch, sulle testate, sul tetto o sul pavimento. Ogni rack LV smista 8 chiamate insieme, MV 32, HV 128; rack "
+        "Steel, Aluminium o Stainless Steel.%n%nConsuma tramite un Energy Hatch per la sua lunghezza e i suoi rack, e "
+        "collega un bus a ogni Line Hatch, sulle testate, sul tetto o sul pavimento. Ogni rack LV smista 8 chiamate "
+        "insieme, MV 16, HV 32; rack "
         "e hatch arrivano fino al livello della sala."),
     "antenna_t1": ("In onda",
         "È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame "
         "Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va "
-        "nello shelter degli apparati davanti. Usa 32 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. "
+        "nello shelter degli apparati davanti. Usa 24 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. "
         "L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, ma i collegamenti "
         "radio portano poco. Metti una Line Hatch nel suo shelter e collegala con il cavo al tuo Router: l'antenna "
         "porta allora le chiamate della tua rete via etere, 4 alla volta."),
@@ -72,12 +73,12 @@ QUESTS_IT = {
         "Di' \"passo\" quando hai finito."),
     "antenna_t2": ("Un albero più alto",
         "Stessa idea, più portata. Una Testa d'antenna T2 sta in cima a un albero strallato più alto di "
-        "Aluminium Frame Box, da 8 a 32, con due dipoli incrociati e MV Machine Casing, e usa 128 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di "
+        "Aluminium Frame Box, da 8 a 32, con due dipoli incrociati e MV Machine Casing, e usa 96 EU/t.%n%nArriva a circa 128 blocchi, il doppio di una T1: ogni 6 dB di bilancio di "
         "collegamento raddoppiano la portata in campo aperto. Le antenne ripetono tra loro tutti i 16 canali radio "
         "e portano le chiamate tra i bus cablati a loro."),
     "antenna_t3": ("Oltre la valle",
         "Una Testa d'antenna T3 sta in cima a un traliccio autoportante di Stainless Steel "
-        "Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 512 EU/t e "
+        "Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 384 EU/t e "
         "arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una "
         "collina in mezzo può costarti più della distanza."),
     "app_mirror": ("Specchio, specchio",
@@ -118,7 +119,7 @@ QUESTS_IT = {
     "me_bridge": ("Unire le reti",
         "Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi "
         "telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con il cavo, su qualsiasi faccia, "
-        "a un Router o a una Centrale: quel cavo porta le sue chiamate. Usa 512 EU/t e porta 8 chiamate insieme."),
+        "a un Router o a una Centrale: quel cavo porta le sue chiamate. Va con l'energia della sua rete ME e porta 8 chiamate insieme."),
     "me_bridge_call": ("Interurbana",
         "Il tuo Telefono ME può arrivare oltre la tua rete ME. Da un Telefono ME, chiama un Telefono, "
         "un Telefono cellulare o un Videotelefono, attraverso un Ponte ME."),
@@ -127,7 +128,7 @@ QUESTS_IT = {
         "da un portale del Nether, dell'End, del Twilight Forest o di Personal Space, con 32 EU/t di corrente "
         "MV.%n%nCollegalo con il cavo, su qualsiasi faccia, a un Router o a una Centrale della tua rete. Poi "
         "attraversa il portale e metti un ripetitore dall'altra parte, collegato a uno di là: i due si accoppiano da soli. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI "
-        "ripetitori HV ed EV ne portano 48 e 128; una coppia lavora al livello del ripetitore più basso."),
+        "ripetitori HV ed EV ne portano 32 e 64; una coppia lavora al livello del ripetitore più basso."),
     "satellite_rocket": ("Carico utile",
         "Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 "
         "di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di "
@@ -149,7 +150,7 @@ QUESTS_IT = {
         "ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola di Clean "
         "Stainless Steel Machine Casing rivolta al cielo, con un illuminatore su quattro sostegni sopra di lei, su un "
         "piedistallo di Stainless Steel Frame Box; l'Energy Hatch, il Maintenance Hatch e una Line Hatch vanno nel "
-        "basamento ai suoi piedi, accanto al controller. Usa 512 EU/t.%n%nCollega con un cavo la sua Line Hatch a un "
+        "basamento ai suoi piedi, accanto al controller. Usa 384 EU/t.%n%nCollega con un cavo la sua Line Hatch a un "
         "Router o a una Centrale: quel bus è la sua dorsale. Tienila in ordine: ogni problema di manutenzione le costa 2 dB."),
     "rocket_receiver": ("Chiamare casa",
         "Il tuo razzo è parcheggiato su un altro pianeta: perché non renderlo utile? Metti un Ricevitore radio per "

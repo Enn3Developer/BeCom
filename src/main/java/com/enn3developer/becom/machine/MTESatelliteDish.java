@@ -79,6 +79,8 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     private static final String PIECE_DISH = "dish";
     private static final int TICKS_PER_SECOND = 20;
+    // An HV machine; its energy hatches overclock it from there.
+    private static final int TIER = 3;
     // The bowl's rim is this wide; the whole dish stands this high, plinth to feed horn.
     private static final int SIDE = 7;
     private static final int HEIGHT = 9;
@@ -126,6 +128,8 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     private final LineHatches lineHatches = new LineHatches();
     private boolean registered;
+    // Tiers its energy hatches run it above HV, as its last structure check found them.
+    private int overclocks;
     private boolean working;
     private boolean sky;
     private boolean rains;
@@ -195,9 +199,12 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        overclocks = 0;
         if (!checkPiece(PIECE_DISH, SIDE / 2, HEIGHT - 1, CONTROLLER_ROW, errors)) return;
         if (mMaintenanceHatches.size() != 1) errors.add(StructureErrors.missingHatch(Maintenance));
         checkHasEnergyHatch(errors);
+        EnergyHatches.checkTier(this, TIER, errors);
+        overclocks = EnergyHatches.overclocks(this, TIER);
         // A gateway on two buses would carry calls between them like a router: it takes a single Line Hatch.
         int lines = lineHatches.count();
         if (lines != 1) errors.add(
@@ -302,6 +309,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         working = mMachine && sky && tile.isAllowedToWork() && drainPower() && doRandomMaintenanceDamage();
         if (working) {
             becom.network.heartbeat(world, pos());
+            becom.network.overclocked(world, pos(), overclocks);
             becom.network.dish(world, pos(), loss());
         } else {
             becom.network.dishOff(world, pos());
@@ -327,8 +335,16 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     private boolean drainPower() {
         return EnergyHatches.drain(
             this,
-            BeComConfig.get()
-                .dishPower());
+            EnergyHatches.power(
+                BeComConfig.get()
+                    .dishPower(),
+                overclocks));
+    }
+
+    /** The calls it carries at once, doubled for each tier its energy hatches run it above HV. */
+    public int calls() {
+        return BeComConfig.get()
+            .dishCalls() << overclocks;
     }
 
     @Override
@@ -437,9 +453,10 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
                         .toLowerCase(Locale.ROOT)))
             .status(view.level());
         int calls = becom.calls.callsAt(dimension, pos());
-        info.add("becom.dish.calls_right", calls, t.dishCalls())
+        info.add("becom.dish.calls_right", calls, calls())
             .right();
-        if (t.dishCalls() > 0 && calls >= t.dishCalls()) info.warn("becom.info.calls_full", t.dishCalls());
+        if (calls >= calls()) info.warn("becom.info.calls_full", calls());
+        InfoLines.overclock(info, TIER, overclocks, 2);
         int[] sky = becom.calls.skyCalls(dimension);
         if (sky[1] > 0) info.add("becom.dish.overhead_calls", view.satellites(), sky[0], sky[1])
             .row("becom.info.row.satellites")
@@ -500,7 +517,8 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
                     StatCollector.translateToLocalFormatted(
                         "becom.machine.satellite_dish.maintenance",
                         String.format(Locale.ROOT, "%.0f", t.dishMaintenanceLoss())),
-                    Tips.power(t.dishPower(), "HV")))
+                    Tips.power(t.dishPower(), "HV"),
+                    StatCollector.translateToLocal("becom.machine.overclock")))
             .beginStructureBlock(SIDE, HEIGHT, SIDE, false)
             .addController(StatCollector.translateToLocal("becom.machine.satellite_dish.controller"))
             .addCasingInfoExactly(

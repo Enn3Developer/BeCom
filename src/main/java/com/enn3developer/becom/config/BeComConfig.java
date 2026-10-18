@@ -122,11 +122,17 @@ public final class BeComConfig {
             Tunables.MAX_CABLE,
             "Most Coaxial blocks a bus carries over.");
         integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Most Fibre blocks a bus carries over.");
-        integer(config, v, WIRED, "routerPower", "EU/t a Router draws.");
+        integer(config, v, WIRED, "routerPower", "EU/t an LV Router draws; four times as much each tier up.");
         integer(config, v, WIRED, "routerCallsLV", "Calls an LV Router carries at once.");
         integer(config, v, WIRED, "routerCallsMV", "Calls an MV Router carries at once.");
         integer(config, v, WIRED, "routerCallsHV", "Calls an HV Router carries at once.");
-        integer(config, v, WIRED, "exchangePower", "EU/t an Exchange draws.");
+        integer(
+            config,
+            v,
+            WIRED,
+            "exchangeSlicePower",
+            "EU/t each slice of an LV Exchange draws; four times as much each tier up.");
+        integer(config, v, WIRED, "rackPower", "EU/t an LV Switching Rack draws; four times as much each tier up.");
         integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsHV", "Calls an HV Switching Rack switches at once.");
@@ -280,7 +286,8 @@ public final class BeComConfig {
         dbl(config, v, VIDEO, "videophoneRoom", "Blocks around a Videophone within which players are in its call.");
         dbl(config, v, VIDEO, "videophoneLoudspeaker", "Blocks a Videophone's loudspeaker carries.");
         integer(config, v, VIDEO, "videophoneEmptySeconds", "Seconds with nobody in the room before it hangs up.");
-        integer(config, v, ME, "meBridgePower", "EU/t an ME Bridge draws.");
+        integer(config, v, ME, "meBridgePower", "AE/t an ME Bridge draws from its ME network.");
+        integer(config, v, ME, "meBridgeCallPower", "AE/t more an ME Bridge draws for each call it carries.");
         integer(config, v, ME, "meBridgeChannels", 0, 1, "ME channels an ME Bridge uses.");
         integer(config, v, ME, "meBridgeCalls", "Calls an ME Bridge carries at once.");
         integer(config, v, SPACE, "satellitesLow", "Satellites over a dimension for its sky hops to reach Low.");

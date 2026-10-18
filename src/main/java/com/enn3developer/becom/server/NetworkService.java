@@ -61,6 +61,8 @@ public final class NetworkService {
     private Map<Integer, List<BusRef>> phoneBuses = Map.of();
     // How many calls each working Exchange's racks switch at once.
     private final Map<NodeRef, Integer> exchanges = new HashMap<>();
+    // How many tiers above its own each overclocked Antenna's and Satellite Dish's energy hatches run it.
+    private final Map<NodeRef, Integer> overclocks = new HashMap<>();
     // Each working ME Bridge's ME network, by grid id.
     private final Map<NodeRef, Integer> meBridges = new HashMap<>();
     // Each working Satellite Dish, and what its hop up to the satellites loses.
@@ -183,6 +185,7 @@ public final class NetworkService {
         model.remove(pos);
         lastHeard.remove(ref);
         exchanges.remove(ref);
+        overclocks.remove(ref);
         routerTiers.remove(ref);
         meBridges.remove(ref);
         dishes.remove(ref);
@@ -197,6 +200,20 @@ public final class NetworkService {
         heartbeat(world, pos);
         Integer before = exchanges.put(new NodeRef(world.provider.dimensionId, pos), calls);
         if (before == null || before != calls) version++;
+    }
+
+    /**
+     * An Antenna or Satellite Dish runs {@code tiers} tiers above its own this tick: each doubles the calls it
+     * carries.
+     */
+    public void overclocked(World world, long pos, int tiers) {
+        NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
+        Integer before = tiers > 0 ? overclocks.put(ref, tiers) : overclocks.remove(ref);
+        if (before == null ? tiers > 0 : before != tiers) version++;
+    }
+
+    private int overclocks(NodeRef ref) {
+        return overclocks.getOrDefault(ref, 0);
     }
 
     /** Every working Exchange. */
@@ -636,7 +653,8 @@ public final class NetworkService {
                         vertex,
                         tunables.antennaCalls(
                             node.kind()
-                                .antennaTier()));
+                                .antennaTier())
+                            << overclocks(new NodeRef(dimension, node.pos())));
                 if (node.kind() == NodeKind.EXCHANGE) builder.slots(vertex, exchangeCalls(dimension, node.pos()));
                 if (node.kind() == NodeKind.ROUTER)
                     builder.slots(vertex, tunables.routerCalls(routerTier(new NodeRef(dimension, node.pos()))));
@@ -727,7 +745,12 @@ public final class NetworkService {
         for (Map.Entry<NodeRef, Double> entry : dishes.entrySet()) {
             NodeRef dish = entry.getKey();
             if (working(dish.dimension(), dish.pos())) {
-                working.add(new Gateways.Dish(dish.dimension(), dish.pos(), entry.getValue()));
+                working.add(
+                    new Gateways.Dish(
+                        dish.dimension(),
+                        dish.pos(),
+                        entry.getValue(),
+                        tunables.dishCalls() << overclocks(dish)));
             }
         }
         return working;

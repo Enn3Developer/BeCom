@@ -141,7 +141,7 @@ public final class AntennaScreen {
             Ownership.mayManage(player, owner),
             ownerName == null ? "-" : ownerName,
             becom.calls.callsAt(ref.dimension(), ref.pos()),
-            t.antennaCalls(antenna.tier()),
+            antenna.calls(),
             links,
             buses,
             (int) Math.round(t.rangeToHold(t.antennaBudget(antenna.tier()))),

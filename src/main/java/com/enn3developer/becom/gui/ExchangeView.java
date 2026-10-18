@@ -17,8 +17,8 @@ import net.minecraft.network.PacketBuffer;
  *              wall's, seen from the front; a rack's tier ordinal, or -1 for a free slot
  * @param why   why it isn't formed, as a lang key and its arguments; empty when it is
  */
-public record ExchangeView(boolean online, boolean formed, int tier, int calls, int slots, int data, int routes,
-    int reaches, int exchanges, List<Integer> racks, List<Line> lines, List<String> why) {
+public record ExchangeView(boolean online, boolean formed, int tier, int overclocks, int calls, int slots, int data,
+    int routes, int reaches, int exchanges, List<Integer> racks, List<Line> lines, List<String> why) {
 
     /**
      * One of its Line Hatches.
@@ -31,6 +31,7 @@ public record ExchangeView(boolean online, boolean formed, int tier, int calls, 
     public static final ExchangeView EMPTY = new ExchangeView(
         false,
         false,
+        0,
         0,
         0,
         0,
@@ -51,6 +52,7 @@ public record ExchangeView(boolean online, boolean formed, int tier, int calls, 
         buf.writeBoolean(online);
         buf.writeBoolean(formed);
         buf.writeByte(tier);
+        buf.writeByte(overclocks);
         buf.writeInt(calls);
         buf.writeInt(slots);
         buf.writeInt(data);
@@ -77,6 +79,7 @@ public record ExchangeView(boolean online, boolean formed, int tier, int calls, 
         boolean online = buf.readBoolean();
         boolean formed = buf.readBoolean();
         int tier = buf.readByte();
+        int overclocks = buf.readUnsignedByte();
         int calls = buf.readInt();
         int slots = buf.readInt();
         int data = buf.readInt();
@@ -99,6 +102,7 @@ public record ExchangeView(boolean online, boolean formed, int tier, int calls, 
             online,
             formed,
             tier,
+            overclocks,
             calls,
             slots,
             data,

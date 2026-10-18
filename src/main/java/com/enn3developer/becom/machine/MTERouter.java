@@ -136,7 +136,7 @@ public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableE
             registered = true;
         }
         long power = BeComConfig.get()
-            .routerPower();
+            .routerPower(tier());
         working = tile.isAllowedToWork() && tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
         if (working) becom.network.heartbeat(world, pos);
         tile.setActive(working);
@@ -263,7 +263,7 @@ public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableE
             StatCollector.translateToLocalFormatted(
                 "becom.machine.router.cable",
                 StatCollector.translateToLocal("tile.becom." + BlockPhoneCable.nameOf(tier()) + ".name")),
-            Tips.power(t.routerPower(), tier().voltage()));
+            Tips.power(t.routerPower(tier()), tier().voltage()));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);

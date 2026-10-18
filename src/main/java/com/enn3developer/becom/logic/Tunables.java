@@ -15,8 +15,9 @@ public record Tunables(
     double dropAfterSeconds,
     // Wired network
     int cableRatePhone, int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial,
-    int cableReachFibre, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV, int exchangePower,
-    int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
+    int cableReachFibre, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
+    int exchangeSlicePower, int rackPower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate,
+    int videoRate,
     // Calls
     double directHearingRange, int sessionGraceSeconds, int ringSeconds, int callAttemptsPerMinute,
     // Radio simulation
@@ -46,7 +47,7 @@ public record Tunables(
     int rearHeightMax, int rearFpsMax, int rearMaxBytes, int rearMaxFps, int videophonePower, double videophoneRoom,
     double videophoneLoudspeaker, int videophoneEmptySeconds,
     // ME
-    int meBridgePower, int meBridgeChannels, int meBridgeCalls,
+    int meBridgePower, int meBridgeCallPower, int meBridgeChannels, int meBridgeCalls,
     // Space: levels by number, 1 Low to 4 Max
     int satellitesLow, int satellitesMax, double satelliteLifetimeDays, double satelliteLifetimeSpread,
     int launchSeconds, int launchPower, int launchFuel, int dishPower, double dishMaintenanceLoss,
@@ -111,14 +112,15 @@ public record Tunables(
         d.put("cableReachPhone", 128);
         d.put("cableReachCoaxial", 512);
         d.put("cableReachFibre", 4096);
-        d.put("routerPower", 4);
+        d.put("routerPower", 8);
         d.put("routerCallsLV", 8);
-        d.put("routerCallsMV", 32);
-        d.put("routerCallsHV", 128);
-        d.put("exchangePower", 64);
+        d.put("routerCallsMV", 16);
+        d.put("routerCallsHV", 32);
+        d.put("exchangeSlicePower", 8);
+        d.put("rackPower", 4);
         d.put("rackCallsLV", 8);
-        d.put("rackCallsMV", 32);
-        d.put("rackCallsHV", 128);
+        d.put("rackCallsMV", 16);
+        d.put("rackCallsHV", 32);
         d.put("voiceRate", 2);
         d.put("videoRate", 8);
         d.put("directHearingRange", 16.0);
@@ -139,16 +141,16 @@ public record Tunables(
         d.put("antennaBudgetT1", 42.0);
         d.put("antennaBudgetT2", 48.0);
         d.put("antennaBudgetT3", 54.0);
-        d.put("antennaPowerT1", 32);
-        d.put("antennaPowerT2", 128);
-        d.put("antennaPowerT3", 512);
+        d.put("antennaPowerT1", 24);
+        d.put("antennaPowerT2", 96);
+        d.put("antennaPowerT3", 384);
         d.put("antennaMastMinT1", 6);
         d.put("antennaMastMinT2", 8);
         d.put("antennaMastMinT3", 10);
         d.put("antennaMastMax", 32);
         d.put("antennaCallsT1", 4);
-        d.put("antennaCallsT2", 12);
-        d.put("antennaCallsT3", 32);
+        d.put("antennaCallsT2", 8);
+        d.put("antennaCallsT3", 16);
         d.put("radioRateLow", 4);
         d.put("radioRateMedium", 16);
         d.put("radioRateHigh", 64);
@@ -209,7 +211,8 @@ public record Tunables(
         d.put("videophoneRoom", 4.0);
         d.put("videophoneLoudspeaker", 16.0);
         d.put("videophoneEmptySeconds", 30);
-        d.put("meBridgePower", 512);
+        d.put("meBridgePower", 64);
+        d.put("meBridgeCallPower", 16);
         d.put("meBridgeChannels", 1);
         d.put("meBridgeCalls", 8);
         d.put("satellitesLow", 5);
@@ -219,7 +222,7 @@ public record Tunables(
         d.put("launchSeconds", 30);
         d.put("launchPower", 480);
         d.put("launchFuel", 1000);
-        d.put("dishPower", 512);
+        d.put("dishPower", 384);
         d.put("dishMaintenanceLoss", 2.0);
         d.put("receiverUplinkLevel", 3);
         d.put("relayPower", 32);
@@ -229,11 +232,11 @@ public record Tunables(
         d.put("dishCalls", 32);
         d.put("receiverCalls", 4);
         d.put("relayCallsMV", 16);
-        d.put("relayCallsHV", 48);
-        d.put("relayCallsEV", 128);
+        d.put("relayCallsHV", 32);
+        d.put("relayCallsEV", 64);
         d.put("relayRateMV", 64);
-        d.put("relayRateHV", 256);
-        d.put("relayRateEV", 1024);
+        d.put("relayRateHV", 128);
+        d.put("relayRateEV", 256);
         d.put("questlineEnabled", true);
         d.put("questlineRecheckSeconds", 60);
     }
@@ -291,7 +294,9 @@ public record Tunables(
             if (routerCalls(tier) < 1) throw invalid("routerCalls" + tier.voltage(), routerCalls(tier), "at least 1");
             if (rackCalls(tier) < 1) throw invalid("rackCalls" + tier.voltage(), rackCalls(tier), "at least 1");
         }
-        if (exchangePower < 0) throw invalid("exchangePower", exchangePower, "0 or more");
+        if (routerPower < 0) throw invalid("routerPower", routerPower, "0 or more");
+        if (exchangeSlicePower < 0) throw invalid("exchangeSlicePower", exchangeSlicePower, "0 or more");
+        if (rackPower < 0) throw invalid("rackPower", rackPower, "0 or more");
         if (voiceRate < 1) throw invalid("voiceRate", voiceRate, "at least 1");
         if (videoRate < voiceRate) throw invalid("videoRate", videoRate, "at least voiceRate");
         for (int tier = 1; tier <= 3; tier++) {
@@ -399,6 +404,7 @@ public record Tunables(
         if (videophoneLoudspeaker < 0) throw invalid("videophoneLoudspeaker", videophoneLoudspeaker, "0 or more");
         if (videophoneEmptySeconds < 1) throw invalid("videophoneEmptySeconds", videophoneEmptySeconds, "at least 1");
         if (meBridgePower < 0) throw invalid("meBridgePower", meBridgePower, "0 or more");
+        if (meBridgeCallPower < 0) throw invalid("meBridgeCallPower", meBridgeCallPower, "0 or more");
         if (meBridgeChannels < 0 || meBridgeChannels > 1) throw invalid("meBridgeChannels", meBridgeChannels, "0 or 1");
         if (satellitesLow < 1) throw invalid("satellitesLow", satellitesLow, "at least 1");
         if (satellitesMax <= satellitesLow) throw invalid("satellitesMax", satellitesMax, "more than satellitesLow");
@@ -564,6 +570,24 @@ public record Tunables(
             case COAXIAL -> routerCallsMV;
             case FIBRE -> routerCallsHV;
         };
+    }
+
+    /** What a router of a cable tier's voltage draws in EU/t: routerPower at LV, four times as much each tier up. */
+    public long routerPower(CableTier tier) {
+        return (long) routerPower << 2 * (tier.voltageTier() - 1);
+    }
+
+    /**
+     * What each slice of an Exchange's hall draws in EU/t, by the hall's GT voltage tier, 1 LV to 3 HV:
+     * exchangeSlicePower at LV, four times as much each tier up.
+     */
+    public long exchangeSlicePower(int voltageTier) {
+        return (long) exchangeSlicePower << 2 * (Math.max(1, voltageTier) - 1);
+    }
+
+    /** What a Switching Rack of a cable tier's voltage draws in EU/t: rackPower at LV, four times as much each up. */
+    public long rackPower(CableTier tier) {
+        return (long) rackPower << 2 * (tier.voltageTier() - 1);
     }
 
     /** How many calls a Switching Rack of a cable tier's voltage switches at once. */

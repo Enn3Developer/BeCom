@@ -75,10 +75,10 @@ quanto arriva un bus di fibra, le chiamate vanno via radio, tramite le antenne, 
 
 ## Router
 
-Un <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> va a 4 EU/t e smista le chiamate di ogni bus
-che lo raggiunge. Prende cavo fino al suo livello, su ogni faccia: quello LV il Cavo telefonico e porta 8 chiamate
-insieme, il <ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink> fino al coassiale e 32 chiamate,
-il <ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink> fino alla fibra e 128 chiamate.
+Un <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> smista le chiamate di ogni bus che lo
+raggiunge. Prende cavo fino al suo livello, su ogni faccia: quello LV il Cavo telefonico, 8 chiamate insieme a 8 EU/t,
+il <ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink> fino al coassiale, 16 chiamate a 32 EU/t,
+il <ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink> fino alla fibra, 32 chiamate a 128 EU/t.
 
 Cliccalo col tasto destro per la sua schermata: le chiamate che porta, una riga per ogni bus che lo raggiunge, col suo
 cavo, la sua lunghezza rispetto al bus più lungo e quanto porta, poi quel che sta su quei bus: ogni telefono per numero
@@ -100,7 +100,7 @@ struttura formata, non collega niente.
 ## Centrale
 
 Una <ItemLink id="becom:machine:25001" showIcon="left">Centrale</ItemLink> è un grande router: una sala di rack di
-commutazione. Consuma 64 EU/t e smista le chiamate tra tutti i bus collegati alle sue Line Hatch.
+commutazione. Smista le chiamate tra tutti i bus collegati alle sue Line Hatch.
 
 La sala è larga 3 blocchi, alta 5 e profonda da 5 a 19:
 
@@ -120,11 +120,16 @@ tier.
 
 I **Rack di commutazione** sono hatch sulle sue pareti laterali: il
 <ItemLink id="becom:machine:25019" showIcon="left">Rack di commutazione (LV)</ItemLink> smista 8 chiamate insieme,
-il <ItemLink id="becom:machine:25020" showIcon="left">Rack di commutazione (MV)</ItemLink> 32 e
-il <ItemLink id="becom:machine:25021" showIcon="left">Rack di commutazione (HV)</ItemLink> 128. La sala smista tante
+il <ItemLink id="becom:machine:25020" showIcon="left">Rack di commutazione (MV)</ItemLink> 16 e
+il <ItemLink id="becom:machine:25021" showIcon="left">Rack di commutazione (HV)</ItemLink> 32. La sala smista tante
 chiamate quante ne sommano i suoi rack; senza, non smista niente. I rack si riempiono dal davanti, e le spie di un rack
 sono accese mentre le chiamate lo usano, così si vede da fuori quanto è occupata. Quando ogni strada tra due telefoni è
 piena, chi chiama dopo sente occupato. Le chiamate già in corso tengono la loro strada.
+
+Consuma per la sua lunghezza e per i suoi rack: 8 EU/t a sezione in una sala LV, 32 in MV e 128 in HV, e 4, 16 o 64
+EU/t per ogni rack LV, MV o HV. Una Energy Hatch sotto il tier della sala non la fa formare. Ogni tier di cui la sua
+Energy Hatch più bassa supera quello della sala è un overclock perfetto: quattro volte le chiamate per quattro volte
+l'energia.
 
 Clic destro sul suo controller per il suo schermo, al posto del terminale di GT: il suo tier e se funziona, poi le sue
 chiamate, "9 di 72", con una barra, i suoi dati in KB/s su quanti percorsi, e quanti numeri raggiunge tramite quante

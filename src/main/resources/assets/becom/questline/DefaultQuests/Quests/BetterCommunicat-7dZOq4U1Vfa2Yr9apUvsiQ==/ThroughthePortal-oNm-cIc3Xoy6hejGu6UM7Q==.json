@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power.%n%nCable it, on any face, to a Router or an Exchange of your network. Then go through the portal and place a relay by the other side, cabled to one there: the two pair by themselves. The pair joins the two networks at High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at its lower relay's tier.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV power.%n%nCable it, on any face, to a Router or an Exchange of your network. Then go through the portal and place a relay by the other side, cabled to one there: the two pair by themselves. The pair joins the two networks at High, and carries 16 calls.%n%nHV and EV relays carry 32 and 64; a pair works at its lower relay's tier.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

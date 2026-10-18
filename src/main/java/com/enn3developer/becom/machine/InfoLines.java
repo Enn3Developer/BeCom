@@ -565,6 +565,19 @@ public final class InfoLines {
     }
 
     /**
+     * A row for a multiblock its energy hatches run {@code overclocks} tiers above its own {@code tier}, each
+     * multiplying its calls by {@code factor}; nothing when they don't.
+     */
+    public static void overclock(InfoLines info, int tier, int overclocks, int factor) {
+        if (overclocks <= 0) return;
+        info.add(
+            "becom.info.overclocked",
+            gregtech.api.enums.GTValues.VN[tier + overclocks],
+            (long) Math.pow(factor, overclocks))
+            .row("becom.info.row.overclock");
+    }
+
+    /**
      * How many calls go through the machine on {@code tile} now, out of the {@code slots} it carries at once; whether
      * they're all taken, for the caller to say so in its board's words.
      */

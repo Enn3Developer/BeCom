@@ -124,6 +124,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private final int tier;
     private final LineHatches lineHatches = new LineHatches();
     private int mast;
+    // Tiers its energy hatches run it above its own, as its last structure check found them.
+    private int overclocks;
     private boolean working;
     private boolean registered;
     private boolean locked;
@@ -202,6 +204,12 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         return tier;
     }
 
+    /** The calls it carries at once: its tier's, doubled for each tier its energy hatches run it above its own. */
+    public int calls() {
+        return BeComConfig.get()
+            .antennaCalls(tier) << overclocks;
+    }
+
     /** The mast's height at the last structure check. */
     public int mast() {
         return mast;
@@ -255,6 +263,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         Tunables t = BeComConfig.get();
+        overclocks = 0;
         int found = 0;
         // Frames below the head sit at -1, -2, ...; the pad's casing under the mast ends the count.
         while (found < t.antennaMastMax() && checkPiece(PIECE_MAST, 0, -(found + 1), 0, null)) found++;
@@ -266,6 +275,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         if (!checkPiece(PIECE_TOP, TOP_MAST[tier][0], -1, TOP_MAST[tier][1], errors)) return;
         if (!checkPiece(PIECE_FOOT, FOOT_MAST[tier][0], footOffset(found), FOOT_MAST[tier][1], errors)) return;
         checkHasEnergyHatch(errors);
+        EnergyHatches.checkTier(this, tier, errors);
+        overclocks = EnergyHatches.overclocks(this, tier);
     }
 
     @Override
@@ -370,6 +381,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         working = mMachine && tile.isAllowedToWork() && drainPower();
         if (working) {
             becom.network.heartbeat(world, pos);
+            becom.network.overclocked(world, pos, overclocks);
             becom.antennas.seen(ref(), tier, head(), locked, tile.getOwnerUuid());
         }
         tile.setActive(working);
@@ -408,8 +420,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private boolean drainPower() {
         return EnergyHatches.drain(
             this,
-            BeComConfig.get()
-                .antennaPower(tier));
+            EnergyHatches.power(
+                BeComConfig.get()
+                    .antennaPower(tier),
+                overclocks));
     }
 
     @Override
@@ -496,6 +510,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
                                 .translateToLocalFormatted("becom.machine.antenna.budget", (int) t.antennaBudget(tier))
                             + "\u00a77"),
                     Tips.power(t.antennaPower(tier), VOLTAGE_NAMES[tier]),
+                    StatCollector.translateToLocal("becom.machine.overclock"),
                     Tips.howTo(
                         "becom.machine.antenna.looks." + tier,
                         Tiers.frame(tier)
@@ -598,13 +613,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
             .row("becom.info.row.links");
         else info.add("becom.info.links_antennas", antennas)
             .row("becom.info.row.links");
-        info.add(
-            "becom.info.of",
-            becom.calls.callsAt(ref.dimension(), ref.pos()),
-            BeComConfig.get()
-                .antennaCalls(tier))
+        info.add("becom.info.of", becom.calls.callsAt(ref.dimension(), ref.pos()), calls())
             .row("becom.info.row.calls")
             .brief();
+        InfoLines.overclock(info, tier, overclocks, 2);
         UUID owner = owner();
         String name = owner == null ? null : net.minecraftforge.common.UsernameCache.getLastKnownUsername(owner);
         if (locked) info.add("becom.info.serves_team", name == null ? "?" : name)

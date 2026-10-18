@@ -172,6 +172,8 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     private MTEHatchRack[] slots = new MTEHatchRack[0];
     private int tier = NO_TIER;
     private int slices;
+    // Tiers its energy hatches run it above its own, as its last structure check found them.
+    private int overclocks;
     // The looks' tier the clients were last told.
     private int toldLooks;
     // Why it didn't form, as a lang key and its arguments; empty when it did.
@@ -277,6 +279,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         tier = NO_TIER;
         slices = 0;
+        overclocks = 0;
         why = List.of("becom.exchange.why.shape");
         if (!checkPiece(PIECE_FRONT, ACROSS, DOWN, 0, errors)) return;
         // A bay stands wherever its frames do; anything else there is the back cap.
@@ -326,6 +329,10 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             checkHasEnergyHatch(errors);
             if (why.isEmpty()) why = List.of("becom.exchange.why.no_energy_hatch");
         }
+        int before = errors.size();
+        EnergyHatches.checkTier(this, tier, errors);
+        if (errors.size() > before && why.isEmpty()) why = List.of("becom.exchange.why.energy_tier", hall);
+        overclocks = EnergyHatches.overclocks(this, tier);
     }
 
     /** A rack or Line Hatch above the hall's tier: an error, and the first one is why it didn't form. */
@@ -478,14 +485,25 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         }
         if (--mUpdate == 0 || --mStartUpCheck == 0 || tick % (TICKS_PER_SECOND * 5) == 0) refreshStructure();
         Tunables t = BeComConfig.get();
-        working = mMachine && tile.isAllowedToWork() && EnergyHatches.drain(this, t.exchangePower());
+        working = mMachine && tile.isAllowedToWork() && EnergyHatches.drain(this, power(t));
         int switching = 0;
         if (working) for (MTEHatchRack rack : slots) if (rack != null && rack.isValid()) switching += rack.calls();
-        calls = switching;
+        // Its overclocks are perfect: four times the calls for four times the power.
+        calls = switching << 2 * overclocks;
         if (working) becom.network.exchange(world, pos(), calls);
         tile.setActive(working);
         if (tick % TICKS_PER_SECOND == 0)
             lightRacks(working ? becom.calls.callsAt(world.provider.dimensionId, pos()) : 0);
+    }
+
+    /**
+     * What it draws: each slice of its hall at its tier, and each rack at its own, four times as much for each tier
+     * its energy hatches run it above its own.
+     */
+    private long power(Tunables t) {
+        long power = t.exchangeSlicePower(tier) * slices;
+        for (MTEHatchRack rack : slots) if (rack != null && rack.isValid()) power += t.rackPower(rack.tier());
+        return EnergyHatches.power(power, overclocks);
     }
 
     /** Racks fill from the front: each is lit while some of the calls now are on it. */
@@ -493,7 +511,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         for (MTEHatchRack rack : slots) {
             if (rack == null || !rack.isValid()) continue;
             rack.light(now > 0);
-            now -= rack.calls();
+            now -= rack.calls() << 2 * overclocks;
         }
     }
 
@@ -540,6 +558,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             working,
             mMachine,
             Math.max(0, tier()),
+            overclocks,
             becom.calls.callsAt(dimension, pos()),
             calls,
             data[0],
@@ -638,7 +657,11 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
                         t.rackCallsMV(),
                         t.rackCallsHV()),
                     StatCollector.translateToLocal("becom.machine.exchange.tier"),
-                    Tips.power(t.exchangePower(), "LV")))
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.exchange.power",
+                        Tips.number(t.exchangeSlicePower(1) + " EU/t"),
+                        Tips.number(t.rackPower(CableTier.PHONE) + " EU/t")),
+                    StatCollector.translateToLocal("becom.machine.exchange.overclock")))
             .beginVariableStructureBlock(3, 3, 5, 5, depthOf(2) + 1, depthOf(MAX_SLICES + 1) + 1, false)
             .addController(StatCollector.translateToLocal("becom.machine.exchange.controller"))
             .addCasing("45+", StatCollector.translateToLocal("becom.machine.exchange.casing"), true)
@@ -695,6 +718,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             .voltage();
         (slices == 1 ? info.add("becom.exchange.hall_one", voltage) : info.add("becom.exchange.hall", voltage, slices))
             .row("becom.info.row.hall");
+        InfoLines.overclock(info, tier, overclocks, 4);
         int[] counts = new int[CableTier.values().length];
         int count = 0;
         for (MTEHatchRack rack : slots) {
@@ -713,7 +737,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
                     counts[rack.ordinal()],
                     rack.voltage(),
                     BeComConfig.get()
-                        .rackCalls(rack));
+                        .rackCalls(rack) << 2 * overclocks);
             }
         }
         if (becom == null || tile == null) return info;

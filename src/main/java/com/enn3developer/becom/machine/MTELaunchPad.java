@@ -104,6 +104,8 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
 
     private static final String PIECE_PAD = "pad";
     private static final int TICKS_PER_SECOND = 20;
+    // An HV machine; its energy hatches overclock it from there.
+    private static final int TIER = 3;
     // The flame pit: three across, centred this far behind the controller.
     private static final int PIT = 3;
     private static final int PIT_DEPTH = 3;
@@ -223,11 +225,14 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        overclocks = 0;
         if (!checkPiece(PIECE_PAD, CONTROLLER_COLUMN, CONTROLLER_LAYER, 0, errors)) return;
         if (mInputBusses.isEmpty()) errors.add(StructureErrors.missingHatch(InputBus));
         if (mInputHatches.isEmpty()) errors.add(StructureErrors.missingHatch(InputHatch));
         if (mMaintenanceHatches.size() != 1) errors.add(StructureErrors.missingHatch(Maintenance));
         checkHasEnergyHatch(errors);
+        EnergyHatches.checkTier(this, TIER, errors);
+        overclocks = EnergyHatches.overclocks(this, TIER);
     }
 
     @Override
@@ -305,10 +310,15 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         int problems = getIdealStatus() - getRepairStatus();
         mEfficiency = Math.max(EFFICIENCY_PER_PROBLEM, FULL_EFFICIENCY - problems * EFFICIENCY_PER_PROBLEM);
         mEfficiencyIncrease = FULL_EFFICIENCY;
-        mMaxProgresstime = (int) ((long) t.launchSeconds() * TICKS_PER_SECOND * FULL_EFFICIENCY / mEfficiency);
-        mEUt = -t.launchPower();
+        // Each overclock halves the launch for four times the power, as GT's imperfect overclocks do.
+        long ticks = (long) t.launchSeconds() * TICKS_PER_SECOND * FULL_EFFICIENCY / mEfficiency >> overclocks;
+        mMaxProgresstime = (int) Math.max(1, ticks);
+        mEUt = (int) -EnergyHatches.power(t.launchPower(), overclocks);
         return CheckRecipeResultRegistry.SUCCESSFUL;
     }
+
+    // Tiers its energy hatches run it above HV, as its last structure check found them.
+    private int overclocks;
 
     // Whether the sky over the pad was open at the last look, taken once a second while a launch runs.
     private boolean skyOpen = true;
@@ -646,7 +656,8 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
                         t.launchSeconds(),
                         t.launchPower(),
                         t.launchFuel()),
-                    StatCollector.translateToLocal("becom.machine.launch_pad.sky")))
+                    StatCollector.translateToLocal("becom.machine.launch_pad.sky"),
+                    StatCollector.translateToLocal("becom.machine.launch_pad.overclock")))
             .beginStructureBlock(SHAPE[0][0].length(), SHAPE.length, SHAPE[0].length, false)
             .addController(StatCollector.translateToLocal("becom.machine.launch_pad.controller"))
             .addCasingInfoMin(CASING.getLocalizedName(), count('C') + count('B') + count('T') + count('P') - 4, false)

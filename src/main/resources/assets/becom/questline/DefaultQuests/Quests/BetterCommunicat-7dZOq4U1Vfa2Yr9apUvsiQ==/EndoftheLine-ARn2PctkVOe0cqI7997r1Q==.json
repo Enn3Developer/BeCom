@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Every building's network starts at a Router. Give it LV power, just 4 EU/t, and cable your Telephones to it, on any face. The LV Router takes Phone Cable and switches 8 calls at once; the MV one takes Coaxial too and switches 32, the HV one Fibre and 128.%n%nThe cable on each of its faces is a bus, and everything on a bus shares its rate. A bus works only with a working router on it, and up to 128 blocks of Phone Cable. A router starts the count again, so cable between two routers joins them, building to building.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every building's network starts at a Router. Give it LV power, just 8 EU/t, and cable your Telephones to it, on any face. The LV Router takes Phone Cable and switches 8 calls at once; the MV one takes Coaxial too and switches 16, the HV one Fibre and 32.%n%nThe cable on each of its faces is a bus, and everything on a bus shares its rate. A bus works only with a working router on it, and up to 128 blocks of Phone Cable. A router starts the count again, so cable between two routers joins them, building to building.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
