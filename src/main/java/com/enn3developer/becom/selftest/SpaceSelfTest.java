@@ -33,7 +33,6 @@ import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
-import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
@@ -433,11 +432,16 @@ final class SpaceSelfTest {
         }
         dishA.refreshStructure();
         dishB.refreshStructure();
-        // Each Exchange switches calls with an HV rack.
+        // Each Exchange switches calls with an HV rack, on the left wall of its slice.
         for (MTEExchange exchange : new MTEExchange[] { dishExchangeA, dishExchangeB, relayExchangeOverworld,
             relayExchangeNether }) {
             if (exchange == null) continue;
-            exchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.FIBRE, 1);
+            int[] at = SelfTest.hallAt(exchange, -1, 1, 2);
+            WorldServer world = (WorldServer) exchange.getBaseMetaTileEntity()
+                .getWorld();
+            world.setBlockToAir(at[0], at[1], at[2]);
+            place(world, BeComMachines.rackHV, at[0], at[1], at[2]);
+            exchange.refreshStructure();
         }
         // Relays by the two sides of one portal pair by themselves, each second; once now.
         becom.network.pairRelaysForSelfTest();
@@ -800,17 +804,21 @@ final class SpaceSelfTest {
         // The Exchange's screen lists its dish on its cable, carrying, and the other Exchange it reaches through it.
         com.enn3developer.becom.gui.ExchangeView screen = dishExchangeA.view();
         boolean dishRow = false;
-        for (com.enn3developer.becom.gui.ExchangeView.Joined joined : screen.joined()) {
-            dishRow |= joined.node() == com.enn3developer.becom.logic.net.NodeKind.SATELLITE_DISH.ordinal()
-                && joined.rate() > 0;
+        for (com.enn3developer.becom.gui.ExchangeView.Line line : screen.lines()) {
+            dishRow |= line.bus() != null && line.bus()
+                .gateways() == 1
+                && line.bus()
+                    .rate() > 0;
         }
+        long racks = screen.racks()
+            .stream()
+            .filter(r -> r >= 0)
+            .count();
         t.check(
-            "...and the Exchange's screen shows its dish joined by cable, and the far Exchange it reaches",
-            screen.online() && dishRow
-                && screen.exchanges() >= 1
-                && screen.racks()
-                    .size() == 1,
-            "online " + screen.online() + ", joined " + screen.joined() + ", exchanges " + screen.exchanges());
+            "...and the Exchange's screen shows its dish on its Line Hatch's bus, its rack, and the far Exchange it"
+                + " reaches",
+            screen.online() && dishRow && screen.exchanges() >= 1 && racks == 1,
+            "online " + screen.online() + ", lines " + screen.lines() + ", exchanges " + screen.exchanges());
         dishA.causeMaintenanceIssue();
         return 2;
     }
@@ -1273,13 +1281,15 @@ final class SpaceSelfTest {
     }
 
     /**
-     * An Exchange facing north, powered, with its input bus for racks and its Line Hatch over the controller: what
-     * the gateways here cable to.
+     * An HV Exchange hall of one slice facing north, powered, with its Line Hatch over the controller: what the
+     * gateways here cable to.
      */
     private MTEExchange exchange(WorldServer world, int x, int y, int z) {
-        MTEExchange exchange = multiblock(world, BeComMachines.exchange, x, y, z);
+        MTEExchange exchange = place(world, BeComMachines.exchange, x, y, z);
+        exchange.getBaseMetaTileEntity()
+            .setFrontFacing(ForgeDirection.NORTH);
+        ((IConstructable) exchange).construct(SelfTest.hall(3, 1), false);
         t.power(hatch(world, exchange, 0, 1, ItemList.Hatch_Energy_LV).getBaseMetaTileEntity());
-        hatch(world, exchange, 0, -1, ItemList.Hatch_Input_Bus_LV);
         lineHatch(world, exchange, 0, 0, 1);
         return exchange;
     }

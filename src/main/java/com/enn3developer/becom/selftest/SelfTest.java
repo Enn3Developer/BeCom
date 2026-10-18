@@ -46,10 +46,10 @@ import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.gui.AntennaView;
+import com.enn3developer.becom.gui.ExchangeView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
-import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Slots;
@@ -76,6 +76,7 @@ import com.enn3developer.becom.machine.InfoLines;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTEExchange;
 import com.enn3developer.becom.machine.MTEHatchLine;
+import com.enn3developer.becom.machine.MTEHatchRack;
 import com.enn3developer.becom.machine.MTEMeBridge;
 import com.enn3developer.becom.machine.MTERouter;
 import com.enn3developer.becom.machine.MTETransceiver;
@@ -120,6 +121,7 @@ import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
 import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
+import gregtech.common.misc.GTStructureChannels;
 import ic2.api.item.ElectricItem;
 
 /**
@@ -278,6 +280,9 @@ public final class SelfTest {
         steps.add(this::checkLineReach);
         steps.add(this::checkExchange);
         steps.add(this::checkExchangeWithRack);
+        steps.add(this::callThroughExchange);
+        steps.add(this::checkRackLamp);
+        steps.add(this::checkHallTiers);
         steps.add(this::checkWaila);
         steps.add(this::checkCall);
         steps.add(this::switchRouterOff);
@@ -593,7 +598,7 @@ public final class SelfTest {
         for (CableTier tier : CableTier.values()) {
             check(
                 "assembler makes " + tier.configName() + " cable, and Switching Racks of " + tier.voltage(),
-                assembles(BlockPhoneCable.stack(tier, 2)) && assembles(ItemSwitchingRack.stack(tier, 1)),
+                assembles(BlockPhoneCable.stack(tier, 2)) && assembles(rackOf(tier).getStackForm(1)),
                 "");
         }
         return 1;
@@ -718,27 +723,16 @@ public final class SelfTest {
         buildLine(phoneLine, BeComMachines.routerHV, z, LINE_LENGTH);
         cablePath(CableTier.PHONE, new int[] { X0 + 1, Y, z }, new int[] { X0 + LINE_LENGTH - 1, Y, z });
         z += GROUP_GAP;
-        // Two MV routers, and Coaxial from each into a Line Hatch on its side of an Exchange halfway between them.
+        // Two MV routers, and Coaxial from each into a Line Hatch on its side of an MV Exchange halfway between them.
         buildLine(exchangeLine, BeComMachines.routerMV, z, LINE_LENGTH);
-        exchange = place(BeComMachines.exchange, X0 + LINE_LENGTH / 2, Y, z);
-        exchange.getBaseMetaTileEntity()
-            .setFrontFacing(ForgeDirection.NORTH);
-        ((IConstructable) exchange).construct(BeComMachines.exchange.getStackForm(1), false);
-        exchangeHatches(exchange);
-        // The Exchange faces north, so its middle row is a block south of its controller: a hatch at each end of it.
+        exchange = buildHall(X0 + LINE_LENGTH / 2, Y, z, ForgeDirection.NORTH, 2, 1);
+        powerHall(exchange);
+        // The hall faces north: a hatch at each side of its controller, in its front cap.
         int west = X0 + LINE_LENGTH / 2 - 1, east = X0 + LINE_LENGTH / 2 + 1;
-        lineHatchAt(BeComMachines.lineHatchMV, west, Y, z + 1, ForgeDirection.WEST);
-        lineHatchAt(BeComMachines.lineHatchMV, east, Y, z + 1, ForgeDirection.EAST);
-        cablePath(
-            CableTier.COAXIAL,
-            new int[] { X0 + 1, Y, z },
-            new int[] { west - 1, Y, z },
-            new int[] { west - 1, Y, z + 1 });
-        cablePath(
-            CableTier.COAXIAL,
-            new int[] { east + 1, Y, z + 1 },
-            new int[] { east + 1, Y, z },
-            new int[] { X0 + LINE_LENGTH - 1, Y, z });
+        lineHatchAt(BeComMachines.lineHatchMV, west, Y, z, ForgeDirection.WEST);
+        lineHatchAt(BeComMachines.lineHatchMV, east, Y, z, ForgeDirection.EAST);
+        cablePath(CableTier.COAXIAL, new int[] { X0 + 1, Y, z }, new int[] { west - 1, Y, z });
+        cablePath(CableTier.COAXIAL, new int[] { east + 1, Y, z }, new int[] { X0 + LINE_LENGTH - 1, Y, z });
         z += GROUP_GAP;
         // Five Telephones near one LV router on its cable, a second router at the cable's far end, and a sixth
         // Telephone by that one.
@@ -771,25 +765,93 @@ public final class SelfTest {
     }
 
     /**
-     * An Exchange's energy hatch and input bus, on either side of its controller in place of casings, and an HV Line
-     * Hatch, taking any cable, right above it facing out the same way; the test power supply keeps the energy hatch
-     * full.
+     * The Exchange's item as the build tool's trigger: a hall of {@code slices} rack slices, in {@code tier}'s casings.
      */
-    private MTEHatchLine exchangeHatches(MTEExchange machine) {
-        IGregTechTileEntity tile = machine.getBaseMetaTileEntity();
-        ForgeDirection side = tile.getFrontFacing()
-            .getRotation(ForgeDirection.UP);
-        int x = tile.getXCoord(), y = tile.getYCoord(), z = tile.getZCoord();
-        world.setBlockToAir(x + side.offsetX, y, z + side.offsetZ);
-        world.setBlockToAir(x - side.offsetX, y, z - side.offsetZ);
+    static ItemStack hall(int tier, int slices) {
+        ItemStack stack = BeComMachines.exchange.getStackForm(1);
+        NBTTagCompound channels = new NBTTagCompound();
+        channels.setInteger(GTStructureChannels.STRUCTURE_LENGTH.get(), slices);
+        channels.setInteger(GTStructureChannels.TIER_MACHINE_CASING.get(), tier);
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setTag("channels", channels);
+        stack.setTagCompound(tag);
+        return stack;
+    }
+
+    /**
+     * An Exchange hall built as the build tool does, its controller at x, y, z facing {@code front}, on clear ground.
+     */
+    private MTEExchange buildHall(int x, int y, int z, ForgeDirection front, int tier, int slices) {
+        ForgeDirection back = front.getOpposite(), right = back.getRotation(ForgeDirection.UP);
+        for (int depth = 0; depth <= 2 * slices + 2; depth++) {
+            for (int across = -1; across <= 1; across++) {
+                for (int up = -1; up <= 3; up++) {
+                    world.setBlockToAir(
+                        x + back.offsetX * depth + right.offsetX * across,
+                        y + up,
+                        z + back.offsetZ * depth + right.offsetZ * across);
+                }
+            }
+        }
+        MTEExchange hall = place(BeComMachines.exchange, x, y, z);
+        hall.getBaseMetaTileEntity()
+            .setFrontFacing(front);
+        ((IConstructable) hall).construct(hall(tier, slices), false);
+        return hall;
+    }
+
+    /**
+     * Where in a hall a block stands, {x, y, z}: {@code across} the controller's column to the right seen from the
+     * front, {@code up} above its row and {@code depth} behind it.
+     */
+    static int[] hallAt(MTEExchange hall, int across, int up, int depth) {
+        IGregTechTileEntity tile = hall.getBaseMetaTileEntity();
+        ForgeDirection back = tile.getFrontFacing()
+            .getOpposite();
+        ForgeDirection right = back.getRotation(ForgeDirection.UP);
+        return new int[] { tile.getXCoord() + back.offsetX * depth + right.offsetX * across, tile.getYCoord() + up,
+            tile.getZCoord() + back.offsetZ * depth + right.offsetZ * across };
+    }
+
+    /** An energy hatch under a hall's controller; the test power supply keeps it full. */
+    private void powerHall(MTEExchange hall) {
+        int[] at = hallAt(hall, 0, -1, 0);
         IMetaTileEntity hatch = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
             .getItemDamage()];
-        IMetaTileEntity bus = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Input_Bus_LV.get(1)
-            .getItemDamage()];
-        powered.add(place(hatch, x + side.offsetX, y, z + side.offsetZ).getBaseMetaTileEntity());
-        place(bus, x - side.offsetX, y, z - side.offsetZ);
-        powered.add(tile);
-        return lineHatchAt(BeComMachines.lineHatchHV, x, y + 1, z, tile.getFrontFacing());
+        world.setBlockToAir(at[0], at[1], at[2]);
+        powered.add(place(hatch, at[0], at[1], at[2]).getBaseMetaTileEntity());
+        powered.add(hall.getBaseMetaTileEntity());
+    }
+
+    /**
+     * A rack in place of the casing at a hall's {@code slot} of its {@code slice}, both from 0: the left wall's top and
+     * bottom, then the right wall's, seen from the front.
+     */
+    private MTEHatchRack rackAt(MTEExchange hall, MTEHatchRack rack, int slice, int slot) {
+        int[] at = hallAt(hall, slot < 2 ? -1 : 1, slot % 2 == 0 ? 1 : 0, 2 * (slice + 1));
+        world.setBlockToAir(at[0], at[1], at[2]);
+        return place(rack, at[0], at[1], at[2]);
+    }
+
+    /** A machine casing of {@code tier} at {at}, in place of whatever stands there. */
+    private void recase(int[] at, int tier) {
+        world.setBlock(at[0], at[1], at[2], GregTechAPI.sBlockCasings1, tier, 3);
+    }
+
+    /** A frame box of {@code material} at {at}, in place of whatever stands there, as placing one does. */
+    private void frame(int[] at, Materials material) {
+        world.setBlockToAir(at[0], at[1], at[2]);
+        ItemStack frame = GTOreDictUnificator.get(OrePrefixes.frameGt, material, 1);
+        ((ItemBlock) frame.getItem())
+            .placeBlockAt(frame, owner, world, at[0], at[1], at[2], 1, 0.5f, 0.5f, 0.5f, frame.getItemDamage());
+    }
+
+    static MTEHatchRack rackOf(CableTier tier) {
+        return switch (tier) {
+            case PHONE -> BeComMachines.rack;
+            case COAXIAL -> BeComMachines.rackMV;
+            case FIBRE -> BeComMachines.rackHV;
+        };
     }
 
     /** A Line Hatch in place of what stands at x, y, z, facing {@code front}. */
@@ -1073,25 +1135,29 @@ public final class SelfTest {
         int x = CABLE_X + 4, z = LINE_Z;
         for (int cx = x - 3; cx <= x + 3; cx++) {
             for (int cz = z - 3; cz <= z + 3; cz++) {
-                for (int cy = Y - 1; cy <= Y + 3; cy++) world.setBlockToAir(cx, cy, cz);
+                for (int cy = Y - 1; cy <= Y + 4; cy++) world.setBlockToAir(cx, cy, cz);
             }
         }
-        hatchExchange = place(BeComMachines.exchange, x, Y, z);
-        IGregTechTileEntity tile = hatchExchange.getBaseMetaTileEntity();
-        tile.setFrontFacing(ForgeDirection.NORTH);
-        ((IConstructable) hatchExchange).construct(BeComMachines.exchange.getStackForm(1), false);
-        IMetaTileEntity energy = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
-            .getItemDamage()];
-        world.setBlockToAir(x + 1, Y, z);
-        powered.add(place(energy, x + 1, Y, z).getBaseMetaTileEntity());
-        powered.add(tile);
+        // An LV hall two rack slices long, powered from under its controller.
+        hatchExchange = buildHall(x, Y, z, ForgeDirection.NORTH, 1, 2);
+        powerHall(hatchExchange);
         check("an Exchange with no Line Hatch doesn't form", !hatchExchange.refreshStructure(), "");
-        lineHatch = lineHatchAt(BeComMachines.lineHatch, x, Y + 1, z, ForgeDirection.NORTH);
-        check("...and with one it does", hatchExchange.refreshStructure(), "");
-        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x, Y + 1, z, ForgeDirection.UP);
-        check("a Line Hatch takes cable on its front face only", mask(x, Y + 2, z) == 0, "mask " + mask(x, Y + 2, z));
-        hatchPhone = telephone(x, Y + 1, z - 2);
-        lay(world, x, Y + 1, z - 1, CableTier.PHONE);
+        List<String> why = hatchExchange.view()
+            .why();
+        check("...and its screen says why", why.equals(List.of("becom.exchange.why.no_line_hatch")), why.toString());
+        // At the top of its front cap.
+        lineHatch = lineHatchAt(BeComMachines.lineHatch, x, Y + 2, z, ForgeDirection.NORTH);
+        check(
+            "...and with one it does, as long as it was built: two slices of four rack slots",
+            hatchExchange.refreshStructure() && hatchExchange.slices() == 2
+                && hatchExchange.view()
+                    .racks()
+                    .size() == 2 * MTEExchange.RACKS_PER_SLICE,
+            "slices " + hatchExchange.slices());
+        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x, Y + 2, z, ForgeDirection.UP);
+        check("a Line Hatch takes cable on its front face only", mask(x, Y + 3, z) == 0, "mask " + mask(x, Y + 3, z));
+        hatchPhone = telephone(x, Y + 2, z - 2);
+        lay(world, x, Y + 2, z - 1, CableTier.PHONE);
         return SETTLE_TICKS;
     }
 
@@ -1106,14 +1172,17 @@ public final class SelfTest {
             routers.size() == 1 && routers.get(0)
                 .pos() == pos(hatchExchange) && lineHatch.controller() == pos(hatchExchange),
             String.valueOf(bus));
+        List<ExchangeView.Line> lines = hatchExchange.view()
+            .lines();
         check(
-            "...which the Exchange's screen lists",
-            hatchExchange.view()
-                .joined()
-                .stream()
-                .anyMatch(j -> j.number() == hatchPhone.number()),
-            "");
-        // A casing at its back gone: it's no longer formed, and its Line Hatch joins nothing.
+            "...which the Exchange's screen shows on its Line Hatch's row",
+            lines.size() == 1 && lines.get(0)
+                .bus() != null
+                && lines.get(0)
+                    .bus()
+                    .phones() == 1,
+            lines.toString());
+        // A casing inside it gone: it's no longer formed, and its Line Hatch joins nothing.
         IGregTechTileEntity tile = hatchExchange.getBaseMetaTileEntity();
         world.setBlockToAir(tile.getXCoord(), Y, tile.getZCoord() + 2);
         hatchExchange.refreshStructure();
@@ -1302,7 +1371,7 @@ public final class SelfTest {
         return 1;
     }
 
-    /** An Exchange forms with an energy hatch and an input bus, but switches nothing until it has racks. */
+    /** An Exchange forms with an energy hatch and its Line Hatches, but switches nothing until it has racks. */
     private int checkExchange() {
         int a = exchangeLine.phoneStart.number(), b = exchangeLine.phoneEnd.number();
         double low = BeComConfig.get()
@@ -1319,7 +1388,8 @@ public final class SelfTest {
             "...but with no Switching Racks it switches no calls: a call through it is busy",
             exchange.calls() == 0 && becom.calls.width(a, b) >= low && !becom.calls.hasRoomForSelfTest(a, b),
             exchange.calls() + " calls");
-        exchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.PHONE, 1);
+        rackAt(exchange, BeComMachines.rack, 0, 0);
+        exchange.refreshStructure();
         return SETTLE_TICKS;
     }
 
@@ -1328,10 +1398,94 @@ public final class SelfTest {
         int calls = BeComConfig.get()
             .rackCalls(CableTier.PHONE);
         check(
-            "an LV Switching Rack in its input bus switches " + calls + " calls, and the call finds room",
+            "an LV Switching Rack on its wall switches " + calls + " calls, and the call finds room",
             exchange.calls() == calls && becom.calls.hasRoomForSelfTest(a, b),
             exchange.calls() + " calls");
         return 1;
+    }
+
+    // Two players of their own for the call through the Exchange: a dial counts toward its caller's attempts a minute,
+    // which the call checks count on.
+    private FakePlayer caller;
+    private FakePlayer callee;
+
+    /** A call between the line's Telephones, through the Exchange. */
+    private int callThroughExchange() {
+        caller = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000091"), "BeComCaller"));
+        callee = FakePlayerFactory
+            .get(world, new GameProfile(UUID.fromString("b3c0b3c0-0000-4000-8000-000000000092"), "BeComCallee"));
+        TileTelephone start = exchangeLine.phoneStart, end = exchangeLine.phoneEnd;
+        UUID a = caller.getUniqueID(), b = callee.getUniqueID();
+        becom.calls.voiceForSelfTest(id -> id.equals(a) || id.equals(b));
+        standBy(caller, start);
+        standBy(callee, end);
+        becom.calls.takeHandset(caller, start);
+        becom.calls.dial(caller, start.number(), end.number());
+        becom.calls.takeHandset(callee, end);
+        // The Exchange lights its racks once a second.
+        return TICKS_PER_SECOND + 2;
+    }
+
+    private int checkRackLamp() {
+        MTEHatchRack rack = exchange.slots()
+            .get(0);
+        Call call = becom.calls.book()
+            .callOf(caller.getUniqueID());
+        int through = becom.calls.callsAt(world.provider.dimensionId, pos(exchange));
+        check(
+            "a call between the line's Telephones goes through the Exchange, and lights the lamp of its first rack",
+            call != null && call.state() == Call.State.CONNECTED && through == 1 && rack != null && rack.lit(),
+            "call " + (call == null ? null : call.state())
+                + ", "
+                + through
+                + " through it, lit "
+                + (rack != null && rack.lit()));
+        becom.calls.hangUpHandset(caller.getUniqueID());
+        becom.calls.hangUpHandset(callee.getUniqueID());
+        return TICKS_PER_SECOND + 2;
+    }
+
+    /**
+     * A hall is all of one tier, its casings' and its frames', and its racks and Line Hatches go up to it: anything
+     * else and it doesn't form, its screen saying why. The line's Exchange is an MV hall.
+     */
+    private int checkHallTiers() {
+        MTEHatchRack first = exchange.slots()
+            .get(0);
+        check("...and the lamp goes out once the call is over", first != null && !first.lit(), "");
+        int[] slot = hallAt(exchange, 1, 1, 2);
+        rackAt(exchange, BeComMachines.rackHV, 0, 2);
+        boolean rack = !exchange.refreshStructure();
+        List<String> rackWhy = exchange.view()
+            .why();
+        recase(slot, 2);
+        int[] roof = hallAt(exchange, 1, 2, 1);
+        lineHatchAt(BeComMachines.lineHatchHV, roof[0], roof[1], roof[2], ForgeDirection.UP);
+        boolean line = !exchange.refreshStructure();
+        List<String> lineWhy = exchange.view()
+            .why();
+        recase(roof, 2);
+        int[] casing = hallAt(exchange, 0, 2, 0);
+        recase(casing, 1);
+        boolean mixed = !exchange.refreshStructure();
+        recase(casing, 2);
+        int[] post = hallAt(exchange, -1, 0, 1);
+        frame(post, Materials.Steel);
+        boolean steel = !exchange.refreshStructure();
+        frame(post, Materials.Aluminium);
+        check(
+            "an HV rack in an MV hall keeps it from forming, its screen saying why",
+            rack && rackWhy.equals(List.of("becom.exchange.why.rack_tier", "HV", "MV")),
+            rackWhy.toString());
+        check(
+            "...as does an HV Line Hatch",
+            line && lineWhy.equals(List.of("becom.exchange.why.line_tier", "HV", "MV")),
+            lineWhy.toString());
+        check("...an LV casing among its MV ones", mixed, "");
+        check("...or a steel frame among its aluminium ones", steel, "");
+        check("put right, it forms again", exchange.refreshStructure(), "");
+        return SETTLE_TICKS;
     }
 
     /** WAILA asks for a machine's lines on the server thread, so they come with the first look. */
@@ -3708,7 +3862,7 @@ public final class SelfTest {
         }
         // Room for the Exchange behind the bridge.
         for (int x = X0 + 5; x <= X0 + 9; x++) {
-            for (int dz = 3; dz <= 6; dz++) for (int y = Y - 1; y <= Y + 2; y++) world.setBlockToAir(x, y, z + dz);
+            for (int dz = 3; dz <= 7; dz++) for (int y = Y - 1; y <= Y + 3; y++) world.setBlockToAir(x, y, z + dz);
         }
         IBlocks blocks = AEApi.instance()
             .definitions()
@@ -3772,25 +3926,23 @@ public final class SelfTest {
         powered.add(meBridge.getBaseMetaTileEntity());
         strangerBridge = placeAs(BeComMachines.meBridge, keptStack(BeComMachines.meBridge), X0 + 6, Y + 1, z, stranger);
         powered.add(strangerBridge.getBaseMetaTileEntity());
-        // An Exchange three blocks behind the bridge, facing it, and Phone Cable from its front to the bridge.
-        meExchange = place(BeComMachines.exchange, X0 + 7, Y, z + 3);
-        meExchange.getBaseMetaTileEntity()
-            .setFrontFacing(ForgeDirection.NORTH);
-        ((IConstructable) meExchange).construct(BeComMachines.exchange.getStackForm(1), false);
-        exchangeHatches(meExchange);
+        // An LV Exchange three blocks behind the bridge, facing it, and Phone Cable from its front to the bridge.
+        meExchange = buildHall(X0 + 7, Y, z + 3, ForgeDirection.NORTH, 1, 1);
+        powerHall(meExchange);
+        lineHatchAt(BeComMachines.lineHatch, X0 + 7, Y + 1, z + 3, ForgeDirection.NORTH);
         lay(world, X0 + 7, Y, z + 1, CableTier.PHONE);
         lay(world, X0 + 7, Y, z + 2, CableTier.PHONE);
         // Up into its Line Hatch, over the controller.
         lay(world, X0 + 7, Y + 1, z + 2, CableTier.PHONE);
-        // A second Line Hatch, at the middle of its west side, and Phone Cable from it down and south to the phone
-        // antenna's Router.
-        lineHatchAt(BeComMachines.lineHatch, X0 + 6, Y, z + 4, ForgeDirection.WEST);
+        // A second Line Hatch, west of the controller, and Phone Cable from it down and south to the phone antenna's
+        // Router.
+        lineHatchAt(BeComMachines.lineHatch, X0 + 6, Y, z + 3, ForgeDirection.WEST);
         IGregTechTileEntity router = phoneRouter.getBaseMetaTileEntity();
         int ry = router.getYCoord(), rz = router.getZCoord();
         cablePath(
             CableTier.PHONE,
-            new int[] { X0 + 5, Y, z + 4 },
-            new int[] { X0 + 5, ry, z + 4 },
+            new int[] { X0 + 5, Y, z + 3 },
+            new int[] { X0 + 5, ry, z + 3 },
             new int[] { X0 + 5, ry, rz },
             new int[] { router.getXCoord() + 1, ry, rz });
         return SETTLE_TICKS;
@@ -3815,8 +3967,8 @@ public final class SelfTest {
     }
 
     private int linkMe() {
+        rackAt(meExchange, BeComMachines.rack, 0, 0);
         meExchange.refreshStructure();
-        meExchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.PHONE, 1);
         return 2 * TICKS_PER_SECOND;
     }
 

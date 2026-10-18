@@ -17,7 +17,7 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * The Router's screen, from the Line Terminal board: the calls it carries, then a row a bus of cable joining it: its
+ * The Router's screen, from the Router board: the calls it carries, then a row a bus of cable joining it: its
  * cable, length and what it carries; and what's on those buses: each phone, its number and what it's doing, then the
  * routers and gateways they join.
  */
@@ -196,6 +196,11 @@ public final class RouterUi extends CanvasScreen {
 
     private static void paintBus(Canvas c, RouterView.Bus bus, int index, float[] col, float ty) {
         c.text(String.valueOf(index + 1), col[0], ty, 14, Grey.NOTE);
+        paintBusColumns(c, bus, col, ty);
+    }
+
+    /** A bus's row past its first column: what it joins, its length, its cable and what it carries. */
+    static void paintBusColumns(Canvas c, RouterView.Bus bus, float[] col, float ty) {
         List<String> joins = new ArrayList<>();
         if (bus.phones() > 0)
             joins.add(t(bus.phones() == 1 ? "becom.ui.router.phone" : "becom.ui.router.phones", bus.phones()));
@@ -228,7 +233,7 @@ public final class RouterUi extends CanvasScreen {
     }
 
     /** A cable's swatch and short name. */
-    private static void cable(Canvas c, int tier, float x, float ty) {
+    static void cable(Canvas c, int tier, float x, float ty) {
         c.rect(x, ty + 4, 14, 5, cableColour(tier));
         c.text(
             t(

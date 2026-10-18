@@ -38,6 +38,9 @@ public final class BeComMachines {
     public static final int LINE_HATCH_ID = 25016;
     public static final int LINE_HATCH_MV_ID = 25017;
     public static final int LINE_HATCH_HV_ID = 25018;
+    public static final int RACK_ID = 25019;
+    public static final int RACK_MV_ID = 25020;
+    public static final int RACK_HV_ID = 25021;
 
     public static BlockBeComMachines block;
     public static MTEExchange exchange;
@@ -58,6 +61,9 @@ public final class BeComMachines {
     public static MTEHatchLine lineHatch;
     public static MTEHatchLine lineHatchMV;
     public static MTEHatchLine lineHatchHV;
+    public static MTEHatchRack rack;
+    public static MTEHatchRack rackMV;
+    public static MTEHatchRack rackHV;
 
     private BeComMachines() {}
 
@@ -82,6 +88,9 @@ public final class BeComMachines {
         ids.put(LINE_HATCH_ID, "becom.line_hatch");
         ids.put(LINE_HATCH_MV_ID, "becom.line_hatch_mv");
         ids.put(LINE_HATCH_HV_ID, "becom.line_hatch_hv");
+        ids.put(RACK_ID, "becom.switching_rack");
+        ids.put(RACK_MV_ID, "becom.switching_rack_mv");
+        ids.put(RACK_HV_ID, "becom.switching_rack_hv");
         return ids;
     }
 
@@ -149,5 +158,8 @@ public final class BeComMachines {
         lineHatch = new MTEHatchLine(LINE_HATCH_ID, "becom.line_hatch", "Line Hatch (LV)", CableTier.PHONE);
         lineHatchMV = new MTEHatchLine(LINE_HATCH_MV_ID, "becom.line_hatch_mv", "Line Hatch (MV)", CableTier.COAXIAL);
         lineHatchHV = new MTEHatchLine(LINE_HATCH_HV_ID, "becom.line_hatch_hv", "Line Hatch (HV)", CableTier.FIBRE);
+        rack = new MTEHatchRack(RACK_ID, "becom.switching_rack", "Switching Rack (LV)", CableTier.PHONE);
+        rackMV = new MTEHatchRack(RACK_MV_ID, "becom.switching_rack_mv", "Switching Rack (MV)", CableTier.COAXIAL);
+        rackHV = new MTEHatchRack(RACK_HV_ID, "becom.switching_rack_hv", "Switching Rack (HV)", CableTier.FIBRE);
     }
 }

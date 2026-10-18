@@ -17,6 +17,10 @@ public final class BeComTextures {
     public static final IIconContainer ROUTER_GLOW = icon("OVERLAY_ROUTER_GLOW");
     public static final IIconContainer LINE_HATCH = icon("OVERLAY_LINE_HATCH");
     public static final IIconContainer LINE_HATCH_GLOW = icon("OVERLAY_LINE_HATCH_GLOW");
+    private static final IIconContainer[] RACKS = { icon("OVERLAY_SWITCHING_RACK_LV"),
+        icon("OVERLAY_SWITCHING_RACK_MV"), icon("OVERLAY_SWITCHING_RACK_HV") };
+    private static final IIconContainer[] RACKS_GLOW = { icon("OVERLAY_SWITCHING_RACK_LV_GLOW"),
+        icon("OVERLAY_SWITCHING_RACK_MV_GLOW"), icon("OVERLAY_SWITCHING_RACK_HV_GLOW") };
     public static final IIconContainer ANTENNA_T1 = icon("OVERLAY_ANTENNA_T1");
     public static final IIconContainer ANTENNA_T1_GLOW = icon("OVERLAY_ANTENNA_T1_GLOW");
     public static final IIconContainer ANTENNA_T2 = icon("OVERLAY_ANTENNA_T2");
@@ -40,6 +44,16 @@ public final class BeComTextures {
 
     private static IIconContainer icon(String name) {
         return Textures.BlockIcons.custom(BeCom.MODID, "iconsets/" + name);
+    }
+
+    /** A Switching Rack's face, its marks in its voltage's colour: {@code tier} 1 LV to 3 HV. */
+    public static IIconContainer rack(int tier) {
+        return RACKS[Math.max(0, Math.min(RACKS.length - 1, tier - 1))];
+    }
+
+    /** A Switching Rack's lamps, lit. */
+    public static IIconContainer rackGlow(int tier) {
+        return RACKS_GLOW[Math.max(0, Math.min(RACKS_GLOW.length - 1, tier - 1))];
     }
 
     /** Loads the class, so every overlay is registered before textures are stitched. */

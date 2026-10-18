@@ -7,7 +7,6 @@ navigation:
 item_ids:
   - becom:telephone:*
   - becom:phone_cable:*
-  - becom:switching_rack:*
   - becom:machine:25001
   - becom:machine:25002
   - becom:machine:25003
@@ -15,6 +14,9 @@ item_ids:
   - becom:machine:25016
   - becom:machine:25017
   - becom:machine:25018
+  - becom:machine:25019
+  - becom:machine:25020
+  - becom:machine:25021
 quest_ids:
   - "IHTr1EMRVx6vQQ7722eirw"
   - "b14IecXxXxuWU8oeGOPcNw"
@@ -93,21 +95,36 @@ Satellite Dish as its backhaul. Its lamp is lit while that multiblock works. Out
 
 ## Exchange
 
-An <ItemLink id="becom:machine:25001" showIcon="left">Exchange</ItemLink> is a big router: a building of LV Machine
-Casings, three blocks each way, with the controller in the middle of its front, an Energy Hatch, an Input Bus and at
-least one Line Hatch. It draws 64 EU/t and switches calls between every bus its Line Hatches join.
+An <ItemLink id="becom:machine:25001" showIcon="left">Exchange</ItemLink> is a big router: a hall of switching racks. It
+draws 64 EU/t and switches calls between every bus its Line Hatches join.
 
-With no <ItemLink id="becom:switching_rack:0" showIcon="left">Switching Rack (LV)</ItemLink> it switches nothing. Put up
-to 8 racks in its Input Bus: each LV rack switches 8 calls at once, MV 32, HV 128. When every way between two phones is
-full, the next caller hears busy. Calls already going keep their way.
+The hall is 3 blocks wide, 5 tall and 5 to 19 deep:
 
-Right-click its controller for its own screen, in place of GT's terminal: whether it works, then its calls, "9 of 72",
-with a bar, its data in KB/s over how many routes, and how many numbers it reaches through how many exchanges. A row of
-8 slots shows its racks: a filled one with the rack's voltage and calls, a free one as a dashed "+". **Joined to** lists
-everything on the buses its Line Hatches join: antennas as "Antenna T3, backhaul", other Exchanges by their
-coordinates, Routers by their compass direction, gateways by name, and numbered devices by kind and number. Each row
-has its bus's cable and a bar of what it carries, or in red why it carries nothing:
-"310 blocks: a Phone Cable run is 128 at most".
+- **A front cap** with the controller in the middle of its second row, and **a back cap**, each a wall of casings.
+- **1 to 8 rack slices**, with a slice of frame posts before and after each. A rack slice's side walls take 4 racks,
+  two on each side.
+- **A cable ladder** of frame boxes along the ridge, over every slice.
+
+Its tier is its casings': all LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel Frame Boxes to
+match. A mixed hall doesn't form. Its racks and Line Hatches go up to that tier, so an MV hall takes LV and MV racks,
+and cable up to Coaxial. Upgrading it means recasing it.
+
+Energy Hatches and Line Hatches go on the caps, the roof and the floor; it needs at least one of each. The Structure
+Projector builds it: its stack size, or the length channel, sets the slices, and the machine casing channel the tier.
+
+**Switching Racks** are hatches on its side walls:
+<ItemLink id="becom:machine:25019" showIcon="left">Switching Rack (LV)</ItemLink> switches 8 calls at once,
+<ItemLink id="becom:machine:25020" showIcon="left">Switching Rack (MV)</ItemLink> 32 and
+<ItemLink id="becom:machine:25021" showIcon="left">Switching Rack (HV)</ItemLink> 128. The hall switches as many calls as
+its racks add up to; with none it switches nothing. Racks fill from the front, and a rack's lamps are lit while calls use
+it, so you can see from outside how busy it is. When every way between two phones is full, the next caller hears busy.
+Calls already going keep their way.
+
+Right-click its controller for its own screen, in place of GT's terminal: its tier and whether it works, then its calls,
+"9 of 72", with a bar, its data in KB/s over how many routes, and how many numbers it reaches through how many
+exchanges. Its racks show as the hall holds them, a column a slice, the left wall over the right: a free slot is a dashed
+"+", and a rack's lamp is lit while it's in use. Then a row for each Line Hatch: what's on its bus, its length, its cable
+and what it carries, or in red why it carries nothing. While it isn't formed, the screen says why.
 
 ## Numbers and contacts
 

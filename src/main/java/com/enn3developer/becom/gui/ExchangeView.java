@@ -6,27 +6,28 @@ import java.util.List;
 import net.minecraft.network.PacketBuffer;
 
 /**
- * What the Exchange's screen shows, from the Router board: whether it works and whose it is; its calls, its data and
- * how many numbers it reaches through how many exchanges; its switching racks; and a row for each thing on the buses
- * its Line Hatches join, with the cable that joins it and what it carries. Built on the server.
+ * What the Exchange's screen shows, from the Router board: whether it works and whose it is; its tier; its calls, its
+ * data and how many numbers it reaches through how many exchanges; its racks, slice by slice; and a row for each of
+ * its Line Hatches, with the bus of cable at its front. Built on the server.
  *
- * @param racks each rack's tier, best first
+ * @param tier  its casings' tier, 1 LV to 3 HV; 0 when it isn't formed
+ * @param calls the calls through it now
+ * @param slots the calls its racks switch at once
+ * @param racks its rack slots, slice by slice from the front: each slice's left wall top and bottom, then its right
+ *              wall's, seen from the front; a rack's tier ordinal, or -1 for a free slot
+ * @param why   why it isn't formed, as a lang key and its arguments; empty when it is
  */
-public record ExchangeView(boolean online, boolean formed, String owner, int x, int y, int z, int calls, int slots,
-    int data, int routes, int reaches, int exchanges, List<Integer> racks, List<Joined> joined) {
+public record ExchangeView(boolean online, boolean formed, String owner, int x, int y, int z, int tier, int calls,
+    int slots, int data, int routes, int reaches, int exchanges, List<Integer> racks, List<Line> lines,
+    List<String> why) {
 
     /**
-     * One thing joined to the Exchange.
+     * One of its Line Hatches.
      *
-     * @param node      its node kind's ordinal, or -1 for a phone on one of the Exchange's buses
-     * @param phoneKind that phone's kind's ordinal, or -1
-     * @param cables    how many cables of each tier join it, by tier
-     * @param length    the cable blocks of the bus it's on
-     * @param rate      the KB/s the wire carries; 0 when it carries nothing
-     * @param used      the KB/s calls and data take of it now, on a bus shared by everything on it
+     * @param hatch the hatch's tier ordinal, which caps its cable
+     * @param bus   the bus of the cable at its front, as the Router's screen shows one; null with none joined there
      */
-    public record Joined(int node, int phoneKind, int number, int x, int y, int z, List<Integer> cables, int length,
-        int rate, int used) {}
+    public record Line(int hatch, RouterView.Bus bus) {}
 
     public static final ExchangeView EMPTY = new ExchangeView(
         false,
@@ -41,13 +42,15 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         0,
         0,
         0,
+        0,
+        List.of(),
         List.of(),
         List.of());
 
-    // More than a screen pages through; it also bounds what a client reads.
-    public static final int MAX_JOINED = 64;
-    private static final int MAX_RACKS = 16;
-    private static final int MAX_TIERS = 8;
+    // A whole hall's slots; more lines than a screen pages through. Both bound what a client reads.
+    public static final int MAX_RACKS = 32;
+    public static final int MAX_LINES = 64;
+    private static final int MAX_WHY = 4;
 
     public void write(PacketBuffer buf) {
         buf.writeBoolean(online);
@@ -56,6 +59,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         buf.writeInt(x);
         buf.writeInt(y);
         buf.writeInt(z);
+        buf.writeByte(tier);
         buf.writeInt(calls);
         buf.writeInt(slots);
         buf.writeInt(data);
@@ -65,28 +69,17 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         int rackCount = Math.min(racks.size(), MAX_RACKS);
         buf.writeByte(rackCount);
         for (int i = 0; i < rackCount; i++) buf.writeByte(racks.get(i));
-        int count = Math.min(joined.size(), MAX_JOINED);
+        int count = Math.min(lines.size(), MAX_LINES);
         buf.writeByte(count);
         for (int i = 0; i < count; i++) {
-            Joined j = joined.get(i);
-            buf.writeByte(j.node());
-            buf.writeByte(j.phoneKind());
-            buf.writeInt(j.number());
-            buf.writeInt(j.x());
-            buf.writeInt(j.y());
-            buf.writeInt(j.z());
-            int tiers = Math.min(
-                j.cables()
-                    .size(),
-                MAX_TIERS);
-            buf.writeByte(tiers);
-            for (int t = 0; t < tiers; t++) buf.writeByte(
-                j.cables()
-                    .get(t));
-            buf.writeInt(j.length());
-            buf.writeInt(j.rate());
-            buf.writeInt(j.used());
+            Line line = lines.get(i);
+            buf.writeByte(line.hatch());
+            buf.writeBoolean(line.bus() != null);
+            if (line.bus() != null) RouterView.writeBus(buf, line.bus());
         }
+        int whyCount = Math.min(why.size(), MAX_WHY);
+        buf.writeByte(whyCount);
+        for (int i = 0; i < whyCount; i++) AntennaView.writeString(buf, why.get(i));
     }
 
     public static ExchangeView read(PacketBuffer buf) {
@@ -96,6 +89,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         int x = buf.readInt();
         int y = buf.readInt();
         int z = buf.readInt();
+        int tier = buf.readByte();
         int calls = buf.readInt();
         int slots = buf.readInt();
         int data = buf.readInt();
@@ -105,21 +99,15 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         int rackCount = Math.min(buf.readUnsignedByte(), MAX_RACKS);
         List<Integer> racks = new ArrayList<>(rackCount);
         for (int i = 0; i < rackCount; i++) racks.add((int) buf.readByte());
-        int count = Math.min(buf.readUnsignedByte(), MAX_JOINED);
-        List<Joined> joined = new ArrayList<>(count);
+        int count = Math.min(buf.readUnsignedByte(), MAX_LINES);
+        List<Line> lines = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            int node = buf.readByte();
-            int phoneKind = buf.readByte();
-            int number = buf.readInt();
-            int jx = buf.readInt();
-            int jy = buf.readInt();
-            int jz = buf.readInt();
-            int tiers = Math.min(buf.readUnsignedByte(), MAX_TIERS);
-            List<Integer> cables = new ArrayList<>(tiers);
-            for (int t = 0; t < tiers; t++) cables.add((int) buf.readByte());
-            joined.add(
-                new Joined(node, phoneKind, number, jx, jy, jz, cables, buf.readInt(), buf.readInt(), buf.readInt()));
+            int hatch = buf.readByte();
+            lines.add(new Line(hatch, buf.readBoolean() ? RouterView.readBus(buf) : null));
         }
+        int whyCount = Math.min(buf.readUnsignedByte(), MAX_WHY);
+        List<String> why = new ArrayList<>(whyCount);
+        for (int i = 0; i < whyCount; i++) why.add(AntennaView.readString(buf));
         return new ExchangeView(
             online,
             formed,
@@ -127,6 +115,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
             x,
             y,
             z,
+            tier,
             calls,
             slots,
             data,
@@ -134,6 +123,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
             reaches,
             exchanges,
             racks,
-            joined);
+            lines,
+            why);
     }
 }

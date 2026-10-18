@@ -45,6 +45,9 @@ DEFAULT = {
     "e": (92, 52, 132),  # fluix, shade
     "b": (34, 46, 98),  # solar cell
     "B": (86, 110, 176),  # solar cell, highlight
+    "1": (200, 200, 200),  # LV mark
+    "2": (230, 120, 40),  # MV mark
+    "3": (236, 210, 50),  # HV mark
 }
 MODERNITY = {
     "o": (34, 33, 30),
@@ -68,6 +71,9 @@ MODERNITY = {
     "e": (100, 80, 140),
     "b": (30, 44, 70),
     "B": (90, 120, 150),
+    "1": (205, 200, 188),
+    "2": (214, 124, 60),
+    "3": (220, 196, 80),
 }
 LIT = {"L"}
 
@@ -167,6 +173,22 @@ def line_hatch():
     c.rect(4, 11, 11, 11, "d")
     c.lamp(7, 12, 2, 1)
     return c
+
+
+def switching_rack(tier):
+    """A rack cabinet: four switching cards on shelves, each with its tier's mark and a lamp lit while calls use it."""
+
+    def draw():
+        c = Canvas()
+        c.panel(1, 1, 14, 14)
+        for y in (3, 6, 9, 12):
+            c.rect(3, y, 12, y + 1, "d")
+            c.rect(3, y, 3, y + 1, str(tier))
+            c.lamp(5, y, 2, 1)
+            c.rect(8, y + 1, 12, y + 1, "s")
+        return c
+
+    return draw
 
 
 def antenna_head(tier):
@@ -310,6 +332,9 @@ OVERLAYS = {
     "OVERLAY_ROUTER_HEAD": router_head,
     "OVERLAY_ROUTER": router,
     "OVERLAY_LINE_HATCH": line_hatch,
+    "OVERLAY_SWITCHING_RACK_LV": switching_rack(1),
+    "OVERLAY_SWITCHING_RACK_MV": switching_rack(2),
+    "OVERLAY_SWITCHING_RACK_HV": switching_rack(3),
     "OVERLAY_ANTENNA_T1": antenna_head(1),
     "OVERLAY_ANTENNA_T2": antenna_head(2),
     "OVERLAY_ANTENNA_T3": antenna_head(3),

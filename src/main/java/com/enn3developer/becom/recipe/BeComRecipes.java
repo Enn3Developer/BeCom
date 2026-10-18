@@ -10,7 +10,6 @@ import net.minecraft.item.ItemStack;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.item.BeComItems;
-import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.machine.BeComMachines;
 
@@ -79,13 +78,15 @@ public final class BeComRecipes {
                 OrePrefixes.circuit.get(circuit), 'H', hull, 'T', OrePrefixes.cableGt01.get(cable), 'S', sensor });
     }
 
-    private static void rack(CableTier tier, Materials circuit, Materials plate, int eut) {
+    private static void rack(gregtech.api.metatileentity.MetaTileEntity machine, CableTier tier, ItemList hull,
+        Materials circuit, Materials plate, int eut) {
         GTValues.RA.stdBuilder()
             .itemInputs(
+                hull.get(1),
                 GTOreDictUnificator.get(OrePrefixes.circuit, circuit, 2),
                 GTOreDictUnificator.get(OrePrefixes.plate, plate, 4),
                 BlockPhoneCable.stack(tier, 4))
-            .itemOutputs(ItemSwitchingRack.stack(tier, 1))
+            .itemOutputs(machine.getStackForm(1))
             .duration(RACK_SECONDS * SECONDS)
             .eut(eut)
             .addTo(assemblerRecipes);
@@ -145,10 +146,16 @@ public final class BeComRecipes {
             .eut(FIBRE_EUT)
             .addTo(assemblerRecipes);
 
-        // Switching Racks: the tier's circuits on a rack of its plates, patched with its cable.
-        rack(CableTier.PHONE, Materials.LV, Materials.Steel, TELEPHONE_EUT);
-        rack(CableTier.COAXIAL, Materials.MV, Materials.Aluminium, COAXIAL_EUT);
-        rack(CableTier.FIBRE, Materials.HV, Materials.StainlessSteel, FIBRE_EUT);
+        // Switching Racks: the tier's circuits on a rack of its plates in a hull of the tier, patched with its cable.
+        rack(BeComMachines.rack, CableTier.PHONE, ItemList.Hull_LV, Materials.LV, Materials.Steel, TELEPHONE_EUT);
+        rack(BeComMachines.rackMV, CableTier.COAXIAL, ItemList.Hull_MV, Materials.MV, Materials.Aluminium, COAXIAL_EUT);
+        rack(
+            BeComMachines.rackHV,
+            CableTier.FIBRE,
+            ItemList.Hull_HV,
+            Materials.HV,
+            Materials.StainlessSteel,
+            FIBRE_EUT);
 
         // Telephone: the circuit, a note block for the bell, a steel body and the cord.
         GTValues.RA.stdBuilder()

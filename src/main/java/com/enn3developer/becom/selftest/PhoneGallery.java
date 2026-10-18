@@ -445,9 +445,11 @@ final class PhoneGallery {
             100);
     }
 
-    /** An Exchange as on the Router board: two MV racks and an LV, five things joined, one too far. */
+    /**
+     * An MV Exchange hall of two slices as on the Router board: three racks, the first lit; and five Line Hatches, one
+     * with no cable and one on a bus too long to carry.
+     */
     private static com.enn3developer.becom.gui.ExchangeView exchange() {
-        int router = com.enn3developer.becom.logic.net.NodeKind.ROUTER.ordinal();
         return new com.enn3developer.becom.gui.ExchangeView(
             true,
             true,
@@ -455,69 +457,29 @@ final class PhoneGallery {
             100,
             64,
             -100,
+            2,
             9,
             72,
             240,
             5,
             47,
             1,
-            List.of(1, 1, 0),
+            List.of(1, 1, -1, 0, -1, -1, -1, -1),
             List.of(
-                new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    com.enn3developer.becom.logic.net.NodeKind.ANTENNA_T3.ordinal(),
-                    -1,
-                    -1,
-                    160,
-                    90,
-                    -100,
-                    List.of(0, 0, 1),
-                    300,
-                    256,
-                    96),
-                new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
-                    -1,
-                    -1,
-                    900,
-                    64,
-                    -120,
-                    List.of(0, 0, 2),
-                    800,
-                    512,
-                    120),
-                new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    router,
-                    -1,
-                    -1,
-                    20,
-                    64,
-                    -100,
-                    List.of(2, 0, 0),
-                    90,
-                    32,
-                    12),
-                new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    router,
-                    -1,
-                    -1,
-                    100,
-                    64,
-                    -410,
-                    List.of(1, 0, 0),
-                    310,
+                new com.enn3developer.becom.gui.ExchangeView.Line(
+                    1,
+                    new com.enn3developer.becom.gui.RouterView.Bus(1, 300, 512, 64, 24, 12, 0, 1, 0)),
+                new com.enn3developer.becom.gui.ExchangeView.Line(
+                    1,
+                    new com.enn3developer.becom.gui.RouterView.Bus(1, 800, 512, 0, 0, 0, 0, 1, 0)),
+                new com.enn3developer.becom.gui.ExchangeView.Line(
                     0,
-                    0),
-                new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    com.enn3developer.becom.logic.net.NodeKind.SATELLITE_DISH.ordinal(),
-                    -1,
-                    -1,
-                    110,
-                    70,
-                    -95,
-                    List.of(0, 0, 1),
-                    12,
-                    256,
-                    24)));
+                    new com.enn3developer.becom.gui.RouterView.Bus(0, 90, 128, 16, 12, 0, 3, 0, 0)),
+                new com.enn3developer.becom.gui.ExchangeView.Line(
+                    1,
+                    new com.enn3developer.becom.gui.RouterView.Bus(1, 12, 512, 64, 0, 24, 0, 0, 1)),
+                new com.enn3developer.becom.gui.ExchangeView.Line(0, null)),
+            List.of());
     }
 
     /**

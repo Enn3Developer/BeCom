@@ -46,7 +46,6 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 
 import gregtech.api.casing.Casings;
-import gregtech.api.enums.Materials;
 import gregtech.api.enums.Textures;
 import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
@@ -155,31 +154,13 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         return BeComMachines.stack(this, amount);
     }
 
-    /** Its mast's frame boxes: steel, aluminium, stainless steel. */
-    static Materials frameOf(int tier) {
-        return switch (tier) {
-            case 1 -> Materials.Steel;
-            case 2 -> Materials.Aluminium;
-            default -> Materials.StainlessSteel;
-        };
-    }
-
-    /** Its base's machine casings: LV, MV, HV. */
-    static Casings casingOf(int tier) {
-        return switch (tier) {
-            case 1 -> Casings.LVMachineCasing;
-            case 2 -> Casings.MVMachineCasing;
-            default -> Casings.HVMachineCasing;
-        };
-    }
-
     private static IStructureDefinition<MTEAntenna> structure(int tier) {
-        Casings casing = casingOf(tier);
+        Casings casing = Tiers.casing(tier);
         return StructureDefinition.<MTEAntenna>builder()
             .addShape(PIECE_MAST, new String[][] { { "F" } })
             .addShape(PIECE_TOP, transpose(TOPS[tier]))
             .addShape(PIECE_FOOT, transpose(FEET[tier]))
-            .addElement('F', ofFrame(frameOf(tier)))
+            .addElement('F', ofFrame(Tiers.frame(tier)))
             .addElement('C', casing.asElement())
             .addElement(
                 'S',
@@ -529,7 +510,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
                     Tips.power(t.antennaPower(tier), VOLTAGE_NAMES[tier]),
                     Tips.howTo(
                         "becom.machine.antenna.looks." + tier,
-                        frameOf(tier).getLocalizedNameForItem("%material"))))
+                        Tiers.frame(tier)
+                            .getLocalizedNameForItem("%material"))))
             .beginVariableStructureBlock(
                 FEET[tier][0][0].length(),
                 FEET[tier][0][0].length(),
@@ -542,24 +524,31 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
             .addCasingInfoRange(
                 StatCollector.translateToLocalFormatted(
                     "becom.machine.antenna.mast",
-                    frameOf(tier).getLocalizedNameForItem("%material Frame Box")),
+                    Tiers.frame(tier)
+                        .getLocalizedNameForItem("%material Frame Box")),
                 t.antennaMastMin(tier),
                 t.antennaMastMax(),
                 false)
             .addCasingInfoExactly(
                 StatCollector.translateToLocalFormatted(
                     "becom.machine.antenna.rigging." + tier,
-                    frameOf(tier).getLocalizedNameForItem("%material Frame Box")),
+                    Tiers.frame(tier)
+                        .getLocalizedNameForItem("%material Frame Box")),
                 // The mast's own frames run through the top and every layer of the foot above the ground.
                 count(TOPS[tier], 'F') - TOPS[tier].length + count(FEET[tier], 'F') - (FEET[tier].length - 1),
                 false)
             .addCasingInfoExactly(
-                StatCollector.translateToLocalFormatted("becom.machine.antenna.pad", casingOf(tier).getLocalizedName()),
+                StatCollector.translateToLocalFormatted(
+                    "becom.machine.antenna.pad",
+                    Tiers.casing(tier)
+                        .getLocalizedName()),
                 count(FEET[tier], 'C'),
                 false)
             .addCasingInfoExactly(
-                StatCollector
-                    .translateToLocalFormatted("becom.machine.antenna.shelter", casingOf(tier).getLocalizedName()),
+                StatCollector.translateToLocalFormatted(
+                    "becom.machine.antenna.shelter",
+                    Tiers.casing(tier)
+                        .getLocalizedName()),
                 count(FEET[tier], 'S') - 1,
                 false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.antenna.hatch"), 1)

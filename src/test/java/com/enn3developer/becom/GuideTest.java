@@ -116,7 +116,7 @@ class GuideTest {
         if (id.startsWith(machines)) return "gt.blockmachines." + BeComMachines.ids()
             .get(Integer.parseInt(id.substring(machines.length()))) + ".name";
         String name = id.substring("becom:".length());
-        // A tiered item names its tier by its damage: phone_cable:1 is Coaxial, switching_rack:2 the HV rack.
+        // A tiered item names its tier by its damage: phone_cable:1 is Coaxial.
         int colon = name.indexOf(':');
         if (colon >= 0 && name.startsWith("becom_card:")) return "item.becom."
             + com.enn3developer.becom.item.ItemBecomCard.nameOf(Integer.parseInt(name.substring(colon + 1)))

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.enn3developer.becom.gui.AntennaView;
 import com.enn3developer.becom.gui.ExchangeView;
 import com.enn3developer.becom.gui.OrbitView;
+import com.enn3developer.becom.gui.RouterView;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.Coverage;
@@ -200,19 +201,43 @@ class PacketRoundTripTest {
             10,
             64,
             -20,
+            2,
             9,
             72,
             240,
             5,
             47,
             1,
-            List.of(1, 1, 0),
+            List.of(1, 1, -1, 0, -1, -1, -1, -1),
             List.of(
-                new ExchangeView.Joined(5, -1, -1, 900, 64, -120, List.of(0, 0, 2), 600, 512, 120),
-                new ExchangeView.Joined(-1, 4, 5551234, 12, 64, -20, List.of(1, 0, 0), 30, 16, 0)));
+                new ExchangeView.Line(1, new RouterView.Bus(1, 600, 512, 0, 0, 0, 0, 1, 0)),
+                new ExchangeView.Line(0, new RouterView.Bus(0, 30, 128, 16, 4, 2, 3, 0, 1)),
+                new ExchangeView.Line(0, null)),
+            List.of());
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);
         assertEquals(view, ExchangeView.read(buf));
+        // One that isn't formed carries why.
+        ExchangeView unformed = new ExchangeView(
+            false,
+            false,
+            "",
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            List.of(),
+            List.of(),
+            List.of("becom.exchange.why.rack_tier", "HV", "MV"));
+        buf = new PacketBuffer(Unpooled.buffer());
+        unformed.write(buf);
+        assertEquals(unformed, ExchangeView.read(buf));
     }
 
     @Test

@@ -69,18 +69,7 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
         buf.writeInt(slots);
         int count = Math.min(buses.size(), MAX_BUSES);
         buf.writeByte(count);
-        for (int i = 0; i < count; i++) {
-            Bus b = buses.get(i);
-            buf.writeByte(b.cable());
-            buf.writeInt(b.cables());
-            buf.writeInt(b.limit());
-            buf.writeInt(b.rate());
-            buf.writeInt(b.used());
-            buf.writeInt(b.data());
-            buf.writeShort(b.phones());
-            buf.writeShort(b.routers());
-            buf.writeShort(b.gateways());
-        }
+        for (int i = 0; i < count; i++) writeBus(buf, buses.get(i));
         count = Math.min(devices.size(), MAX_DEVICES);
         buf.writeShort(count);
         for (int i = 0; i < count; i++) {
@@ -104,19 +93,7 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
         int slots = buf.readInt();
         int count = Math.min(buf.readUnsignedByte(), MAX_BUSES);
         List<Bus> buses = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            buses.add(
-                new Bus(
-                    buf.readByte(),
-                    buf.readInt(),
-                    buf.readInt(),
-                    buf.readInt(),
-                    buf.readInt(),
-                    buf.readInt(),
-                    buf.readShort(),
-                    buf.readShort(),
-                    buf.readShort()));
-        }
+        for (int i = 0; i < count; i++) buses.add(readBus(buf));
         count = Math.min(buf.readShort(), MAX_DEVICES);
         List<Device> devices = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
@@ -130,5 +107,31 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
                     AntennaView.readString(buf)));
         }
         return new RouterView(tier, working, owner, calls, slots, buses, devices);
+    }
+
+    /** A bus's row, as the Exchange's screen sends one too. */
+    static void writeBus(PacketBuffer buf, Bus b) {
+        buf.writeByte(b.cable());
+        buf.writeInt(b.cables());
+        buf.writeInt(b.limit());
+        buf.writeInt(b.rate());
+        buf.writeInt(b.used());
+        buf.writeInt(b.data());
+        buf.writeShort(b.phones());
+        buf.writeShort(b.routers());
+        buf.writeShort(b.gateways());
+    }
+
+    static Bus readBus(PacketBuffer buf) {
+        return new Bus(
+            buf.readByte(),
+            buf.readInt(),
+            buf.readInt(),
+            buf.readInt(),
+            buf.readInt(),
+            buf.readInt(),
+            buf.readShort(),
+            buf.readShort(),
+            buf.readShort());
     }
 }

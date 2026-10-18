@@ -75,6 +75,11 @@ public final class LineHatches {
         return found.size();
     }
 
+    /** The hatches the last structure check found so far. */
+    public List<MTEHatchLine> found() {
+        return Collections.unmodifiableList(found);
+    }
+
     /** The hatches joined to the controller now. */
     public List<MTEHatchLine> hatches() {
         return Collections.unmodifiableList(joined);

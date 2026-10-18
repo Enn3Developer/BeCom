@@ -7,7 +7,6 @@ navigation:
 item_ids:
   - becom:telephone:*
   - becom:phone_cable:*
-  - becom:switching_rack:*
   - becom:machine:25001
   - becom:machine:25002
   - becom:machine:25003
@@ -15,6 +14,9 @@ item_ids:
   - becom:machine:25016
   - becom:machine:25017
   - becom:machine:25018
+  - becom:machine:25019
+  - becom:machine:25020
+  - becom:machine:25021
 quest_ids:
   - "IHTr1EMRVx6vQQ7722eirw"
   - "b14IecXxXxuWU8oeGOPcNw"
@@ -97,21 +99,39 @@ struttura formata, non collega niente.
 
 ## Centrale
 
-Una <ItemLink id="becom:machine:25001" showIcon="left">Centrale</ItemLink> è un grande router: un edificio di LV
-Machine Casing, tre blocchi per lato, con il controller al centro della facciata, un Energy Hatch, un Input Bus e
-almeno una Line Hatch. Consuma 64 EU/t e smista le chiamate tra tutti i bus collegati alle sue Line Hatch.
+Una <ItemLink id="becom:machine:25001" showIcon="left">Centrale</ItemLink> è un grande router: una sala di rack di
+commutazione. Consuma 64 EU/t e smista le chiamate tra tutti i bus collegati alle sue Line Hatch.
 
-Senza <ItemLink id="becom:switching_rack:0" showIcon="left">Rack di commutazione (LV)</ItemLink> non smista niente.
-Mettine fino a 8 nel suo Input Bus: ogni rack LV smista 8 chiamate insieme, MV 32, HV 128. Quando ogni strada tra due
-telefoni è piena, chi chiama dopo sente occupato. Le chiamate già in corso tengono la loro strada.
+La sala è larga 3 blocchi, alta 5 e profonda da 5 a 19:
 
-Clic destro sul suo controller per il suo schermo, al posto del terminale di GT: se funziona, poi le sue chiamate,
-"9 di 72", con una barra, i suoi dati in KB/s su quanti percorsi, e quanti numeri raggiunge tramite quante centrali.
-Una fila di 8 slot mostra i suoi rack: uno pieno con la tensione e le chiamate del rack, uno libero come un "+"
-tratteggiato. **Collegato a** elenca tutto ciò che sta sui bus collegati alle sue Line Hatch: le antenne come
-"Antenna T3, backhaul", le altre Centrali per coordinate, i Router per punto cardinale, i gateway per nome, e i
-dispositivi con un numero per tipo e numero. Ogni riga ha il cavo del suo bus e una barra di quanto porta, o in rosso
-perché non porta niente: "310 blocchi: una tratta di Cavo telefonico arriva al massimo a 128".
+- **Una testata frontale** con il controller al centro della seconda fila, e **una testata posteriore**, ognuna una
+  parete di casing.
+- **Da 1 a 8 sezioni di rack**, con una sezione di montanti di telaio prima e dopo ognuna. Le pareti laterali di una
+  sezione di rack prendono 4 rack, due per lato.
+- **Una passerella dei cavi** di Frame Box lungo il colmo, sopra ogni sezione.
+
+Il suo tier è quello dei suoi casing: tutti Machine Casing LV, MV o HV, con Frame Box di acciaio, alluminio o acciaio
+inox in coppia. Una sala mista non si forma. I suoi rack e le sue Line Hatch arrivano fino a quel tier, quindi una sala
+MV prende rack LV e MV, e cavo fino al Coassiale. Per salire di tier si cambiano i casing.
+
+Energy Hatch e Line Hatch vanno sulle testate, sul tetto e sul pavimento; ne serve almeno una di ciascuna. Lo Structure
+Projector la costruisce: la dimensione dello stack, o il canale length, decide le sezioni, e il canale machine casing il
+tier.
+
+I **Rack di commutazione** sono hatch sulle sue pareti laterali: il
+<ItemLink id="becom:machine:25019" showIcon="left">Rack di commutazione (LV)</ItemLink> smista 8 chiamate insieme,
+il <ItemLink id="becom:machine:25020" showIcon="left">Rack di commutazione (MV)</ItemLink> 32 e
+il <ItemLink id="becom:machine:25021" showIcon="left">Rack di commutazione (HV)</ItemLink> 128. La sala smista tante
+chiamate quante ne sommano i suoi rack; senza, non smista niente. I rack si riempiono dal davanti, e le spie di un rack
+sono accese mentre le chiamate lo usano, così si vede da fuori quanto è occupata. Quando ogni strada tra due telefoni è
+piena, chi chiama dopo sente occupato. Le chiamate già in corso tengono la loro strada.
+
+Clic destro sul suo controller per il suo schermo, al posto del terminale di GT: il suo tier e se funziona, poi le sue
+chiamate, "9 di 72", con una barra, i suoi dati in KB/s su quanti percorsi, e quanti numeri raggiunge tramite quante
+centrali. I suoi rack si vedono come li tiene la sala, una colonna per sezione, la parete sinistra sopra la destra: uno
+slot libero è un "+" tratteggiato, e la spia di un rack è accesa mentre è in uso. Poi una riga per ogni Line Hatch: cosa
+c'è sul suo bus, la sua lunghezza, il suo cavo e quanto porta, o in rosso perché non porta niente. Finché non è formata,
+lo schermo dice perché.
 
 ## Numeri e contatti
 
