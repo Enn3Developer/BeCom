@@ -80,6 +80,12 @@ QUESTS_IT = {
         "Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 512 EU/t e "
         "arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una "
         "collina in mezzo può costarti più della distanza."),
+    "app_mirror": ("Specchio, specchio",
+        "L'App Store è di tutto il server, ma un telefono ci arriva solo attraverso un Mirror dell'App Store: una "
+        "macchina MV, 64 EU/t, collegata con il cavo su qualsiasi faccia a un bus che i tuoi telefoni raggiungono."
+        "%n%nFinché un telefono ha un percorso verso un mirror in funzione, il suo App Store si apre e le app si "
+        "scaricano alla velocità di quel percorso; anche i computer pubblicano attraverso un mirror. Un cacciavite "
+        "lo riserva alla squadra del suo proprietario."),
     "videophone": ("Faccia a faccia",
         "Un vivavoce con uno schermo, per tutta la squadra. Il Videotelefono va a MV, 32 EU/t, e prende il cavo "
         "su qualsiasi faccia, proprio come un Telefono.%n%nClic destro per comporre, "

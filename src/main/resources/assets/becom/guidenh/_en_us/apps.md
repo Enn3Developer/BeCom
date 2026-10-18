@@ -6,6 +6,9 @@ navigation:
   icon: becom:becom_card
 item_ids:
   - becom:becom_card:*
+  - becom:machine:25022
+quest_ids:
+  - "n3P0tSabXDS4eCuzXQVCYQ"
 ---
 
 # Phone apps
@@ -17,8 +20,8 @@ name, with its share.
 
 ## Getting apps
 
-- **App Store:** the App Store tile on the home screen. Its tabs list the **Popular** apps, the **New** ones and the ones
-  **Installed** on your phone. An app's page says what it may do, when it was last updated and who sees it, and has
+- **App Store:** the App Store tile on the home screen, while the phone reaches an App Store Mirror (below). Its tabs
+  list the **Popular** apps, the **New** ones and the ones **Installed** on your phone. An app's page says what it may do, when it was last updated and who sees it, and has
   **Report** to flag it to the operators. Anyone can publish an app from a computer: their phone asks them first, for
   everyone or for their team only, and it goes in under their name, 32 apps each at most. Operators can list the
   reports, hide an app, read its source, or take it out for good.
@@ -31,6 +34,22 @@ often it woke and how much battery it used today, a switch under **It can** for 
 Notifications, Calls, Camera), how much of its storage it uses, and **Uninstall**. Switching one off denies it to the
 app even though it asked for it. An app that can't reach its computer, out of signal or with the computer off, has
 **Retry**; one that crashed shows the error it stopped at.
+
+## The App Store Mirror
+
+The App Store is the whole server's, but phones get to it only through an
+<ItemLink id="becom:machine:25022" showIcon="left">App Store Mirror</ItemLink>: an MV machine, 64 EU/t, cabled on any
+face to a bus. A phone with a path to a working mirror, through antennas, routers and everything else that carries a
+call, opens the store; with none, the store says so. Every mirror leads to the same store.
+
+An install is a download: the app comes down from the mirror the phone reaches fastest, at that path's rate, and the
+button fills as it does. It takes what calls leave of each link, like any data, so a 64 KB app takes 16 seconds at
+Low and moments on fibre. Out of reach halfway, it stops. A phone downloads one app at a time. Installed apps run
+without a mirror; updating one is a download again.
+
+A computer publishes through a mirror too: `becom publish` needs one in the computer's reach. A screwdriver keeps a
+mirror for its owner's team, and again opens it to everyone. Its screen and WAILA show the downloads it serves now and
+today.
 
 ## The BeCom Card
 

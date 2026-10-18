@@ -6,6 +6,9 @@ navigation:
   icon: becom:becom_card
 item_ids:
   - becom:becom_card:*
+  - becom:machine:25022
+quest_ids:
+  - "n3P0tSabXDS4eCuzXQVCYQ"
 ---
 
 # App del telefono
@@ -17,8 +20,8 @@ Standby, Chiamate, Video e Schermo, e ogni app per nome, con la sua quota.
 
 ## Avere le app
 
-- **App Store:** il riquadro App Store nella schermata home. Le sue schede elencano le app **Popolari**, le **Nuove** e
-  quelle **Installate** sul tuo telefono. La pagina di un'app dice cosa può fare, quando è stata aggiornata e chi la
+- **App Store:** il riquadro App Store nella schermata home, finché il telefono raggiunge un Mirror dell'App Store (più
+  sotto). Le sue schede elencano le app **Popolari**, le **Nuove** e quelle **Installate** sul tuo telefono. La pagina di un'app dice cosa può fare, quando è stata aggiornata e chi la
   vede, e ha **Segnala** per indicarla agli operatori. Chiunque può pubblicare un'app da un computer: prima glielo
   chiede il suo telefono, per tutti o solo per la sua squadra, e va a suo nome, al massimo 32 app a testa. Gli operatori
   possono elencare le segnalazioni, nascondere un'app, leggerne la sorgente o toglierla per sempre.
@@ -31,6 +34,24 @@ quante volte si è svegliata e quanta batteria ha usato oggi, sotto **Può** un 
 dichiara (Rete, Notifiche, Chiamate, Camera), quanta memoria occupa e **Disinstalla**. Spegnerne uno nega quella cosa
 all'app, anche se l'ha chiesta. Un'app che non raggiunge il suo computer, senza segnale o col computer spento, ha
 **Riprova**; un'app andata in errore mostra l'errore su cui si è fermata.
+
+## Il Mirror dell'App Store
+
+L'App Store è di tutto il server, ma i telefoni ci arrivano solo attraverso un
+<ItemLink id="becom:machine:25022" showIcon="left">Mirror dell'App Store</ItemLink>: una macchina MV, 64 EU/t,
+collegata con il cavo su qualsiasi faccia a un bus. Un telefono con un percorso verso un mirror in funzione, attraverso
+antenne, router e tutto ciò che porta una chiamata, apre lo store; senza, lo store lo dice. Ogni mirror porta allo
+stesso store.
+
+Un'installazione è un download: l'app scende dal mirror che il telefono raggiunge più in fretta, alla velocità di quel
+percorso, e il pulsante si riempie man mano. Prende ciò che le chiamate lasciano di ogni collegamento, come ogni dato,
+quindi un'app da 64 KB ci mette 16 secondi a Basso e un attimo sulla fibra. Se a metà il mirror esce di portata, si
+ferma. Un telefono scarica un'app alla volta. Le app installate funzionano senza mirror; aggiornarne una è di nuovo un
+download.
+
+Anche un computer pubblica attraverso un mirror: `becom publish` ne vuole uno alla portata del computer. Un cacciavite
+riserva un mirror alla squadra del suo proprietario, e di nuovo lo apre a tutti. Il suo schermo e WAILA mostrano i
+download che serve ora e oggi.
 
 ## La Scheda BeCom
 

@@ -35,6 +35,8 @@ DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PhoneinYourPo
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/PhoneinYourPocke-tmuzvF6QVE-ZigvcfAhM5Q==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CanYouHearMeNow-QTf-qLjuX5uncRhFsloOcg==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/CanYouHearMeNow-QTf-qLjuX5uncRhFsloOcg==.json
+DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/MirrorMirror-n3P0tSabXDS4eCuzXQVCYQ==.json
+DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/MirrorMirror-n3P0tSabXDS4eCuzXQVCYQ==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/WirelessEverywhe-SSBYl-CuVHeaS00Zgy5NWA==.json
 DefaultQuests/Quests/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/WirelessEverywhe-SSBYl-CuVHeaS00Zgy5NWA==.json
 DefaultQuests/QuestLines/BetterCommunicat-7dZOq4U1Vfa2Yr9apUvsiQ==/BridgingtheNetwo-6JNs0PJ2W_2dWPcb8B5q0A==.json

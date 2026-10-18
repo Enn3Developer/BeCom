@@ -60,6 +60,7 @@ GUIDE = {
     "analyzer.md": ("The Signal Analyzer", "L'Analizzatore di segnale"),
     "phones.md": ("Phones", "Telefoni"),
     "space.md": ("Space and other dimensions", "Lo spazio e le altre dimensioni"),
+    "apps.md": ("Phone apps", "App del telefono"),
 }
 GUIDE_LINK = ("More in the guide: [guide page=becom:{page}]{title}[/guide].",
               "Altro nella guida: [guide page=becom:{page}]{title}[/guide].")
@@ -92,6 +93,7 @@ GUIDE_PAGE = {
     "satellite_dish": "space.md",
     "rocket_receiver": "space.md",
     "call_between_dimensions": "space.md",
+    "app_mirror": "apps.md",
 }
 
 
@@ -363,6 +365,20 @@ QUESTS = [
         "tasks": [("becom", "MOBILE_CALL")],
         "big": True,
         "pos": (384, 96),
+    },
+    {
+        "key": "app_mirror",
+        "tier": "MV",
+        "name": "Mirror, Mirror",
+        "desc": "The App Store is the whole server's, but a phone only gets to it through an App Store Mirror: an MV "
+        "machine, 64 EU/t, cabled on any face to a bus your phones reach.%n%nWhile a phone has a path to a working "
+        "mirror, its App Store opens and apps download at that path's rate; computers publish through one too. A "
+        "screwdriver keeps a mirror for its owner's team.",
+        "icon": (MACHINE, 25022),
+        "pre": ["mobile_phone"],
+        "tasks": [("item", MACHINE, 25022, 1)],
+        "big": False,
+        "pos": (384, 48),
     },
     {
         "key": "me_phone",
