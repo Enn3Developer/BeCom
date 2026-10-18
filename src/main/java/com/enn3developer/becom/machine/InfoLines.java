@@ -14,7 +14,6 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
-import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NetworkService;
 
@@ -117,27 +116,6 @@ public final class InfoLines {
 
     private final List<Line> lines = new ArrayList<>();
 
-    /**
-     * The scanner's lines for one span from {@code from} to {@code to}: where it goes, how long it is, whether it's
-     * blocked, and the cables strung on it, best first.
-     */
-    public static void span(InfoLines info, NetworkModel model, long from, long to) {
-        info.detail(
-            model.isBlocked(from, to) ? "becom.info.link_blocked" : "becom.info.link",
-            BlockPos.toString(to),
-            (int) Math.round(BlockPos.distance(from, to)));
-        List<CableTier> cables = model.cables(from, to);
-        if (cables.isEmpty()) {
-            info.detail("becom.info.span_bare");
-            return;
-        }
-        for (CableTier tier : CableTier.values()) {
-            int count = 0;
-            for (CableTier cable : cables) if (cable == tier) count++;
-            if (count > 0) info.detail("becom.info.span_cables", count, cableName(tier));
-        }
-    }
-
     /** One of eight compass points from a step east and south, as a lang key's last part: north is -z. */
     public static String direction(int dx, int dz) {
         if (dx == 0 && dz == 0) return "here";
@@ -151,22 +129,6 @@ public final class InfoLines {
         return new Key(
             "becom.ui.cable." + tier.name()
                 .toLowerCase(Locale.ROOT));
-    }
-
-    /**
-     * Adds a bundle's line, "2\u00d7 Fibre, " then {@code key}'s text with {@code args}: the best cable strung and how
-     * many of it, or "no cable".
-     */
-    public InfoLines bundle(List<CableTier> cables, String key, Object... args) {
-        CableTier best = null;
-        for (CableTier cable : cables) if (best == null || cable.compareTo(best) > 0) best = cable;
-        int count = 0;
-        for (CableTier cable : cables) if (cable == best) count++;
-        Object[] all = new Object[args.length + 2];
-        all[0] = count;
-        all[1] = best == null ? new Key("becom.info.no_cable") : shortName(best);
-        System.arraycopy(args, 0, all, 2, args.length);
-        return add(count > 1 ? key + "_many" : key, all);
     }
 
     /** A cable tier's name, for the reader to translate. */

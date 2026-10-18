@@ -280,7 +280,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         if (becom != null && tile.isServerSide()) {
             World world = tile.getWorld();
             becom.network.ensureNode(world, pos(), nodeKind(), tile.getOwnerUuid());
-            becom.network.setFormed(world, pos(), mMachine, 0);
             registered = true;
             sky = mMachine && openSky();
             rains = BeComServer.rains(world, tile.getXCoord(), tile.getZCoord());

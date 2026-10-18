@@ -1,5 +1,6 @@
 package com.enn3developer.becom.gui.machine;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -20,7 +21,7 @@ import com.enn3developer.becom.logic.net.CableTier;
 
 /**
  * The Antenna's screen, from the Antenna board: its mast, reach and calls; the team lock; what it's linked to, other
- * antennas on each band and its backhaul; and its coverage on either band.
+ * antennas on each band and the buses its Line Hatches join; and its coverage on either band.
  */
 public final class AntennaUi extends CanvasScreen {
 
@@ -97,8 +98,8 @@ public final class AntennaUi extends CanvasScreen {
     private void paintLeft(Canvas c, AntennaView v, float top) {
         float y = top;
         float cell = (LEFT - 12) / 3;
-        AntennaView.Bridge backhaul = backhaul(v);
-        String fed = backhaul == null || backhaul.cable() < 0 ? t("becom.ui.antenna.calls_radio")
+        AntennaView.Bus backhaul = backhaul(v);
+        String fed = backhaul == null ? t("becom.ui.antenna.calls_radio")
             : t("becom.ui.antenna.calls_fed", cable(backhaul.cable()));
         Grey.cell(
             c,
@@ -147,7 +148,7 @@ public final class AntennaUi extends CanvasScreen {
         y += 18;
         int size = v.links()
             .size()
-            + v.bridges()
+            + v.buses()
                 .size();
         int pages = Math.max(1, (size + ROWS - 1) / ROWS);
         page = Math.min(page, pages - 1);
@@ -164,9 +165,9 @@ public final class AntennaUi extends CanvasScreen {
                     y,
                     ty);
             } else {
-                paintBridge(
+                paintBus(
                     c,
-                    v.bridges()
+                    v.buses()
                         .get(
                             i - v.links()
                                 .size()),
@@ -211,28 +212,33 @@ public final class AntennaUi extends CanvasScreen {
         band(c, col[4], y, ty, link.uhf(), SignalLevel.MAX);
     }
 
-    private static void paintBridge(Canvas c, AntennaView.Bridge bridge, float[] col, float y, float ty) {
+    /** A bus its Line Hatches join: what it reaches, its blocks, and its cable and what calls and data take of it. */
+    private static void paintBus(Canvas c, AntennaView.Bus bus, float[] col, float y, float ty) {
         icon(c, col[0] + 3, y + 6, true);
-        String name = RouterUi.kindLabel(bridge.kind());
-        c.text(
-            Paint.fit(c, t("becom.ui.antenna.at", name, bridge.x(), bridge.y(), bridge.z()), 14, col[2] - col[1] - 6),
-            col[1],
-            ty,
-            14,
-            Grey.TEXT);
-        c.text(String.valueOf(bridge.distance()), col[2], ty, 14, Grey.TEXT);
-        String carried = bridge.rate() <= 0 || bridge.cable() < 0 ? t("becom.ui.antenna.backhaul_none")
-            : t("becom.ui.antenna.backhaul", cable(bridge.cable()), bridge.used(), bridge.rate());
+        List<String> joins = new ArrayList<>();
+        if (bus.phones() > 0)
+            joins.add(t(bus.phones() == 1 ? "becom.ui.router.phone" : "becom.ui.router.phones", bus.phones()));
+        if (bus.routers() > 0)
+            joins.add(t(bus.routers() == 1 ? "becom.ui.router.router" : "becom.ui.router.routers", bus.routers()));
+        if (bus.gateways() > 0)
+            joins.add(t(bus.gateways() == 1 ? "becom.ui.router.gateway" : "becom.ui.router.gateways", bus.gateways()));
+        String joined = joins.isEmpty() ? t("becom.ui.router.joins_nothing") : String.join(", ", joins);
+        c.text(Paint.fit(c, joined, 14, col[2] - col[1] - 6), col[1], ty, 14, Grey.TEXT);
+        c.text(String.valueOf(bus.cables()), col[2], ty, 14, Grey.TEXT);
+        String carried = bus.rate() > 0 ? t("becom.ui.antenna.bus", cable(bus.cable()), bus.used(), bus.rate())
+            : bus.cables() > BeComConfig.get()
+                .cableReach(CableTier.values()[bus.cable()]) ? t("becom.ui.router.bus_too_long")
+                    : t("becom.ui.router.bus_down");
         // It spans Radio and Calls, wrapping onto a second line as on the board.
         List<String> lines = Paint.wrap(c, carried, 12, X0 + LEFT - col[3]);
         float ly = lines.size() > 1 ? y + (ROW - 2 * c.lineHeight(12) - 2) / 2 : ty + 1;
         for (int i = 0; i < Math.min(2, lines.size()); i++) {
-            c.text(lines.get(i), col[3], ly, 12, bridge.rate() > 0 ? 0x2f6f2f : 0xa02818);
+            c.text(lines.get(i), col[3], ly, 12, bus.rate() > 0 ? 0x2f6f2f : 0xa02818);
             ly += c.lineHeight(12) + 2;
         }
     }
 
-    /** An antenna, a mast with two crossbars; or a backhaul, a run between two posts. */
+    /** An antenna, a mast with two crossbars; or a bus, a run of cable between two posts. */
     private static void icon(Canvas c, float x, float y, boolean backhaul) {
         int ink = Grey.TITLE;
         if (backhaul) {
@@ -261,9 +267,12 @@ public final class AntennaUi extends CanvasScreen {
         c.text(Math.round(snr) + " dB", x + 24, ty, 13, Grey.text(level));
     }
 
-    private static AntennaView.Bridge backhaul(AntennaView v) {
-        AntennaView.Bridge best = null;
-        for (AntennaView.Bridge b : v.bridges()) if (best == null || b.rate() > best.rate()) best = b;
+    /** Its best working backhaul: the bus to another router that carries the most, or null. */
+    private static AntennaView.Bus backhaul(AntennaView v) {
+        AntennaView.Bus best = null;
+        for (AntennaView.Bus b : v.buses()) {
+            if (b.backhaul() && b.rate() > 0 && (best == null || b.rate() > best.rate())) best = b;
+        }
         return best;
     }
 

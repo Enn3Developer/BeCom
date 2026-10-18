@@ -17,7 +17,6 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.Buses;
-import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeRef;
@@ -29,8 +28,8 @@ import com.enn3developer.becom.server.NetworkService;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The Router's screen: its state and owner, its uplink and what calls take of it, the calls it carries, a row
- * per bus of cable joining it, and what's on those buses, with what each phone is doing.
+ * The Router's screen: its state and owner, the calls it carries, a row per bus of cable joining it, and what's on
+ * those buses, with what each phone is doing.
  */
 public final class RouterScreen {
 
@@ -59,33 +58,6 @@ public final class RouterScreen {
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         NetworkModel model = becom.network.model(self.dimension());
-        NetNode node = model == null ? null : model.node(self.pos());
-        List<RouterView.Uplink> uplinks = new ArrayList<>();
-        if (node != null) {
-            List<NetworkService.Run> runs = becom.network.runsFrom(self.dimension(), self.pos());
-            for (long other : node.links()) {
-                int[] cables = new int[CableTier.values().length];
-                for (CableTier cable : model.cables(self.pos(), other)) cables[cable.ordinal()]++;
-                // The span leads to a pylon or a machine; the run it starts goes on to the next working node.
-                NetworkService.Run run = runs.isEmpty() ? null : runs.get(0);
-                long end = run == null ? other : run.to();
-                NetNode far = model.node(end);
-                uplinks.add(
-                    new RouterView.Uplink(
-                        far == null || far.kind() == com.enn3developer.becom.logic.net.NodeKind.PYLON ? -1
-                            : far.kind()
-                                .ordinal(),
-                        BlockPos.x(end),
-                        BlockPos.y(end),
-                        BlockPos.z(end),
-                        (int) Math.round(run == null ? BlockPos.distance(self.pos(), other) : run.length()),
-                        cables,
-                        // -1: no run at all, from a span down, an unformed pylon or a dead far end.
-                        run == null ? -1 : run.rate(),
-                        run == null ? 0 : becom.calls.usedOn(run.link()),
-                        run == null ? 0 : becom.apps.dataOn(run.link())));
-            }
-        }
         List<RouterView.Bus> buses = new ArrayList<>();
         List<RouterView.Device> devices = new ArrayList<>();
         List<Buses.Bus> on = new ArrayList<>(becom.network.busesAt(self.dimension(), self.pos()));
@@ -127,7 +99,6 @@ public final class RouterScreen {
                 .ordinal(),
             router.isWorking(),
             ownerName == null ? "" : ownerName,
-            uplinks,
             becom.calls.callsAt(self.dimension(), self.pos()),
             t.routerCalls(router.tier()),
             buses,

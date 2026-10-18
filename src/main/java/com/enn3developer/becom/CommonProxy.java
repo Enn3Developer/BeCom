@@ -30,7 +30,6 @@ import com.enn3developer.becom.packet.VideoEquipmentPacket;
 import com.enn3developer.becom.packet.VideoPosePacket;
 import com.enn3developer.becom.packet.VideoProfilePacket;
 import com.enn3developer.becom.packet.VideoStatePacket;
-import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.recipe.BeComRecipes;
 import com.enn3developer.becom.server.BeComServer;
@@ -138,8 +137,6 @@ public class CommonProxy {
     public void onLevel(LevelPacket packet) {}
 
     public void onTone(TonePacket packet) {}
-
-    public void onWires(WireSyncPacket packet) {}
 
     public void onConfig(ConfigSyncPacket packet) {}
 

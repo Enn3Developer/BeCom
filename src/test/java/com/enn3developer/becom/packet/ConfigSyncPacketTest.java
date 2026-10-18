@@ -19,7 +19,7 @@ class ConfigSyncPacketTest {
     void carriesEveryValue() {
         Map<String, Object> values = Tunables.defaults()
             .toMap();
-        values.put("pylonMaxHeight", 20);
+        values.put("antennaMastMax", 20);
         values.put("weatherRainLoss", 2.5);
         values.put("questlineEnabled", false);
         Tunables server = Tunables.fromMap(values);
@@ -32,10 +32,10 @@ class ConfigSyncPacketTest {
 
     @Test
     void refusesValuesNoConfigFileCouldHold() {
-        // A modified server sending an endless pylon would make the client's hologram loop.
+        // A modified server sending a mast shorter than its shape has room on would draw a broken hologram.
         Map<String, Object> values = Tunables.defaults()
             .toMap();
-        values.put("pylonMinHeight", 0);
+        values.put("antennaMastMinT1", 0);
         ByteBuf buf = Unpooled.buffer();
         new ConfigSyncPacket(Tunables.fromMap(values)).toBytes(buf);
         ConfigSyncPacket read = new ConfigSyncPacket();
@@ -44,11 +44,12 @@ class ConfigSyncPacketTest {
     }
 
     @Test
-    void refusesAnEndlessPylon() {
+    void refusesAnEndlessMast() {
+        // A modified server sending an endless mast would make the client's hologram loop.
         Map<String, Object> values = Tunables.defaults()
             .toMap();
-        values.put("pylonMinHeight", Integer.MAX_VALUE);
-        values.put("pylonMaxHeight", Integer.MAX_VALUE);
+        values.put("antennaMastMinT1", Integer.MAX_VALUE);
+        values.put("antennaMastMax", Integer.MAX_VALUE);
         ByteBuf buf = Unpooled.buffer();
         new ConfigSyncPacket(Tunables.fromMap(values)).toBytes(buf);
         ConfigSyncPacket read = new ConfigSyncPacket();

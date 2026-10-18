@@ -38,7 +38,7 @@ final class TooltipGallery extends GuiScreen {
             boxes.add(router(false));
             boxes.add(telephone());
             boxes.add(router(true));
-            boxes.add(pylon());
+            boxes.add(lineHatch());
             boxes.add(relay());
             at = new int[][] { { 12, 24 }, { 220, 24 }, { 430, 24 }, { 12, 150 }, { 220, 150 }, { 400, 150 } };
             return;
@@ -98,15 +98,13 @@ final class TooltipGallery extends GuiScreen {
                 .row("becom.info.row.bus");
             info.problem("becom.info.bus_too_long", InfoLines.cableName(CableTier.PHONE), 128)
                 .row("becom.info.row.bus");
-            info.bundle(List.of(CableTier.COAXIAL), "becom.info.uplink", 30, 64)
-                .row("becom.info.row.uplink");
         } else {
             info.add("becom.info.of_slots", 3, 8)
                 .bar("becom.info.row.calls", 3 / 8.0);
             info.add("becom.info.bus", InfoLines.cableName(CableTier.PHONE), 14, 128, 12, 16)
                 .row("becom.info.row.bus");
-            info.bundle(List.of(CableTier.PHONE, CableTier.PHONE), "becom.info.uplink", 12, 32)
-                .row("becom.info.row.uplink");
+            info.add("becom.info.bus", InfoLines.cableName(CableTier.PHONE), 30, 128, 8, 16)
+                .row("becom.info.row.bus");
         }
         return box(BeComMachines.router.getStackForm(1), info);
     }
@@ -125,18 +123,14 @@ final class TooltipGallery extends GuiScreen {
         return box(new ItemStack(BeComBlocks.telephone), info);
     }
 
-    /** A Pylon Head's WAILA lines as on the Scanner board: no state line while it's formed. */
-    private static List<String> pylon() {
+    /** A Line Hatch's WAILA lines: the multiblock it's part of, and the bus of the cable at its front. */
+    private static List<String> lineHatch() {
         InfoLines info = new InfoLines();
-        info.add("becom.info.blocks", 12)
-            .row("becom.info.row.pole");
-        info.bundle(List.of(CableTier.FIBRE, CableTier.FIBRE), "becom.info.span_row", 45)
-            .row("becom.info.row.dir.east");
-        info.bundle(List.of(CableTier.FIBRE, CableTier.FIBRE), "becom.info.span_row", 51)
-            .row("becom.info.row.dir.west");
-        info.add("becom.info.of", 600, 4096)
-            .row("becom.info.row.run");
-        return box(BeComMachines.pylonHead.getStackForm(1), info);
+        info.add("becom.info.part_of", "120, 64, -40")
+            .status();
+        info.add("becom.info.bus", InfoLines.cableName(CableTier.FIBRE), 600, 4096, 30, 256)
+            .row("becom.info.row.bus");
+        return box(BeComMachines.lineHatchHV.getStackForm(1), info);
     }
 
     /**

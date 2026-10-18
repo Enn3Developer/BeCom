@@ -531,17 +531,6 @@ final class PhoneGallery {
             1,
             true,
             "Steve",
-            List.of(
-                new com.enn3developer.becom.gui.RouterView.Uplink(
-                    com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
-                    100,
-                    70,
-                    200,
-                    45,
-                    new int[] { 2, 0, 0 },
-                    32,
-                    2,
-                    10)),
             1,
             32,
             List.of(
@@ -605,15 +594,8 @@ final class PhoneGallery {
                 new com.enn3developer.becom.gui.AntennaView.Link(120, 70, -340, 96, 14, 19),
                 new com.enn3developer.becom.gui.AntennaView.Link(-60, 88, 15, 141, -20, 7)),
             List.of(
-                new com.enn3developer.becom.gui.AntennaView.Bridge(
-                    com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
-                    10,
-                    64,
-                    20,
-                    210,
-                    2,
-                    256,
-                    96)),
+                new com.enn3developer.becom.gui.AntennaView.Bus(2, 210, 0, 1, 0, 256, 96),
+                new com.enn3developer.becom.gui.AntennaView.Bus(0, 12, 3, 0, 0, 16, 4)),
             80,
             vhf,
             uhf,

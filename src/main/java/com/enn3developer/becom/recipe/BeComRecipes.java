@@ -162,14 +162,6 @@ public final class BeComRecipes {
             .eut(TELEPHONE_EUT)
             .addTo(assemblerRecipes);
 
-        // Pylon Head: a frame box with the line's steel wires and glass insulators.
-        GTModHandler.addCraftingRecipe(
-            BeComMachines.pylonHead.getStackForm(1),
-            GTModHandler.RecipeBits.BUFFERED,
-            new Object[] { "WPW", "GFG", "WPW", 'W', OrePrefixes.wireGt01.get(Materials.Steel), 'P',
-                OrePrefixes.plate.get(Materials.Steel), 'G', OrePrefixes.plate.get(Materials.Glass), 'F',
-                OrePrefixes.frameGt.get(Materials.Steel) });
-
         // Routers: a hull of the tier with its circuit, two of its cables to the devices and two wires to the
         // line.
         router(BeComMachines.router, CableTier.PHONE, Materials.LV, ItemList.Hull_LV);

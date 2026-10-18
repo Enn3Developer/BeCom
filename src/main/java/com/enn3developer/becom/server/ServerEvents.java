@@ -130,20 +130,6 @@ public final class ServerEvents {
         if (becom == null || !(event.player instanceof EntityPlayerMP player)) return;
         // The server's rules for the client's tooltips and holograms.
         BeComPackets.send(new ConfigSyncPacket(BeComConfig.get()), player);
-        becom.network.sendWires(player);
-    }
-
-    @SubscribeEvent
-    public void onChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        BeComServer becom = BeComServer.get();
-        if (becom != null && event.player instanceof EntityPlayerMP player) becom.network.sendWires(player);
-    }
-
-    /** Dying in the Nether or leaving the End respawns into another world without a dimension-change event. */
-    @SubscribeEvent
-    public void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
-        BeComServer becom = BeComServer.get();
-        if (becom != null && event.player instanceof EntityPlayerMP player) becom.network.sendWires(player);
     }
 
     @SubscribeEvent
@@ -153,6 +139,5 @@ public final class ServerEvents {
         becom.calls.logout(event.player.getUniqueID());
         becom.radio.logout(event.player.getUniqueID());
         becom.carried.logout(event.player.getUniqueID());
-        becom.links.forget(event.player.getUniqueID());
     }
 }

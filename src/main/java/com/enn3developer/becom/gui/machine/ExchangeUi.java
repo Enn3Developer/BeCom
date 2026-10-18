@@ -268,19 +268,18 @@ public final class ExchangeUi extends CanvasScreen {
         float cw = INNER - COLUMNS[2];
         if (j.rate() <= 0) {
             CableTier tier = best < 0 ? null : CableTier.byOrdinal(best);
-            String why = tier == null ? t("becom.ui.exchange.bare")
-                : j.length() <= BeComConfig.get()
-                    .cableReach(tier)
-                        ? t("becom.ui.exchange.dead")
-                        : t(
-                            "becom.ui.exchange.too_long",
-                            j.length(),
-                            t(
-                                "tile.becom."
-                                    + com.enn3developer.becom.block.BlockPhoneCable.nameOf(CableTier.byOrdinal(best))
-                                    + ".name"),
-                            BeComConfig.get()
-                                .cableReach(CableTier.byOrdinal(best)));
+            String why = tier == null || j.length() <= BeComConfig.get()
+                .cableReach(tier)
+                    ? t("becom.ui.exchange.dead")
+                    : t(
+                        "becom.ui.exchange.too_long",
+                        j.length(),
+                        t(
+                            "tile.becom."
+                                + com.enn3developer.becom.block.BlockPhoneCable.nameOf(CableTier.byOrdinal(best))
+                                + ".name"),
+                        BeComConfig.get()
+                            .cableReach(CableTier.byOrdinal(best)));
             c.text(Paint.fit(c, why, 11, cw), cx, ty + 2, 11, Grey.BAD);
             return;
         }

@@ -115,22 +115,6 @@ class Canvas:
         return any(role == "l" for row in self.px for role in row)
 
 
-def pylon_head():
-    """Two glass insulators carrying the line across a steel crossarm."""
-    c = Canvas()
-    c.rect(0, 2, 15, 2, "w")
-    for cx in (2, 10):
-        for y in (3, 5, 7, 9):
-            c.rect(cx + 1, y, cx + 2, y, "j")
-        for y in (4, 6, 8):
-            c.rect(cx, y, cx + 3, y, "i")
-            c.set(cx, y, "j")
-        c.rect(cx + 1, 10, cx + 2, 10, "s")
-    c.panel(1, 11, 14, 14)
-    c.rect(3, 12, 12, 12, "s")
-    return c
-
-
 def repeater_head():
     """An amplifier: signal in on the left, out of the triangle's tip on the right, and a lamp."""
     c = Canvas()
@@ -322,7 +306,6 @@ def portal_relay():
 
 
 OVERLAYS = {
-    "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
     "OVERLAY_ROUTER_HEAD": router_head,
     "OVERLAY_ROUTER": router,

@@ -105,21 +105,21 @@ class TunablesTest {
 
     @Test
     void checksEveryTickAreRefused() throws Exception {
-        refused("pylonClearanceSeconds", 0);
+        refused("surveySeconds", 0);
         refused("questlineRecheckSeconds", 0);
     }
 
     @Test
-    void pylonHeightsMustMakeSense() throws Exception {
-        refused("pylonMinHeight", 0);
-        refused("pylonMaxHeight", 5);
+    void mastHeightsMustMakeSense() throws Exception {
+        refused("antennaMastMinT1", 0);
+        refused("antennaMastMax", 5);
         // No column of frames is taller than the world.
-        refused("pylonMaxHeight", 2_000_000_000);
+        refused("antennaMastMax", 2_000_000_000);
     }
 
     @Test
     void theCeilingsThemselvesAreAllowed() throws Exception {
-        assertDoesNotThrow(with("pylonMaxHeight", 255)::validate);
+        assertDoesNotThrow(with("antennaMastMax", 255)::validate);
         assertDoesNotThrow(with("cableReachFibre", Tunables.MAX_CABLE)::validate);
     }
 
@@ -138,7 +138,7 @@ class TunablesTest {
 
     @Test
     void roundTripsThroughAMapByName() throws Exception {
-        Tunables changed = with("pylonSpanFactor", 5.0);
+        Tunables changed = with("weatherRainLoss", 5.0);
         assertEquals(changed, Tunables.fromMap(changed.toMap()));
     }
 

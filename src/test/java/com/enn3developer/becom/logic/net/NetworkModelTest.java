@@ -1,7 +1,7 @@
 package com.enn3developer.becom.logic.net;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -20,68 +20,33 @@ class NetworkModelTest {
     }
 
     @Test
-    void removingANodeRemovesEveryLinkToIt() {
+    void everyNodeChangeMovesTheVersion() {
         NetworkModel model = new NetworkModel();
         long a = BlockPos.pack(0, 64, 0);
-        long b = BlockPos.pack(10, 64, 0);
-        long c = BlockPos.pack(20, 64, 0);
-        model.add(new NetNode(a, NodeKind.PYLON, null));
-        model.add(new NetNode(b, NodeKind.PYLON, null));
-        model.add(new NetNode(c, NodeKind.PYLON, null));
-        model.link(a, b);
-        model.link(b, c);
-        model.setBlocked(b, c, true);
-        model.remove(b);
-        assertTrue(
-            model.node(a)
-                .links()
-                .isEmpty());
-        assertTrue(
-            model.node(c)
-                .links()
-                .isEmpty());
-        assertFalse(model.isBlocked(b, c));
-        assertTrue(
-            model.links()
-                .isEmpty());
-    }
-
-    @Test
-    void everyTopologyChangeMovesTheVersion() {
-        NetworkModel model = new NetworkModel();
-        long a = BlockPos.pack(0, 64, 0);
-        long b = BlockPos.pack(10, 64, 0);
         long v0 = model.version();
-        model.add(new NetNode(a, NodeKind.PYLON, null));
-        model.add(new NetNode(b, NodeKind.PYLON, null));
+        model.add(new NetNode(a, NodeKind.ROUTER, null));
         long v1 = model.version();
         assertTrue(v1 > v0);
-        model.link(a, b);
+        model.remove(a);
         long v2 = model.version();
         assertTrue(v2 > v1);
-        // Linking again changes nothing, so the version stays.
-        model.link(a, b);
+        // Removing what isn't there changes nothing, so the version stays.
+        model.remove(a);
         assertEquals(v2, model.version());
-        model.setBlocked(a, b, true);
-        assertTrue(model.version() > v2);
-        long v3 = model.version();
-        model.setBlocked(a, b, true);
-        assertEquals(v3, model.version());
     }
 
     @Test
-    void replacingANodeDropsTheOldOnesLinks() {
+    void addingANodeWhereOneIsReplacesIt() {
         NetworkModel model = new NetworkModel();
         long a = BlockPos.pack(0, 64, 0);
-        long b = BlockPos.pack(10, 64, 0);
-        model.add(new NetNode(a, NodeKind.PYLON, null));
-        model.add(new NetNode(b, NodeKind.PYLON, null));
-        model.link(a, b);
         model.add(new NetNode(a, NodeKind.ROUTER, null));
-        assertFalse(model.linked(a, b));
-        assertTrue(
-            model.node(b)
-                .links()
-                .isEmpty());
+        model.add(new NetNode(a, NodeKind.EXCHANGE, null));
+        assertEquals(1, model.size());
+        assertEquals(
+            NodeKind.EXCHANGE,
+            model.node(a)
+                .kind());
+        model.remove(a);
+        assertNull(model.node(a));
     }
 }

@@ -102,10 +102,6 @@ public final class BeComConfig {
         dbl(config, v, SIGNAL, "dropoutCleanSnr", "SNR in dB from which nothing is lost.");
         dbl(config, v, SIGNAL, "dropoutMeanBurstMillis", "Mean burst of losses, in ms.");
         dbl(config, v, SIGNAL, "dropAfterSeconds", "Seconds below Low before a link drops.");
-        integer(config, v, WIRED, "pylonMinHeight", "Shortest pylon, in frame boxes.");
-        integer(config, v, WIRED, "pylonMaxHeight", 1, Tunables.MAX_COLUMN, "Tallest pylon, in frame boxes.");
-        dbl(config, v, WIRED, "pylonSpanFactor", "Span limit, times the shorter pylon's height.");
-        integer(config, v, WIRED, "pylonClearanceSeconds", "Seconds between line checks.");
         integer(config, v, WIRED, "cableRatePhone", "KB/s a Phone Cable carries.");
         integer(config, v, WIRED, "cableRateCoaxial", "KB/s a Coaxial cable carries.");
         integer(config, v, WIRED, "cableRateFibre", "KB/s a Fibre cable carries.");
@@ -126,8 +122,6 @@ public final class BeComConfig {
             Tunables.MAX_CABLE,
             "Most Coaxial blocks a bus carries over.");
         integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Most Fibre blocks a bus carries over.");
-        integer(config, v, WIRED, "bundleSize", 1, Tunables.MAX_BUNDLE, "Most cables a pylon span holds.");
-        integer(config, v, WIRED, "cableBlocksPerItem", "Blocks of span one cable item strings.");
         integer(config, v, WIRED, "routerPower", "EU/t a Router draws.");
         integer(config, v, WIRED, "routerCallsLV", "Calls an LV Router carries at once.");
         integer(config, v, WIRED, "routerCallsMV", "Calls an MV Router carries at once.");
@@ -145,7 +139,6 @@ public final class BeComConfig {
             "directHearingRange",
             "Blocks within which listeners hear a speaker directly, not through BeCom.");
         integer(config, v, CALLS, "sessionGraceSeconds", "Seconds a timed-out voice keeps a call.");
-        integer(config, v, CALLS, "halfLinkSeconds", "Seconds a half-made wrench link is kept.");
         integer(config, v, CALLS, "ringSeconds", "Seconds a phone rings before \"no answer\".");
         integer(config, v, CALLS, "callAttemptsPerMinute", "Call attempts per caller a minute.");
         dbl(config, v, RADIO, "vhfWavelength", "Radio channels' wavelength in blocks. Longer bends over hills better.");
@@ -176,7 +169,6 @@ public final class BeComConfig {
         integer(config, v, ANTENNAS, "antennaMastMinT2", "Shortest Antenna T2 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMinT3", "Shortest Antenna T3 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMax", 1, Tunables.MAX_COLUMN, "Tallest antenna mast, in frame boxes.");
-        dbl(config, v, ANTENNAS, "wrenchLinkDistance", "Blocks an antenna reaches to bridge a Pylon Head or Router.");
         dbl(config, v, RADIOS, "transceiverBudget", "Transceiver link budget in dB, for direct links.");
         dbl(config, v, RADIOS, "walkieBudget", "Walkie-Talkie link budget in dB, for direct links.");
         integer(config, v, RADIOS, "transceiverPower", "EU/t a Transceiver draws.");
@@ -372,8 +364,6 @@ public final class BeComConfig {
 
     // The smallest value each whole-number option makes sense with, as Tunables.validate checks; the file shows it.
     private static final Map<String, Integer> MINIMUM = Map.ofEntries(
-        Map.entry("pylonMinHeight", 1),
-        Map.entry("pylonClearanceSeconds", 1),
         Map.entry("ringSeconds", 1),
         Map.entry("callAttemptsPerMinute", 1),
         Map.entry("questlineRecheckSeconds", 1),

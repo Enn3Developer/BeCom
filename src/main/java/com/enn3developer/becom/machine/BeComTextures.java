@@ -11,7 +11,6 @@ import gregtech.api.interfaces.IIconContainer;
  */
 public final class BeComTextures {
 
-    public static final IIconContainer PYLON_HEAD = icon("OVERLAY_PYLON_HEAD");
     public static final IIconContainer EXCHANGE = icon("OVERLAY_EXCHANGE");
     public static final IIconContainer EXCHANGE_GLOW = icon("OVERLAY_EXCHANGE_GLOW");
     public static final IIconContainer ROUTER = icon("OVERLAY_ROUTER");

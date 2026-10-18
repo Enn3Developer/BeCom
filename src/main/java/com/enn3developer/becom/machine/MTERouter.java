@@ -26,12 +26,9 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
-import com.enn3developer.becom.logic.net.NetNode;
-import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.server.BeComServer;
-import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.NodeHost;
 
 import gregtech.api.enums.Textures;
@@ -44,9 +41,9 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Router: where a building's line starts. An LV, MV or HV machine drawing a few EU/t that links
- * to one pylon and carries the calls of every bus of cable joining it, up to its tier's cable, as many at once as its
- * tier carries. The phones on a bus share its rate.
+ * The Router: an LV, MV or HV machine drawing a few EU/t that carries the calls of every bus of cable joining it, on
+ * any face and up to its tier's cable, as many at once as its tier carries. The phones on a bus share its rate; a bus
+ * between two routers joins them, so a call crosses from one to the other.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -154,19 +151,6 @@ public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableE
                 .removeNode(tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         }
         super.onBlockDestroyed();
-    }
-
-    @Override
-    public boolean onWrenchRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer player, float x,
-        float y, float z, ItemStack tool) {
-        if (player.isSneaking()) return super.onWrenchRightClick(side, wrenchingSide, player, x, y, z, tool);
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || !tile.isServerSide()) return false;
-        long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-        becom.network.ensureNode(tile.getWorld(), pos, NodeKind.ROUTER, tile.getOwnerUuid());
-        becom.links.wrench(player, tile.getWorld(), pos);
-        return true;
     }
 
     // region Screen
@@ -304,8 +288,8 @@ public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableE
     }
 
     /**
-     * Its lines for WAILA and the scanner, as on the Scanner board: its state, the calls it carries, each bus of cable
-     * joining it, and its uplink. The scanner adds each phone on its buses and each span.
+     * Its lines for WAILA and the scanner, as on the Scanner board: its state, the calls it carries and each bus of
+     * cable joining it. The scanner adds each phone on its buses.
      */
     private InfoLines info() {
         InfoLines info = new InfoLines();
@@ -320,38 +304,13 @@ public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableE
         NodeRef self = new NodeRef(tile.getWorld().provider.dimensionId, pos(tile));
         InfoLines.calls(info, tile, t.routerCalls(tier()));
         InfoLines.buses(info, becom, self.dimension(), self.pos());
-        // Only a loaded dimension's model: asking by world would load one that isn't.
-        NetworkModel model = becom.network.model(self.dimension());
-        NetNode node = model == null ? null : model.node(self.pos());
-        if (node == null || node.links()
-            .isEmpty()) {
-            info.problem("becom.ui.router.no_uplink")
-                .row("becom.info.row.uplink");
-        } else {
-            List<NetworkService.Run> runs = becom.network.runsFrom(self.dimension(), self.pos());
-            if (runs.isEmpty()) info.problem("becom.ui.router.uplink_down")
-                .row("becom.info.row.uplink");
-            else {
-                NetworkService.Run run = runs.get(0);
-                if (run.rate() <= 0) info.problem("becom.ui.router.too_long")
-                    .row("becom.info.row.uplink");
-                else info
-                    .bundle(
-                        run.cables(),
-                        "becom.info.uplink",
-                        becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link()),
-                        run.rate())
-                    .row("becom.info.row.uplink");
-            }
-        }
         for (int phone : phones()) info.detail("becom.info.device", phone);
-        if (node != null) for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
         return info;
     }
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        // Nothing to keep: its buses are the world's cable, its links live in the network data.
+        // Nothing to keep: its buses are the world's cable.
     }
 
     @Override

@@ -8,7 +8,7 @@ navigation:
 
 # How signal works
 
-A call or a radio channel travels hop by hop: Telephone to Router to pylons, a walkie to an antenna to the next
+A call or a radio channel travels hop by hop: Telephone to Router to the next router, a walkie to an antenna to the next
 antenna, a phone up to the satellites. Each hop has a signal-to-noise ratio, its SNR, in decibels (dB). The link is as
 good as its weakest hop, and no better than the devices at either end allow.
 

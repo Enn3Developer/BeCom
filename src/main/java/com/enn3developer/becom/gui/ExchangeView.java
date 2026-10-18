@@ -7,9 +7,8 @@ import net.minecraft.network.PacketBuffer;
 
 /**
  * What the Exchange's screen shows, from the Router board: whether it works and whose it is; its calls, its data and
- * how many numbers it reaches through how many exchanges; its switching racks; and a row for each thing joined to it,
- * by a run of wire over pylons or on a bus of its own cable, with the cables that join it and what they carry. Built
- * on the server.
+ * how many numbers it reaches through how many exchanges; its switching racks; and a row for each thing on the buses
+ * its Line Hatches join, with the cable that joins it and what it carries. Built on the server.
  *
  * @param racks each rack's tier, best first
  */
@@ -22,7 +21,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
      * @param node      its node kind's ordinal, or -1 for a phone on one of the Exchange's buses
      * @param phoneKind that phone's kind's ordinal, or -1
      * @param cables    how many cables of each tier join it, by tier
-     * @param length    the blocks of wire to it: a run's length, or the cable blocks of the bus it's on
+     * @param length    the cable blocks of the bus it's on
      * @param rate      the KB/s the wire carries; 0 when it carries nothing
      * @param used      the KB/s calls and data take of it now, on a bus shared by everything on it
      */

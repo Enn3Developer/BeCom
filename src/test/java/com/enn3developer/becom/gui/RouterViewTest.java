@@ -1,6 +1,5 @@
 package com.enn3developer.becom.gui;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ class RouterViewTest {
             1,
             true,
             "Steve",
-            List.of(new RouterView.Uplink(2, 100, 70, -200, 45, new int[] { 2, 0, 1 }, 32, 12, 5)),
             3,
             8,
             List.of(
@@ -45,14 +43,6 @@ class RouterViewTest {
         assertEquals(view.slots(), back.slots());
         assertEquals(view.buses(), back.buses());
         assertEquals(view.devices(), back.devices());
-        RouterView.Uplink u = view.uplinks()
-            .get(0),
-            b = back.uplinks()
-                .get(0);
-        assertEquals(
-            List.of(u.kind(), u.x(), u.y(), u.z(), u.distance(), u.rate(), u.used(), u.data()),
-            List.of(b.kind(), b.x(), b.y(), b.z(), b.distance(), b.rate(), b.used(), b.data()));
-        assertArrayEquals(u.cables(), b.cables());
     }
 
     @Test
@@ -63,7 +53,7 @@ class RouterViewTest {
         }
         List<RouterView.Bus> buses = new ArrayList<>();
         for (int i = 0; i < RouterView.MAX_BUSES + 2; i++) buses.add(new RouterView.Bus(0, i, 128, 16, 0, 0, 1, 0, 0));
-        RouterView back = roundTrip(new RouterView(0, false, "", List.of(), 0, 8, buses, many));
+        RouterView back = roundTrip(new RouterView(0, false, "", 0, 8, buses, many));
         assertEquals(
             RouterView.MAX_DEVICES,
             back.devices()

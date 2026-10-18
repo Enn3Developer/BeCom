@@ -41,14 +41,14 @@ Un'antenna funziona solo se caricata e alimentata.
   banda telefonica.
 - **Si collega alle altre antenne** dove il loro segnale arriva almeno al livello Basso, separatamente per ogni banda: i
   canali radio viaggiano tra le antenne sulla banda radio, le chiamate sulla banda telefonica.
-- **Aggancia le linee:** usa la chiave su di lei, poi su una Testa di traliccio, un Router o una
-  Centrale entro 16 blocchi, e le chiamate di quella linea passano via etere, a ogni telefono che le antenne
-  raggiungono. Un'antenna ha 15 collegamenti per i suoi agganci.
+- **Smista i bus:** tramite le Line Hatch nel suo shelter, è il router di ogni bus collegato. Un Telefono cablato a
+  una di loro passa le sue chiamate per l'antenna, e un Router cablato a una aggancia la sua linea: le chiamate di
+  quella linea passano via etere, a ogni telefono che le antenne raggiungono.
 
 ## Il suo schermo
 
-Clic destro sulla testa per il suo schermo: le antenne a cui si collega e le linee che aggancia, e una mappa di
-copertura del segnale che avrebbe un giocatore in piedi a terra intorno a lei, per le radio o per le chiamate. Il
+Clic destro sulla testa per il suo schermo: le antenne a cui si collega e i bus collegati alle sue Line Hatch, e una
+mappa di copertura del segnale che avrebbe un giocatore in piedi a terra intorno a lei, per le radio o per le chiamate. Il
 proprietario, la sua squadra o un operatore del server possono riservarla alla squadra del proprietario: allora serve
 solo i dispositivi di quella squadra, ma continua a portare le chiamate lungo i suoi collegamenti. Le squadre sono
 quelle di ServerUtilities, che si creano con il suo pulsante My Team accanto all'inventario. Gli alleati di una squadra

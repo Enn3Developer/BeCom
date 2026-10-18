@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import net.minecraft.block.Block;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -26,18 +24,13 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
-import com.enn3developer.becom.logic.net.Clearance;
-import com.enn3developer.becom.logic.net.LinkRules;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
-import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.space.Gateways;
 import com.enn3developer.becom.logic.space.Portals;
-import com.enn3developer.becom.packet.BeComPackets;
-import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 
@@ -45,8 +38,8 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
  * The live side of every loaded dimension's network: which powered nodes are working, the cable buses and what each
- * reaches, how many calls each Exchange switches, the clearance re-checks, the graph calls are routed over, and the
- * wires clients draw. Server thread only.
+ * reaches, how many calls each Exchange switches, the sweep that drops nodes whose machine is gone, and the graph calls
+ * are routed over. Server thread only.
  */
 public final class NetworkService {
 
@@ -55,9 +48,10 @@ public final class NetworkService {
     private static final int TICKS_PER_SECOND = 20;
     // A dish's loss moves calls' paths in steps this small; finer ones would rebuild them every second of a fade.
     private static final double LOSS_STEP = 0.1;
+    // Every node is looked for this often, so one whose machine went without telling the network goes too.
+    private static final int SWEEP_SECONDS = 60;
 
     private final Tunables tunables;
-    private final LinkRules rules;
     private final LevelScale levels;
     private final Map<Integer, NetworkModel> models = new HashMap<>();
     private final Map<NodeRef, Long> lastHeard = new HashMap<>();
@@ -80,11 +74,10 @@ public final class NetworkService {
     // Where the Personal Space portals by each relay lead, at its last look, working or not.
     private final Map<NodeRef, Set<Integer>> personalTargets = new HashMap<>();
     private final Map<Integer, Long> seenModelVersions = new HashMap<>();
-    private final Map<Integer, Long> wiresSent = new HashMap<>();
     private long tick;
     private long version;
-    private long nextClearanceTick;
-    private final Sweep<Recheck> recheck = new Sweep<>();
+    private long nextSweepTick = (long) SWEEP_SECONDS * TICKS_PER_SECOND;
+    private final Sweep<NodeRef> sweep = new Sweep<>();
     private final AntennaNetwork antennas;
     private long antennasVersion = -1;
     private final SpaceService space;
@@ -102,16 +95,10 @@ public final class NetworkService {
         this.antennas = antennas;
         this.space = space;
         this.gateways = Gateways.of(tunables);
-        this.rules = new LinkRules(tunables.pylonSpanFactor(), tunables.wrenchLinkDistance());
         this.levels = tunables.levelScale();
-        this.nextClearanceTick = (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
     }
 
-    public LinkRules rules() {
-        return rules;
-    }
-
-    /** Server ticks since BeCom started; the clock heartbeats and half-made links are measured in. */
+    /** Server ticks since BeCom started; the clock heartbeats are measured in. */
     public long currentTick() {
         return tick;
     }
@@ -150,7 +137,6 @@ public final class NetworkService {
             .removeIf(ref -> ref.dimension() == dimension);
         personalTargets.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
-        wiresSent.remove(dimension);
         version++;
     }
 
@@ -184,12 +170,11 @@ public final class NetworkService {
             return node;
         }
         node = new NetNode(pos, kind, owner);
-        node.setFormed(!kind.structure());
         model.add(node);
         return node;
     }
 
-    /** The machine was broken: its node and every link to it go, a relay's partner included. */
+    /** The machine was broken: its node goes, and a relay's partner forgets it. */
     public void removeNode(World world, long pos) {
         NetworkModel model = model(world);
         NodeRef ref = new NodeRef(world.provider.dimensionId, pos);
@@ -205,16 +190,6 @@ public final class NetworkService {
         relayTiers.remove(ref);
         personalTargets.remove(ref);
         version++;
-    }
-
-    /** A machine with a structure finished its structure check. */
-    public void setFormed(World world, long pos, boolean formed, int height) {
-        NetworkModel model = model(world);
-        NetNode node = model.node(pos);
-        if (node == null || node.formed() == formed && node.height() == height) return;
-        node.setFormed(formed);
-        node.setHeight(height);
-        model.changed();
     }
 
     /** A working Exchange's racks switch {@code calls} calls at once this tick. */
@@ -614,7 +589,7 @@ public final class NetworkService {
         return graph;
     }
 
-    /** Goes up on every change that can move a path: nodes, links, clearance, power, buses. */
+    /** Goes up on every change that can move a path: nodes, power, buses, radio links and satellites. */
     public long version() {
         updateBuses();
         boolean changed = seenModelVersions.size() != models.size() || antennas.version() != antennasVersion
@@ -637,42 +612,6 @@ public final class NetworkService {
         return version;
     }
 
-    /**
-     * A run of wire leaving a working node, to the next working one: where it ends, how long it is, the
-     * KB/s it carries, and the link calls share that rate on, to ask the calls how much of it they take.
-     */
-    public record Run(long to, double length, int rate, Object link, List<CableTier> cables) {}
-
-    private final Map<Integer, List<WiredTopology.Segment>> segments = new HashMap<>();
-    private long segmentsVersion = -1;
-
-    /** The runs leaving a working node; the screens ask every tick, so they're worked out again only on a change. */
-    public List<Run> runsFrom(int dimension, long pos) {
-        long now = version();
-        if (now != segmentsVersion) {
-            segments.clear();
-            segmentsVersion = now;
-        }
-        NetworkModel model = models.get(dimension);
-        if (model == null) return List.of();
-        List<Run> runs = new ArrayList<>();
-        for (WiredTopology.Segment segment : segments
-            .computeIfAbsent(dimension, d -> WiredTopology.segments(model, p -> working(d, p), tunables, rules))) {
-            if (segment.from() != pos) continue;
-            runs.add(
-                new Run(
-                    segment.to(),
-                    segment.length(),
-                    segment.rate(),
-                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to())),
-                    segment.cables()));
-        }
-        return runs;
-    }
-
-    /** The link a run of wire shares its rate on: the same from either end. */
-    private record RunLink(int dimension, NetworkModel.LinkKey key) {}
-
     /** The link a UHF hop between two antennas shares its rate on. */
     private record RadioLink(int dimension, NetworkModel.LinkKey key) {}
 
@@ -681,18 +620,6 @@ public final class NetworkService {
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
             int dimension = entry.getKey();
             NetworkModel model = entry.getValue();
-            for (WiredTopology.Segment segment : WiredTopology
-                .segments(model, pos -> working(dimension, pos), tunables, rules)) {
-                // A run no cable reaches the whole of carries nothing.
-                if (segment.rate() <= 0) continue;
-                builder.hop(
-                    new CallGraph.NodeVertex(dimension, segment.from()),
-                    new CallGraph.NodeVertex(dimension, segment.to()),
-                    Double.POSITIVE_INFINITY,
-                    CallGraph.HopKind.LINE,
-                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to())),
-                    segment.rate());
-            }
             // Calls travel between antennas on UHF, once both are working, at their level's rate.
             antennas.forEachUhfLink(dimension, (a, b, snr) -> {
                 if (working(dimension, a) && working(dimension, b)) {
@@ -867,71 +794,28 @@ public final class NetworkService {
 
     // endregion
 
-    // region Clearance
+    // region Sweep
 
-    /** Whether the line between two heads is clear, probing only loaded chunks. */
-    public Clearance.Result clearance(World world, long a, long b) {
-        return Clearance.check(a, b, (x, y, z) -> probe(world, x, y, z));
-    }
-
-    private static Clearance.Probe probe(World world, int x, int y, int z) {
-        if (y < 0 || y >= world.getHeight()) return Clearance.Probe.AIR;
-        if (!world.getChunkProvider()
-            .chunkExists(x >> 4, z >> 4)) return Clearance.Probe.UNLOADED;
-        Block block = world.getBlock(x, y, z);
-        return block.getMaterial()
-            .blocksMovement() ? Clearance.Probe.SOLID : Clearance.Probe.AIR;
-    }
-
-    /** Re-checks every pylon link in loaded chunks, and drops nodes whose machine is gone. */
-    public void recheckAll() {
-        queueRecheck();
-        recheck.run(this::recheck, System::nanoTime, Long.MAX_VALUE);
-    }
-
-    /** Queues every node and pylon link of every loaded dimension for the next round of re-checks. */
-    private void queueRecheck() {
-        List<Recheck> round = new ArrayList<>();
+    /** Queues every node of every loaded dimension for the next sweep, which drops those whose machine is gone. */
+    private void queueSweep() {
+        List<NodeRef> round = new ArrayList<>();
         for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
-            int dimension = entry.getKey();
             for (NetNode node : entry.getValue()
-                .nodes()) round.add(new Recheck(dimension, node.pos(), Long.MIN_VALUE));
-            for (NetworkModel.LinkKey key : entry.getValue()
-                .links()) round.add(new Recheck(dimension, key.a(), key.b()));
+                .nodes()) round.add(new NodeRef(entry.getKey(), node.pos()));
         }
-        recheck.add(round);
+        sweep.add(round);
     }
 
-    /** One item of a re-check round: a node to look for, or a link to walk ({@code b} set). */
-    private record Recheck(int dimension, long a, long b) {}
-
-    private void recheck(Recheck item) {
-        WorldServer world = DimensionManager.getWorld(item.dimension());
-        NetworkModel model = models.get(item.dimension());
-        if (world == null || model == null) return;
-        if (item.b() == Long.MIN_VALUE) {
-            NetNode node = model.node(item.a());
-            if (node != null && isStale(world, node)) {
-                BeCom.LOG.info(
-                    "Dropping network node at {} in dimension {}: its machine is gone",
-                    BlockPos.toString(node.pos()),
-                    world.provider.dimensionId);
-                removeNode(world, node.pos());
-            }
-            return;
-        }
-        NetNode a = model.node(item.a());
-        NetNode b = model.node(item.b());
-        if (a == null || b == null
-            || !model.linked(item.a(), item.b())
-            || !a.kind()
-                .pylonHead()
-            || !b.kind()
-                .pylonHead())
-            return;
-        Clearance.Result result = clearance(world, item.a(), item.b());
-        if (result == Clearance.Result.UNKNOWN) return;
-        model.setBlocked(item.a(), item.b(), result == Clearance.Result.BLOCKED);
+    private void sweepNode(NodeRef ref) {
+        WorldServer world = DimensionManager.getWorld(ref.dimension());
+        NetworkModel model = models.get(ref.dimension());
+        NetNode node = model == null ? null : model.node(ref.pos());
+        if (world == null || node == null || !isStale(world, node)) return;
+        BeCom.LOG.info(
+            "Dropping network node at {} in dimension {}: its machine is gone",
+            BlockPos.toString(node.pos()),
+            world.provider.dimensionId);
+        removeNode(world, node.pos());
     }
 
     /** A node whose machine is gone from a loaded chunk; unloaded ones are left alone. */
@@ -945,23 +829,22 @@ public final class NetworkService {
 
     // endregion
 
-    // region Ticking and wires
+    // region Ticking
 
-    /** One server tick; line re-checks get at most {@code recheckBudgetNanos} of it. */
-    public void tick(long recheckBudgetNanos) {
+    /** One server tick; the node sweep gets at most {@code sweepBudgetNanos} of it. */
+    public void tick(long sweepBudgetNanos) {
         tick++;
         updateBuses();
         if (tick % TICKS_PER_SECOND == 0) {
             expireOffline();
             pairRelays();
-            syncWires();
         }
-        if (tick >= nextClearanceTick) {
-            nextClearanceTick = tick + (long) tunables.pylonClearanceSeconds() * TICKS_PER_SECOND;
+        if (tick >= nextSweepTick) {
+            nextSweepTick = tick + (long) SWEEP_SECONDS * TICKS_PER_SECOND;
             // A round still running from last time finishes first rather than piling up.
-            if (recheck.isEmpty()) queueRecheck();
+            if (sweep.isEmpty()) queueSweep();
         }
-        recheck.run(this::recheck, System::nanoTime, recheckBudgetNanos);
+        sweep.run(this::sweepNode, System::nanoTime, sweepBudgetNanos);
     }
 
     private void expireOffline() {
@@ -974,37 +857,6 @@ public final class NetworkService {
                 version++;
             }
         }
-    }
-
-    private void syncWires() {
-        for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
-            long modelVersion = entry.getValue()
-                .version();
-            Long sent = wiresSent.put(entry.getKey(), modelVersion);
-            if (sent != null && sent == modelVersion) continue;
-            BeComPackets.sendToDimension(wires(entry.getKey()), entry.getKey());
-        }
-    }
-
-    /** Sends a player the wires of the dimension they're in, as they log in or arrive. */
-    public void sendWires(EntityPlayerMP player) {
-        BeComPackets.send(wires(player.dimension), player);
-    }
-
-    private WireSyncPacket wires(int dimension) {
-        List<WireSyncPacket.Wire> wires = new ArrayList<>();
-        NetworkModel model = models.get(dimension);
-        if (model != null) {
-            for (NetworkModel.LinkKey key : model.links()) {
-                NetNode a = model.node(key.a());
-                NetNode b = model.node(key.b());
-                // A wire hangs broken while blocked, or while its pylons are too short for its span.
-                boolean down = model.isBlocked(key.a(), key.b())
-                    || a != null && b != null && a.distanceTo(b) > rules.maxSpan(a, b);
-                wires.add(new WireSyncPacket.Wire(key.a(), key.b(), down, model.cables(key.a(), key.b())));
-            }
-        }
-        return new WireSyncPacket(dimension, wires);
     }
 
     // endregion

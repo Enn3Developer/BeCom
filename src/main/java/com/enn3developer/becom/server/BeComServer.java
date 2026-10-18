@@ -46,7 +46,6 @@ public final class BeComServer {
     public final HeightCaches heights;
     public final AntennaNetwork antennas;
     public final NetworkService network;
-    public final LinkService links;
     public final PhoneService phones;
     public final CallService calls;
     public final com.enn3developer.becom.apps.AppService apps;
@@ -90,7 +89,6 @@ public final class BeComServer {
             }
         }, Ownership::sameTeam);
         this.network = new NetworkService(tunables, antennas, space);
-        this.links = new LinkService(network, tunables);
         this.rockets = new RocketReceivers(network, antennas);
         this.phones = new PhoneService();
         CallGroup callGroup = new CallGroup(
@@ -206,8 +204,8 @@ public final class BeComServer {
         heights.tick();
         space.tick();
         rockets.tick();
-        // Surveys get at most the survey budget per tick. Line re-checks walk the world too, so they
-        // share it: up to half for them, the rest for surveys.
+        // Surveys get at most the survey budget per tick. The node sweep walks the world too, so they
+        // share it: up to half for it, the rest for surveys.
         long budget = (long) (tunables.surveyBudgetMillis() * 1_000_000);
         long start = System.nanoTime();
         network.tick(budget / 2);
@@ -217,6 +215,5 @@ public final class BeComServer {
         apps.tick();
         video.tick();
         radio.tick();
-        if (network.currentTick() % 20 == 0) links.expire();
     }
 }

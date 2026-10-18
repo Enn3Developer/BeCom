@@ -8,9 +8,7 @@ import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -68,10 +66,9 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Exchange: a ground-level building of LV machine casings, three blocks each way, that switches
- * calls between every line wired to it, up to fifteen. Switching Racks in its input buses set how many calls it
- * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Buses of cable join it through its
- * Line Hatches, at least one, as a router; pylons and antennas are wired to it like to any ground node.
+ * The Exchange: a ground-level building of LV machine casings, three blocks each way, that switches calls between every
+ * bus of cable its Line Hatches join, at least one, as a router. Switching Racks in its input buses set how many calls
+ * it switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing.
  * <p>
  * It isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick and tells the
  * network. A missing tick of power means offline, never a shutdown to restart by hand.
@@ -224,7 +221,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
             becom.network.ensureNode(tile.getWorld(), pos(), nodeKind(), tile.getOwnerUuid());
-            becom.network.setFormed(tile.getWorld(), pos(), mMachine, 0);
             registered = true;
         }
         return mMachine;
@@ -286,23 +282,10 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         BeComServer becom = BeComServer.get();
         if (becom != null && tile != null && tile.isServerSide()) {
-            becom.links.dropCables(tile.getWorld(), pos());
             becom.network.removeNode(tile.getWorld(), pos());
             lineHatches.dropped(tile);
         }
         super.onBlockDestroyed();
-    }
-
-    @Override
-    public boolean onWrenchRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer player, float x,
-        float y, float z, ItemStack tool) {
-        if (player.isSneaking()) return super.onWrenchRightClick(side, wrenchingSide, player, x, y, z, tool);
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || !tile.isServerSide()) return false;
-        refreshStructure();
-        becom.links.wrench(player, tile.getWorld(), pos());
-        return true;
     }
 
     // endregion
@@ -310,8 +293,8 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     // region Screen
 
     /**
-     * Its screen, as the Router board lays it out: its calls, data and reach, its racks, and what's joined to it, by
-     * runs of wire over pylons and by its own cable. Built on the server.
+     * Its screen, as the Router board lays it out: its calls, data and reach, its racks, and what's on the buses its
+     * Line Hatches join. Built on the server.
      */
     public ExchangeView view() {
         BeComServer becom = BeComServer.get();
@@ -323,23 +306,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         for (CableTier rack : racks()) racks.add(rack.ordinal());
         List<ExchangeView.Joined> joined = new ArrayList<>();
         NetworkModel model = becom.network.model(dimension);
-        for (NetworkService.Run run : becom.network.runsFrom(dimension, pos())) {
-            NetNode far = model == null ? null : model.node(run.to());
-            joined.add(
-                new ExchangeView.Joined(
-                    far == null ? -1
-                        : far.kind()
-                            .ordinal(),
-                    -1,
-                    -1,
-                    BlockPos.x(run.to()),
-                    BlockPos.y(run.to()),
-                    BlockPos.z(run.to()),
-                    counts(run.cables()),
-                    (int) Math.round(run.length()),
-                    run.rate(),
-                    becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link())));
-        }
         List<Buses.Bus> buses = new ArrayList<>(becom.network.busesAt(dimension, pos()));
         buses.sort(java.util.Comparator.comparingLong(Buses.Bus::id));
         for (Buses.Bus bus : buses) {
@@ -449,8 +415,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
                         t.rackCallsLV(),
                         t.rackCallsMV(),
                         t.rackCallsHV()),
-                    StatCollector
-                        .translateToLocalFormatted("becom.machine.exchange.links", NodeKind.EXCHANGE.linkSlots()),
                     Tips.power(t.exchangePower(), "LV")))
             .beginStructureBlock(SIDE, SIDE, SIDE, false)
             .addController(StatCollector.translateToLocal("becom.machine.exchange.controller"))
@@ -520,34 +484,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         if (working) info.add("becom.exchange.numbers", becom.calls.reachFrom(dimension, pos()))
             .row("becom.info.row.reaches");
         InfoLines.buses(info, becom, dimension, pos());
-        NetworkModel model = becom.network.model(dimension);
-        NetNode node = model == null ? null : model.node(pos());
-        if (node != null) {
-            info.detail(
-                "becom.info.links",
-                node.links()
-                    .size(),
-                NodeKind.EXCHANGE.linkSlots());
-            // Each run to the next working node, with what calls take of it; the spans' cables for the scanner.
-            for (NetworkService.Run run : becom.network.runsFrom(dimension, pos())) {
-                NetNode far = model.node(run.to());
-                if (run.rate() <= 0) {
-                    info.problem("becom.info.run_too_long", BlockPos.toString(run.to()));
-                    continue;
-                }
-                info.add(
-                    "becom.exchange.run",
-                    new InfoLines.Key(
-                        "becom.node." + (far == null ? "pylon"
-                            : far.kind()
-                                .name()
-                                .toLowerCase(Locale.ROOT))),
-                    BlockPos.toString(run.to()),
-                    becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link()),
-                    run.rate());
-            }
-            for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
-        }
         return info;
     }
 

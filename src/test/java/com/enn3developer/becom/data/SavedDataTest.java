@@ -32,18 +32,13 @@ class SavedDataTest {
     private static NetworkSavedData networkWith(long a, long b, UUID owner) {
         NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
         NetworkModel model = data.model();
-        NetNode na = new NetNode(a, NodeKind.PYLON, owner);
-        na.setHeight(12);
-        na.setFormed(true);
-        model.add(na);
+        model.add(new NetNode(a, NodeKind.EXCHANGE, owner));
         model.add(new NetNode(b, NodeKind.ROUTER, null));
-        model.link(a, b);
-        model.setBlocked(a, b, true);
         return data;
     }
 
     @Test
-    void networkRoundTripsWithItsLinksAndClearance() {
+    void networkRoundTripsWithItsNodesAndOwners() {
         long a = BlockPos.pack(-100, 70, 300);
         long b = BlockPos.pack(-90, 64, 300);
         UUID owner = UUID.randomUUID();
@@ -55,16 +50,12 @@ class SavedDataTest {
         read.readFromNBT(nbt);
         NetNode na = read.model()
             .node(a);
-        assertEquals(NodeKind.PYLON, na.kind());
+        assertEquals(NodeKind.EXCHANGE, na.kind());
         assertEquals(owner, na.owner());
-        assertEquals(12, na.height());
-        assertTrue(na.formed());
-        assertTrue(
-            read.model()
-                .linked(a, b));
-        assertTrue(
-            read.model()
-                .isBlocked(a, b));
+        NetNode nb = read.model()
+            .node(b);
+        assertEquals(NodeKind.ROUTER, nb.kind());
+        assertNull(nb.owner());
         assertFalse(read.isDirty(), "freshly read data has nothing to save");
     }
 
@@ -75,7 +66,6 @@ class SavedDataTest {
         long other = BlockPos.pack(1, 40, -3);
         NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
         NetNode node = new NetNode(relay, NodeKind.PORTAL_RELAY, null);
-        node.setFormed(true);
         node.setPartner(new NodeRef(-1, other));
         data.model()
             .add(node);
@@ -125,38 +115,10 @@ class SavedDataTest {
         assertFalse(SavedDataFormat.tooNew(new NBTTagCompound(), 1));
     }
 
-    @Test
-    void savedLinksNeverExceedSlots() {
-        long head = BlockPos.pack(0, 64, 0);
-        NBTTagCompound nbt = new NBTTagCompound();
-        NBTTagList nodes = new NBTTagList();
-        nodes.appendTag(
-            node(head, NodeKind.PYLON, BlockPos.pack(1, 64, 0), BlockPos.pack(2, 64, 0), BlockPos.pack(3, 64, 0)));
-        for (int x = 1; x <= 3; x++) nodes.appendTag(node(BlockPos.pack(x, 64, 0), NodeKind.PYLON, head));
-        nbt.setTag("nodes", nodes);
-        NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
-        read.readFromNBT(nbt);
-        assertEquals(
-            2,
-            read.model()
-                .node(head)
-                .links()
-                .size());
-    }
-
-    private static NBTTagCompound node(long pos, NodeKind kind, long... links) {
+    private static NBTTagCompound node(long pos, NodeKind kind) {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setLong("pos", pos);
         tag.setString("kind", kind.name());
-        tag.setBoolean("formed", true);
-        tag.setInteger("height", 16);
-        NBTTagList list = new NBTTagList();
-        for (long link : links) {
-            NBTTagCompound l = new NBTTagCompound();
-            l.setLong("pos", link);
-            list.appendTag(l);
-        }
-        tag.setTag("links", list);
         return tag;
     }
 
@@ -165,8 +127,8 @@ class SavedDataTest {
         // Data a newer BeCom wrote is kept untouched and never saved over, not partly dropped.
         NBTTagCompound nbt = new NBTTagCompound();
         NBTTagList nodes = new NBTTagList();
-        nodes.appendTag(node(BlockPos.pack(0, 64, 0), NodeKind.PYLON));
-        NBTTagCompound future = node(BlockPos.pack(10, 64, 0), NodeKind.PYLON);
+        nodes.appendTag(node(BlockPos.pack(0, 64, 0), NodeKind.ROUTER));
+        NBTTagCompound future = node(BlockPos.pack(10, 64, 0), NodeKind.ROUTER);
         future.setString("kind", "SATELLITE_DISH_MK2");
         nodes.appendTag(future);
         nbt.setTag("nodes", nodes);
@@ -297,7 +259,7 @@ class SavedDataTest {
         StorageFixture fixture = new StorageFixture(dir);
         NetworkSavedData data = new NetworkSavedData(NetworkSavedData.NAME);
         data.model()
-            .add(new NetNode(BlockPos.pack(1, 64, 1), NodeKind.PYLON, null));
+            .add(new NetNode(BlockPos.pack(1, 64, 1), NodeKind.ROUTER, null));
         NBTTagCompound root = new NBTTagCompound();
         NBTTagCompound inner = new NBTTagCompound();
         data.writeToNBT(inner);
@@ -446,29 +408,6 @@ class SavedDataTest {
             .getCompoundTagAt(0)
             .setString("dir", "REJECTED");
         GlobalSavedData read = new GlobalSavedData(GlobalSavedData.NAME);
-        read.readFromNBT(nbt);
-        assertTrue(read.isTooNew());
-        assertFalse(read.isDirty());
-    }
-
-    @Test
-    void moreLinksThanAKindHasSlotsMeansANewerBeComSavedIt() {
-        NBTTagCompound nbt = new NBTTagCompound();
-        NBTTagList nodes = new NBTTagList();
-        long hub = BlockPos.pack(0, 64, 0);
-        NBTTagCompound pylon = node(hub, NodeKind.PYLON);
-        NBTTagList links = new NBTTagList();
-        for (int i = 1; i <= 3; i++) {
-            long other = BlockPos.pack(10 * i, 64, 0);
-            nodes.appendTag(node(other, NodeKind.PYLON));
-            NBTTagCompound link = new NBTTagCompound();
-            link.setLong("pos", other);
-            links.appendTag(link);
-        }
-        pylon.setTag("links", links);
-        nodes.appendTag(pylon);
-        nbt.setTag("nodes", nodes);
-        NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
         read.readFromNBT(nbt);
         assertTrue(read.isTooNew());
         assertFalse(read.isDirty());

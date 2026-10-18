@@ -40,13 +40,14 @@ An antenna works only while it's loaded and powered.
 - **Serves devices** in its reach on both bands: walkie-talkies on the radio band, phones on the phone band.
 - **Links to other antennas** wherever their signal reaches at least Low, separately for each band: radio channels
   travel between antennas on the radio band, calls on the phone band.
-- **Bridges lines:** wrench it, then a Pylon Head, a Router or an Exchange within 16 blocks, and that line's
-  calls go over the air, to every phone the antennas reach. An antenna has 15 link slots for its bridges.
+- **Routes buses:** through the Line Hatches in its shelter, it's the router of every bus they join. A Telephone
+  cabled to one gets its calls through the antenna, and a Router cabled to one bridges its line: that line's calls go
+  over the air, to every phone the antennas reach.
 
 ## Its screen
 
-Right-click the head for its screen: the antennas it links to and the lines it bridges, and a coverage map of the
-signal a player standing on the ground would get around it, for radios or for calls. The owner, their team or a
+Right-click the head for its screen: the antennas it links to and the buses its Line Hatches join, and a coverage map of
+the signal a player standing on the ground would get around it, for radios or for calls. The owner, their team or a
 server operator can lock it to the owner's team: it then serves only that team's devices, but still carries calls
 along its links. Teams are ServerUtilities' teams, made with its My Team button beside the inventory. A team's allies
 aren't part of it, and on a dedicated server the "singleplayer" team doesn't count.

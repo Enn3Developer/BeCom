@@ -23,7 +23,6 @@ import net.minecraft.util.IChatComponent;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
-import com.enn3developer.becom.logic.net.LinkRules;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.radio.RadioModel;
@@ -100,10 +99,7 @@ class LangTest {
         for (PhoneRecord.Direction direction : PhoneRecord.Direction.values()) {
             wanted.add("becom.phone.recent." + lower(direction));
         }
-        for (LinkRules.Result result : LinkRules.Result.values()) {
-            if (result != LinkRules.Result.OK) wanted.add("becom.link.refused." + lower(result));
-        }
-        for (NodeKind kind : List.of(NodeKind.PYLON, NodeKind.EXCHANGE)) {
+        for (NodeKind kind : List.of(NodeKind.EXCHANGE)) {
             wanted.add("becom.machine." + lower(kind) + ".type");
             wanted.add("becom.machine." + lower(kind) + ".info");
         }

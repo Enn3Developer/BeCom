@@ -1,8 +1,6 @@
 package com.enn3developer.becom.data;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -13,15 +11,14 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
-import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 
 /**
- * One dimension's network: every node with its position, owner and links, and which links a clearance
- * check found blocked. Saved in the dimension's own data folder.
+ * One dimension's network: every node with its position, its owner and, for a Portal Relay, its partner. Saved in the
+ * dimension's own data folder.
  */
 public final class NetworkSavedData extends WorldSavedData {
 
@@ -118,49 +115,10 @@ public final class NetworkSavedData extends WorldSavedData {
             NodeKind kind = kindOf(tag.getString("kind"));
             UUID owner = tag.hasKey("ownerMost") ? new UUID(tag.getLong("ownerMost"), tag.getLong("ownerLeast")) : null;
             NetNode node = new NetNode(tag.getLong("pos"), kind, owner);
-            node.setHeight(tag.getInteger("height"));
-            node.setFormed(tag.getBoolean("formed"));
             if (tag.hasKey("partnerPos")) {
                 node.setPartner(new NodeRef(tag.getInteger("partnerDim"), tag.getLong("partnerPos")));
             }
             model.add(node);
-        }
-        // Links go in once every node exists, so a link to a node saved later in the list isn't lost.
-        for (int i = 0; i < nodes.tagCount(); i++) {
-            NBTTagCompound tag = nodes.getCompoundTagAt(i);
-            long pos = tag.getLong("pos");
-            if (model.node(pos) == null) continue;
-            NBTTagList links = tag.getTagList("links", Constants.NBT.TAG_COMPOUND);
-            for (int j = 0; j < links.tagCount(); j++) {
-                long other = links.getCompoundTagAt(j)
-                    .getLong("pos");
-                NetNode a = model.node(pos);
-                NetNode b = model.node(other);
-                if (b == null || model.linked(pos, other)) continue;
-                // More links than a kind has slots: a newer BeCom with more slots wrote this.
-                if (!a.hasFreeSlot() || !b.hasFreeSlot()) {
-                    notUnderstood(nbt, "a " + a.kind() + " with more links than this BeCom gives it");
-                    return;
-                }
-                List<CableTier> cables = new ArrayList<>();
-                for (byte ordinal : links.getCompoundTagAt(j)
-                    .getByteArray("cables")) {
-                    CableTier cable = CableTier.byOrdinal(ordinal);
-                    if (cable == null) {
-                        notUnderstood(nbt, "a cable it doesn't know, " + ordinal);
-                        return;
-                    }
-                    cables.add(cable);
-                }
-                model.link(pos, other, cables);
-            }
-        }
-        NBTTagList blocked = nbt.getTagList("blocked", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < blocked.tagCount(); i++) {
-            NBTTagCompound tag = blocked.getCompoundTagAt(i);
-            long a = tag.getLong("a");
-            long b = tag.getLong("b");
-            if (model.linked(a, b)) model.setBlocked(a, b, true);
         }
         savedVersion = model.version();
         // Last: anything thrown above leaves the data unread, and so never saved over the file.
@@ -207,8 +165,6 @@ public final class NetworkSavedData extends WorldSavedData {
                     node.owner()
                         .getLeastSignificantBits());
             }
-            tag.setInteger("height", node.height());
-            tag.setBoolean("formed", node.formed());
             // A Portal Relay's partner: only relays have one, and a BeCom from before relays refuses their kind, so
             // the keys need no new format.
             if (node.partner() != null) {
@@ -221,29 +177,9 @@ public final class NetworkSavedData extends WorldSavedData {
                     node.partner()
                         .pos());
             }
-            NBTTagList links = new NBTTagList();
-            for (long other : node.links()) {
-                NBTTagCompound link = new NBTTagCompound();
-                link.setLong("pos", other);
-                List<CableTier> cables = model.cables(node.pos(), other);
-                byte[] ordinals = new byte[cables.size()];
-                for (int i = 0; i < ordinals.length; i++) ordinals[i] = (byte) cables.get(i)
-                    .ordinal();
-                link.setByteArray("cables", ordinals);
-                links.appendTag(link);
-            }
-            tag.setTag("links", links);
             nodes.appendTag(tag);
         }
         nbt.setTag("nodes", nodes);
-        NBTTagList blocked = new NBTTagList();
-        for (NetworkModel.LinkKey key : model.blockedLinks()) {
-            NBTTagCompound tag = new NBTTagCompound();
-            tag.setLong("a", key.a());
-            tag.setLong("b", key.b());
-            blocked.appendTag(tag);
-        }
-        nbt.setTag("blocked", blocked);
         savedVersion = model.version();
     }
 }

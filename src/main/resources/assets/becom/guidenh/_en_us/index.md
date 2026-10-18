@@ -21,7 +21,7 @@ values.
 
 | Tier | What it brings | Read |
 | --- | --- | --- |
-| LV | Telephones on pylon lines, and the first antenna, T1 | [The wired network](wired.md), [Antennas](antennas.md) |
+| LV | Telephones on cable, and the first antenna, T1 | [The wired network](wired.md), [Antennas](antennas.md) |
 | MV | The T2 antenna, walkie-talkies, the Transceiver, the Signal Analyzer, the Videophone, the Portal Relay and the BeCom Card | [Antennas](antennas.md), [Radios](radios.md), [The Signal Analyzer](analyzer.md), [Phones](phones.md), [Phone apps](apps.md), [Space and other dimensions](space.md) |
 | HV | The T3 antenna, the Mobile Phone, satellites and their Launch Pad, the Satellite Dish and the Rocket Radio Receiver | [Antennas](antennas.md), [Phones](phones.md), [Space and other dimensions](space.md) |
 | EV | The ME Phone and the ME Bridge | [Phones](phones.md) |
@@ -36,14 +36,15 @@ comes from, and [the Signal Analyzer](analyzer.md) shows it for wherever you sta
 Look at a BeCom machine with WAILA, or right-click it with a GT scanner, and its first line is its state, in colour:
 green when it works, or red with what stops it, such as **Not formed**, **Switched off** with a soft mallet, or
 **No power**. In WAILA, a Telephone says **Ringing** or **Handset lifted** in orange, otherwise **Ready**. Short rows
-follow, each a grey label and a white value: "Mast 24 blocks", "Calls 9 of 12", "Uplink 2× Phone, 12 of 32 KB/s".
+follow, each a grey label and a white value: "Mast 24 blocks", "Calls 9 of 12",
+"Bus Phone Cable, 14 / 128 blocks, 12 / 16 KB/s".
 
 ## Machines in the rain
 
 GTNH keeps GregTech's rain hazards on, and they reach BeCom's machines as they reach any GT machine that stores
-power: one left in the rain can catch fire or explode. That's the Router, the Repeater and Router Heads, the
-Transceiver, the Videophone, the ME Bridge and the Portal Relay, and the energy hatches of antennas, the Satellite
-Launch Pad and the Satellite Dish. Plain Pylon Heads, controllers and other hatches are safe.
+power: one left in the rain can catch fire or explode. That's the Router, the Transceiver, the Videophone, the ME
+Bridge and the Portal Relay, and the energy hatches of antennas, the Satellite Launch Pad and the Satellite Dish.
+Controllers, Line Hatches and other hatches are safe.
 
 A machine's top is in the rain when nothing stands above it, and a side when nothing stands beside it at its height or
 higher. A cover on that face keeps the rain off. The side a cable comes in by needs none: the cable shields it. Covers

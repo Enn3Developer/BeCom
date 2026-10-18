@@ -34,8 +34,8 @@ class BeComConfigTest {
     @Test
     void aBadValueStopsOnlyAServerStartingWithIt(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        // A rule no single option's range can hold: the tallest pylon below the shortest.
-        Files.write(file.toPath(), "wired {\n    I:pylonMinHeight=20\n    I:pylonMaxHeight=10\n}\n".getBytes());
+        // A rule no single option's range can hold: video taking less than voice.
+        Files.write(file.toPath(), "wired {\n    I:voiceRate=20\n    I:videoRate=10\n}\n".getBytes());
         // Loading happens on every side, a client's included: it mustn't throw.
         assertDoesNotThrow(() -> BeComConfig.load(file));
         // A server about to use the file stops, naming the key.
@@ -43,14 +43,16 @@ class BeComConfigTest {
         assertEquals(
             true,
             e.getMessage()
-                .contains("pylonMinHeight"),
+                .contains("videoRate"),
             e.getMessage());
     }
 
     @Test
     void cappedValuesAreClampedIntoTheirRange(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        Files.write(file.toPath(), "wired {\n    I:cableReachFibre=100000\n    I:pylonMaxHeight=4000\n}\n".getBytes());
+        Files.write(
+            file.toPath(),
+            "wired {\n    I:cableReachFibre=100000\n}\nantennas {\n    I:antennaMastMax=4000\n}\n".getBytes());
         BeComConfig.load(file);
         BeComConfig.useFileValues();
         assertEquals(
@@ -60,13 +62,13 @@ class BeComConfigTest {
         assertEquals(
             Tunables.MAX_COLUMN,
             BeComConfig.get()
-                .pylonMaxHeight());
+                .antennaMastMax());
     }
 
     @Test
     void zeroWhereAtLeastOneIsNeededIsClampedNotFatal(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        Files.write(file.toPath(), "calls {\n    I:ringSeconds=0\n}\nwired {\n    I:pylonMinHeight=0\n}\n".getBytes());
+        Files.write(file.toPath(), "calls {\n    I:ringSeconds=0\n}\nradio {\n    I:surveyStep=0\n}\n".getBytes());
         BeComConfig.load(file);
         BeComConfig.useFileValues();
         assertEquals(
@@ -76,7 +78,7 @@ class BeComConfigTest {
         assertEquals(
             1,
             BeComConfig.get()
-                .pylonMinHeight());
+                .surveyStep());
         // The file shows the range the server holds the option to.
         String text = new String(Files.readAllBytes(file.toPath()));
         assertEquals(true, text.contains("range: 1 ~"), text);
@@ -93,7 +95,7 @@ class BeComConfigTest {
     @Test
     void aNewerFileIsLeftAloneAndRefusedOnlyWhenAServerStarts(@TempDir File dir) throws Exception {
         File file = new File(dir, "becom.cfg");
-        String newer = "general {\n    I:formatVersion=99\n}\nwired {\n    I:pylonMaxHeight=12\n}\n";
+        String newer = "general {\n    I:formatVersion=99\n}\nwired {\n    I:cableReachPhone=12\n}\n";
         Files.write(file.toPath(), newer.getBytes());
         assertDoesNotThrow(() -> BeComConfig.load(file));
         assertEquals(

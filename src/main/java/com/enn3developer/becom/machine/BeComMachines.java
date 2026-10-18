@@ -20,7 +20,6 @@ public final class BeComMachines {
     public static final int FIRST_ID = 25000;
     public static final int LAST_ID = 25199;
 
-    public static final int PYLON_HEAD_ID = 25000;
     public static final int EXCHANGE_ID = 25001;
     public static final int ROUTER_MV_ID = 25002;
     public static final int ROUTER_ID = 25003;
@@ -41,7 +40,6 @@ public final class BeComMachines {
     public static final int LINE_HATCH_HV_ID = 25018;
 
     public static BlockBeComMachines block;
-    public static MTEPylonHead pylonHead;
     public static MTEExchange exchange;
     public static MTERouter router;
     public static MTERouter routerMV;
@@ -66,7 +64,6 @@ public final class BeComMachines {
     /** Every ID BeCom registers, with the internal name of the machine that gets it. */
     public static Map<Integer, String> ids() {
         Map<Integer, String> ids = new LinkedHashMap<>();
-        ids.put(PYLON_HEAD_ID, "becom.pylon_head");
         ids.put(EXCHANGE_ID, "becom.exchange");
         ids.put(ROUTER_MV_ID, "becom.router_mv");
         ids.put(ROUTER_ID, "becom.router");
@@ -134,7 +131,6 @@ public final class BeComMachines {
         checkIds();
         block = new BlockBeComMachines();
         BeComTextures.init();
-        pylonHead = new MTEPylonHead(PYLON_HEAD_ID, "becom.pylon_head", "Pylon Head");
         exchange = new MTEExchange(EXCHANGE_ID, "becom.exchange", "Exchange");
         router = new MTERouter(ROUTER_ID, "becom.router", "Router", CableTier.PHONE);
         routerMV = new MTERouter(ROUTER_MV_ID, "becom.router_mv", "Router (MV)", CableTier.COAXIAL);

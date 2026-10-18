@@ -9,12 +9,10 @@ import static gregtech.api.util.GTStructureUtility.ofFrame;
 import java.util.List;
 import java.util.UUID;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -33,8 +31,6 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
-import com.enn3developer.becom.logic.net.NetNode;
-import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
@@ -70,11 +66,11 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  * and T2 are guyed masts, held by three guys of frame boxes down to casing anchors; T3 is a self-supporting lattice
  * tower. Dipoles or panel antennas hang under the head, and an equipment shelter in front of the mast's pad holds the
  * Energy Hatch. None of it changes what the antenna reaches, which goes by the top of the head. While formed and
- * powered it reports to the antenna network every tick, which surveys it and links it to other antennas; it also
- * bridges wired lines it's wrench-linked to, and routes the calls of the buses its Line Hatches join.
+ * powered it reports to the antenna network every tick, which surveys it and links it to other antennas; through its
+ * Line Hatches it's also a router to the buses they join.
  * <p>
- * Like the Pylon Head, it isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick,
- * and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
+ * It isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick, and tells the
+ * network. A missing tick of power means offline, never a shutdown to restart by hand.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -427,14 +423,13 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     /** Runs the structure check now and tells the networks; the self-test calls this directly. */
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        // Left alone: no node, no formed state, no bridges written for it here.
+        // Left alone: no node written for it here.
         if (tooNew != null) return false;
         checkStructure(true, tile);
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
             long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
             becom.network.ensureNode(tile.getWorld(), pos, nodeKind(), tile.getOwnerUuid());
-            becom.network.setFormed(tile.getWorld(), pos, mMachine, mMachine ? mast : 0);
             if (!mMachine) becom.antennas.gone(ref());
             registered = true;
         }
@@ -459,23 +454,6 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
             lineHatches.dropped(tile);
         }
         super.onBlockDestroyed();
-    }
-
-    @Override
-    public boolean onWrenchRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer player, float x,
-        float y, float z, ItemStack tool) {
-        if (player.isSneaking()) return super.onWrenchRightClick(side, wrenchingSide, player, x, y, z, tool);
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || !tile.isServerSide()) return false;
-        if (tooNew != null) {
-            player.addChatComponentMessage(new ChatComponentTranslation("becom.info.too_new"));
-            return true;
-        }
-        refreshStructure();
-        becom.links
-            .wrench(player, tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
-        return true;
     }
 
     // endregion
@@ -548,10 +526,6 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
                             + StatCollector
                                 .translateToLocalFormatted("becom.machine.antenna.budget", (int) t.antennaBudget(tier))
                             + "\u00a77"),
-                    StatCollector.translateToLocalFormatted(
-                        "becom.machine.antenna.bridge",
-                        Tips.number((int) t.wrenchLinkDistance()),
-                        Tips.number(15)),
                     Tips.power(t.antennaPower(tier), VOLTAGE_NAMES[tier]),
                     Tips.howTo(
                         "becom.machine.antenna.looks." + tier,
@@ -635,11 +609,14 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         int antennas = 0;
         for (AntennaNetwork.LinkKey key : becom.antennas.links(ref.dimension())
             .keySet()) if (key.a() == ref.pos() || key.b() == ref.pos()) antennas++;
-        NetworkModel model = becom.network.model(ref.dimension());
-        NetNode node = model == null ? null : model.node(ref.pos());
+        // Its backhaul: the best bus that carries to another working router.
         CableTier backhaul = null;
-        if (node != null) for (long other : node.links()) for (CableTier cable : model.cables(ref.pos(), other)) {
-            if (backhaul == null || cable.compareTo(backhaul) > 0) backhaul = cable;
+        for (Buses.Bus bus : becom.network.busesAt(ref.dimension(), ref.pos())) {
+            if (!becom.network.carries(ref.dimension(), bus)) continue;
+            boolean other = false;
+            for (long router : becom.network.routersOn(ref.dimension(), bus)) other |= router != ref.pos();
+            if (other && (backhaul == null || bus.tier()
+                .compareTo(backhaul) > 0)) backhaul = bus.tier();
         }
         if (backhaul != null) info.add("becom.info.links_backhaul", antennas, InfoLines.shortName(backhaul))
             .row("becom.info.row.links");

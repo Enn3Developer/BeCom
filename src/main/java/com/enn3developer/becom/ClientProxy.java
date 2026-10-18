@@ -24,7 +24,6 @@ import com.enn3developer.becom.client.ClientLevels;
 import com.enn3developer.becom.client.ClientPhone;
 import com.enn3developer.becom.client.ClientRadio;
 import com.enn3developer.becom.client.ClientVideo;
-import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.CoverageMapDrawer;
 import com.enn3developer.becom.client.DistanceFade;
 import com.enn3developer.becom.client.GlCanvas;
@@ -35,7 +34,6 @@ import com.enn3developer.becom.client.SignalBars;
 import com.enn3developer.becom.client.TelephoneRenderer;
 import com.enn3developer.becom.client.ToneSounds;
 import com.enn3developer.becom.client.VideoRenderer;
-import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.gui.paint.CanvasScreen;
@@ -52,7 +50,6 @@ import com.enn3developer.becom.packet.VideoEquipmentPacket;
 import com.enn3developer.becom.packet.VideoPosePacket;
 import com.enn3developer.becom.packet.VideoProfilePacket;
 import com.enn3developer.becom.packet.VideoStatePacket;
-import com.enn3developer.becom.packet.WireSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.bq.BqGuideTags;
 import com.enn3developer.becom.selftest.ClientSelfTest;
@@ -87,7 +84,6 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
-        MinecraftForge.EVENT_BUS.register(new WireRenderer());
         MinecraftForge.EVENT_BUS.register(new CableGrid());
         MinecraftForge.EVENT_BUS.register(new SignalBars());
         MinecraftForge.EVENT_BUS.register(new AnalyzerOverlay());
@@ -128,7 +124,6 @@ public class ClientProxy extends CommonProxy {
     public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
         mainThread.add(() -> {
             ClientLevels.clear();
-            ClientWires.clear();
             ToneSounds.stop();
             BeComConfig.useDefaults();
             MachineTooltips.forget();
@@ -309,10 +304,5 @@ public class ClientProxy extends CommonProxy {
     @Override
     public boolean rearCameraWorks() {
         return VideoRenderer.framebuffers();
-    }
-
-    @Override
-    public void onWires(WireSyncPacket packet) {
-        mainThread.add(() -> ClientWires.set(packet.dimension(), packet.wires()));
     }
 }

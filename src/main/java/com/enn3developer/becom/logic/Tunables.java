@@ -14,12 +14,11 @@ public record Tunables(
     double dropoutMaxLoss, double dropoutFullLossSnr, double dropoutCleanSnr, double dropoutMeanBurstMillis,
     double dropAfterSeconds,
     // Wired network
-    int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, int cableRatePhone,
-    int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial, int cableReachFibre,
-    int bundleSize, int cableBlocksPerItem, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
-    int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
+    int cableRatePhone, int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial,
+    int cableReachFibre, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV, int exchangePower,
+    int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
     // Calls
-    double directHearingRange, int sessionGraceSeconds, int halfLinkSeconds, int ringSeconds, int callAttemptsPerMinute,
+    double directHearingRange, int sessionGraceSeconds, int ringSeconds, int callAttemptsPerMinute,
     // Radio simulation
     double vhfWavelength, double uhfWavelength, double vhfCoverPerBlock, double uhfCoverPerBlock, double coverLossCap,
     double terrainLossCap, double noSkyNoise, int surveyBearings, int surveyStep, int surveySeconds,
@@ -27,8 +26,8 @@ public record Tunables(
     // Antennas
     double antennaBudgetT1, double antennaBudgetT2, double antennaBudgetT3, int antennaPowerT1, int antennaPowerT2,
     int antennaPowerT3, int antennaMastMinT1, int antennaMastMinT2, int antennaMastMinT3, int antennaMastMax,
-    double wrenchLinkDistance, int antennaCallsT1, int antennaCallsT2, int antennaCallsT3, int radioRateLow,
-    int radioRateMedium, int radioRateHigh, int radioRateMax,
+    int antennaCallsT1, int antennaCallsT2, int antennaCallsT3, int radioRateLow, int radioRateMedium,
+    int radioRateHigh, int radioRateMax,
     // Radios
     double transceiverBudget, double walkieBudget, int transceiverPower, double loudspeakerRange, double talkRange,
     double walkieSpeakerRange, int captureHoldMillis, double captureMargin, int walkieBattery, int walkieStandbyDrain,
@@ -60,8 +59,6 @@ public record Tunables(
     // is taller than the world, and no bus is counted far past what it carries over.
     public static final int MAX_COLUMN = 255;
     public static final int MAX_CABLE = 16_384;
-    // A span holds at most this many cables, so a hostile value can't make a wire packet huge.
-    public static final int MAX_BUNDLE = 8;
     // Portal Relays come in MV, HV and EV.
     public static final int RELAY_MIN_TIER = 2;
     public static final int RELAY_MAX_TIER = 4;
@@ -107,18 +104,12 @@ public record Tunables(
         d.put("dropoutCleanSnr", 12.0);
         d.put("dropoutMeanBurstMillis", 60.0);
         d.put("dropAfterSeconds", 3.0);
-        d.put("pylonMinHeight", 6);
-        d.put("pylonMaxHeight", 16);
-        d.put("pylonSpanFactor", 4.0);
-        d.put("pylonClearanceSeconds", 60);
         d.put("cableRatePhone", 16);
         d.put("cableRateCoaxial", 64);
         d.put("cableRateFibre", 256);
         d.put("cableReachPhone", 128);
         d.put("cableReachCoaxial", 512);
         d.put("cableReachFibre", 4096);
-        d.put("bundleSize", 4);
-        d.put("cableBlocksPerItem", 4);
         d.put("routerPower", 4);
         d.put("routerCallsLV", 8);
         d.put("routerCallsMV", 32);
@@ -131,7 +122,6 @@ public record Tunables(
         d.put("videoRate", 8);
         d.put("directHearingRange", 16.0);
         d.put("sessionGraceSeconds", 10);
-        d.put("halfLinkSeconds", 5 * 60);
         d.put("ringSeconds", 30);
         d.put("callAttemptsPerMinute", 5);
         d.put("vhfWavelength", 3.0);
@@ -155,7 +145,6 @@ public record Tunables(
         d.put("antennaMastMinT2", 8);
         d.put("antennaMastMinT3", 10);
         d.put("antennaMastMax", 32);
-        d.put("wrenchLinkDistance", 16.0);
         d.put("antennaCallsT1", 4);
         d.put("antennaCallsT2", 12);
         d.put("antennaCallsT3", 32);
@@ -291,9 +280,6 @@ public record Tunables(
                     + e.getMessage(),
                 e);
         }
-        if (pylonMinHeight < 1) throw invalid("pylonMinHeight", pylonMinHeight, "at least 1");
-        if (pylonMaxHeight < pylonMinHeight) throw invalid("pylonMaxHeight", pylonMaxHeight, "at least pylonMinHeight");
-        if (pylonMaxHeight > MAX_COLUMN) throw invalid("pylonMaxHeight", pylonMaxHeight, "at most " + MAX_COLUMN);
         for (CableTier tier : CableTier.values()) {
             String name = tier.configName();
             if (cableRate(tier) < 1) throw invalid("cableRate" + name, cableRate(tier), "at least 1");
@@ -303,8 +289,6 @@ public record Tunables(
             if (routerCalls(tier) < 1) throw invalid("routerCalls" + tier.voltage(), routerCalls(tier), "at least 1");
             if (rackCalls(tier) < 1) throw invalid("rackCalls" + tier.voltage(), rackCalls(tier), "at least 1");
         }
-        if (bundleSize < 1 || bundleSize > MAX_BUNDLE) throw invalid("bundleSize", bundleSize, "1 to " + MAX_BUNDLE);
-        if (cableBlocksPerItem < 1) throw invalid("cableBlocksPerItem", cableBlocksPerItem, "at least 1");
         if (exchangePower < 0) throw invalid("exchangePower", exchangePower, "0 or more");
         if (voiceRate < 1) throw invalid("voiceRate", voiceRate, "at least 1");
         if (videoRate < voiceRate) throw invalid("videoRate", videoRate, "at least voiceRate");
@@ -324,8 +308,6 @@ public record Tunables(
             if (relayCalls(tier) < 1) throw invalid("relayCalls" + voltage, relayCalls(tier), "at least 1");
             if (relayRate(tier) < 1) throw invalid("relayRate" + voltage, relayRate(tier), "at least 1");
         }
-        if (pylonSpanFactor <= 0) throw invalid("pylonSpanFactor", pylonSpanFactor, "more than 0");
-        if (pylonClearanceSeconds < 1) throw invalid("pylonClearanceSeconds", pylonClearanceSeconds, "at least 1");
         if (dropAfterSeconds < 0) throw invalid("dropAfterSeconds", dropAfterSeconds, "0 or more");
         if (directHearingRange < 0) throw invalid("directHearingRange", directHearingRange, "0 or more");
         if (ringSeconds < 1) throw invalid("ringSeconds", ringSeconds, "at least 1");
@@ -357,7 +339,6 @@ public record Tunables(
                 throw invalid("antennaMastMax", antennaMastMax, "at least " + key);
         }
         if (antennaMastMax > MAX_COLUMN) throw invalid("antennaMastMax", antennaMastMax, "at most " + MAX_COLUMN);
-        if (wrenchLinkDistance < 0) throw invalid("wrenchLinkDistance", wrenchLinkDistance, "0 or more");
         if (loudspeakerRange < 0) throw invalid("loudspeakerRange", loudspeakerRange, "0 or more");
         if (talkRange < 0) throw invalid("talkRange", talkRange, "0 or more");
         if (walkieSpeakerRange < 0) throw invalid("walkieSpeakerRange", walkieSpeakerRange, "0 or more");

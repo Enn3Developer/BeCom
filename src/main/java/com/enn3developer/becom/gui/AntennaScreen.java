@@ -20,10 +20,7 @@ import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
-import com.enn3developer.becom.logic.net.CableTier;
-import com.enn3developer.becom.logic.net.NetNode;
-import com.enn3developer.becom.logic.net.NetworkModel;
-import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.machine.MTEAntenna;
@@ -99,37 +96,30 @@ public final class AntennaScreen {
                         .snr()));
         }
         links.sort(Comparator.comparingDouble((AntennaView.Link l) -> -Math.max(l.vhf(), l.uhf())));
-        List<AntennaView.Bridge> bridges = new ArrayList<>();
-        NetNode node = becom.network.model(tile.getWorld())
-            .node(ref.pos());
-        if (node != null) {
-            NetworkModel model = becom.network.model(tile.getWorld());
-            List<NetworkService.Run> runs = becom.network.runsFrom(ref.dimension(), ref.pos());
-            for (long other : node.links()) {
-                List<CableTier> cables = model.cables(ref.pos(), other);
-                // The span leads to a pylon or a machine; the run it starts goes on to the next working node.
-                NetworkService.Run run = runOver(
-                    runs,
-                    other,
-                    node.links()
-                        .size());
-                long end = run == null ? other : run.to();
-                NetNode far = model.node(end);
-                bridges.add(
-                    new AntennaView.Bridge(
-                        far == null || far.kind() == NodeKind.PYLON ? -1
-                            : far.kind()
-                                .ordinal(),
-                        BlockPos.x(end),
-                        BlockPos.y(end),
-                        BlockPos.z(end),
-                        (int) Math.round(run == null ? BlockPos.distance(ref.pos(), other) : run.length()),
-                        cables.isEmpty() ? -1
-                            : cables.get(0)
-                                .ordinal(),
-                        run == null ? -1 : run.rate(),
-                        run == null ? 0 : becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link())));
+        List<AntennaView.Bus> buses = new ArrayList<>();
+        List<Buses.Bus> on = new ArrayList<>(becom.network.busesAt(ref.dimension(), ref.pos()));
+        on.sort(Comparator.comparingLong(Buses.Bus::id));
+        for (Buses.Bus bus : on) {
+            int phones = 0, routers = 0, gateways = 0;
+            for (Buses.End end : bus.ends()) {
+                if (end.pos() == ref.pos()) continue;
+                switch (end.kind()) {
+                    case PHONE -> phones++;
+                    case ROUTER -> routers++;
+                    case GATEWAY -> gateways++;
+                }
             }
+            Object link = NetworkService.busLink(ref.dimension(), bus);
+            buses.add(
+                new AntennaView.Bus(
+                    bus.tier()
+                        .ordinal(),
+                    bus.cables(),
+                    phones,
+                    routers,
+                    gateways,
+                    becom.network.carries(ref.dimension(), bus) ? t.cableRate(bus.tier()) : 0,
+                    becom.calls.usedOn(link) + becom.apps.dataOn(link)));
         }
         double bestUhf = Double.NEGATIVE_INFINITY;
         for (AntennaView.Link link : links) bestUhf = Math.max(bestUhf, link.uhf());
@@ -154,17 +144,11 @@ public final class AntennaScreen {
             becom.calls.callsAt(ref.dimension(), ref.pos()),
             t.antennaCalls(antenna.tier()),
             links,
-            bridges,
+            buses,
             (int) Math.round(t.rangeToHold(t.antennaBudget(antenna.tier()))),
             vhfMap == null ? new byte[0] : vhfMap,
             uhfMap == null ? new byte[0] : uhfMap,
             radioRate,
             radioLevel.ordinal());
-    }
-
-    /** The run leaving over the span to {@code other}: the one ending there, or the only one when there's one span. */
-    private static NetworkService.Run runOver(List<NetworkService.Run> runs, long other, int spans) {
-        for (NetworkService.Run run : runs) if (run.to() == other) return run;
-        return spans == 1 && runs.size() == 1 ? runs.get(0) : null;
     }
 }

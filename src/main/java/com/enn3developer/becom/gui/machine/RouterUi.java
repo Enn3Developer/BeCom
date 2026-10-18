@@ -17,9 +17,9 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * The Router's screen, from the Line Terminal board: its uplink and how much of the line calls and data take,
- * the calls it carries, then a row a bus of cable joining it: its cable, length and what it carries; and what's on
- * those buses: each phone, its number and what it's doing, then the routers and gateways they join.
+ * The Router's screen, from the Line Terminal board: the calls it carries, then a row a bus of cable joining it: its
+ * cable, length and what it carries; and what's on those buses: each phone, its number and what it's doing, then the
+ * routers and gateways they join.
  */
 public final class RouterUi extends CanvasScreen {
 
@@ -29,7 +29,6 @@ public final class RouterUi extends CanvasScreen {
     private static final float INNER = 572;
     private static final float ROW = 26;
     static final int CALLS = 0x55ff55;
-    static final int DATA = 0x55ffaa;
     static final int FREE = 0x2a3038;
 
     private final Supplier<RouterView> view;
@@ -71,34 +70,14 @@ public final class RouterUi extends CanvasScreen {
         };
     }
 
-    static String kindName(int kind) {
-        if (kind < 0) return t("becom.node.pylon");
-        return t(
-            "becom.node." + NodeKind.values()[kind].name()
-                .toLowerCase(Locale.ROOT));
-    }
-
     /**
      * A node kind's name on its own, as a label starts with it: "Antenna T3", where a sentence says "the" before it.
      */
     static String kindLabel(int kind) {
-        if (kind < 0) return t("becom.ui.node.pylon");
+        if (kind < 0 || kind >= NodeKind.values().length) return "?";
         return t(
             "becom.ui.node." + NodeKind.values()[kind].name()
                 .toLowerCase(Locale.ROOT));
-    }
-
-    /** "2× Phone Cable, Coaxial Cable", or a dash for a bare span. */
-    static String cables(int[] counts) {
-        List<String> parts = new ArrayList<>();
-        for (int tier = 0; tier < counts.length; tier++) {
-            if (counts[tier] <= 0) continue;
-            String name = t(
-                "tile.becom." + com.enn3developer.becom.block.BlockPhoneCable.nameOf(CableTier.byOrdinal(tier))
-                    + ".name");
-            parts.add(counts[tier] > 1 ? counts[tier] + "× " + name : name);
-        }
-        return parts.isEmpty() ? "-" : String.join(", ", parts);
     }
 
     static String blocks(int blocks) {
@@ -136,7 +115,7 @@ public final class RouterUi extends CanvasScreen {
                 15,
                 Grey.FAINT);
         y += 22 + 10;
-        y = paintUplink(c, v, y) + 10;
+        y = paintCalls(c, v, y) + 10;
         paintTable(c, v, y, HEIGHT - X0 - 40);
         float footY = HEIGHT - X0 - 34;
         for (String line : Paint.wrap(c, t("becom.ui.router.note"), 13, INNER)) {
@@ -145,73 +124,25 @@ public final class RouterUi extends CanvasScreen {
         }
     }
 
-    /** The uplink's display: where the line goes, the bar of what calls and data take of it, and its key. */
-    private float paintUplink(Canvas c, RouterView v, float y) {
-        float h = 104;
+    /** Its display: the calls it carries now, of the most it carries at once; or why it carries none. */
+    private static float paintCalls(Canvas c, RouterView v, float y) {
+        float h = 40;
         Grey.display(c, X0, y, INNER, h);
         float x = X0 + 12;
         float w = INNER - 24;
-        float ly = y + 10;
-        c.text(t("becom.ui.router.uplink"), x, ly, 14, Paint.GREY);
-        float vx = x + c.width(t("becom.ui.router.uplink"), 14) + 8;
-        paintCalls(c, v, x, vx, w, y + h - 24);
-        if (v.uplinks()
-            .isEmpty()) {
-            c.text(t("becom.ui.router.no_uplink"), vx, ly, 14, Paint.RED);
-            return y + h;
-        }
-        RouterView.Uplink u = v.uplinks()
-            .get(0);
-        String to = t("becom.ui.router.to", cables(u.cables()), kindName(u.kind()), u.x(), u.y(), u.z());
-        String blocks = t("becom.ui.machine.blocks", u.distance());
-        c.text(Paint.fit(c, to, 14, w - (vx - x) - c.width(blocks, 14) - 12), vx, ly, 14, Paint.TEXT);
-        Paint.right(c, blocks, x + w, ly, 14, Paint.GREY);
-        ly += 24;
-        c.text(t("becom.ui.router.line"), x, ly, 14, Paint.GREY);
-        float bx = x + c.width(t("becom.ui.router.uplink"), 14) + 8;
-        String problem = !v.working() ? t("becom.ui.router.offline")
-            : u.rate() < 0 ? t("becom.ui.router.uplink_down") : u.rate() == 0 ? t("becom.ui.router.too_long") : null;
-        if (problem != null) {
-            c.text(problem, bx, ly, 14, Paint.RED);
-            return y + h;
-        }
-        String of = t("becom.ui.router.of", u.used() + u.data(), u.rate());
-        float bw = w - (bx - x) - c.width(of, 14) - 10;
-        c.rect(bx, ly + 1, bw, 12, FREE);
-        float calls = bw * Math.min(1, u.used() / (float) u.rate());
-        float data = Math.min(bw - calls, bw * u.data() / (float) u.rate());
-        c.rect(bx, ly + 1, calls, 12, CALLS);
-        c.rect(bx + calls, ly + 1, data, 12, DATA);
-        Paint.right(c, of, x + w, ly, 14, u.used() + u.data() >= u.rate() ? Paint.RED : Paint.TEXT);
-        ly += 22;
-        int callCount = v.calls();
-        float kx = x;
-        kx = key(
-            c,
-            kx,
-            ly,
-            CALLS,
-            t(callCount == 1 ? "becom.ui.router.key_call" : "becom.ui.router.key_calls", callCount, u.used()));
-        kx = key(c, kx, ly, DATA, t("becom.ui.router.key_data", u.data()));
-        key(c, kx, ly, FREE, t("becom.ui.router.key_free"));
-        return y + h;
-    }
-
-    /** The calls it carries now, of the most it carries at once. */
-    private static void paintCalls(Canvas c, RouterView v, float x, float bx, float w, float ly) {
+        float ly = y + (h - c.lineHeight(14)) / 2;
         c.text(t("becom.ui.router.calls"), x, ly, 14, Paint.GREY);
+        float bx = x + c.width(t("becom.ui.router.calls"), 14) + 8;
+        if (!v.working()) {
+            c.text(t("becom.ui.router.offline"), bx, ly, 14, Paint.RED);
+            return y + h;
+        }
         String of = t("becom.ui.router.calls_of", v.calls(), v.slots());
         float bw = w - (bx - x) - c.width(of, 14) - 10;
         c.rect(bx, ly + 1, bw, 12, FREE);
         if (v.slots() > 0) c.rect(bx, ly + 1, bw * Math.min(1, v.calls() / (float) v.slots()), 12, CALLS);
         Paint.right(c, of, x + w, ly, 14, v.slots() > 0 && v.calls() >= v.slots() ? Paint.RED : Paint.TEXT);
-    }
-
-    static float key(Canvas c, float x, float y, int colour, String label) {
-        c.rect(x, y + 4, 14, 5, colour);
-        if (colour == FREE) Paint.border(c, x, y + 4, 14, 5, 1, 0x4a5560);
-        c.text(label, x + 20, y, 12, Paint.GREY);
-        return x + 20 + c.width(label, 12) + 14;
+        return y + h;
     }
 
     /** The table: a row a bus, then what's on the buses, paged when it doesn't fit. */

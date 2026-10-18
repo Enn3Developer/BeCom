@@ -50,6 +50,5 @@ public class ItemBlockCable extends ItemBlockWithMetadata {
                 t.cableRate(tier),
                 t.cableReach(tier)));
         lines.add(StatCollector.translateToLocal("becom.cable.tooltip_join"));
-        lines.add(StatCollector.translateToLocal("becom.cable.tooltip_span"));
     }
 }

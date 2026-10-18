@@ -10,16 +10,16 @@ import com.enn3developer.becom.logic.radio.Coverage;
 
 /**
  * What the antenna screen shows: its state, the calls through it out of those it carries, its links
- * to other antennas on each band, its wiring onto lines and what each span carries, the team lock, and its coverage
- * map on each band. Built on the server, formatted on the client.
+ * to other antennas on each band, the buses its Line Hatches join and what each carries, the team lock, and its
+ * coverage map on each band. Built on the server, formatted on the client.
  */
 public record AntennaView(int tier, boolean formed, boolean working, int mast, int range, boolean surveyed,
-    boolean locked, boolean mayManage, String owner, int calls, int callSlots, List<Link> links, List<Bridge> bridges,
+    boolean locked, boolean mayManage, String owner, int calls, int callSlots, List<Link> links, List<Bus> buses,
     int mapRange, byte[] vhfMap, byte[] uhfMap, int radioRate, int radioLevel) {
 
     // A dimension rarely has more antennas in reach than this; the screen lists the strongest.
     public static final int MAX_LINKS = 64;
-    public static final int MAX_BRIDGES = 15;
+    public static final int MAX_BUSES = 15;
 
     public static final AntennaView EMPTY = new AntennaView(
         0,
@@ -47,11 +47,16 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
     public record Link(int x, int y, int z, int distance, double vhf, double uhf) {}
 
     /**
-     * Its backhaul: the working node its cable leads to (its NodeKind ordinal, -1 for none), where and how far, its
-     * best
-     * cable (a CableTier ordinal, -1 for none), the KB/s the run carries (-1 for none) and what calls take of it.
+     * A bus its Line Hatches join: its cable (a CableTier ordinal) and cable blocks, how many phones, other routers and
+     * gateways it reaches, its KB/s (0 when it carries nothing) and what calls and data take of it. One reaching
+     * another router is its backhaul.
      */
-    public record Bridge(int kind, int x, int y, int z, int distance, int cable, int rate, int used) {}
+    public record Bus(int cable, int cables, int phones, int routers, int gateways, int rate, int used) {
+
+        public boolean backhaul() {
+            return routers > 0;
+        }
+    }
 
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
@@ -76,18 +81,17 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             buf.writeDouble(link.vhf);
             buf.writeDouble(link.uhf);
         }
-        int bridges = Math.min(this.bridges.size(), MAX_BRIDGES);
-        buf.writeShort(bridges);
-        for (int i = 0; i < bridges; i++) {
-            Bridge bridge = this.bridges.get(i);
-            buf.writeInt(bridge.x);
-            buf.writeShort(bridge.y);
-            buf.writeInt(bridge.z);
-            buf.writeByte(bridge.kind);
-            buf.writeInt(bridge.distance);
-            buf.writeByte(bridge.cable);
-            buf.writeInt(bridge.rate);
-            buf.writeInt(bridge.used);
+        int buses = Math.min(this.buses.size(), MAX_BUSES);
+        buf.writeShort(buses);
+        for (int i = 0; i < buses; i++) {
+            Bus bus = this.buses.get(i);
+            buf.writeByte(bus.cable);
+            buf.writeInt(bus.cables);
+            buf.writeShort(bus.phones);
+            buf.writeShort(bus.routers);
+            buf.writeShort(bus.gateways);
+            buf.writeInt(bus.rate);
+            buf.writeInt(bus.used);
         }
         buf.writeShort(mapRange);
         writeMap(buf, vhfMap);
@@ -132,14 +136,18 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
                     buf.readDouble(),
                     buf.readDouble()));
         }
-        count = Math.min(buf.readShort(), MAX_BRIDGES);
-        List<Bridge> bridges = new ArrayList<>();
+        count = Math.min(buf.readShort(), MAX_BUSES);
+        List<Bus> buses = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            int x = buf.readInt();
-            int y = buf.readShort();
-            int z = buf.readInt();
-            int kind = buf.readByte();
-            bridges.add(new Bridge(kind, x, y, z, buf.readInt(), buf.readByte(), buf.readInt(), buf.readInt()));
+            buses.add(
+                new Bus(
+                    buf.readByte(),
+                    buf.readInt(),
+                    buf.readShort(),
+                    buf.readShort(),
+                    buf.readShort(),
+                    buf.readInt(),
+                    buf.readInt()));
         }
         int mapRange = buf.readShort();
         byte[] vhfMap = readMap(buf);
@@ -160,7 +168,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             calls,
             callSlots,
             links,
-            bridges,
+            buses,
             mapRange,
             vhfMap,
             uhfMap,
