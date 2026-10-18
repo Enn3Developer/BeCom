@@ -70,10 +70,8 @@ public sealed interface PhoneHandle {
         /** The stack of this phone among what {@code player} carries, or null. */
         public ItemStack stack(EntityPlayer player) {
             if (number < 0) return null;
-            Carried.Slot slot = Carried.first(
-                player,
-                stack -> ItemCarriedPhone.is(stack) && !ItemCarriedPhone.isTooNew(stack)
-                    && ItemCarriedPhone.number(stack) == number);
+            Carried.Slot slot = Carried
+                .first(player, stack -> ItemCarriedPhone.is(stack) && ItemCarriedPhone.number(stack) == number);
             return slot == null ? null : slot.stack();
         }
     }

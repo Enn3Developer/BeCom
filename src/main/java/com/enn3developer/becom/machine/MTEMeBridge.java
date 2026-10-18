@@ -20,7 +20,6 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
@@ -57,10 +56,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGridProxyable, CableEnd {
 
     private static final int TIER = 4;
-    public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the bridge left alone.
-    private NBTTagCompound tooNew;
     // The NBT key AE2 saves the bridge's node under.
     public static final String PROXY = "proxy";
 
@@ -107,10 +103,6 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     public boolean isWorking() {
         return working;
-    }
-
-    public boolean isTooNew() {
-        return tooNew != null;
     }
 
     public NodeRef ref() {
@@ -167,7 +159,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public void onFirstTick(IGregTechTileEntity tile) {
         super.onFirstTick(tile);
-        if (tile.isServerSide() && tooNew == null) getProxy().onReady();
+        if (tile.isServerSide()) getProxy().onReady();
     }
 
     // endregion
@@ -176,7 +168,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
@@ -346,7 +338,6 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     /** What it says about itself: on WAILA and the scanner, and laid out as the Gateways board on its screen. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.problem("becom.info.too_new");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         if (!powered) InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), false);
         else if (working) info.add("becom.info.online")
@@ -403,26 +394,11 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
         getProxy().writeToNBT(nbt);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
-        if (BeComNbt.tooNew(nbt, FORMAT)) {
-            // Its node too: AE2's owner, security key and grid storage come back with the newer BeCom.
-            tooNew = BeComNbt.ours(nbt);
-            if (nbt.hasKey(PROXY)) tooNew.setTag(
-                PROXY,
-                nbt.getTag(PROXY)
-                    .copy());
-            return;
-        }
-        tooNew = null;
         // A bridge placed from an item that kept some of its data, its paint or a cover, has no node saved: AE2 would
         // read the missing one as AE player 0's and drop the placer GT just gave it. GT's own ME hatches check too.
         if (nbt.hasKey(PROXY)) getProxy().readFromNBT(nbt);

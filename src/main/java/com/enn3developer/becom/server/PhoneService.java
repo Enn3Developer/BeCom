@@ -130,7 +130,7 @@ public final class PhoneService {
         PhoneRecord record = number < 0 ? null : registry().get(number);
         if (record == null || record.kind() != kind) return false;
         if (record.dimension() == world.provider.dimensionId && record.pos() == pos) return true;
-        // The original still stands: this is a copy. One saved by a newer BeCom counts too, though it shows no number.
+        // The original still stands: this is a copy.
         if (standsAt(record)) return false;
         // Its old spot isn't loaded, so there's no telling; a move happens with both spots loaded, so this is most
         // likely a copy, and a copy gets its own number on its first tick.
@@ -140,7 +140,7 @@ public final class PhoneService {
         return true;
     }
 
-    /** Whether a phone holding {@code record}'s number, or one this BeCom leaves alone, stands where it says. */
+    /** Whether a phone holding {@code record}'s number stands where it says. */
     private static boolean standsAt(PhoneRecord record) {
         WorldServer world = DimensionManager.getWorld(record.dimension());
         long pos = record.pos();
@@ -148,9 +148,9 @@ public final class PhoneService {
         if (world == null || !world.getChunkProvider()
             .chunkExists(x >> 4, z >> 4)) return false;
         TileEntity tile = world.getTileEntity(x, BlockPos.y(pos), z);
-        if (tile instanceof TileTelephone phone) return phone.isTooNew() || phone.number() == record.number();
+        if (tile instanceof TileTelephone phone) return phone.number() == record.number();
         return tile instanceof IGregTechTileEntity gt && gt.getMetaTileEntity() instanceof MTEVideophone phone
-            && (phone.isTooNew() || phone.number() == record.number());
+            && phone.number() == record.number();
     }
 
     /**

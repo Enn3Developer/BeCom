@@ -28,7 +28,6 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -66,10 +65,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, CableEnd {
 
     private static final int TICKS_PER_SECOND = 20;
-    public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the relay left alone.
-    private NBTTagCompound tooNew;
     private boolean working;
     // Whether it had the power to work at its last tick, switched on.
     private boolean powered;
@@ -121,10 +117,6 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
         return working;
     }
 
-    public boolean isTooNew() {
-        return tooNew != null;
-    }
-
     /** The kinds of portal in its reach at the last look. */
     public Set<Portals.Kind> portals() {
         return portals;
@@ -146,7 +138,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
@@ -389,7 +381,6 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
     /** What it says about itself: on WAILA and the scanner, and laid out as the Gateways board on its screen. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.problem("becom.info.too_new");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         NodeRef partner = becom == null || tile == null ? null : becom.network.partnerOf(ref());
@@ -491,18 +482,10 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
     }
 
     @Override
-    public void saveNBTData(NBTTagCompound nbt) {
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
-    }
+    public void saveNBTData(NBTTagCompound nbt) {}
 
     @Override
-    public void loadNBTData(NBTTagCompound nbt) {
-        tooNew = BeComNbt.tooNew(nbt, FORMAT) ? BeComNbt.ours(nbt) : null;
-    }
+    public void loadNBTData(NBTTagCompound nbt) {}
 
     // endregion
 }

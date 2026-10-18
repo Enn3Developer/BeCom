@@ -105,7 +105,7 @@ public final class NetworkService {
 
     // region Models
 
-    /** Loads a dimension's network as its world loads, which also stops the server on data that is too new. */
+    /** Loads a dimension's network as its world loads. */
     public void worldLoaded(World world) {
         if (world.isRemote) return;
         models.put(

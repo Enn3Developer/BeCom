@@ -196,7 +196,7 @@ public class BlockPhoneCable extends BlockContainer {
         Block block = world.getBlock(x, y, z);
         TileEntity tile = world.getTileEntity(x, y, z);
         if (block instanceof BlockTelephone) {
-            int number = tile instanceof TileTelephone phone && !phone.isTooNew() ? phone.number() : -1;
+            int number = tile instanceof TileTelephone phone ? phone.number() : -1;
             return new Buses.End(pos, Buses.Kind.PHONE, number);
         }
         if (tile instanceof IGregTechTileEntity gt) {

@@ -92,12 +92,7 @@ public class CommonProxy {
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
-        try {
-            BeComServer.start();
-        } catch (IllegalStateException e) {
-            // Saved data BeCom won't overwrite.
-            refuseWorld(e.getMessage());
-        }
+        BeComServer.start();
         event.registerServerCommand(new CommandBeCom());
         // CI's run-server job greps for this line: FML silently skips mod jars it can't read.
         BeCom.LOG.info("Better Communications {} started", Tags.VERSION);

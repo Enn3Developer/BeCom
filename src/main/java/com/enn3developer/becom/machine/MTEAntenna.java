@@ -24,7 +24,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
@@ -122,12 +121,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private static final IStructureDefinition<MTEAntenna>[] STRUCTURES = new IStructureDefinition[] { null,
         structure(1), structure(2), structure(3) };
 
-    public static final int FORMAT = 1;
-
     private final int tier;
     private final LineHatches lineHatches = new LineHatches();
-    // BeCom's keys from a newer BeCom: kept as they were, and the antenna left alone.
-    private NBTTagCompound tooNew;
     private int mast;
     private boolean working;
     private boolean registered;
@@ -221,14 +216,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     }
 
     public void setLocked(boolean locked) {
-        if (tooNew != null) return;
         this.locked = locked;
         markDirty();
-    }
-
-    /** Saved by a newer BeCom: this one leaves it alone. */
-    public boolean isTooNew() {
-        return tooNew != null;
     }
 
     public UUID owner() {
@@ -366,7 +355,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
@@ -405,7 +394,6 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         // Left alone: no node written for it here.
-        if (tooNew != null) return false;
         checkStructure(true, tile);
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
@@ -588,7 +576,6 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private InfoLines info() {
         InfoLines info = new InfoLines();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (tooNew != null) info.problem("becom.info.too_new");
         InfoLines.state(info, mMachine, tile != null && tile.isAllowedToWork(), working);
         info.add("becom.info.blocks", mMachine ? mast : 0)
             .row("becom.info.row.mast");
@@ -637,22 +624,12 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
         super.saveNBTData(nbt);
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
         nbt.setBoolean("becomLocked", locked);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
         super.loadNBTData(nbt);
-        if (BeComNbt.tooNew(nbt, FORMAT)) {
-            tooNew = BeComNbt.ours(nbt);
-            return;
-        }
-        tooNew = null;
         locked = nbt.getBoolean("becomLocked");
     }
 

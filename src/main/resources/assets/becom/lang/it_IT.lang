@@ -131,7 +131,6 @@ becom.rack.in_use=In uso
 becom.rack.idle=Inattivo
 becom.rack.calls=%s insieme
 becom.info.device=Telefono %s
-becom.info.too_new=Salvato da un BeCom più recente: aggiorna BeCom per usarlo
 becom.info.no_sky=Niente cielo aperto sopra
 becom.info.ringing=Squilla
 becom.info.off_hook=Cornetta alzata
@@ -154,7 +153,6 @@ becom.phone.holding_other=Hai già in mano un'altra cornetta.
 becom.phone.handset_first=Prima riappoggia la cornetta del Telefono.
 becom.phone.in_use=Questo telefono lo sta usando qualcun altro.
 becom.phone.too_far=Avvicinati al telefono per alzare la cornetta.
-becom.phone.too_new=Questo Telefono è stato salvato da un BeCom più recente. Aggiorna BeCom per usarlo.
 
 # Levels
 becom.level.none=Nessuno

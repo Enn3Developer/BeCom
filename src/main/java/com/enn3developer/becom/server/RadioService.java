@@ -770,8 +770,7 @@ public final class RadioService {
                 && (radio.transceiver == null || transceivers.get(radio.transceiver) == null);
             for (Carried.Slot slot : Carried.slots(player)) {
                 ItemStack stack = slot.stack();
-                if (!ItemWalkieTalkie.is(stack) || ItemWalkieTalkie.isTooNew(stack) || !ItemWalkieTalkie.on(stack))
-                    continue;
+                if (!ItemWalkieTalkie.is(stack) || !ItemWalkieTalkie.on(stack)) continue;
                 int perTick = tunables.walkieStandbyDrain();
                 if (slot.equals(activeSlot)) {
                     if (transmitting) perTick = tunables.walkieTransmitDrain();

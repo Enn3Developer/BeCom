@@ -1,6 +1,5 @@
 package com.enn3developer.becom.data;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -25,39 +24,22 @@ import com.enn3developer.becom.logic.app.PhoneApps;
 public final class AppsSavedData extends WorldSavedData {
 
     public static final String NAME = "becom_apps";
-    public static final int FORMAT = 1;
 
     private final Map<Integer, PhoneApps> phones = new HashMap<>();
     private final AppStore store = new AppStore();
     // The day, of the world's total time, each BeCom Card computer last ran: one gone long enough loses its number.
     private final Map<Integer, Long> seen = new HashMap<>();
-    private NBTTagCompound tooNewData;
-    private boolean read;
 
     public AppsSavedData(String name) {
         super(name);
     }
 
-    /** @throws IllegalStateException when the saved data is newer than this BeCom understands */
     public static AppsSavedData get(World world) {
-        return load(
-            world.mapStorage,
-            world.getSaveHandler()
-                .getMapFileFromName(NAME));
-    }
-
-    static AppsSavedData load(MapStorage storage, File file) {
+        MapStorage storage = world.mapStorage;
         AppsSavedData data = (AppsSavedData) storage.loadData(AppsSavedData.class, NAME);
         if (data == null) {
             data = new AppsSavedData(NAME);
-            data.read = true;
             storage.setData(NAME, data);
-        } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
-            data.tooNewData = new NBTTagCompound();
-            throw SavedDataFormat.couldNotRead("phone apps", file);
-        }
-        if (data.tooNewData != null) {
-            throw SavedDataFormat.newerThanUnderstood("phone apps", SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
         return data;
     }
@@ -117,16 +99,11 @@ public final class AppsSavedData extends WorldSavedData {
 
     @Override
     public boolean isDirty() {
-        return tooNewData == null && super.isDirty();
+        return super.isDirty();
     }
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
-        read = true;
-        if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            tooNewData = (NBTTagCompound) nbt.copy();
-            return;
-        }
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound phone = list.getCompoundTagAt(i);
@@ -186,13 +163,6 @@ public final class AppsSavedData extends WorldSavedData {
 
     @Override
     public void writeToNBT(NBTTagCompound nbt) {
-        if (tooNewData != null) {
-            for (Object key : tooNewData.func_150296_c()) {
-                nbt.setTag((String) key, tooNewData.getTag((String) key));
-            }
-            return;
-        }
-        SavedDataFormat.write(nbt, FORMAT);
         NBTTagList list = new NBTTagList();
         for (Map.Entry<Integer, PhoneApps> entry : phones.entrySet()) {
             if (entry.getValue()

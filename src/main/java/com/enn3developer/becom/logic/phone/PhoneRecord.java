@@ -177,12 +177,9 @@ public final class PhoneRecord {
         history.addLast(entry);
     }
 
-    /**
-     * Adds a call on top, dropping the oldest past the cap. A history loaded longer than the cap (a newer BeCom kept
-     * more) rolls at the length it was loaded with rather than being cut back.
-     */
+    /** Adds a call on top, dropping the oldest past the cap. */
     public void addHistory(HistoryEntry entry) {
-        int keep = Math.max(HISTORY_SIZE, history.size());
+        int keep = HISTORY_SIZE;
         history.addFirst(entry);
         while (history.size() > keep) history.removeLast();
     }

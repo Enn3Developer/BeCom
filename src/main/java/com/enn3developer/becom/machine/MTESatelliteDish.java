@@ -25,7 +25,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.gui.ViewSync;
 import com.enn3developer.becom.gui.machine.ReadoutUi;
@@ -88,8 +87,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     private static final Casings CASING = Casings.CleanStainlessSteelMachineCasing;
     private static final Materials FRAME = Materials.StainlessSteel;
 
-    public static final int FORMAT = 1;
-
     // Layers run top to bottom and rows from the controller's front backwards. C is a casing, F a frame box, H a plinth
     // casing an energy, maintenance or Line Hatch may take the place of, and a space anything.
     private static final String[][] SHAPE = {
@@ -127,8 +124,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         return n;
     }
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the dish left alone.
-    private NBTTagCompound tooNew;
     private final LineHatches lineHatches = new LineHatches();
     private boolean registered;
     private boolean working;
@@ -177,11 +172,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     public boolean isWorking() {
         return working;
-    }
-
-    /** Saved by a newer BeCom: this one leaves it alone. */
-    public boolean isTooNew() {
-        return tooNew != null;
     }
 
     private long pos() {
@@ -274,7 +264,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         // Left alone: no node, no formed state, no bridges written for it here.
-        if (tooNew != null) return false;
         checkStructure(true, tile);
         BeComServer becom = BeComServer.get();
         if (becom != null && tile.isServerSide()) {
@@ -295,7 +284,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         if (!registered) {
             becom.network.ensureNode(world, pos(), nodeKind(), tile.getOwnerUuid());
@@ -561,7 +550,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     private InfoLines info() {
         // GT's scanner reads on the server and sends its text as it is; WAILA translates on the client.
         InfoLines info = readout();
-        if (tooNew != null) info.problem("becom.info.too_new");
         return info;
     }
 
@@ -578,17 +566,11 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
         super.saveNBTData(nbt);
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
         super.loadNBTData(nbt);
-        tooNew = BeComNbt.tooNew(nbt, FORMAT) ? BeComNbt.ours(nbt) : null;
     }
 
     // endregion

@@ -10,7 +10,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.UsernameCache;
@@ -25,7 +24,6 @@ import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.block.TileCable;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
@@ -56,11 +54,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
 
     private static final int TIER = 2;
-    public static final int FORMAT = 1;
     private static final String NUMBER = "becomNumber";
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the Videophone left alone.
-    private NBTTagCompound tooNew;
     private int number = -1;
     private boolean working;
     private long settledAt = Long.MIN_VALUE;
@@ -86,7 +81,7 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
         return BeComMachines.stack(this, amount);
     }
 
-    /** Its number, or -1 before its first tick or when a newer BeCom saved it. */
+    /** Its number, or -1 before its first tick. */
     public int number() {
         return number;
     }
@@ -95,15 +90,11 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
         return working;
     }
 
-    public boolean isTooNew() {
-        return tooNew != null;
-    }
-
     @Override
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         int x = tile.getXCoord(), y = tile.getYCoord(), z = tile.getZCoord();
         // On the first tick after loading, and again if a mover carried it somewhere else.
@@ -145,7 +136,7 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
     public void settle() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         BeComServer becom = BeComServer.get();
-        if (becom == null || tile == null || tooNew != null) return;
+        if (becom == null || tile == null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         PhoneRecord original = number < 0 ? null : becom.phones.record(number);
@@ -175,7 +166,7 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
 
     @Override
     public int busNumber() {
-        return tooNew != null ? -1 : number;
+        return number;
     }
 
     @Override
@@ -202,10 +193,6 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
     @Override
     public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
         if (!tile.isServerSide()) return true;
-        if (tooNew != null) {
-            player.addChatComponentMessage(new ChatComponentTranslation("becom.phone.too_new"));
-            return true;
-        }
         BeComServer becom = BeComServer.get();
         if (becom != null && number >= 0) becom.phones.claimIfOwnerless(number, player);
         openGui(player);
@@ -343,7 +330,6 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
     private InfoLines info() {
         InfoLines info = new InfoLines();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (tooNew != null) info.problem("becom.info.too_new");
         InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
         if (number >= 0) info.add("becom.info.value", number)
             .row("becom.info.row.number");
@@ -363,22 +349,11 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
         nbt.setInteger(NUMBER, number);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
-        if (BeComNbt.tooNew(nbt, FORMAT)) {
-            tooNew = BeComNbt.ours(nbt);
-            number = -1;
-            return;
-        }
-        tooNew = null;
         number = nbt.hasKey(NUMBER) ? nbt.getInteger(NUMBER) : -1;
     }
 

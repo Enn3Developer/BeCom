@@ -1,6 +1,5 @@
 package com.enn3developer.becom.data;
 
-import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
@@ -11,6 +10,7 @@ import net.minecraft.world.WorldSavedData;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
+import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
@@ -23,116 +23,49 @@ import com.enn3developer.becom.logic.phone.PhoneRegistry;
 public final class GlobalSavedData extends WorldSavedData {
 
     public static final String NAME = "becom_global";
-    public static final int FORMAT = 1;
 
     private final PhoneRegistry phones = new PhoneRegistry();
     private long savedVersion;
-    private NBTTagCompound tooNewData;
-    // What this BeCom found it doesn't understand, which means a newer BeCom saved the file.
-    private String notUnderstood;
-    // Set with notUnderstood when what was found is something no BeCom writes, rather than a newer BeCom's.
-    private boolean damaged;
-    private boolean read;
 
     public GlobalSavedData(String name) {
         super(name);
     }
 
-    /** @throws IllegalStateException when the saved data is newer than this BeCom understands */
     public static GlobalSavedData get(World world) {
-        return load(
-            world.mapStorage,
-            world.getSaveHandler()
-                .getMapFileFromName(NAME));
-    }
-
-    /** Loads the registry from {@code storage}, whose file is {@code file}; {@link #get} for the Overworld. */
-    static GlobalSavedData load(MapStorage storage, File file) {
+        MapStorage storage = world.mapStorage;
         GlobalSavedData data = (GlobalSavedData) storage.loadData(GlobalSavedData.class, NAME);
         if (data == null) {
             data = new GlobalSavedData(NAME);
-            // Nothing on disk to read: a new world. Counts as read, so a later get() after the first save is fine.
-            data.read = true;
             storage.setData(NAME, data);
-        } else if (SavedDataFormat.unreadable(file != null && file.isFile(), data.read)) {
-            data.tooNewData = new NBTTagCompound();
-            throw SavedDataFormat.couldNotRead("the phone registry", file);
-        }
-        if (data.notUnderstood != null) {
-            throw data.damaged ? SavedDataFormat.damaged("the phone registry", data.notUnderstood)
-                : SavedDataFormat.notUnderstood("the phone registry", data.notUnderstood);
-        }
-        if (data.tooNewData != null) {
-            throw SavedDataFormat
-                .newerThanUnderstood("the phone registry", SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
         return data;
-    }
-
-    /** Whether {@link #readFromNBT} ran; false for data vanilla failed to read. */
-    public boolean wasRead() {
-        return read;
     }
 
     public PhoneRegistry phones() {
         return phones;
     }
 
-    public boolean isTooNew() {
-        return tooNewData != null;
-    }
-
     @Override
     public boolean isDirty() {
-        if (tooNewData != null) return false;
         return super.isDirty() || phones.version() != savedVersion;
     }
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
-        if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            tooNewData = (NBTTagCompound) nbt.copy();
-            read = true;
-            return;
-        }
         NBTTagList list = nbt.getTagList("phones", Constants.NBT.TAG_COMPOUND);
-        // Phone kinds and history directions are added without a format bump: one this BeCom doesn't know means a newer
-        // BeCom saved the file. Dropping those phones would free their numbers for reuse, so keep it untouched.
         java.util.Set<Integer> numbers = new java.util.HashSet<>();
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound phone = list.getCompoundTagAt(i);
-            // Numbers are six digits and unique: anything else is damage, not a newer BeCom.
+            // A phone whose number isn't valid, is taken already, or whose kind this BeCom doesn't have is dropped.
             int number = phone.getInteger("number");
-            if (!PhoneNumbers.isValid(number) || !numbers.add(number)) {
-                notUnderstood(nbt, "a phone number that is invalid or repeated, " + number);
-                damaged = true;
-                return;
-            }
             String kind = phone.getString("kind");
-            if (kindOf(kind) == null) {
-                notUnderstood(nbt, "a phone kind it doesn't know, \"" + kind + "\"");
-                return;
+            if (!PhoneNumbers.isValid(number) || !numbers.add(number) || kindOf(kind) == null) {
+                BeCom.LOG.warn("Dropping a saved phone, number {} of kind \"{}\"", number, kind);
+                continue;
             }
-            NBTTagList history = phone.getTagList("history", Constants.NBT.TAG_COMPOUND);
-            for (int j = 0; j < history.tagCount(); j++) {
-                String dir = history.getCompoundTagAt(j)
-                    .getString("dir");
-                if (directionOf(dir) == null) {
-                    notUnderstood(nbt, "a call history entry it doesn't know, \"" + dir + "\"");
-                    return;
-                }
-            }
+            phones.restore(readPhone(phone));
         }
-        for (int i = 0; i < list.tagCount(); i++) phones.restore(readPhone(list.getCompoundTagAt(i)));
         savedVersion = phones.version();
-        // Last: anything thrown above leaves the data unread, and so never saved over the file.
-        read = true;
-    }
-
-    private void notUnderstood(NBTTagCompound nbt, String detail) {
-        notUnderstood = detail;
-        tooNewData = (NBTTagCompound) nbt.copy();
-        read = true;
     }
 
     private static PhoneRecord.Direction directionOf(String name) {
@@ -145,11 +78,6 @@ public final class GlobalSavedData extends WorldSavedData {
 
     @Override
     public void writeToNBT(NBTTagCompound nbt) {
-        if (tooNewData != null) {
-            for (String key : tooNewData.func_150296_c()) nbt.setTag(key, tooNewData.getTag(key));
-            return;
-        }
-        SavedDataFormat.write(nbt, FORMAT);
         NBTTagList list = new NBTTagList();
         for (PhoneRecord record : phones.all()) list.appendTag(writePhone(record));
         nbt.setTag("phones", list);
@@ -164,7 +92,7 @@ public final class GlobalSavedData extends WorldSavedData {
         }
     }
 
-    /** One phone, already checked by {@link #readFromNBT}: its number, kind and history directions are known. */
+    /** One phone, already checked by {@link #readFromNBT}: its number and kind are known. */
     static PhoneRecord readPhone(NBTTagCompound tag) {
         int number = tag.getInteger("number");
         PhoneKind kind = kindOf(tag.getString("kind"));
@@ -183,15 +111,15 @@ public final class GlobalSavedData extends WorldSavedData {
         for (int i = 0; i < blocked.tagCount(); i++) {
             NBTTagCompound entry = blocked.getCompoundTagAt(i);
             UUID player = readUuid(entry, "player");
-            // As saved, even past this BeCom's cap: a newer one may allow more, and the list isn't this BeCom's to cut.
             if (player != null) record.restoreBlock(player, entry.getString("name"));
         }
         NBTTagList history = tag.getTagList("history", Constants.NBT.TAG_COMPOUND);
-        // Saved newest first and kept in that order, all of it: a newer BeCom may keep more than this one does, and
-        // the history then rolls at that length (PhoneRecord.addHistory).
+        // Saved newest first and kept in that order.
         for (int i = 0; i < history.tagCount(); i++) {
             NBTTagCompound entry = history.getCompoundTagAt(i);
             PhoneRecord.Direction direction = directionOf(entry.getString("dir"));
+            // An entry of a direction this BeCom doesn't have is dropped.
+            if (direction == null) continue;
             record.restoreHistory(
                 new PhoneRecord.HistoryEntry(
                     entry.getLong("time"),

@@ -231,7 +231,7 @@ public final class CarriedPhones {
         Map<Integer, ItemStack> stacks = new HashMap<>();
         // The cursor counts: a phone being moved to another slot mustn't drop out of its call.
         for (ItemStack stack : Carried.stacks(player)) {
-            if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack)) continue;
+            if (!ItemCarriedPhone.is(stack)) continue;
             ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
             int number = ItemCarriedPhone.number(stack);
             PhoneRecord record = number < 0 ? null : phones.record(number);
@@ -325,7 +325,7 @@ public final class CarriedPhones {
         Set<Integer> seen = new HashSet<>();
         for (EntityPlayerMP player : players) {
             for (ItemStack stack : Carried.stacks(player)) {
-                if (!ItemCarriedPhone.is(stack) || ItemCarriedPhone.isTooNew(stack)) continue;
+                if (!ItemCarriedPhone.is(stack)) continue;
                 ItemCarriedPhone item = (ItemCarriedPhone) stack.getItem();
                 int number = ItemCarriedPhone.number(stack);
                 double max = item.maxCharge(stack);

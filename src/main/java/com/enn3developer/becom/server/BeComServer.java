@@ -144,8 +144,7 @@ public final class BeComServer {
 
     /**
      * Starts BeCom for a server whose worlds have loaded: GTNH Voice forgets every group when its
-     * server stops, so the groups are registered again on every start. Loading the phone registry and the satellites
-     * here stops the server early if a newer BeCom saved them.
+     * server stops, so the groups are registered again on every start.
      */
     public static void start() {
         BeComServer becom = mine();

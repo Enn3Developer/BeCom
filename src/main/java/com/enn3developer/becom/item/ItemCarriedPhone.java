@@ -8,7 +8,6 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.api.IGuiHolder;
@@ -19,7 +18,6 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.logic.phone.BatteryUse;
 import com.enn3developer.becom.logic.phone.PhoneKind;
@@ -47,7 +45,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     private static final String USE = "becomUse";
     private static final String SAVER = "becomSaver";
     private static final String WARN = "becomWarn";
-    public static final int FORMAT = 1;
 
     protected ItemCarriedPhone(String name) {
         setUnlocalizedName(BeCom.MODID + "." + name);
@@ -80,7 +77,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     public static void setNumber(ItemStack stack, int number) {
-        if (isTooNew(stack)) return;
         tag(stack).setInteger(NUMBER, number);
     }
 
@@ -91,7 +87,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     public static void setOn(ItemStack stack, boolean on) {
-        if (isTooNew(stack)) return;
         tag(stack).setBoolean(ON, on);
     }
 
@@ -106,7 +101,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     public static void setUse(ItemStack stack, BatteryUse use) {
-        if (isTooNew(stack)) return;
         long[] eu = use.eu();
         int[] saved = new int[eu.length];
         // A day's drain stays far below 2^32 EU; past it, it stops counting rather than wrap.
@@ -123,7 +117,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     public static void setSaver(ItemStack stack, boolean on) {
-        if (isTooNew(stack)) return;
         tag(stack).setBoolean(SAVER, on);
     }
 
@@ -134,24 +127,17 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     }
 
     public static void setWarns(ItemStack stack, boolean on) {
-        if (isTooNew(stack)) return;
         tag(stack).setBoolean(WARN, on);
-    }
-
-    /** Its state was written by a newer BeCom: this one leaves it alone. */
-    public static boolean isTooNew(ItemStack stack) {
-        return BeComNbt.tooNew(stack.getTagCompound(), FORMAT);
     }
 
     /** Switched on and charged: it has service where its holder is, can be called, and drains its charge. */
     public static boolean working(ItemStack stack) {
-        return is(stack) && !isTooNew(stack) && on(stack) && ((ItemCarriedPhone) stack.getItem()).charge(stack) > 0;
+        return is(stack) && on(stack) && ((ItemCarriedPhone) stack.getItem()).charge(stack) > 0;
     }
 
-    /** Its tag, marked with BeCom's format as BeCom writes into it. */
+    /** Its tag, made on first use. */
     protected static NBTTagCompound tag(ItemStack stack) {
         if (stack.getTagCompound() == null) stack.setTagCompound(new NBTTagCompound());
-        BeComNbt.write(stack.getTagCompound(), FORMAT);
         return stack.getTagCompound();
     }
 
@@ -233,7 +219,6 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
-        if (isTooNew(stack)) lines.add(StatCollector.translateToLocal("becom.info.too_new"));
         int number = number(stack);
         if (number >= 0) lines.add(Tips.row("becom.tip.number", number));
         lines.add(Tips.state(on(stack), batteryLine(stack)));

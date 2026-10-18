@@ -22,7 +22,6 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.WalkieScreen;
 import com.enn3developer.becom.voice.RadioGroup;
 
@@ -49,7 +48,6 @@ public class ItemWalkieTalkie extends Item
     private static final String CHANNEL = "becomChannel";
     private static final String ON = "becomOn";
     private static final int TIER = 2;
-    public static final int FORMAT = 1;
     private static final double TRANSFER_LIMIT = 128;
 
     @SideOnly(Side.CLIENT)
@@ -74,13 +72,7 @@ public class ItemWalkieTalkie extends Item
         return channel < 1 || channel > RadioGroup.CHANNELS ? 1 : channel;
     }
 
-    /** Its state was written by a newer BeCom: this one leaves it alone. */
-    public static boolean isTooNew(ItemStack stack) {
-        return BeComNbt.tooNew(stack.getTagCompound(), FORMAT);
-    }
-
     public static void setChannel(ItemStack stack, int channel) {
-        if (isTooNew(stack)) return;
         tag(stack).setInteger(CHANNEL, Math.floorMod(channel - 1, RadioGroup.CHANNELS) + 1);
     }
 
@@ -91,7 +83,6 @@ public class ItemWalkieTalkie extends Item
     }
 
     public static void setOn(ItemStack stack, boolean on) {
-        if (isTooNew(stack)) return;
         tag(stack).setBoolean(ON, on);
     }
 
@@ -101,7 +92,7 @@ public class ItemWalkieTalkie extends Item
 
     /** Switched on and charged: it receives, transmits and drains its battery. */
     public static boolean working(ItemStack stack) {
-        return is(stack) && !isTooNew(stack) && on(stack) && charge(stack) > 0;
+        return is(stack) && on(stack) && charge(stack) > 0;
     }
 
     /** Takes up to {@code eu} from its battery, and returns what it took. */
@@ -114,10 +105,9 @@ public class ItemWalkieTalkie extends Item
         return Carried.first(player, ItemWalkieTalkie::working);
     }
 
-    /** Its tag, marked with BeCom's format as BeCom writes into it; IC2 keeps its charge there too. */
+    /** Its tag, made on first use; IC2 keeps its charge there too. */
     private static NBTTagCompound tag(ItemStack stack) {
         if (stack.getTagCompound() == null) stack.setTagCompound(new NBTTagCompound());
-        BeComNbt.write(stack.getTagCompound(), FORMAT);
         return stack.getTagCompound();
     }
 
@@ -224,7 +214,6 @@ public class ItemWalkieTalkie extends Item
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
-        if (isTooNew(stack)) lines.add(StatCollector.translateToLocal("becom.info.too_new"));
         lines.add(
             Tips.state(
                 on(stack),

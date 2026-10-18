@@ -62,8 +62,6 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     @Override
     public double injectAEPower(ItemStack stack, double amount) {
-        // One a newer BeCom saved keeps its charge as it was: a charger keeps the power it would have lost.
-        if (isTooNew(stack)) return amount;
         double stored = getAECurrentPower(stack);
         double taken = Math.min(amount, getAEMaxPower(stack) - stored);
         setPower(stack, stored + taken);
@@ -73,7 +71,6 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
     @Override
     public double extractAEPower(ItemStack stack, double amount) {
         // Nor does it give any away, which it couldn't take off its charge.
-        if (isTooNew(stack)) return 0;
         double stored = getAECurrentPower(stack);
         double given = Math.min(amount, stored);
         setPower(stack, stored - given);
@@ -97,7 +94,6 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
     }
 
     private static void setPower(ItemStack stack, double power) {
-        if (isTooNew(stack)) return;
         tag(stack).setDouble(POWER, power);
     }
 
@@ -114,7 +110,6 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
 
     @Override
     public void setEncryptionKey(ItemStack stack, String key, String name) {
-        if (isTooNew(stack)) return;
         tag(stack).setString(KEY, key == null ? "" : key);
         tag(stack).setString(NETWORK_NAME, name == null ? "" : name);
     }

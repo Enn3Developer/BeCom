@@ -11,7 +11,6 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.Cord;
@@ -37,10 +36,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     // "You can move 1 block away": the gap from the block to the player's body, with a little slack.
     private static final double CORD_REACH = 1.2;
 
-    public static final int FORMAT = 1;
-
     private int number = -1;
-    private NBTTagCompound tooNew;
     private boolean ringing;
     private int ringTicks;
     private long settledAt = Long.MIN_VALUE;
@@ -134,7 +130,6 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     @Override
     public void updateEntity() {
         if (worldObj.isRemote) return;
-        if (tooNew != null) return;
         // On the first tick after loading, and again if a mover carried this same tile object somewhere else.
         long here = BlockPos.pack(xCoord, yCoord, zCoord);
         int dimension = worldObj.provider.dimensionId;
@@ -152,37 +147,14 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     @Override
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);
-        if (tooNew != null) {
-            // Written back as a newer BeCom saved it, except where it stands now: a mover that keeps the tile object
-            // may have carried it.
-            for (String key : tooNew.func_150296_c()) {
-                if (!key.equals("id") && !key.equals("x") && !key.equals("y") && !key.equals("z")) {
-                    nbt.setTag(key, tooNew.getTag(key));
-                }
-            }
-            return;
-        }
-        SavedDataFormat.write(nbt, FORMAT);
         nbt.setInteger("number", number);
     }
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
-        if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            // A Telephone from a newer BeCom: kept untouched and left alone, never given a number here.
-            tooNew = (NBTTagCompound) nbt.copy();
-            number = -1;
-            return;
-        }
-        tooNew = null;
         // Format 1 is the first; the number is all a Telephone keeps.
         number = nbt.hasKey("number") ? nbt.getInteger("number") : -1;
-    }
-
-    /** Saved by a newer BeCom: this one leaves it alone. */
-    public boolean isTooNew() {
-        return tooNew != null;
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -195,7 +167,6 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     /** Its lines for WAILA, as on the Scanner board: ringing or not, its number and its owner. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (isTooNew()) info.problem("becom.info.too_new");
         BeComServer becom = BeComServer.get();
         PhoneRecord record = number < 0 || becom == null ? null : becom.phones.record(number);
         if (ringing()) info.add("becom.info.ringing")

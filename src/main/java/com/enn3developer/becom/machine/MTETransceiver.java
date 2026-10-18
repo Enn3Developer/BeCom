@@ -18,7 +18,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.TransceiverScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
@@ -49,10 +48,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
 
     private static final int TIER = 2;
-    public static final int FORMAT = 1;
 
-    // BeCom's keys from a newer BeCom: kept as they were, and the Transceiver left alone.
-    private NBTTagCompound tooNew;
     private int channel = 1;
     private boolean loudspeaker = true;
     private boolean working;
@@ -87,7 +83,6 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     }
 
     public void setChannel(int channel) {
-        if (tooNew != null) return;
         this.channel = Math.floorMod(channel - 1, RadioGroup.CHANNELS) + 1;
         markDirty();
     }
@@ -97,7 +92,6 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     }
 
     public void setLoudspeaker(boolean on) {
-        if (tooNew != null) return;
         loudspeaker = on;
         markDirty();
     }
@@ -117,7 +111,7 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         if (!tile.isServerSide()) return;
         BeComServer becom = BeComServer.get();
-        if (becom == null || tooNew != null) return;
+        if (becom == null) return;
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
@@ -290,7 +284,6 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     private InfoLines info() {
         InfoLines info = new InfoLines();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (tooNew != null) info.problem("becom.info.too_new");
         InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
         info.add("becom.info.value", channel)
             .row("becom.info.row.channel");
@@ -306,22 +299,12 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        if (tooNew != null) {
-            BeComNbt.restore(nbt, tooNew);
-            return;
-        }
-        BeComNbt.write(nbt, FORMAT);
         nbt.setInteger("becomChannel", channel);
         nbt.setBoolean("becomLoudspeaker", loudspeaker);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
-        if (BeComNbt.tooNew(nbt, FORMAT)) {
-            tooNew = BeComNbt.ours(nbt);
-            return;
-        }
-        tooNew = null;
         int saved = nbt.getInteger("becomChannel");
         channel = saved < 1 || saved > RadioGroup.CHANNELS ? 1 : saved;
         loudspeaker = !nbt.hasKey("becomLoudspeaker") || nbt.getBoolean("becomLoudspeaker");

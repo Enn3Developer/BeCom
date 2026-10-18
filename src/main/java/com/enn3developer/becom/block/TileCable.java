@@ -8,7 +8,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.enn3developer.becom.data.SavedDataFormat;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.machine.InfoLines;
@@ -24,12 +23,10 @@ import com.enn3developer.becom.server.BeComServer;
  */
 public class TileCable extends TileEntity {
 
-    public static final int FORMAT = 1;
     /** Every side open. */
     public static final int ALL = 0x3f;
 
     private int mask;
-    private NBTTagCompound tooNew;
     private final WailaInfo waila = new WailaInfo(this::info);
 
     public int mask() {
@@ -49,7 +46,6 @@ public class TileCable extends TileEntity {
      * stands there: {@link BlockPhoneCable.Join#joins} when the side is open now.
      */
     public BlockPhoneCable.Join connect(ForgeDirection side) {
-        if (tooNew != null) return BlockPhoneCable.Join.NO;
         BlockPhoneCable.Join join = BlockPhoneCable.joinAt(worldObj, xCoord, yCoord, zCoord, side, tier());
         if (!join.joins()) return join;
         setMask(mask | side.flag);
@@ -60,7 +56,6 @@ public class TileCable extends TileEntity {
 
     /** Closes a side, and the cable across it closes back. */
     public void disconnect(ForgeDirection side) {
-        if (tooNew != null) return;
         setMask(mask & ~side.flag);
         if (beside(side) instanceof TileCable other) other.setMask(other.mask & ~side.getOpposite().flag);
     }
@@ -78,7 +73,7 @@ public class TileCable extends TileEntity {
      * cable of the tier open back toward a side left open for it. Sides facing an unloaded chunk stay as they are.
      */
     public void check() {
-        if (tooNew != null || worldObj == null || worldObj.isRemote) return;
+        if (worldObj == null || worldObj.isRemote) return;
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
             if (!open(side)) continue;
             BlockPhoneCable.Join join = BlockPhoneCable.joinAt(worldObj, xCoord, yCoord, zCoord, side, tier());
@@ -152,35 +147,13 @@ public class TileCable extends TileEntity {
     @Override
     public void writeToNBT(NBTTagCompound nbt) {
         super.writeToNBT(nbt);
-        if (tooNew != null) {
-            // Written back as a newer BeCom saved it, except where it stands now.
-            for (String key : tooNew.func_150296_c()) {
-                if (!key.equals("id") && !key.equals("x") && !key.equals("y") && !key.equals("z")) {
-                    nbt.setTag(key, tooNew.getTag(key));
-                }
-            }
-            return;
-        }
-        SavedDataFormat.write(nbt, FORMAT);
         nbt.setByte("mask", (byte) mask);
     }
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
         super.readFromNBT(nbt);
-        if (SavedDataFormat.tooNew(nbt, FORMAT)) {
-            // A cable from a newer BeCom: kept untouched, and joining nothing here.
-            tooNew = (NBTTagCompound) nbt.copy();
-            mask = 0;
-            return;
-        }
-        tooNew = null;
         mask = nbt.getByte("mask") & ALL;
-    }
-
-    /** Saved by a newer BeCom: this one leaves it alone. */
-    public boolean isTooNew() {
-        return tooNew != null;
     }
 
     public WailaInfo waila() {
@@ -191,8 +164,7 @@ public class TileCable extends TileEntity {
     private InfoLines info() {
         InfoLines info = new InfoLines();
         BeComServer becom = BeComServer.get();
-        if (tooNew != null) info.problem("becom.info.too_new");
-        else if (becom != null)
+        if (becom != null)
             InfoLines.cable(info, becom, worldObj.provider.dimensionId, BlockPos.pack(xCoord, yCoord, zCoord));
         return info;
     }
