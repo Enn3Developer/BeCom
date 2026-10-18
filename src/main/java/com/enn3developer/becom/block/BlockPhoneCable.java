@@ -9,6 +9,7 @@ import net.minecraft.block.material.Material;
 import net.minecraft.block.material.MaterialLogic;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -343,9 +344,26 @@ public class BlockPhoneCable extends BlockContainer {
         setBlockBounds((float) b[0], (float) b[1], (float) b[2], (float) b[3], (float) b[4], (float) b[5]);
     }
 
+    /** It's solid: its core and each open side's arm, so a player walks on it rather than through it. */
+    @Override
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public void addCollisionBoxesToList(World world, int x, int y, int z, AxisAlignedBB mask, List list,
+        Entity entity) {
+        int sides = maskAt(world, x, y, z);
+        collide(core(), x, y, z, mask, list);
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS)
+            if ((sides & side.flag) != 0) collide(arm(side), x, y, z, mask, list);
+    }
+
+    private static void collide(double[] b, int x, int y, int z, AxisAlignedBB mask, List<AxisAlignedBB> list) {
+        AxisAlignedBB box = AxisAlignedBB.getBoundingBox(x + b[0], y + b[1], z + b[2], x + b[3], y + b[4], z + b[5]);
+        if (mask.intersectsWith(box)) list.add(box);
+    }
+
     @Override
     public AxisAlignedBB getCollisionBoundingBoxFromPool(World world, int x, int y, int z) {
-        return null;
+        double[] b = hull(maskAt(world, x, y, z));
+        return AxisAlignedBB.getBoundingBox(x + b[0], y + b[1], z + b[2], x + b[3], y + b[4], z + b[5]);
     }
 
     @Override
