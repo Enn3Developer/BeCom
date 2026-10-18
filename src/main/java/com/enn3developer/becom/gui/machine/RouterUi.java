@@ -232,7 +232,8 @@ public final class RouterUi extends CanvasScreen {
                     "becom.phone.kind." + PhoneKind.values()[d.kind()].name()
                         .toLowerCase(Locale.ROOT));
         c.text(kind, x, ty, 14, Grey.TEXT);
-        if (d.node() >= 0) return;
+        // A router, a gateway or a mirror is just there: no number to show, nothing it's doing.
+        if (d.node() >= 0 || d.kind() == PhoneKind.MIRROR.ordinal()) return;
         if (d.number() >= 0) c.text(String.valueOf(d.number()), x + c.width(kind, 14) + 10, ty, 14, Grey.NOTE);
         String now;
         int colour;

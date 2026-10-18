@@ -76,8 +76,10 @@ public final class PhoneRegistry {
         for (int number : reachable) {
             if (number == ownNumber) continue;
             PhoneRecord record = phones.get(number);
-            if (record == null || record.hidden() || record.blocks(caller) || record.kind() == PhoneKind.COMPUTER)
-                continue;
+            if (record == null || record.hidden()
+                || record.blocks(caller)
+                || record.kind() == PhoneKind.COMPUTER
+                || record.kind() == PhoneKind.MIRROR) continue;
             contacts.add(new Contact(number, record.ownerName()));
         }
         contacts.sort(

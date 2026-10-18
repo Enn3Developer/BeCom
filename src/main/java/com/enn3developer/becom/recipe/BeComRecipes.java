@@ -211,6 +211,19 @@ public final class BeComRecipes {
                 new ItemStack(Blocks.noteblock), 'C', OrePrefixes.circuit.get(Materials.MV), 'H', ItemList.Hull_MV, 'P',
                 cable.copy() });
 
+        // App Store Mirror: an MV hull with two of OpenComputers' hard disks for the store, its memory and circuits,
+        // and two Phone Cables to its bus.
+        li.cil.oc.api.detail.ItemInfo hdd = li.cil.oc.api.Items.get("hdd1");
+        li.cil.oc.api.detail.ItemInfo ram = li.cil.oc.api.Items.get("ram1");
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.appMirror.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "DCD", "RHR", "P P", 'D',
+                hdd == null ? OrePrefixes.circuit.get(Materials.MV) : hdd.createItemStack(1), 'C',
+                OrePrefixes.circuit.get(Materials.MV), 'R',
+                ram == null ? OrePrefixes.circuit.get(Materials.LV) : ram.createItemStack(1), 'H', ItemList.Hull_MV,
+                'P', cable.copy() });
+
         // Signal Analyzer: it only listens, so a sensor and no emitter, behind a screen in an aluminium case.
         GTValues.RA.stdBuilder()
             .itemInputs(

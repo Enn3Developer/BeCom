@@ -41,6 +41,7 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.CarriedPhones;
 import com.enn3developer.becom.server.NetworkService;
+import com.enn3developer.becom.server.Ownership;
 import com.enn3developer.becom.server.PhoneHandle;
 import com.enn3developer.becom.server.PhoneService;
 import com.enn3developer.becom.server.RadioService;
@@ -96,6 +97,28 @@ public final class AppService {
 
     private record Delivery(long due, long order, int to, String app, int from, byte[] data) {}
 
+    /**
+     * The best way from a phone or computer to the App Store: the mirror and the route to it, and the KB/s that route
+     * has free.
+     */
+    public record Reach(int mirror, int rate, CallGraph.DataRoute route) {}
+
+    /** A store app on its way to a phone: from {@code mirror}, started at {@code from}, done at {@code until}. */
+    private record Download(String id, int mirror, long from, long until, int rate, CallGraph.DataRoute route) {
+
+        int on(Object link) {
+            return route.links()
+                .contains(link) ? rate : 0;
+        }
+
+        double progress(long now) {
+            return until <= from ? 1 : Math.max(0, Math.min(1, (now - from) / (double) (until - from)));
+        }
+    }
+
+    /** A working mirror as it last said so: when, whose it is, and whether it serves its owner's team alone. */
+    private record Mirror(long heard, UUID owner, boolean locked) {}
+
     private final MinecraftServer server;
     private final Tunables t;
     private final LevelScale levels;
@@ -124,6 +147,15 @@ public final class AppService {
     private final Map<Integer, Set<String>> awake = new HashMap<>();
     // Each sender's stream: its messages go one after another, at the rate its route had free when it last sent.
     private final Map<Integer, Sending> sending = new HashMap<>();
+    // The App Store's mirrors heard working, by number; each phone's download, one at a time; and each phone's or
+    // computer's reach, worked out once a second.
+    private final Map<Integer, Mirror> mirrors = new HashMap<>();
+    private final Map<Integer, Download> downloads = new HashMap<>();
+    private final Map<Integer, Reach> reaches = new HashMap<>();
+    private final Map<Integer, Long> reachedAt = new HashMap<>();
+    // Downloads each mirror has served on the day in [0], as [day, count].
+    private final Map<Integer, long[]> served = new HashMap<>();
+    private static final long MIRROR_LOST_TICKS = 2 * TICKS_PER_SECOND;
     private boolean statsChanged;
     private final Map<Integer, Long> lastChat = new HashMap<>();
     private static final long CHAT_EVERY_TICKS = 5 * TICKS_PER_SECOND;
@@ -371,13 +403,45 @@ public final class AppService {
         changed();
     }
 
-    /** Installs an app from the App Store. */
+    /**
+     * Downloads an app from the App Store, through the mirror the phone reaches best, at its route's rate: it installs
+     * when it's all there.
+     */
     public void installFromStore(EntityPlayerMP player, int number, String id) {
         AppStore.Entry entry = data.store()
             .get(id);
         if (entry == null || entry.hidden() && !player.mcServer.getConfigurationManager()
             .func_152596_g(player.getGameProfile())) return;
         if (!sees(number, entry)) return;
+        if (downloads.containsKey(number)) {
+            tell(player, "becom.apps.downloading");
+            return;
+        }
+        Reach reach = reachNow(number, ownerOf(number));
+        if (reach == null) {
+            tell(player, "becom.apps.no_mirror");
+            return;
+        }
+        int ticksTaken = Math.max(1, DataLink.ticks(entry.size(), reach.rate()));
+        downloads.put(number, new Download(id, reach.mirror(), ticks, ticks + ticksTaken, reach.rate(), reach.route()));
+        long[] count = served.computeIfAbsent(reach.mirror(), m -> new long[2]);
+        if (count[0] != day()) {
+            count[0] = day();
+            count[1] = 0;
+        }
+        count[1]++;
+        changed();
+    }
+
+    /** A download is all there: it installs, as it is in the store now. */
+    private void finishDownload(int number, String id) {
+        EntityPlayerMP player = holderOf(number);
+        AppStore.Entry entry = data.store()
+            .get(id);
+        if (player == null || entry == null || !sees(number, entry)) return;
+        // Hidden while it came down: only an operator still gets it, as only they could start it.
+        if (entry.hidden() && !player.mcServer.getConfigurationManager()
+            .func_152596_g(player.getGameProfile())) return;
         PhoneApps.Installed result = data.apps(number)
             .install(entry.source(), entry.authorName(), PhoneApps.Origin.STORE);
         tell(
@@ -567,6 +631,7 @@ public final class AppService {
     public int dataOn(Object link) {
         int kbps = 0;
         for (Sending stream : sending.values()) if (stream.until() > ticks) kbps += stream.on(link);
+        for (Download download : downloads.values()) kbps += download.on(link);
         return kbps;
     }
 
@@ -578,6 +643,13 @@ public final class AppService {
                 .vertices()
                 .contains(vertex)) continue;
             kbps += stream.rate();
+            routes++;
+        }
+        for (Download download : downloads.values()) {
+            if (!download.route()
+                .vertices()
+                .contains(vertex)) continue;
+            kbps += download.rate();
             routes++;
         }
         return new int[] { kbps, routes };
@@ -632,6 +704,95 @@ public final class AppService {
         // Stats only: saved with the next change, or within a minute; the screen shows them now.
         statsChanged = true;
         changed();
+    }
+
+    // endregion
+
+    // region The App Store's mirrors
+
+    /** A working mirror says so each tick, with whose it is and whether it serves its owner's team alone. */
+    public void mirrorHeard(int number, UUID owner, boolean locked) {
+        mirrors.put(number, new Mirror(ticks, owner, locked));
+    }
+
+    /** A mirror was broken: what it was serving stops. */
+    public void mirrorGone(int number) {
+        mirrors.remove(number);
+        served.remove(number);
+        checkDownloads();
+    }
+
+    /** What a mirror serves: [downloads now, downloads today]. */
+    public int[] mirrorLoad(int number) {
+        int now = 0;
+        for (Download download : downloads.values()) if (download.mirror() == number) now++;
+        long[] count = served.get(number);
+        return new int[] { now, count == null || count[0] != day() ? 0 : (int) count[1] };
+    }
+
+    /** How a phone reaches the App Store, as of the last second: null when no working mirror is in reach. */
+    public Reach reach(int number) {
+        Long at = reachedAt.get(number);
+        if (at == null || ticks - at >= TICKS_PER_SECOND) {
+            reachedAt.put(number, ticks);
+            Reach reach = reachNow(number, ownerOf(number));
+            if (reach == null) reaches.remove(number);
+            else reaches.put(number, reach);
+        }
+        return reaches.get(number);
+    }
+
+    /** How far a phone's download is, 0 to 1, and which app it is; null when it isn't downloading. */
+    public Map.Entry<String, Double> download(int number) {
+        Download download = downloads.get(number);
+        return download == null ? null : Map.entry(download.id(), download.progress(ticks));
+    }
+
+    /**
+     * The mirror {@code number} reaches fastest now, serving {@code user}, and its route; null for none. Data already
+     * on the way takes its share of each link.
+     */
+    private Reach reachNow(int number, UUID user) {
+        Reach best = null;
+        for (Map.Entry<Integer, Mirror> entry : mirrors.entrySet()) {
+            Mirror mirror = entry.getValue();
+            if (mirror.locked() && !Ownership.sameTeam(mirror.owner(), user)) continue;
+            int at = entry.getKey();
+            CallGraph.DataRoute path = calls.dataRoute(number, at, this::dataOn);
+            if (!path.routed()) continue;
+            SignalLevel level = levels.levelOf(path.width());
+            if (level == SignalLevel.NONE) continue;
+            int rate = Math.min(Math.min(DataLink.rate(rateOf(number), rateOf(at)), t.radioRate(level)), path.free());
+            if (rate > 0 && (best == null || rate > best.rate())) best = new Reach(at, rate, path);
+        }
+        return best;
+    }
+
+    private UUID ownerOf(int number) {
+        PhoneRecord record = phones.record(number);
+        return record == null ? null : record.owner();
+    }
+
+    /** Finishes the downloads that are all there, and stops those whose mirror or route to it is gone. */
+    private void checkDownloads() {
+        for (Iterator<Map.Entry<Integer, Download>> it = downloads.entrySet()
+            .iterator(); it.hasNext();) {
+            Map.Entry<Integer, Download> entry = it.next();
+            int number = entry.getKey();
+            Download download = entry.getValue();
+            boolean lost = !mirrors.containsKey(download.mirror())
+                || levels.levelOf(calls.width(number, download.mirror())) == SignalLevel.NONE;
+            if (lost) {
+                it.remove();
+                EntityPlayerMP holder = holderOf(number);
+                if (holder != null) tell(holder, "becom.apps.download_lost");
+                changed();
+            } else if (download.until() <= ticks) {
+                it.remove();
+                finishDownload(number, download.id());
+                changed();
+            }
+        }
     }
 
     // endregion
@@ -770,6 +931,7 @@ public final class AppService {
             }
         }
         if (number < 0) return "the player near the computer has no phone on to confirm with";
+        if (reachNow(card.number(), author.getUniqueID()) == null) return "no App Store mirror in reach";
         return ask(card, number, holder, source, author.getCommandSenderName(), true);
     }
 
@@ -963,6 +1125,9 @@ public final class AppService {
             .removeIf(offer -> offer.until() < ticks)) changed();
         sending.values()
             .removeIf(stream -> stream.until() <= ticks);
+        mirrors.values()
+            .removeIf(mirror -> ticks - mirror.heard() > MIRROR_LOST_TICKS);
+        checkDownloads();
         if (statsChanged && ticks % STATS_SAVE_TICKS == 0) {
             statsChanged = false;
             data.markDirty();

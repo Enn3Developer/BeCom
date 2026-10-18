@@ -228,6 +228,7 @@ public final class BeComConfig {
             "Blocks from a computer within which a player is asked to publish its app.");
         integer(config, v, APPS, "storeApps", 1, 8192, "Most apps the App Store holds.");
         integer(config, v, APPS, "storeAppsPerAuthor", 1, 1024, "Most apps one player may have in the App Store.");
+        integer(config, v, APPS, "mirrorPower", "EU/t an App Store Mirror draws.");
         integer(
             config,
             v,

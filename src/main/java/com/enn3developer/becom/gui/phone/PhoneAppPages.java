@@ -563,6 +563,7 @@ final class PhoneAppPages {
         ui.paintStatus(c, v);
         float y = ui.paintBar(c, t("becom.ui.app.store"), STORE, STORE_SHADOW);
         AppsView apps = v.apps();
+        if (noMirror(c, apps, y)) return;
         float x = SX + 10;
         float w = SW - 20;
         y += 8;
@@ -639,7 +640,7 @@ final class PhoneAppPages {
                 ui.app = id;
                 ui.open(PhoneUi.Page.STORE_APP);
             });
-            paintInstallButton(c, app, x + w - bw, y + 8 + (content - 22) / 2, bw, 22, 12, false);
+            paintInstallButton(c, apps, app, x + w - bw, y + 8 + (content - 22) / 2, bw, 22, 12, false);
             c.rect(SX, y + h - 1, SW, 1, Paint.LINE);
             y += h;
         }
@@ -652,6 +653,13 @@ final class PhoneAppPages {
                 ask();
             });
         }
+    }
+
+    /** With no App Store mirror in reach, the store says so and shows nothing else; true then. */
+    private static boolean noMirror(Canvas c, AppsView apps, float y) {
+        if (apps.mirror() > 0) return false;
+        Paint.centered(c, t("becom.ui.store.no_mirror"), SX + SW / 2, y + 30, 13, Paint.GREY);
+        return true;
     }
 
     /** Install, Installed or Update for a store app; {@code withSize} adds its size, as its page has it. */
@@ -668,11 +676,28 @@ final class PhoneAppPages {
      * A store app's Install, Installed or Update: on its page {@code wide} and bevelled with its size, on the store
      * small and flat in a 1-pixel edge, each as its board's. Installed takes no click.
      */
-    private void paintInstallButton(Canvas c, AppsView.StoreApp app, float x, float y, float w, float h, float size,
-        boolean wide) {
+    private void paintInstallButton(Canvas c, AppsView apps, AppsView.StoreApp app, float x, float y, float w, float h,
+        float size, boolean wide) {
+        if (app.id()
+            .equals(apps.downloading())) {
+            // Coming down: the button fills as the bytes arrive, with how much is here.
+            flat(c, x, y, w, h, "", size, Paint.LINE, EDGE, Paint.GREY);
+            c.rect(x + 1, y + 1, (w - 2) * Math.max(0, Math.min(1, apps.progress())), h - 2, Paint.Style.GO.face);
+            String done = Math.round(apps.progress() * 100) + "%";
+            Paint.centered(c, done, x + w / 2, y + Math.round((h - c.lineHeight(size)) / 2), size, Paint.WHITE);
+            ui.hit(x, y, w, h, null);
+            return;
+        }
         String label = installLabel(app, wide);
         if (app.installed()
             .equals(app.version())) {
+            flat(c, x, y, w, h, label, size, Paint.LINE, EDGE, Paint.GREY);
+            ui.hit(x, y, w, h, null);
+            return;
+        }
+        if (!apps.downloading()
+            .isEmpty()) {
+            // One download at a time: the others wait for it.
             flat(c, x, y, w, h, label, size, Paint.LINE, EDGE, Paint.GREY);
             ui.hit(x, y, w, h, null);
             return;
@@ -693,6 +718,7 @@ final class PhoneAppPages {
     void paintStoreApp(Canvas c, PhoneView v) {
         ui.paintStatus(c, v);
         float y = ui.paintBar(c, t("becom.ui.app.store"), STORE, STORE_SHADOW);
+        if (noMirror(c, v.apps(), y)) return;
         AppsView.StoreApp app = null;
         for (AppsView.StoreApp a : v.apps()
             .store())
@@ -717,7 +743,7 @@ final class PhoneAppPages {
             12,
             Paint.GREY);
         y += 48 + 10;
-        paintInstallButton(c, app, x, y, w, 32, 15, true);
+        paintInstallButton(c, v.apps(), app, x, y, w, 32, 15, true);
         // The description 10 under the button in 17-pixel lines; then what it can and can't, and about it.
         y += 32 + 10;
         for (String line : Paint.wrap(c, app.about(), 13, w)) {

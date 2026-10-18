@@ -13,11 +13,15 @@ import com.enn3developer.becom.logic.app.AppTree;
  * an install a computer offers, the last notification, and one page of the App Store. Built on the server, drawn on
  * the client, which decides nothing from it.
  *
- * @param tab  the store tab, an AppService.StoreTab ordinal
- * @param page which page of {@code total} results {@code store} is
+ * @param tab         the store tab, an AppService.StoreTab ordinal
+ * @param page        which page of {@code total} results {@code store} is
+ * @param mirror      the KB/s to the App Store mirror the phone reaches best; 0 when none is in reach, and the store
+ *                    is empty
+ * @param downloading the store app on its way to the phone, or empty
+ * @param progress    how much of it is here, 0 to 1
  */
 public record AppsView(List<App> installed, Screen screen, Offer offer, Notice notice, List<StoreApp> store,
-    String query, int tab, int page, int total) {
+    String query, int tab, int page, int total, int mirror, String downloading, float progress) {
 
     public static final int MAX_INSTALLED = com.enn3developer.becom.logic.app.AppLimits.MAX_APPS_PER_PHONE;
     /** Store results a page. */
@@ -32,7 +36,29 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
         "",
         0,
         0,
+        0,
+        0,
+        "",
         0);
+
+    /** The same with the store as the phone reaches it now: empty with no mirror in reach. */
+    public AppsView reached(int mirror, String downloading, float progress) {
+        return mirror <= 0
+            ? new AppsView(installed, screen, offer, notice, List.of(), query, tab, 0, 0, 0, downloading, progress)
+            : new AppsView(
+                installed,
+                screen,
+                offer,
+                notice,
+                store,
+                query,
+                tab,
+                page,
+                total,
+                mirror,
+                downloading,
+                progress);
+    }
 
     /**
      * An installed app and its settings: its icon (64 hex digits or empty) and what it uses (AppManifest.Use bits),
@@ -172,6 +198,9 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
         buf.writeByte(tab);
         buf.writeShort(page);
         buf.writeShort(total);
+        buf.writeInt(mirror);
+        str(buf, downloading);
+        buf.writeFloat(progress);
     }
 
     public static AppsView read(PacketBuffer buf) {
@@ -258,7 +287,10 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
             query,
             buf.readUnsignedByte(),
             buf.readShort(),
-            buf.readShort());
+            buf.readShort(),
+            buf.readInt(),
+            str(buf),
+            buf.readFloat());
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

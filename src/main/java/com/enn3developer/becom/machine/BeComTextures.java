@@ -33,6 +33,8 @@ public final class BeComTextures {
     public static final IIconContainer ME_BRIDGE_GLOW = icon("OVERLAY_ME_BRIDGE_GLOW");
     public static final IIconContainer VIDEOPHONE = icon("OVERLAY_VIDEOPHONE");
     public static final IIconContainer VIDEOPHONE_GLOW = icon("OVERLAY_VIDEOPHONE_GLOW");
+    public static final IIconContainer APP_MIRROR = icon("OVERLAY_APP_MIRROR");
+    public static final IIconContainer APP_MIRROR_GLOW = icon("OVERLAY_APP_MIRROR_GLOW");
     public static final IIconContainer LAUNCH_PAD = icon("OVERLAY_LAUNCH_PAD");
     public static final IIconContainer LAUNCH_PAD_GLOW = icon("OVERLAY_LAUNCH_PAD_GLOW");
     public static final IIconContainer SATELLITE_DISH = icon("OVERLAY_SATELLITE_DISH");

@@ -507,6 +507,11 @@ public final class CallService implements CallBook.Listener {
             tell(caller, "becom.call.computer");
             return CallBook.Check.UNREACHABLE;
         }
+        // A mirror's number is how the network finds it; it takes no calls.
+        if (target.kind() == PhoneKind.MIRROR) {
+            tell(caller, "becom.call.mirror");
+            return CallBook.Check.UNREACHABLE;
+        }
         if (target.kind()
             .carried()) {
             // Unreachable when nobody carries it switched on and charged, or its holder has no voice;

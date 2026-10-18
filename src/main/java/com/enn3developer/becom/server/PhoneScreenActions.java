@@ -231,10 +231,22 @@ public final class PhoneScreenActions {
     private static AppsView appsOf(BeComServer becom, int number) {
         long version = becom.apps.version();
         CachedApps cached = APPS_VIEWS.get(number);
-        if (cached != null && cached.version() == version) return cached.view();
-        AppsView view = buildApps(becom, number);
-        APPS_VIEWS.put(number, new CachedApps(version, view));
-        return view;
+        AppsView view;
+        if (cached != null && cached.version() == version) view = cached.view();
+        else {
+            view = buildApps(becom, number);
+            APPS_VIEWS.put(number, new CachedApps(version, view));
+        }
+        // Where the store is and how far a download is change as the holder walks and the bytes come in, not with
+        // the apps' version: put in each time.
+        AppService.Reach reach = becom.apps.reach(number);
+        Map.Entry<String, Double> download = becom.apps.download(number);
+        return view.reached(
+            reach == null ? 0 : reach.rate(),
+            download == null ? "" : download.getKey(),
+            download == null ? 0
+                : download.getValue()
+                    .floatValue());
     }
 
     private static AppsView buildApps(BeComServer becom, int number) {
@@ -348,7 +360,10 @@ public final class PhoneScreenActions {
             query.tab()
                 .ordinal(),
             page,
-            found.size());
+            found.size(),
+            0,
+            "",
+            0);
     }
 
     /** A carried phone's battery page: its charge, how long it lasts, where it went today and its switches. */

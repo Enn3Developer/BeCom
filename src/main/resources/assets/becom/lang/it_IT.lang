@@ -20,6 +20,7 @@ gt.blockmachines.becom.antenna_t3.name=Testa d'antenna T3
 gt.blockmachines.becom.transceiver.name=Ricetrasmettitore
 gt.blockmachines.becom.me_bridge.name=Ponte ME
 gt.blockmachines.becom.videophone.name=Videotelefono
+gt.blockmachines.becom.app_mirror.name=Mirror dell'App Store
 gt.blockmachines.becom.launch_pad.name=Rampa di lancio per satelliti
 gt.blockmachines.becom.satellite_dish.name=Parabola satellitare
 gt.blockmachines.becom.portal_relay.name=Ripetitore di portale
@@ -109,6 +110,7 @@ becom.machine.transceiver.range=Arriva a ~%s blocchi, sente entro %s, altoparlan
 becom.machine.me_bridge.info=Fa chiamare qualsiasi telefono ai Telefoni ME della sua rete ME; prende un canale
 becom.machine.videophone.info=Un vivavoce video cablato
 becom.machine.videophone.room=Sente entro %s blocchi, altoparlante %s, riaggancia dopo %s s da solo
+becom.machine.app_mirror.info=I telefoni scaricano le app dello store attraverso di lui
 becom.videophone.step_closer=Avvicinati al Videotelefono entro %s blocchi per usarlo: le sue chiamate sono per chi gli sta intorno.
 
 # Scanner info
@@ -173,12 +175,16 @@ item.becom.becom_card_wired.name=Scheda BeCom (cablata)
 becom.card.radio=Radio: segnale da telefono
 becom.card.wired=Cablata: il cavo del computer
 becom.call.computer=Quel numero è un computer: riceve dati, non chiamate.
+becom.call.mirror=Quel numero è un Mirror dell'App Store: non riceve chiamate.
 becom.apps.background.info=Si sveglia per i messaggi, al massimo una volta al minuto
 becom.apps.installed.new=%s installata.
 becom.apps.installed.updated=%s aggiornata.
 becom.apps.installed.full=Non c'è posto per %s: un telefono tiene %s app.
 becom.apps.installed.not_an_app=%s non è un'app.
 becom.apps.installed.too_big=%s è troppo grande per un telefono.
+becom.apps.download_lost=Download interrotto: il Mirror dell'App Store non è più in portata.
+becom.apps.downloading=Un'altra app si sta scaricando.
+becom.apps.no_mirror=Nessun Mirror dell'App Store in portata.
 becom.apps.notice=[%s] %s %s
 becom.apps.offered=Un computer a %3$s ti offre l'app %1$s %2$s: apri il telefono per installarla.
 
@@ -280,6 +286,8 @@ betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.name=§5§lUn telefono in tasca
 betterquesting.quest.tmuzvF6QVE-ZigvcfAhM5Q.desc=Un telefono che va dove vai tu. Il Telefono cellulare prende il servizio dalle antenne: circa 64 blocchi da una T1 in campo aperto, il doppio da una T2.%n%nPrende il suo numero al primo uso e funziona dall'inventario o da uno slot bauble. Il tasto Telefono (N, se non l'hai cambiato) risponde, riaggancia o apre il suo schermo.%n%nLa batteria tiene 1.200.000 EU e consuma 4 EU/t in attesa, 16 in chiamata.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.name=§5§lMi senti adesso?
 betterquesting.quest.QTf-qLjuX5uncRhFsloOcg.desc=Fai o ricevi una chiamata con un Telefono cellulare. Tienilo in mano per vedere le tacche.%n%nIl maltempo si fa sentire: la pioggia toglie 3 dB al servizio di un telefono, un temporale 6. Non sai dove c'è copertura? Lo schermo di un'antenna mostra fin dove arriva il suo segnale.%n%nIn chiamata, aggiungi altri telefoni dalla tastiera: si parla fino in 8.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
+betterquesting.quest.n3P0tSabXDS4eCuzXQVCYQ.name=§6§lSpecchio, specchio
+betterquesting.quest.n3P0tSabXDS4eCuzXQVCYQ.desc=L'App Store è di tutto il server, ma un telefono ci arriva solo attraverso un Mirror dell'App Store: una macchina MV, 64 EU/t, collegata con il cavo su qualsiasi faccia a un bus che i tuoi telefoni raggiungono.%n%nFinché un telefono ha un percorso verso un mirror in funzione, il suo App Store si apre e le app si scaricano alla velocità di quel percorso; anche i computer pubblicano attraverso un mirror. Un cacciavite lo riserva alla squadra del suo proprietario.%n%nAltro nella guida: [guide page=becom:apps.md]App del telefono[/guide].
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=§8§lSenza fili dappertutto
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Hai una rete ME con i punti d'accesso wireless? Allora la copertura ce l'hai già. Un Telefono ME è un Telefono cellulare collegato a una rete ME.%n%nCollegalo a un Terminale di sicurezza ME, come un Terminale wireless. Ovunque arrivino i Punti d'accesso wireless ME di quella rete, amplificatori compresi, ha servizio al livello Massimo. Altrove è un Telefono cellulare, con il segnale di un Telefono cellulare. Si carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si chiamano senza nessuna antenna.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=§8§lUnire le reti
@@ -331,6 +339,7 @@ becom.phone.kind.mobile=Telefono cellulare
 becom.phone.kind.me_phone=Telefono ME
 becom.phone.kind.videophone=Videotelefono
 becom.phone.kind.computer=Computer
+becom.phone.kind.mirror=Mirror dell'App Store
 becom.info.no_backhaul=Nessuna dorsale
 becom.info.no_backhaul_hatch=Nessuna dorsale sulla sua Line Hatch
 becom.info.backhaul_dead=Nessuna dorsale: nessun router in funzione sul suo cavo
@@ -490,6 +499,7 @@ becom.ui.store.installed=Installata
 becom.ui.store.update=Aggiorna
 becom.ui.store.with_size=%s, %s
 becom.ui.store.empty=Ancora niente di pubblicato.
+becom.ui.store.no_mirror=Nessun Mirror dell'App Store in portata
 becom.ui.store.no_match=Nessuna app corrisponde.
 becom.ui.store.about=Informazioni
 becom.ui.store.updated=Aggiornata %s giorni fa.
@@ -744,6 +754,11 @@ becom.info.row.racks=Rack
 becom.info.row.hall=Sala
 becom.info.row.reaches=Raggiunge
 becom.info.row.serves=Serve
+becom.mirror.not_yours=Solo il proprietario, la sua squadra o un operatore possono bloccarlo.
+becom.mirror.unlocked=Ora serve tutti.
+becom.mirror.locked=Ora serve solo la squadra del proprietario.
+becom.info.row.downloads=Download
+becom.mirror.downloads=%s ora, %s oggi
 becom.tip.on=Acceso
 becom.tip.off=Spento
 becom.tip.channel=Canale %s

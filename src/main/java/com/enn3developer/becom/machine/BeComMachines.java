@@ -41,6 +41,7 @@ public final class BeComMachines {
     public static final int RACK_ID = 25019;
     public static final int RACK_MV_ID = 25020;
     public static final int RACK_HV_ID = 25021;
+    public static final int APP_MIRROR_ID = 25022;
 
     public static BlockBeComMachines block;
     public static MTEExchange exchange;
@@ -64,6 +65,7 @@ public final class BeComMachines {
     public static MTEHatchRack rack;
     public static MTEHatchRack rackMV;
     public static MTEHatchRack rackHV;
+    public static MTEAppMirror appMirror;
 
     private BeComMachines() {}
 
@@ -91,6 +93,7 @@ public final class BeComMachines {
         ids.put(RACK_ID, "becom.switching_rack");
         ids.put(RACK_MV_ID, "becom.switching_rack_mv");
         ids.put(RACK_HV_ID, "becom.switching_rack_hv");
+        ids.put(APP_MIRROR_ID, "becom.app_mirror");
         return ids;
     }
 
@@ -161,5 +164,6 @@ public final class BeComMachines {
         rack = new MTEHatchRack(RACK_ID, "becom.switching_rack", "Switching Rack (LV)", CableTier.PHONE);
         rackMV = new MTEHatchRack(RACK_MV_ID, "becom.switching_rack_mv", "Switching Rack (MV)", CableTier.COAXIAL);
         rackHV = new MTEHatchRack(RACK_HV_ID, "becom.switching_rack_hv", "Switching Rack (HV)", CableTier.FIBRE);
+        appMirror = new MTEAppMirror(APP_MIRROR_ID, "becom.app_mirror", "App Store Mirror");
     }
 }

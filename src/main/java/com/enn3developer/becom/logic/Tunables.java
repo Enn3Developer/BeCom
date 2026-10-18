@@ -39,6 +39,7 @@ public record Tunables(
     // Apps
     int appsPerPhone, int appSourceKB, int appStorageKB, int appMessageKB, int appWakeSeconds, int appAwakeSeconds,
     int appOfferSeconds, int appAuthorReach, int storeApps, int storeAppsPerAuthor, int computerForgetDays,
+    int mirrorPower,
     // Video
     int videoPoseRate, int videoHeightMedium, int videoHeightHigh, int videoHeightMax, int videoFpsMedium,
     int videoFpsHigh, int videoFpsMax, int rearWidthHigh, int rearHeightHigh, int rearFpsHigh, int rearWidthMax,
@@ -184,6 +185,7 @@ public record Tunables(
         d.put("appAuthorReach", 16);
         d.put("storeApps", 1024);
         d.put("storeAppsPerAuthor", 32);
+        d.put("mirrorPower", 64);
         d.put("computerForgetDays", 30);
         d.put("weatherRainLoss", 3.0);
         d.put("weatherStormLoss", 6.0);
@@ -368,6 +370,7 @@ public record Tunables(
             throw invalid("appOfferSeconds", appOfferSeconds, "10 to 600");
         if (appAuthorReach < 2 || appAuthorReach > 64) throw invalid("appAuthorReach", appAuthorReach, "2 to 64");
         if (storeApps < 1 || storeApps > 8192) throw invalid("storeApps", storeApps, "1 to 8192");
+        if (mirrorPower < 0) throw invalid("mirrorPower", mirrorPower, "0 or more");
         if (storeAppsPerAuthor < 1 || storeAppsPerAuthor > 1024)
             throw invalid("storeAppsPerAuthor", storeAppsPerAuthor, "1 to 1024");
         if (computerForgetDays < 1 || computerForgetDays > 3650)

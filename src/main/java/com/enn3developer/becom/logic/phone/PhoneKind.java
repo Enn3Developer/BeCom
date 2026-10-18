@@ -14,7 +14,9 @@ public enum PhoneKind {
     /** The Videophone: a speakerphone block on a router's bus, like a Telephone. */
     VIDEOPHONE(SignalLevel.HIGH, false, true),
     /** A computer with a BeCom Card: it has a number for apps' data, but takes no calls. */
-    COMPUTER(SignalLevel.HIGH, false, false);
+    COMPUTER(SignalLevel.HIGH, false, false),
+    /** The App Store Mirror: a block on a bus that phones download store apps from; it takes no calls or data. */
+    MIRROR(SignalLevel.MAX, false, false);
 
     private final SignalLevel cap;
     private final boolean carried;

@@ -316,6 +316,20 @@ def portal_relay():
     return c
 
 
+def app_mirror():
+    """An App Store Mirror: a server's face, three drive bays each with its activity lamp, over a vent."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    for y in (3, 6, 9):
+        c.rect(3, y, 12, y + 1, "o")
+        c.rect(4, y, 9, y, "s")
+        c.rect(4, y + 1, 9, y + 1, "d")
+        c.lamp(11, y, 1, 2)
+    for x in range(4, 12, 2):
+        c.set(x, 12, "k")
+    return c
+
+
 OVERLAYS = {
     "OVERLAY_EXCHANGE": exchange,
     "OVERLAY_ROUTER": router,
@@ -332,6 +346,7 @@ OVERLAYS = {
     "OVERLAY_LAUNCH_PAD": launch_pad,
     "OVERLAY_SATELLITE_DISH": satellite_dish,
     "OVERLAY_PORTAL_RELAY": portal_relay,
+    "OVERLAY_APP_MIRROR": app_mirror,
 }
 
 
