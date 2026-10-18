@@ -25,21 +25,17 @@ public enum NodeKind {
     /** A radio on a block: kept here so the network knows where every Transceiver is. */
     TRANSCEIVER(0, true, false, 0),
     /**
-     * The ME Bridge: joins an ME network to a BeCom network. Its one wrench link is a bridge onto
-     * a Pylon Head, a Line Terminal or an antenna within the bridge distance, a short stretch of line it drives,
-     * like an antenna's.
+     * The ME Bridge: joins an ME network to a BeCom network. Like every gateway it has no wrench links: cable from it
+     * to an Exchange is its backhaul.
      */
-    ME_BRIDGE(1, true, false, 0),
+    ME_BRIDGE(0, true, false, 0),
+    /** The Satellite Dish: joins the Exchange its cable reaches to the satellites over its dimension. */
+    SATELLITE_DISH(0, true, false, 0),
     /**
-     * The Satellite Dish: its one wrench link is a bridge onto an antenna, a Pylon Head or a Line
-     * Terminal within the bridge distance, and it joins that network to the satellites over its dimension.
+     * The Portal Relay: joins the Exchange its cable reaches to its partner's, the relay by the far side of a portal,
+     * a link of its own between two dimensions.
      */
-    SATELLITE_DISH(1, true, false, 0),
-    /**
-     * The Portal Relay: its one wrench link is a bridge onto its own network, as a dish's is, and
-     * its partner, the relay on the far side of a portal, is a link of its own between two dimensions.
-     */
-    PORTAL_RELAY(1, true, false, 0);
+    PORTAL_RELAY(0, true, false, 0);
 
     private final int linkSlots;
     private final boolean powered;
@@ -76,14 +72,22 @@ public enum NodeKind {
         return antennaTier > 0;
     }
 
-    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna, an ME Bridge, a dish or a relay. */
+    /** Reaches the bridge distance to link, instead of a pylon's span: an antenna. */
     public boolean bridge() {
-        return antenna() || this == ME_BRIDGE || gateway();
+        return antenna();
     }
 
-    /** Joins its network to others far away, and is wired only to an antenna, a pylon, a terminal or an Exchange. */
+    /** Joins its network to others far away: a dish or a relay. */
     public boolean gateway() {
         return this == SATELLITE_DISH || this == PORTAL_RELAY;
+    }
+
+    /**
+     * Joins the network by cable to an Exchange, which carries its calls at the cable's rate: a gateway or an ME
+     * Bridge.
+     */
+    public boolean cabled() {
+        return gateway() || this == ME_BRIDGE;
     }
 
     /** Needs its multiblock formed before it works or links. */

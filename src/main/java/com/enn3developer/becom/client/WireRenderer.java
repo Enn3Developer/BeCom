@@ -29,7 +29,7 @@ public final class WireRenderer {
     private static final int WIRE_COLOR = 0x2A2A2A;
     private static final int BROKEN_COLOR = 0x7A3A1A;
     // Each cable's colour, as its block draws it, by tier.
-    private static final int[] CABLE_COLOR = { 0xB2201E, 0x8A8D92, 0x3A8AC0 };
+    private static final int[] CABLE_COLOR = { 0xE08A3A, 0x9A9A9A, 0x5AA0D0 };
     // Strands of one span hang this far apart along the crossarm.
     private static final double STRAND_GAP = 0.6;
 

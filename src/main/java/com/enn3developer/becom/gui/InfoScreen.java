@@ -2,20 +2,19 @@ package com.enn3developer.becom.gui;
 
 import java.util.function.Supplier;
 
-import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.gui.machine.ReadoutUi;
+import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.machine.InfoLines;
 
 /**
- * A machine's screen that shows what it says about itself (its {@link InfoLines}, scanner details too): what's wrong,
- * in red on top, then its state, calls and backhaul. For the ME Bridge and the Portal Relay, which have nothing to set.
+ * A machine's screen that shows what it says about itself (its {@link InfoLines}, scanner details too), laid out as
+ * the Gateways board's readout ({@link ReadoutUi}). For the ME Bridge and the Portal Relay, which have nothing to set.
  */
 public final class InfoScreen {
-
-    private static final int WIDTH = 240;
-    private static final int HEIGHT = 130;
 
     // A machine says a dozen lines; whole lines past this are left out rather than cut.
     private static final int MAX_BYTES = 16 * 1024;
@@ -64,25 +63,15 @@ public final class InfoScreen {
     }
 
     /** {@code info} runs on the server only; each client translates the lines it's sent. */
-    public static ModularPanel build(String id, String title, Supplier<InfoLines> info, PanelSyncManager sync) {
+    public static ModularPanel build(String id, String title, String chip, Supplier<InfoLines> info,
+        PanelSyncManager sync) {
         ViewSync<String> text = lines(info);
         sync.syncValue("becomInfo", text);
-        ModularPanel panel = new ModularPanel(id).size(WIDTH, HEIGHT);
-        Flow column = Flow.column()
-            .sizeRel(1f)
-            .padding(6, 6, 6, 6)
-            .childPadding(4);
-        column.child(
-            IKey.str(title)
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        column.child(
-            IKey.dynamic(() -> String.join("\n", InfoLines.decode(text.view())))
-                .asWidget()
-                .widthRel(1f)
-                .expanded());
-        panel.child(column);
-        return panel;
+        CanvasWidget screen = new CanvasWidget(
+            ReadoutUi.panel(text::view, title, chip),
+            ReadoutUi.panelScale(BeCom.proxy.guiHeight()));
+        return new ModularPanel(id).size(screen.width(), screen.height())
+            .background(IDrawable.EMPTY)
+            .child(screen);
     }
 }

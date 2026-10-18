@@ -18,9 +18,9 @@ public final class WiredTopology {
 
     /**
      * One run between two powered nodes, as seen from {@code from}: {@code rate} is what it carries in KB/s, 0 when
-     * no span has a cable that reaches the whole run.
+     * no span has a cable that reaches the whole run; {@code cables} are those strung on its first span.
      */
-    public record Segment(long from, long to, double length, int rate) {}
+    public record Segment(long from, long to, double length, int rate, List<CableTier> cables) {}
 
     /**
      * Every run leaving every working powered node; a run between two working nodes shows up once from each end.
@@ -61,7 +61,9 @@ public final class WiredTopology {
             spans.add(model.cables(prev, cur));
             if (node.kind()
                 .powered()) {
-                return working.test(cur) ? new Segment(start.pos(), cur, length, rate(spans, length, cables)) : null;
+                return working.test(cur)
+                    ? new Segment(start.pos(), cur, length, rate(spans, length, cables), spans.get(0))
+                    : null;
             }
             if (!node.formed()) return null;
             long next = otherLink(node, prev);
@@ -87,6 +89,52 @@ public final class WiredTopology {
     }
 
     /** The passive pylon's link that isn't {@code from}, or {@link Long#MIN_VALUE} at a dead end. */
+                                                                                                     /**
+                                                                                                      * The run of wire
+                                                                                                      * through a
+                                                                                                      * passive pylon,
+                                                                                                      * out both ways to
+                                                                                                      * the powered
+                                                                                                      * nodes or dead
+                                                                                                      * ends there: its
+                                                                                                      * length, and
+                                                                                                      * the best cable
+                                                                                                      * strung on every
+                                                                                                      * span of it, or
+                                                                                                      * null when no one
+                                                                                                      * cable is.
+                                                                                                      */
+    public record Through(double length, CableTier cable) {}
+
+    public static Through through(NetworkModel model, long pos) {
+        NetNode pylon = model.node(pos);
+        if (pylon == null) return new Through(0, null);
+        double length = 0;
+        java.util.EnumSet<CableTier> common = java.util.EnumSet.allOf(CableTier.class);
+        boolean any = false;
+        for (long first : pylon.links()) {
+            long prev = pos;
+            long cur = first;
+            for (int steps = 0; steps <= model.size(); steps++) {
+                length += BlockPos.distance(prev, cur);
+                List<CableTier> span = model.cables(prev, cur);
+                common.retainAll(
+                    span.isEmpty() ? java.util.EnumSet.noneOf(CableTier.class) : java.util.EnumSet.copyOf(span));
+                any = true;
+                NetNode node = model.node(cur);
+                if (node == null || node.kind()
+                    .powered()) break;
+                long next = otherLink(node, prev);
+                if (next == Long.MIN_VALUE) break;
+                prev = cur;
+                cur = next;
+            }
+        }
+        CableTier best = null;
+        for (CableTier tier : common) best = tier;
+        return new Through(length, any ? best : null);
+    }
+
     private static long otherLink(NetNode pylon, long from) {
         for (long other : pylon.links()) {
             if (other != from) return other;

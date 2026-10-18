@@ -151,7 +151,14 @@ public final class VideoService {
     private void update() {
         List<VideoPlan> plans = new ArrayList<>();
         for (Call call : calls.book()
-            .calls()) plans.add(VideoPlan.of(call, calls::videoKindOf, this::camerasOf));
+            .calls()) {
+            plans.add(
+                VideoPlan.of(
+                    call,
+                    calls::videoKindOf,
+                    this::camerasOf,
+                    (seen, viewing) -> calls.videoRoom(call, seen.phone(), viewing.phone())));
+        }
         plan = VideoPlan.merge(plans);
         // Out of a call, the switches go back to how the next call starts.
         cameras.keySet()

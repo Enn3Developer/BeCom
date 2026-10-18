@@ -74,12 +74,14 @@ public final class VideoRenderer {
     private static final int NOISE_ALPHA = 96;
     private static final int[] GLITCH_COLORS = { 0x1F5F2F, 0x7F2F7F, 0x6F6F6F, 0x2F3F7F };
     private static final int GLITCH_ALPHA = 200;
-    private static final int BACKGROUND_TOP = 0xFF2B3440;
-    private static final int BACKGROUND_BOTTOM = 0xFF15191F;
+    // Behind a person, flat, as on the call boards' tiles.
+    private static final int BACKGROUND = 0xFF2B3440;
     private static final int TILE_BACKGROUND = 0xFF101418;
     private static final int FROZEN_SHADE = 0x80000000;
     private static final int NAME_BAR = 0xA0000000;
     private static final int TEXT = 0xFFE0E0E0;
+    // What's wrong with a picture, over it: yellow, as on the call boards.
+    private static final int LABEL = 0xFFFFFF55;
     private static final int TALK_BORDER = 0xFF40E060;
     private static final int WINDOW_BACKGROUND = 0xC0000000;
     // The corner window, in scaled GUI pixels, and at most this share of the screen's width.
@@ -88,6 +90,8 @@ public final class VideoRenderer {
     private static final int WINDOW_MARGIN = 4;
     private static final float SMALL_TEXT = 0.5f;
     private static final int SMALL_TILE = 48;
+    // Between the tiles of a call filling a screen.
+    private static final int TILE_GAP = 2;
     // The rear picture is shown while it's this fresh; older, the tiles take its place.
     private static final long REAR_FRESH_MILLIS = 3000;
     private static final float REAR_ASPECT = 16f / 9f;
@@ -203,7 +207,7 @@ public final class VideoRenderer {
         GL11.glClearColor(0, 0, 0, 1);
         GL11.glClearDepth(1);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        gradient(0, 0, size, size, BACKGROUND_TOP, BACKGROUND_BOTTOM);
+        gradient(0, 0, size, size, BACKGROUND, BACKGROUND);
         pose(body, feed, now);
         drawBody(body, size / 2f, EYE_LINE * size, size / FRAMED_BLOCKS);
         noise(level, size);
@@ -403,24 +407,42 @@ public final class VideoRenderer {
 
     /** One person: their picture, frozen with "weak signal" at Low, their name, and a border while they talk. */
     private static void drawTile(VideoStatePacket.Tile tile, int x, int y, int size) {
+        drawTile(tile, x, y, size, size);
+    }
+
+    /**
+     * One person's tile, {@code width} by {@code height}: their square picture in the middle, what's wrong with it over
+     * it, their name on a bar across the foot, and a green border while they talk.
+     */
+    private static void drawTile(VideoStatePacket.Tile tile, int x, int y, int width, int height) {
         Minecraft mc = Minecraft.getMinecraft();
         ClientVideo.Feed feed = ClientVideo.existing(tile.source());
-        Gui.drawRect(x, y, x + size, y + size, TILE_BACKGROUND);
         String label = labelOf(tile, feed);
+        int size = Math.min(width, height);
+        int px = x + (width - size) / 2;
+        int py = y + (height - size) / 2;
+        // The picture's own background, out to the tile's edges, so the person fills the tile as on the call boards.
+        Gui.drawRect(x, y, x + width, y + height, BACKGROUND);
         if (tile.front() && feed != null && feed.drawn) {
-            if (feed.frame != null) drawFramebuffer(feed.frame, x, y, size);
-            else drawDirect(feed, x, y, size);
-            if (frozen(tile, feed)) Gui.drawRect(x, y, x + size, y + size, FROZEN_SHADE);
+            if (feed.frame != null) drawFramebuffer(feed.frame, px, py, size);
+            else drawDirect(feed, px, py, size);
+            if (frozen(tile, feed)) Gui.drawRect(x, y, x + width, y + height, FROZEN_SHADE);
         }
         float textScale = size < SMALL_TILE ? SMALL_TEXT : 1f;
         FontRenderer font = mc.fontRenderer;
-        if (label != null)
-            text(font, label, x + size / 2f, y + size / 2f - font.FONT_HEIGHT * textScale / 2, textScale, size);
+        if (label != null) text(
+            font,
+            label,
+            x + width / 2f,
+            y + height / 2f - font.FONT_HEIGHT * textScale / 2,
+            textScale,
+            width,
+            LABEL);
         String name = feed != null ? feed.name : tile.name();
         int bar = Math.round(font.FONT_HEIGHT * textScale) + 2;
-        Gui.drawRect(x, y + size - bar, x + size, y + size, NAME_BAR);
-        text(font, name, x + size / 2f, y + size - bar + 1, textScale, size);
-        if (TalkMeter.loudness(tile.source()) > TALKING) border(x, y, size, TALK_BORDER);
+        Gui.drawRect(x, y + height - bar, x + width, y + height, NAME_BAR);
+        text(font, name, x + width / 2f, y + height - bar + 1, textScale, width);
+        if (TalkMeter.loudness(tile.source()) > TALKING) border(x, y, width, height, TALK_BORDER);
     }
 
     private static void drawFramebuffer(Framebuffer frame, int x, int y, int size) {
@@ -474,26 +496,41 @@ public final class VideoRenderer {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.currentScreen != null && !(mc.currentScreen instanceof GuiChat)) return;
-        if (!ClientVideo.windowShown() || ClientVideo.tiles()
-            .isEmpty()) return;
-        int screenWidth = event.resolution.getScaledWidth();
-        int screenHeight = event.resolution.getScaledHeight();
-        int width = Math.min(WINDOW_WIDTH, screenWidth / WINDOW_SHARE);
+        int[] window = window(event.resolution.getScaledWidth(), event.resolution.getScaledHeight());
+        if (window == null) return;
+        int x = window[0];
+        int y = window[1];
+        int width = window[2];
+        int height = window[3];
         ClientVideo.Feed rear = freshRear();
-        int height = rear != null ? Math.round(width / REAR_ASPECT) : callHeight(width);
-        ClientConfig.Corner corner = ClientConfig.videoCorner();
-        int x = corner.right() ? screenWidth - WINDOW_MARGIN - width : WINDOW_MARGIN;
-        int y = corner.bottom() ? screenHeight - WINDOW_MARGIN - height : WINDOW_MARGIN;
         Gui.drawRect(x - 1, y - 1, x + width + 1, y + height + 1, WINDOW_BACKGROUND);
         if (rear != null) {
             drawRear(rear, x, y, width, height);
-            int inset = height / 2;
+            // The sender in the corner, half the window tall and a little narrower, 1 pixel in, as on the HUD board.
+            int insetHeight = height / 2;
+            int insetWidth = insetHeight * 8 / 9;
             VideoStatePacket.Tile sender = tileOf(rear.id);
-            if (sender != null) drawTile(sender, x + width - inset, y + height - inset, inset);
+            if (sender != null)
+                drawTile(sender, x + width - insetWidth - 1, y + height - insetHeight - 1, insetWidth, insetHeight);
         } else {
             drawCall(x, y, width, height);
         }
         GL11.glColor4f(1, 1, 1, 1);
+    }
+
+    /**
+     * Where the video window stands on a screen this big, {x, y, width, height} in GUI pixels, or null while it isn't
+     * shown; the ring notice goes under it.
+     */
+    public static int[] window(int screenWidth, int screenHeight) {
+        if (!ClientVideo.windowShown() || ClientVideo.tiles()
+            .isEmpty()) return null;
+        int width = Math.min(WINDOW_WIDTH, screenWidth / WINDOW_SHARE);
+        int height = freshRear() != null ? Math.round(width / REAR_ASPECT) : callHeight(width);
+        ClientConfig.Corner corner = ClientConfig.videoCorner();
+        int x = corner.right() ? screenWidth - WINDOW_MARGIN - width : WINDOW_MARGIN;
+        int y = corner.bottom() ? screenHeight - WINDOW_MARGIN - height : WINDOW_MARGIN;
+        return new int[] { x, y, width, height };
     }
 
     private static VideoStatePacket.Tile tileOf(java.util.UUID source) {
@@ -512,8 +549,50 @@ public final class VideoRenderer {
             text(mc.fontRenderer, StatCollector.translateToLocal(key), x + width / 2f, y + height / 2f - 4, 1f);
             return;
         }
-        drawCall(x, y, width, height);
+        drawFilled(x, y, width, height);
         GL11.glColor4f(1, 1, 1, 1);
+    }
+
+    /**
+     * The call filling a screen, as the phone's and the Videophone's boards draw it: the rear picture on top when one
+     * comes in, then the people in tiles that share out the whole width, each picture in the middle of its tile.
+     */
+    private static void drawFilled(int x, int y, int width, int height) {
+        List<VideoStatePacket.Tile> tiles = ClientVideo.tiles();
+        if (tiles.isEmpty()) return;
+        ClientVideo.Feed rear = freshRear();
+        int gridTop = y;
+        int gridHeight = height;
+        if (rear != null) {
+            int rearHeight = Math.round(Math.min(width / REAR_ASPECT, height * REAR_SHARE));
+            int rearWidth = Math.round(rearHeight * REAR_ASPECT);
+            drawRear(rear, x + (width - rearWidth) / 2, y, rearWidth, rearHeight);
+            gridTop = y + rearHeight + 1;
+            gridHeight = height - rearHeight - 1;
+        }
+        int n = tiles.size();
+        // The columns that give each picture the most room.
+        int cols = 1;
+        int best = 0;
+        for (int c = 1; c <= n; c++) {
+            int r = (n + c - 1) / c;
+            int size = Math.min(width / c, gridHeight / r);
+            if (size > best) {
+                best = size;
+                cols = c;
+            }
+        }
+        int rows = (n + cols - 1) / cols;
+        int tileWidth = (width - TILE_GAP * (cols - 1)) / cols;
+        int tileHeight = (gridHeight - TILE_GAP * (rows - 1)) / rows;
+        for (int i = 0; i < n; i++) {
+            drawTile(
+                tiles.get(i),
+                x + i % cols * (tileWidth + TILE_GAP),
+                gridTop + i / cols * (tileHeight + TILE_GAP),
+                tileWidth,
+                tileHeight);
+        }
     }
 
     // endregion
@@ -787,26 +866,35 @@ public final class VideoRenderer {
         GL11.glDisable(GL11.GL_BLEND);
     }
 
-    private static void border(int x, int y, int size, int color) {
-        Gui.drawRect(x, y, x + size, y + 1, color);
-        Gui.drawRect(x, y + size - 1, x + size, y + size, color);
-        Gui.drawRect(x, y, x + 1, y + size, color);
-        Gui.drawRect(x + size - 1, y, x + size, y + size, color);
+    private static void border(int x, int y, int width, int height, int color) {
+        Gui.drawRect(x, y, x + width, y + 1, color);
+        Gui.drawRect(x, y + height - 1, x + width, y + height, color);
+        Gui.drawRect(x, y, x + 1, y + height, color);
+        Gui.drawRect(x + width - 1, y, x + width, y + height, color);
     }
 
     /** Text centred on {@code centerX}, at {@code scale}, or smaller to fit within {@code width}. */
     private static void text(FontRenderer font, String text, float centerX, float y, float scale, int width) {
+        text(font, text, centerX, y, scale, width, TEXT);
+    }
+
+    private static void text(FontRenderer font, String text, float centerX, float y, float scale, int width,
+        int color) {
         int textWidth = font.getStringWidth(text);
         if (textWidth * scale > width - 2) scale = Math.max(0.25f, (width - 2) / (float) textWidth);
-        text(font, text, centerX, y, scale);
+        coloured(font, text, centerX, y, scale, color);
     }
 
     /** Text centred on {@code centerX}, at {@code scale}. */
     private static void text(FontRenderer font, String text, float centerX, float y, float scale) {
+        coloured(font, text, centerX, y, scale, TEXT);
+    }
+
+    private static void coloured(FontRenderer font, String text, float centerX, float y, float scale, int color) {
         GL11.glPushMatrix();
         GL11.glTranslatef(centerX, y, 0);
         GL11.glScalef(scale, scale, 1);
-        font.drawStringWithShadow(text, -font.getStringWidth(text) / 2, 0, TEXT);
+        font.drawStringWithShadow(text, -font.getStringWidth(text) / 2, 0, color);
         GL11.glPopMatrix();
     }
 

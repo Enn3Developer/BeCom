@@ -173,6 +173,8 @@ public final class SelfTest {
     private MTELineTerminal deviceTerminal;
     private MTELineTerminal nearTerminal;
     private final List<TileTelephone> devicePhones = new ArrayList<>();
+    // How far along the device group's cable its second terminal stands.
+    private static final int DEVICE_CABLE = 12;
     private MTEPylonHead shortPylon;
     private MTEPylonHead minPylon;
     private MTEPylonHead clearA;
@@ -264,6 +266,7 @@ public final class SelfTest {
         steps.add(this::checkQuestBookBuild);
         steps.add(this::checkRegistration);
         steps.add(this::build);
+        steps.add(this::checkMachineBlock);
         steps.add(this::formAndLink);
         steps.add(this::checkStructuresAndLines);
         steps.add(this::checkLineReach);
@@ -654,6 +657,40 @@ public final class SelfTest {
         return false;
     }
 
+    /**
+     * BeCom's machines are GregTech machines in BeCom's own block: their items are becom:machine at their IDs, so WAILA
+     * and NEI name BeCom as their mod, and one placed stands in that block and breaks back into that item.
+     */
+    private int checkMachineBlock() {
+        List<String> notOurs = new ArrayList<>();
+        for (int id : BeComMachines.ids()
+            .keySet()) {
+            String name = itemName(GregTechAPI.METATILEENTITIES[id].getStackForm(1));
+            if (!name.equals(BeCom.MODID + ":machine:" + id)) notOurs.add(name);
+        }
+        check("every machine's item is BeCom's, becom:machine at its ID", notOurs.isEmpty(), notOurs.toString());
+        int x = X0 - 8, z = Z0 - 8;
+        placeAs(BeComMachines.transceiver, x, Y, z, owner);
+        Block block = world.getBlock(x, Y, z);
+        check(
+            "a placed machine stands in BeCom's machine block",
+            block == BeComMachines.block,
+            Block.blockRegistry.getNameForObject(block));
+        List<String> drops = new ArrayList<>();
+        for (ItemStack drop : block.getDrops(world, x, Y, z, world.getBlockMetadata(x, Y, z), 0))
+            drops.add(itemName(drop));
+        world.setBlockToAir(x, Y, z);
+        check(
+            "broken, it drops its own item again",
+            drops.equals(List.of(itemName(BeComMachines.transceiver.getStackForm(1)))),
+            drops.toString());
+        return 1;
+    }
+
+    private static String itemName(ItemStack stack) {
+        return Item.itemRegistry.getNameForObject(stack.getItem()) + ":" + stack.getItemDamage();
+    }
+
     private int build() {
         // Far from spawn nothing is loaded, and an unloaded chunk silently swallows setBlock; load the whole area.
         for (int cx = (X0 - 16) >> 4; cx <= (X0 + 330) >> 4; cx++) {
@@ -675,14 +712,16 @@ public final class SelfTest {
         ((IConstructable) exchange).construct(BeComMachines.exchange.getStackForm(1), false);
         exchangeHatches(exchange);
         z += GROUP_GAP;
-        // Five Telephones on one LV terminal's cable, and a second terminal at the cable's far end.
+        // Five Telephones near one LV terminal on its cable, a second terminal at the cable's far end, and a sixth
+        // Telephone by that one.
         deviceTerminal = place(BeComMachines.lineTerminal, X0, Y, z);
-        nearTerminal = place(BeComMachines.lineTerminal, X0 + 6, Y, z);
+        nearTerminal = place(BeComMachines.lineTerminal, X0 + DEVICE_CABLE, Y, z);
         powered.add(deviceTerminal.getBaseMetaTileEntity());
         powered.add(nearTerminal.getBaseMetaTileEntity());
         devicePhones.clear();
-        for (int i = 0; i <= 6; i++) world.setBlock(X0 + i, Y, z + 1, BeComBlocks.phoneCable);
+        for (int i = 0; i <= DEVICE_CABLE; i++) world.setBlock(X0 + i, Y, z + 1, BeComBlocks.phoneCable);
         for (int i = 1; i <= 5; i++) devicePhones.add(telephone(X0 + i, Y, z + 2));
+        devicePhones.add(telephone(X0 + DEVICE_CABLE - 1, Y, z + 2));
         z += GROUP_GAP;
 
         minPylon = head(BeComMachines.pylonHead, X0, Y, z, 1);
@@ -757,7 +796,7 @@ public final class SelfTest {
             model.remove(node.pos());
         }
         for (int z = Z0; z <= zEnd; z += GROUP_GAP) {
-            for (int x = X0; x <= X0 + 6; x++) {
+            for (int x = X0; x <= X0 + DEVICE_CABLE; x++) {
                 world.setBlockToAir(x, Y, z + 2);
                 world.setBlockToAir(x, Y, z + 1);
             }
@@ -1012,7 +1051,10 @@ public final class SelfTest {
                 + " Fibre");
     }
 
-    /** One LV terminal's cable reaches five Telephones; a second terminal sits at the cable's far end. */
+    /**
+     * One LV terminal's cable reaches six Telephones: five near it, and one by a second terminal at the cable's far
+     * end, which takes that one.
+     */
     private void checkDevices(Tunables t) {
         deviceTerminal.scanCable();
         nearTerminal.scanCable();
@@ -1022,8 +1064,8 @@ public final class SelfTest {
         List<NetworkService.Device> found = becom.network.devicesOf(dimension, pos(deviceTerminal));
         List<NetworkService.Device> served = becom.network.served(self, found);
         check(
-            "an LV terminal finds all five Telephones on its cable and serves the " + ports + " nearest",
-            found.size() == 5 && served.size() == ports
+            "an LV terminal finds all six Telephones on its cable and serves the " + ports + " nearest of its own",
+            found.size() == 6 && served.size() == ports
                 && served.get(0)
                     .phone()
                     == devicePhones.get(0)
@@ -1032,7 +1074,7 @@ public final class SelfTest {
         NodeRef near = new NodeRef(dimension, pos(nearTerminal));
         int first = devicePhones.get(0)
             .number();
-        int last = devicePhones.get(4)
+        int last = devicePhones.get(5)
             .number();
         check(
             "a Telephone on two terminals' cable takes the nearer one",
@@ -1042,8 +1084,9 @@ public final class SelfTest {
             .view(deviceTerminal);
         List<com.enn3developer.becom.gui.LineTerminalView.Device> rows = view.devices();
         check(
-            "the terminal's screen lists its five Telephones, the nearest first with a line, the farthest without",
-            view.ports() == ports && rows.size() == 5
+            "the terminal's screen lists all six, the nearest first with a line; the fifth has no port, and the one by "
+                + "the other terminal is that one's",
+            view.ports() == ports && rows.size() == 6
                 && rows.get(0)
                     .number() == first
                 && rows.get(0)
@@ -1051,9 +1094,10 @@ public final class SelfTest {
                 && rows.get(0)
                     .now()
                     .served()
-                && !rows.get(4)
-                    .now()
-                    .served(),
+                && rows.get(4)
+                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.NO_PORT
+                && rows.get(5)
+                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.NEARER,
             rows.toString());
     }
 
@@ -1112,19 +1156,25 @@ public final class SelfTest {
     private int checkWaila() {
         List<String> terminal = wailaLines(phoneLine.start);
         check(
-            "WAILA's first look at a Line Terminal gets its lines",
-            terminal.contains(StatCollector.translateToLocal("becom.info.online")) && terminal.contains(
-                StatCollector.translateToLocalFormatted(
-                    "becom.info.devices",
-                    1,
-                    BeComConfig.get()
-                        .terminalPorts(CableTier.PHONE))),
+            "WAILA's first look at a Line Terminal gets its lines: its state first, then its rows, as on the Scanner board",
+            !terminal.isEmpty() && terminal.get(0)
+                .equals("\u00a7a\u25a0 " + StatCollector.translateToLocal("becom.info.online"))
+                && terminal.contains(
+                    "\u00a77" + StatCollector.translateToLocal("becom.info.row.devices")
+                        + " \u00a7f"
+                        + StatCollector.translateToLocalFormatted(
+                            "becom.info.of",
+                            1,
+                            BeComConfig.get()
+                                .terminalPorts(CableTier.PHONE))),
             terminal.toString());
         List<String> phone = wailaLines(phoneLine.phoneStart);
         check(
             "and the Telephone's number",
             phone.contains(
-                StatCollector.translateToLocalFormatted("becom.mobile.number", phoneLine.phoneStart.number())),
+                "\u00a77" + StatCollector.translateToLocal("becom.info.row.number")
+                    + " \u00a7f"
+                    + phoneLine.phoneStart.number()),
             phone.toString());
         int dimension = world.provider.dimensionId;
         List<String> far = wailaLines(phoneLine.start, 14, dimension);
@@ -1524,7 +1574,7 @@ public final class SelfTest {
         if (Item.itemRegistry.getObject(LOOTBAG) != null) expected.add("bq_standard:item " + LOOTBAG);
         expected.add(
             "bq_standard:choice " + (Item.itemRegistry.getObject(LV_COIN) != null ? LV_COIN + " " : "")
-                + "gregtech:gt.blockmachines");
+                + "becom:machine");
         check(
             "...and the first-call quest offers its coins as a choice against two Pylon Heads, without what isn't"
                 + " installed",
@@ -3402,6 +3452,8 @@ public final class SelfTest {
     // a stranger's bridge on the same cable doesn't.
     private static final int ME_DZ = 8;
     private MTEMeBridge meBridge;
+    // The Exchange the ME Bridge is cabled to, joined to the phone antenna.
+    private MTEExchange meExchange;
     private MTEMeBridge strangerBridge;
     private TileEntity meSecurity;
     private TileEntity meWireless;
@@ -3426,6 +3478,10 @@ public final class SelfTest {
                 world.setBlockToAir(x, Y, z + dz);
                 world.setBlockToAir(x, Y + 1, z + dz);
             }
+        }
+        // Room for the Exchange behind the bridge.
+        for (int x = X0 + 5; x <= X0 + 9; x++) {
+            for (int dz = 3; dz <= 6; dz++) for (int y = Y - 1; y <= Y + 2; y++) world.setBlockToAir(x, y, z + dz);
         }
         IBlocks blocks = AEApi.instance()
             .definitions()
@@ -3489,6 +3545,14 @@ public final class SelfTest {
         powered.add(meBridge.getBaseMetaTileEntity());
         strangerBridge = placeAs(BeComMachines.meBridge, keptStack(BeComMachines.meBridge), X0 + 6, Y + 1, z, stranger);
         powered.add(strangerBridge.getBaseMetaTileEntity());
+        // An Exchange three blocks behind the bridge, facing it, and Phone Cable from its front to the bridge.
+        meExchange = place(BeComMachines.exchange, X0 + 7, Y, z + 3);
+        meExchange.getBaseMetaTileEntity()
+            .setFrontFacing(ForgeDirection.NORTH);
+        ((IConstructable) meExchange).construct(BeComMachines.exchange.getStackForm(1), false);
+        exchangeHatches(meExchange);
+        world.setBlock(X0 + 7, Y, z + 1, BeComBlocks.phoneCable);
+        world.setBlock(X0 + 7, Y, z + 2, BeComBlocks.phoneCable);
         return SETTLE_TICKS;
     }
 
@@ -3511,7 +3575,10 @@ public final class SelfTest {
     }
 
     private int linkMe() {
-        link(meBridge, phoneAntenna);
+        meExchange.refreshStructure();
+        meExchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.PHONE, 1);
+        meExchange.scanCable();
+        link(meExchange, phoneAntenna);
         return 2 * TICKS_PER_SECOND;
     }
 
@@ -3566,7 +3633,7 @@ public final class SelfTest {
             service.entries()
                 .size() + " entries, "
                 + service.level());
-        CallBook.DialResult between = becom.calls.dialCarried(odo, odoNumber, piaNumber);
+        CallBook.DialResult between = becom.calls.dialCarried(odo, odoNumber, piaNumber, true);
         becom.calls.answerCarried(pia, piaNumber);
         Call call = becom.calls.book()
             .callOf(odo.getUniqueID());

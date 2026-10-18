@@ -31,6 +31,13 @@ values.
 Every link in BeCom ends at one of five levels, from None to Max. [How signal works](signal.md) shows where the level
 comes from, and [the Signal Analyzer](analyzer.md) shows it for wherever you stand.
 
+## WAILA and the scanner
+
+Look at a BeCom machine with WAILA, or right-click it with a GT scanner, and its first line is its state, in colour:
+green when it works, or red with what stops it, such as **Not formed**, **Switched off** with a soft mallet, or
+**No power**. In WAILA, a Telephone says **Ringing** or **Handset lifted** in orange, otherwise **Ready**. Short rows
+follow, each a grey label and a white value: "Mast 24 blocks", "Calls 9 of 12", "Uplink 2× Phone, 12 of 32 KB/s".
+
 ## Machines in the rain
 
 GTNH keeps GregTech's rain hazards on, and they reach BeCom's machines as they reach any GT machine that stores

@@ -125,7 +125,7 @@ public final class BeComConfig {
             "terminalCableBudget",
             1,
             Tunables.MAX_CABLE,
-            "Most blocks of cable a Line Terminal walks to find its devices.");
+            "Most blocks of cable a Line Terminal or an Exchange walks to find its devices.");
         integer(config, v, WIRED, "exchangePower", "EU/t an Exchange draws.");
         integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");

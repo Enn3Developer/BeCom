@@ -41,14 +41,17 @@ import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.ClientVideo;
 import com.enn3developer.becom.client.RearJpeg;
+import com.enn3developer.becom.client.TalkMeter;
 import com.enn3developer.becom.client.VideoRenderer;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
+import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.RadioModel;
+import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.RearFramePacket;
 import com.enn3developer.becom.packet.VideoEquipmentPacket;
@@ -56,11 +59,14 @@ import com.enn3developer.becom.packet.VideoPosePacket;
 import com.enn3developer.becom.packet.VideoStatePacket;
 import com.enn3developer.becom.server.BeComServer;
 
+import codechicken.nei.api.ItemInfo;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.api.GregTechAPI;
+import ic2.api.item.ElectricItem;
 
 /**
  * A smoke test of the client's video drawing, for the development environment only. The run has no game client to
@@ -83,11 +89,12 @@ public final class ClientSelfTest {
     private static final UUID MAX = UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000a3");
     private static final UUID LOW = UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000a4");
     private static final UUID OFF = UUID.fromString("b3c0b3c0-0000-4000-8000-0000000000a5");
-    // Background colours a picture is cleared to; a pixel far from both is part of the person.
-    private static final int BACKGROUND_TOP = 0x2B3440;
-    private static final int BACKGROUND_BOTTOM = 0x15191F;
+    // The colour a picture is cleared to; a pixel far from it is part of the person.
+    private static final int BACKGROUND = 0x2B3440;
 
     private final File out;
+    private final PhoneGallery gallery = new PhoneGallery();
+    private final java.util.List<PhoneGallery.Shot> shots = gallery.shots();
     private boolean launched;
     private int ticks;
     private int seq;
@@ -128,6 +135,8 @@ public final class ClientSelfTest {
     /** At the main menu, once the client has finished starting: a flat creative world. */
     private void launch(Minecraft mc) {
         launched = true;
+        // A window without focus would pause the world under the Game menu, and with it the server's packets.
+        mc.gameSettings.pauseOnLostFocus = false;
         log("opening a flat world");
         String name = "becom-clienttest-" + System.currentTimeMillis();
         WorldSettings settings = new WorldSettings(1L, WorldSettings.GameType.CREATIVE, false, false, WorldType.FLAT);
@@ -150,8 +159,13 @@ public final class ClientSelfTest {
         if (ticks == SETTLE_TICKS + 140) afterFrame.add(this::checkRear);
         if (ticks == SETTLE_TICKS + 150) givePhone(mc);
         if (ticks == SETTLE_TICKS + 160) openPhone(mc);
-        if (ticks == SETTLE_TICKS + 190) afterFrame.add(() -> screenshot("phone-video-page"));
+        // The phone itself, opened in this world: no antenna here, so its home page with No service. The call is
+        // only on this client, so the call's page is the gallery's.
+        if (ticks == SETTLE_TICKS + 190) afterFrame.add(() -> screenshot("phone-opened"));
         if (ticks == SETTLE_TICKS + 195) mc.displayGuiScreen(null);
+        if (ticks == SETTLE_TICKS + 198) showHud(mc, true);
+        if (ticks == SETTLE_TICKS + 206) afterFrame.add(() -> screenshot("hud"));
+        if (ticks == SETTLE_TICKS + 208) showHud(mc, false);
         if (ticks == SETTLE_TICKS + 220) afterFrame.add(() -> screenshot("videophone-screen"));
         if (ticks == SETTLE_TICKS + 230) standRocket(mc);
         if (ticks == SETTLE_TICKS + 270) afterFrame.add(this::checkRocketStands);
@@ -169,7 +183,16 @@ public final class ClientSelfTest {
         if (ticks == SETTLE_TICKS + 372) KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), true);
         if (ticks == SETTLE_TICKS + 385) afterFrame.add(() -> screenshot("signal-analyzer-sneaking"));
         if (ticks == SETTLE_TICKS + 388) KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), false);
-        if (ticks == SETTLE_TICKS + 395) finish(mc);
+        if (ticks == SETTLE_TICKS + 395) gallery.open();
+        // The phone's pages, one every four ticks: set up, drawn, then saved.
+        int shot = (ticks - SETTLE_TICKS - 400) / 4;
+        if (ticks >= SETTLE_TICKS + 400 && shot < shots.size()) {
+            PhoneGallery.Shot s = shots.get(shot);
+            if ((ticks - SETTLE_TICKS - 400) % 4 == 0) s.setup()
+                .run();
+            if ((ticks - SETTLE_TICKS - 400) % 4 == 2) afterFrame.add(() -> screenshot(s.name()));
+        }
+        if (ticks == SETTLE_TICKS + 400 + shots.size() * 4 + 4) finish(mc);
     }
 
     @SubscribeEvent
@@ -178,11 +201,28 @@ public final class ClientSelfTest {
         if (ticks > SETTLE_TICKS) {
             int error = GL11.glGetError();
             if (error != GL11.GL_NO_ERROR) glErrors++;
+            // The first caller talks, as Alex does on the call boards, so the shots show the frame round a talker.
+            TalkMeter.talkForTest(MEDIUM);
         }
         for (int n = afterFrame.size(); n > 0; n--) {
             Runnable task = afterFrame.poll();
             if (task != null) task.run();
         }
+    }
+
+    /**
+     * The HUD as on its board: a call ringing under the video window, the call's bars at High, and a walkie in hand
+     * transmitting, just turned to its channel. Only this client's own drawing: the inventory is left alone, so the
+     * server's idea of it stays right.
+     */
+    private void showHud(Minecraft mc, boolean on) {
+        com.enn3developer.becom.client.ClientPhone.ring(
+            on ? com.enn3developer.becom.packet.RingPacket.ringing("Bob", 300417)
+                : com.enn3developer.becom.packet.RingPacket.stop());
+        com.enn3developer.becom.client.ClientPhone.callBars(on ? com.enn3developer.becom.logic.SignalLevel.HIGH : null);
+        ItemStack walkie = new ItemStack(BeComItems.walkieTalkie);
+        com.enn3developer.becom.item.ItemWalkieTalkie.setChannel(walkie, 4);
+        com.enn3developer.becom.client.ClientRadio.showForTest(on ? walkie : null);
     }
 
     /** A call with five people at every level: Medium, High and Max live, Low frozen, one camera off. */
@@ -302,7 +342,7 @@ public final class ClientSelfTest {
             for (int x = 0; x < w; x++) {
                 int rgb = pixels[row * w + x] & 0xFFFFFF;
                 image.setRGB(x, h - 1 - row, rgb);
-                if (far(rgb, BACKGROUND_TOP) && far(rgb, BACKGROUND_BOTTOM) && far(rgb, mix(row, h))) person++;
+                if (far(rgb, BACKGROUND)) person++;
             }
         }
         try {
@@ -311,15 +351,6 @@ public final class ClientSelfTest {
             log("couldn't save " + name + ": " + e);
         }
         return person / (double) (w * h);
-    }
-
-    private static int mix(int row, int height) {
-        // The gradient runs top to bottom; rows come bottom first.
-        float t = 1 - row / (float) Math.max(1, height - 1);
-        int r = Math.round((BACKGROUND_TOP >> 16 & 0xFF) * (1 - t) + (BACKGROUND_BOTTOM >> 16 & 0xFF) * t);
-        int g = Math.round((BACKGROUND_TOP >> 8 & 0xFF) * (1 - t) + (BACKGROUND_BOTTOM >> 8 & 0xFF) * t);
-        int b = Math.round((BACKGROUND_TOP & 0xFF) * (1 - t) + (BACKGROUND_BOTTOM & 0xFF) * t);
-        return r << 16 | g << 8 | b;
     }
 
     private static boolean far(int a, int b) {
@@ -358,12 +389,17 @@ public final class ClientSelfTest {
         screenshot("rear-and-window");
     }
 
-    /** A Mobile Phone in the player's hand, given on the server, a few ticks before the screen opens from it. */
+    /**
+     * A Mobile Phone in the player's hand, switched on and charged, given on the server a few ticks before the screen
+     * opens from it.
+     */
     private void givePhone(Minecraft mc) {
-        onServer(
-            mc,
-            player -> player.inventory.mainInventory[player.inventory.currentItem] = new ItemStack(
-                BeComItems.mobilePhone));
+        onServer(mc, player -> {
+            ItemStack phone = new ItemStack(BeComItems.mobilePhone);
+            ItemCarriedPhone.setOn(phone, true);
+            ElectricItem.manager.charge(phone, BeComItems.mobilePhone.maxCharge(phone), Integer.MAX_VALUE, true, false);
+            player.inventory.mainInventory[player.inventory.currentItem] = phone;
+        });
     }
 
     /** The phone screen, opened by the server as a right-click with the phone would: it opens on the video. */
@@ -479,6 +515,14 @@ public final class ClientSelfTest {
 
     private void finish(Minecraft mc) {
         check("drawing raised no OpenGL errors", glErrors == 0, glErrors + " frames with an error");
+        // GregTech's machine block lists every machine, BeCom's among them; NEI shows only BeCom's own.
+        List<String> shown = new ArrayList<>();
+        for (int id : BeComMachines.ids()
+            .keySet()) {
+            if (!ItemInfo.isHidden(new ItemStack(GregTechAPI.sBlockMachines, 1, id))) shown.add("gregtech " + id);
+            if (ItemInfo.isHidden(new ItemStack(BeComMachines.block, 1, id))) shown.add("hidden becom " + id);
+        }
+        check("NEI lists each machine once, as BeCom's", shown.isEmpty(), shown.toString());
         log(passed + " passed, " + failed + " failed");
         mc.shutdown();
     }

@@ -52,9 +52,10 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
 
     /**
      * A device on its cable: {@code kind} a PhoneKind ordinal or -1, its number (-1 without one), its cable's tier
-     * ordinal, its run and that cable's reach in blocks, and what it's doing: {@code with} the other side of a call.
+     * ordinal, its run and that cable's reach in blocks, and what it's doing: {@code with} who's on the other side of a
+     * call, {@code data} the KB/s of data its cable carries now.
      */
-    public record Device(int kind, int number, int cable, int run, int reach, Now now, String with) {}
+    public record Device(int kind, int number, int cable, int run, int reach, Now now, String with, int data) {}
 
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
@@ -89,6 +90,7 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
                 d.now()
                     .ordinal());
             AntennaView.writeString(buf, d.with());
+            buf.writeInt(d.data());
         }
     }
 
@@ -120,7 +122,8 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
                     buf.readInt(),
                     buf.readInt(),
                     Now.byOrdinal(buf.readByte()),
-                    AntennaView.readString(buf)));
+                    AntennaView.readString(buf),
+                    buf.readInt()));
         }
         return new LineTerminalView(tier, working, owner, uplinks, ports, devices);
     }

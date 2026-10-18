@@ -214,14 +214,24 @@ public final class CallGraph {
 
     /**
      * One stream a call needs: between two of its phones, joining the graph through their entries, at {@code rate}
-     * KB/s. Streams of one {@code call} share each vertex's call slot.
+     * KB/s, or at {@code fallback} where {@code rate} finds no room: a video call's stream falls back to voice. Streams
+     * of one {@code call} share each vertex's call slot.
      */
-    public record Demand(Object call, Object key, List<Entry> from, List<Entry> to, int rate) {}
+    public record Demand(Object call, Object key, List<Entry> from, List<Entry> to, int rate, int fallback) {
 
-    /** Where a stream went: its weakest hop's SNR, negative infinity when nothing had room, and its hops. */
-    public record Route(double width, List<HopKind> hops) {
+        /** A stream with no fallback. */
+        public Demand(Object call, Object key, List<Entry> from, List<Entry> to, int rate) {
+            this(call, key, from, to, rate, rate);
+        }
+    }
 
-        public static final Route NONE = new Route(Double.NEGATIVE_INFINITY, List.of());
+    /**
+     * Where a stream went: its weakest hop's SNR, negative infinity when nothing had room, its hops, and the KB/s it
+     * got: its demand's rate, or its fallback.
+     */
+    public record Route(double width, List<HopKind> hops, int rate) {
+
+        public static final Route NONE = new Route(Double.NEGATIVE_INFINITY, List.of(), 0);
 
         public boolean routed() {
             return width != Double.NEGATIVE_INFINITY;
@@ -301,21 +311,30 @@ public final class CallGraph {
 
         private Route best(Demand demand, Demand taking) {
             Set<Integer> own = verticesOf.getOrDefault(demand.call(), Set.of());
+            int rate = demand.rate();
             Found found = search(
                 demand.from(),
                 demand.to(),
                 hop -> fits(hop, demand.rate()),
                 vertex -> hasRoom(vertex, own));
+            if (found == null && demand.fallback() < demand.rate()) {
+                rate = demand.fallback();
+                found = search(
+                    demand.from(),
+                    demand.to(),
+                    hop -> fits(hop, demand.fallback()),
+                    vertex -> hasRoom(vertex, own));
+            }
             if (found == null) return Route.NONE;
             if (taking != null) {
                 for (WidestPath.Edge edge : found.edges()) {
                     Hop hop = (Hop) edge.tag();
-                    if (hop.rate() != UNLIMITED) used.merge(hop.link(), taking.rate(), Integer::sum);
+                    if (hop.rate() != UNLIMITED) used.merge(hop.link(), rate, Integer::sum);
                 }
                 Set<Integer> mine = verticesOf.computeIfAbsent(taking.call(), k -> new HashSet<>());
                 for (int vertex : found.path()) if (mine.add(vertex)) callsAt[vertex]++;
             }
-            return new Route(found.width(), found.kinds());
+            return new Route(found.width(), found.kinds(), rate);
         }
 
         /**

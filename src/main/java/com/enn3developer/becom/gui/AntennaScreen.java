@@ -3,53 +3,42 @@ package com.enn3developer.becom.gui;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
 
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.UsernameCache;
 
-import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
-import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.widgets.ButtonWidget;
-import com.cleanroommc.modularui.widgets.ToggleButton;
-import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.logic.LevelScale;
+import com.enn3developer.becom.gui.machine.AntennaUi;
+import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.logic.Positions;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
+import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
-import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.Ownership;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The antenna screen: its state, its links to other antennas on each band, its bridges onto
- * wired lines, the team lock its owner can set, and its coverage map on either band.
+ * The antenna screen's server side: the view it shows ({@link AntennaUi} paints it) and the team lock its owner can
+ * set.
  */
 public final class AntennaScreen {
 
-    private static final int LIST_WIDTH = 220;
-    private static final int MAP_SIZE = 96;
-    private static final int WIDTH = LIST_WIDTH + MAP_SIZE + 6;
-    private static final int HEIGHT = 170;
-    private static final int ROWS = 7;
-    private static final int ROW_HEIGHT = 11;
     private static final String LOCK = "lock";
     // How close a player must stand to lock an antenna, as for any machine's screen.
     private static final double LOCK_REACH = 8;
@@ -65,196 +54,12 @@ public final class AntennaScreen {
             AntennaView.EMPTY);
         sync.syncValue("view", viewSync);
         sync.registerSyncedAction(LOCK, false, true, buf -> setLocked(antenna, player, buf.readBoolean()));
-        Supplier<AntennaView> view = viewSync::view;
-
-        ModularPanel panel = new ModularPanel("becom_antenna").size(WIDTH, HEIGHT);
-        Flow sides = Flow.row()
-            .sizeRel(1f)
-            .padding(6, 6, 6, 6)
-            .childPadding(6);
-        Flow column = Flow.column()
-            .width(LIST_WIDTH - 12)
-            .heightRel(1f)
-            .childPadding(2);
-        column.child(
-            IKey.dynamic(
-                () -> StatCollector.translateToLocalFormatted(
-                    "becom.antenna.title",
-                    view.get()
-                        .tier()))
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        column.child(
-            IKey.dynamic(() -> status(view.get()))
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        column.child(
-            IKey.dynamic(
-                () -> StatCollector.translateToLocalFormatted(
-                    "becom.antenna.owner_calls",
-                    view.get()
-                        .owner(),
-                    view.get()
-                        .calls(),
-                    view.get()
-                        .callSlots()))
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        column.child(
-            new ToggleButton().size(LIST_WIDTH - 12, 14)
-                .overlay(IKey.lang("becom.antenna.lock"))
-                .value(
-                    new BoolValue.Dynamic(
-                        () -> view.get()
-                            .locked(),
-                        on -> sync.callSyncedAction(LOCK, buf -> buf.writeBoolean(on))))
-                .setEnabledIf(
-                    w -> view.get()
-                        .mayManage()));
-        IntSupplier size = () -> view.get()
-            .links()
-            .size()
-            + view.get()
-                .bridges()
-                .size();
-        int[] page = { 0 };
-        for (int r = 0; r < ROWS; r++) {
-            int row = r;
-            column.child(
-                IKey.dynamic(() -> line(view.get(), page[0] * ROWS + row))
-                    .asWidget()
-                    .widthRel(1f)
-                    .height(ROW_HEIGHT));
-        }
-        column.child(pager(page, size));
-        sides.child(column);
-        sides.child(coverage(view));
-        panel.child(sides);
-        return panel;
-    }
-
-    /** The coverage map, VHF for radio channels or UHF for calls, with its key; the band is the viewer's choice. */
-    private static Flow coverage(Supplier<AntennaView> view) {
-        boolean[] calls = { false };
-        Supplier<SignalLevel> cap = () -> calls[0] ? SignalLevel.MAX : SignalLevel.MEDIUM;
-        Flow map = Flow.column()
-            .width(MAP_SIZE)
-            .heightRel(1f)
-            .childPadding(2);
-        map.child(
-            IKey.dynamic(
-                () -> StatCollector.translateToLocalFormatted(
-                    "becom.antenna.coverage",
-                    view.get()
-                        .mapRange()))
-                .asWidget()
-                .width(MAP_SIZE)
-                .height(10));
-        map.child(
-            BeCom.proxy.coverageMap(
-                () -> calls[0] ? view.get()
-                    .uhfMap()
-                    : view.get()
-                        .vhfMap(),
-                cap)
-                .asWidget()
-                .size(MAP_SIZE, MAP_SIZE));
-        map.child(
-            BeCom.proxy.coverageLegend(cap)
-                .asWidget()
-                .size(MAP_SIZE, 4));
-        map.child(
-            new ToggleButton().size(MAP_SIZE, 14)
-                .overlay(
-                    IKey.dynamic(
-                        () -> StatCollector.translateToLocal(
-                            calls[0] ? "becom.antenna.coverage_calls" : "becom.antenna.coverage_radio")))
-                .value(new BoolValue.Dynamic(() -> calls[0], on -> calls[0] = on)));
-        return map;
-    }
-
-    private static String status(AntennaView view) {
-        if (!view.formed()) return StatCollector.translateToLocal("becom.antenna.unformed");
-        String state = StatCollector.translateToLocal(view.working() ? "becom.info.online" : "becom.info.offline");
-        String survey = StatCollector
-            .translateToLocal(view.surveyed() ? "becom.antenna.surveyed" : "becom.antenna.surveying");
-        return StatCollector
-            .translateToLocalFormatted("becom.antenna.status", state, view.mast(), view.range(), survey);
-    }
-
-    private static String line(AntennaView view, int i) {
-        List<AntennaView.Link> links = view.links();
-        if (i < links.size()) {
-            AntennaView.Link link = links.get(i);
-            return StatCollector.translateToLocalFormatted(
-                "becom.antenna.link",
-                link.x(),
-                link.y(),
-                link.z(),
-                link.distance(),
-                band(link.vhf(), SignalLevel.MEDIUM),
-                band(link.uhf(), SignalLevel.MAX));
-        }
-        i -= links.size();
-        List<AntennaView.Bridge> bridges = view.bridges();
-        if (i < bridges.size()) {
-            AntennaView.Bridge bridge = bridges.get(i);
-            return StatCollector.translateToLocalFormatted(
-                "becom.antenna.bridge",
-                bridge.x(),
-                bridge.y(),
-                bridge.z(),
-                bridge.distance(),
-                bridge.rate());
-        }
-        return i == 0 && links.isEmpty() ? StatCollector.translateToLocal("becom.antenna.no_links") : "";
-    }
-
-    /**
-     * A band's level and SNR, or a dash below Low. Radio channels stop at Medium; calls go as high as the link.
-     */
-    private static String band(double snr, SignalLevel cap) {
-        LevelScale scale = BeComConfig.get()
-            .levelScale();
-        SignalLevel level = SignalLevel.min(scale.levelOf(snr), cap);
-        if (!level.atLeast(SignalLevel.LOW)) return "-";
-        return StatCollector.translateToLocal(
-            "becom.level." + level.name()
-                .toLowerCase(Locale.ROOT))
-            + " "
-            + Math.round(snr)
-            + " dB";
-    }
-
-    private static Flow pager(int[] page, IntSupplier size) {
-        Flow pager = Flow.row()
-            .coverChildren()
-            .childPadding(4);
-        pager.child(
-            new ButtonWidget<>().size(20, 12)
-                .overlay(IKey.str("<"))
-                .onMousePressed(button -> {
-                    if (page[0] > 0) page[0]--;
-                    return true;
-                }));
-        pager.child(IKey.dynamic(() -> {
-            int pages = Math.max(1, (size.getAsInt() + ROWS - 1) / ROWS);
-            if (page[0] >= pages) page[0] = pages - 1;
-            return (page[0] + 1) + "/" + pages;
-        })
-            .asWidget()
-            .size(30, 12));
-        pager.child(
-            new ButtonWidget<>().size(20, 12)
-                .overlay(IKey.str(">"))
-                .onMousePressed(button -> {
-                    if ((page[0] + 1) * ROWS < size.getAsInt()) page[0]++;
-                    return true;
-                }));
-        return pager;
+        CanvasWidget screen = new CanvasWidget(
+            new AntennaUi(viewSync::view, on -> sync.callSyncedAction(LOCK, buf -> buf.writeBoolean(on))),
+            AntennaUi.scale(BeCom.proxy.guiHeight()));
+        return new ModularPanel("becom_antenna").size(screen.width(), screen.height())
+            .background(IDrawable.EMPTY)
+            .child(screen);
     }
 
     /** Server side: only the owner, their team or an operator may lock. */
@@ -298,20 +103,40 @@ public final class AntennaScreen {
         NetNode node = becom.network.model(tile.getWorld())
             .node(ref.pos());
         if (node != null) {
+            NetworkModel model = becom.network.model(tile.getWorld());
+            List<NetworkService.Run> runs = becom.network.runsFrom(ref.dimension(), ref.pos());
             for (long other : node.links()) {
+                List<CableTier> cables = model.cables(ref.pos(), other);
+                // The span leads to a pylon or a machine; the run it starts goes on to the next working node.
+                NetworkService.Run run = runOver(
+                    runs,
+                    other,
+                    node.links()
+                        .size());
+                long end = run == null ? other : run.to();
+                NetNode far = model.node(end);
                 bridges.add(
                     new AntennaView.Bridge(
-                        BlockPos.x(other),
-                        BlockPos.y(other),
-                        BlockPos.z(other),
-                        (int) Math.round(BlockPos.distance(ref.pos(), other)),
-                        WiredTopology.spanRate(
-                            becom.network.model(tile.getWorld())
-                                .cables(ref.pos(), other),
-                            BlockPos.distance(ref.pos(), other),
-                            t)));
+                        far == null || far.kind() == NodeKind.PYLON ? -1
+                            : far.kind()
+                                .ordinal(),
+                        BlockPos.x(end),
+                        BlockPos.y(end),
+                        BlockPos.z(end),
+                        (int) Math.round(run == null ? BlockPos.distance(ref.pos(), other) : run.length()),
+                        cables.isEmpty() ? -1
+                            : cables.get(0)
+                                .ordinal(),
+                        run == null ? -1 : run.rate(),
+                        run == null ? 0 : becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link())));
             }
         }
+        double bestUhf = Double.NEGATIVE_INFINITY;
+        for (AntennaView.Link link : links) bestUhf = Math.max(bestUhf, link.uhf());
+        SignalLevel radioLevel = links.isEmpty() ? SignalLevel.NONE
+            : t.levelScale()
+                .levelOf(bestUhf);
+        int radioRate = links.isEmpty() ? 0 : t.radioRate(radioLevel);
         UUID owner = antenna.owner();
         String ownerName = owner == null ? "-" : UsernameCache.getLastKnownUsername(owner);
         byte[] vhfMap = known == null ? null : becom.antennas.coverage(known, becom.antennas.vhf());
@@ -332,6 +157,14 @@ public final class AntennaScreen {
             bridges,
             (int) Math.round(t.rangeToHold(t.antennaBudget(antenna.tier()))),
             vhfMap == null ? new byte[0] : vhfMap,
-            uhfMap == null ? new byte[0] : uhfMap);
+            uhfMap == null ? new byte[0] : uhfMap,
+            radioRate,
+            radioLevel.ordinal());
+    }
+
+    /** The run leaving over the span to {@code other}: the one ending there, or the only one when there's one span. */
+    private static NetworkService.Run runOver(List<NetworkService.Run> runs, long other, int spans) {
+        for (NetworkService.Run run : runs) if (run.to() == other) return run;
+        return spans == 1 && runs.size() == 1 ? runs.get(0) : null;
     }
 }

@@ -235,21 +235,22 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
         if (isTooNew(stack)) lines.add(StatCollector.translateToLocal("becom.info.too_new"));
         int number = number(stack);
-        if (number >= 0) lines.add(StatCollector.translateToLocalFormatted("becom.mobile.number", number));
-        lines.add(StatCollector.translateToLocal(on(stack) ? "becom.mobile.on" : "becom.mobile.off"));
-        lines.add(chargeLine(stack));
-        moreInformation(stack, lines);
-        lines.add(StatCollector.translateToLocal("becom.mobile.help"));
+        if (number >= 0) lines.add(Tips.row("becom.tip.number", number));
+        lines.add(Tips.state(on(stack), batteryLine(stack)));
+        if (moreInformation(stack, lines)) return;
+        lines.add(Tips.howTo("becom.tip.phone_open", BeCom.proxy.phoneKeyName()));
+        lines.add(Tips.howTo("becom.tip.phone_bauble"));
     }
 
-    /** Its charge, for the tooltip, in the units its battery uses. */
-    protected String chargeLine(ItemStack stack) {
-        return StatCollector
-            .translateToLocalFormatted("becom.mobile.charge", (long) charge(stack), (long) maxCharge(stack));
+    /** Its battery, for the tooltip, as a percent of what its battery holds. */
+    protected String batteryLine(ItemStack stack) {
+        return Tips.battery(charge(stack), maxCharge(stack));
     }
 
-    /** Lines a kind of phone adds to the tooltip. */
-    protected void moreInformation(ItemStack stack, List<String> lines) {}
+    /** Lines a kind of phone adds to the tooltip; true when they say how to use it in place of the phone's own. */
+    protected boolean moreInformation(ItemStack stack, List<String> lines) {
+        return false;
+    }
 
     @Override
     public boolean showDurabilityBar(ItemStack stack) {

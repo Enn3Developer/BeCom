@@ -34,6 +34,7 @@ public final class Call {
     private final long startedMillis;
     private long stateSinceMillis;
     private long connectedMillis = -1;
+    private boolean video;
 
     Call(long id, Leg caller, Leg callee, long nowMillis) {
         this.id = id;
@@ -45,6 +46,18 @@ public final class Call {
 
     public long id() {
         return id;
+    }
+
+    /**
+     * A video call: started as one from a carried phone, or by or to a Videophone with its camera on. Its streams take
+     * video's rate where they find room, voice's where they don't; a voice call shows no video at all.
+     */
+    public boolean video() {
+        return video;
+    }
+
+    public void setVideo(boolean video) {
+        this.video = video;
     }
 
     public State state() {

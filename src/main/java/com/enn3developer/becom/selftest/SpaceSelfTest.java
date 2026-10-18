@@ -34,6 +34,7 @@ import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
+import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
@@ -50,15 +51,14 @@ import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.space.Portals;
 import com.enn3developer.becom.logic.space.Satellites;
 import com.enn3developer.becom.machine.BeComMachines;
+import com.enn3developer.becom.machine.MTEExchange;
 import com.enn3developer.becom.machine.MTELaunchPad;
-import com.enn3developer.becom.machine.MTELineTerminal;
 import com.enn3developer.becom.machine.MTEPortalRelay;
 import com.enn3developer.becom.machine.MTESatelliteDish;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.CallService;
-import com.enn3developer.becom.server.LinkService;
 import com.enn3developer.becom.server.SpaceService;
 import com.enn3developer.becom.voice.RadioSnapshot;
 import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
@@ -129,8 +129,8 @@ final class SpaceSelfTest {
     private MTEHatchInput padHatch;
     private MTESatelliteDish dishA;
     private MTESatelliteDish dishB;
-    private MTELineTerminal dishTerminalA;
-    private MTELineTerminal dishTerminalB;
+    private MTEExchange dishExchangeA;
+    private MTEExchange dishExchangeB;
     private TileTelephone dishPhoneA;
     private TileTelephone dishPhoneB;
     private MTEPortalRelay relayOverworld;
@@ -141,8 +141,6 @@ final class SpaceSelfTest {
     private MTEPortalRelay relayPersonalOther;
     private int personalA = NO_DIMENSION;
     private int personalB = NO_DIMENSION;
-    private LinkService.Outcome pairedPersonal;
-    private LinkService.Outcome pairedPersonalOther;
     private MTEPortalRelay relayBare;
     private MTEPortalRelay relayFarNether;
     private MTEPortalRelay relayTwilightFar;
@@ -150,14 +148,10 @@ final class SpaceSelfTest {
     private MTEPortalRelay relayEndFar;
     private WorldServer twilight;
     private WorldServer end;
-    private LinkService.Outcome pairedTwilight;
-    private LinkService.Outcome pairedEnd;
-    private MTELineTerminal relayTerminalOverworld;
-    private MTELineTerminal relayTerminalNether;
+    private MTEExchange relayExchangeOverworld;
+    private MTEExchange relayExchangeNether;
     private TileTelephone relayPhoneOverworld;
     private TileTelephone relayPhoneNether;
-    private LinkService.Outcome paired;
-    private boolean pairSaved;
     private boolean twilightPlaced;
     private boolean personalPlaced;
     private EntityTier1Rocket rocket;
@@ -242,19 +236,19 @@ final class SpaceSelfTest {
         padHatch = (MTEHatchInput) hatch(overworld, pad, PAD_PIT, tankAcross(), ItemList.Hatch_Input_HV);
         t.power(hatch(overworld, pad, 0, 1, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
         hatch(overworld, pad, 0, -1, ItemList.Hatch_Maintenance);
-        // Two dishes 300 blocks apart, each with a Line Terminal and a Telephone in front.
+        // Two dishes 300 blocks apart, each cabled to an Exchange in front, with a Telephone on that cable.
         dishA = dish(DISH_X);
         dishB = dish(DISH_X + DISH_GAP);
-        dishTerminalA = terminal(overworld, DISH_X, Y, SZ - 3, -1);
-        dishPhoneA = telephone(overworld, DISH_X, Y, SZ - 5, owner);
-        dishTerminalB = terminal(overworld, DISH_X + DISH_GAP, Y, SZ - 3, -1);
-        dishPhoneB = telephone(overworld, DISH_X + DISH_GAP, Y, SZ - 5, owner);
+        dishExchangeA = dishExchange(DISH_X);
+        dishPhoneA = telephone(overworld, DISH_X - 3, Y, SZ - 5, owner);
+        dishExchangeB = dishExchange(DISH_X + DISH_GAP);
+        dishPhoneB = telephone(overworld, DISH_X + DISH_GAP - 3, Y, SZ - 5, owner);
         // A relay by a Nether portal, its terminal and Telephone; relays by the Twilight Forest's and Personal
         // Space's portals, and one by no portal at all.
         netherPortal(overworld, SX + 2, Y, RELAY_Z);
         relayOverworld = relay(overworld, SX, Y + 1, RELAY_Z);
-        relayTerminalOverworld = terminal(overworld, SX, Y, RELAY_Z + TERMINAL_GAP, 1);
-        relayPhoneOverworld = telephone(overworld, SX, Y, RELAY_Z + TERMINAL_GAP + 2, owner);
+        relayExchangeOverworld = relayExchange(overworld, SX, Y, RELAY_Z, 1);
+        relayPhoneOverworld = telephone(overworld, SX - 1, Y, RELAY_Z + TERMINAL_GAP / 2, owner);
         relayTwilight = relay(overworld, SX + 40, Y, RELAY_Z);
         twilightPlaced = placeByClass(overworld, SX + 42, Y, RELAY_Z, Portals.TWILIGHT_PORTAL);
         relayPersonal = relay(overworld, SX + 60, Y, RELAY_Z);
@@ -343,8 +337,8 @@ final class SpaceSelfTest {
         netherPortal(nether, NX + 2, NY - 1, NZ);
         relayNether = relay(nether, NX, NY, NZ);
         relayFarNether = relay(nether, FAR_NX, NY, NZ);
-        relayTerminalNether = terminal(nether, NX, NY, NZ + TERMINAL_GAP, 1);
-        relayPhoneNether = telephone(nether, NX, NY, NZ + TERMINAL_GAP + 2, netherHand);
+        relayExchangeNether = relayExchange(nether, NX, NY, NZ, 0);
+        relayPhoneNether = telephone(nether, NX - 1, NY, NZ + TERMINAL_GAP / 2, netherHand);
         // Machines join the network as they first tick.
         return 5;
     }
@@ -423,7 +417,10 @@ final class SpaceSelfTest {
     }
 
     private int form() {
-        for (MTEEnhancedMultiBlockBase<?> machine : List.<MTEEnhancedMultiBlockBase<?>>of(pad, dishA, dishB)) {
+        List<MTEEnhancedMultiBlockBase<?>> machines = new ArrayList<>(
+            List.of(pad, dishA, dishB, dishExchangeA, dishExchangeB, relayExchangeOverworld));
+        if (relayExchangeNether != null) machines.add(relayExchangeNether);
+        for (MTEEnhancedMultiBlockBase<?> machine : machines) {
             machine.checkStructure(true, machine.getBaseMetaTileEntity());
             // A newly built GT multiblock needs its maintenance done once, as a player does at its hatch.
             machine.fixAllIssues();
@@ -432,43 +429,15 @@ final class SpaceSelfTest {
         }
         dishA.refreshStructure();
         dishB.refreshStructure();
-        dishTerminalA.scanCable();
-        dishTerminalB.scanCable();
-        relayTerminalOverworld.scanCable();
-        if (relayTerminalNether != null) relayTerminalNether.scanCable();
-        link(owner, overworld, dishA, dishTerminalA);
-        link(owner, overworld, dishB, dishTerminalB);
-        link(owner, overworld, relayOverworld, relayTerminalOverworld);
-        if (nether != null) {
-            link(netherHand, nether, relayNether, relayTerminalNether);
-            // Wrench one relay, go through the portal, and wrench the other.
-            becom.links.forget(owner.getUniqueID());
-            becom.links.wrench(owner, overworld, pos(relayOverworld));
-            paired = becom.links.wrench(owner, nether, pos(relayNether));
-            pairSaved = !NetworkSavedData.get(overworld)
-                .isDirty()
-                && !NetworkSavedData.get(nether)
-                    .isDirty();
+        // Each Exchange switches calls with an HV rack, and finds what's on its cable.
+        for (MTEExchange exchange : new MTEExchange[] { dishExchangeA, dishExchangeB, relayExchangeOverworld,
+            relayExchangeNether }) {
+            if (exchange == null) continue;
+            exchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.FIBRE, 1);
+            exchange.scanCable();
         }
-        if (twilight != null) {
-            becom.links.forget(owner.getUniqueID());
-            becom.links.wrench(owner, overworld, pos(relayTwilight));
-            pairedTwilight = becom.links.wrench(owner, twilight, pos(relayTwilightFar));
-        }
-        if (end != null) {
-            becom.links.forget(owner.getUniqueID());
-            becom.links.wrench(owner, overworld, pos(relayEnd));
-            pairedEnd = becom.links.wrench(owner, end, pos(relayEndFar));
-        }
-        if (relayPersonalFar != null && relayPersonalOther != null) {
-            relayPersonal.look();
-            becom.links.forget(owner.getUniqueID());
-            becom.links.wrench(owner, overworld, pos(relayPersonal));
-            pairedPersonalOther = becom.links.wrench(owner, worldOf(relayPersonalOther), pos(relayPersonalOther));
-            becom.links.forget(owner.getUniqueID());
-            becom.links.wrench(owner, overworld, pos(relayPersonal));
-            pairedPersonal = becom.links.wrench(owner, worldOf(relayPersonalFar), pos(relayPersonalFar));
-        }
+        // Relays by the two sides of one portal pair by themselves, each second; once now.
+        becom.network.pairRelaysForSelfTest();
         for (WorldServer w : new WorldServer[] { overworld, moon, nether }) {
             if (w == null) continue;
             for (Object o : w.theChunkProviderServer.loadedChunks) {
@@ -575,8 +544,11 @@ final class SpaceSelfTest {
             "...and while it holds, the pad goes dark and its screen says something covers it",
             pad.held() && !pad.getBaseMetaTileEntity()
                 .isActive()
-                && pad.screenView()
-                    .held(),
+                && String.join(
+                    "\n",
+                    pad.readout()
+                        .encode())
+                    .contains("becom.launch_pad.status_held"),
             "held " + pad.held()
                 + ", lit "
                 + pad.getBaseMetaTileEntity()
@@ -611,6 +583,24 @@ final class SpaceSelfTest {
             "...and Five satellites, now that its dimension has 5",
             padOwner != null && BeComQuests.reportedForSelfTest(QuestTask.FIVE_SATELLITES, padOwner),
             "");
+        com.enn3developer.becom.gui.OrbitView orbit = pad.orbitView();
+        t.check(
+            "...its Orbit page puts the pad's own sky first, with its 5 satellites and when each comes down",
+            !orbit.skies()
+                .isEmpty()
+                && orbit.skies()
+                    .get(0)
+                    .up() == 5
+                && orbit.forecast()
+                    .threshold() > 0
+                && orbit.forecast()
+                    .fallDays()
+                    .size() <= 5,
+            orbit.skies()
+                .isEmpty() ? "no skies"
+                    : orbit.skies()
+                        .get(0) + ", "
+                        + orbit.forecast());
         // It may be out of sight already, gone once it climbed high enough: then it's dead, where it got to.
         EntityLaunchRocket flying = pad.launchedRocket();
         t.check(
@@ -804,6 +794,20 @@ final class SpaceSelfTest {
             String.valueOf(
                 becom.network.graph()
                     .hops(a, b)));
+        // The Exchange's screen lists its dish on its cable, carrying, and the other Exchange it reaches through it.
+        com.enn3developer.becom.gui.ExchangeView screen = dishExchangeA.view();
+        boolean dishRow = false;
+        for (com.enn3developer.becom.gui.ExchangeView.Joined joined : screen.joined()) {
+            dishRow |= joined.node() == com.enn3developer.becom.logic.net.NodeKind.SATELLITE_DISH.ordinal()
+                && joined.rate() > 0;
+        }
+        t.check(
+            "...and the Exchange's screen shows its dish joined by cable, and the far Exchange it reaches",
+            screen.online() && dishRow
+                && screen.exchanges() >= 1
+                && screen.racks()
+                    .size() == 1,
+            "online " + screen.online() + ", joined " + screen.joined() + ", exchanges " + screen.exchanges());
         dishA.causeMaintenanceIssue();
         return 2;
     }
@@ -1003,14 +1007,18 @@ final class SpaceSelfTest {
                         .equals(Set.of(personalA)),
                 "leads to " + relayPersonal.personalTargets() + ", made " + personalA);
             t.check(
-                "relays by that portal and its return portal pair into the personal dimension, a High hop, and one in "
-                    + "another personal dimension is refused",
-                pairedPersonal == LinkService.Outcome.LINKED && pairedPersonalOther == LinkService.Outcome.REFUSED
+                "relays by that portal and its return portal pair by themselves into the personal dimension, a High "
+                    + "hop, and one in another personal dimension stays unpaired",
+                relayPersonalFar.ref()
+                    .equals(becom.network.partnerOf(relayPersonal.ref()))
+                    && becom.network.partnerOf(relayPersonalOther.ref()) == null
                     && Math.abs(
                         becom.network.graph()
                             .width(vertex(relayPersonal), vertex(relayPersonalFar)) - high())
                         < SelfTest.EPS,
-                pairedPersonal + ", other " + pairedPersonalOther);
+                "partner " + becom.network.partnerOf(relayPersonal.ref())
+                    + ", other's "
+                    + becom.network.partnerOf(relayPersonalOther.ref()));
             // Its owner relinks the Overworld portal into the other dimension.
             boolean relinked = linkPersonalPortal(SX + 62, Y, RELAY_Z, personalB);
             relayPersonal.look();
@@ -1026,27 +1034,32 @@ final class SpaceSelfTest {
         }
         if (twilight != null) {
             t.check(
-                "relays by Twilight Forest portals on both sides pair into the Twilight Forest, a High hop, "
+                "relays by Twilight Forest portals on both sides pair by themselves into the Twilight Forest, a High "
+                    + "hop, "
                     + TWILIGHT_DX
                     + " blocks apart as Twilight Forest may put a new portal",
-                pairedTwilight == LinkService.Outcome.LINKED && relayTwilightFar.isWorking()
+                relayTwilightFar.ref()
+                    .equals(becom.network.partnerOf(relayTwilight.ref())) && relayTwilightFar.isWorking()
                     && Math.abs(
                         becom.network.graph()
                             .width(vertex(relayTwilight), vertex(relayTwilightFar)) - high())
                         < SelfTest.EPS,
-                pairedTwilight + ", working " + relayTwilightFar.isWorking());
+                "partner " + becom.network.partnerOf(relayTwilight.ref())
+                    + ", working "
+                    + relayTwilightFar.isWorking());
         }
         if (end != null) {
             t.check(
-                "relays at an End portal and at one in the End pair into the End, a High hop",
-                pairedEnd == LinkService.Outcome.LINKED && relayEndFar.isWorking()
+                "relays at an End portal and at one in the End pair by themselves into the End, a High hop",
+                relayEndFar.ref()
+                    .equals(becom.network.partnerOf(relayEnd.ref())) && relayEndFar.isWorking()
                     && relayEnd.look()
                         .contains(Portals.Kind.END)
                     && Math.abs(
                         becom.network.graph()
                             .width(vertex(relayEnd), vertex(relayEndFar)) - high())
                         < SelfTest.EPS,
-                pairedEnd + ", working " + relayEndFar.isWorking());
+                "partner " + becom.network.partnerOf(relayEnd.ref()) + ", working " + relayEndFar.isWorking());
         }
         t.check(
             "a relay by no portal doesn't work",
@@ -1055,13 +1068,12 @@ final class SpaceSelfTest {
             relayBare.portals() + ", working " + relayBare.isWorking());
         if (nether == null) return 1;
         t.check(
-            "relays on both sides of a Nether portal pair: wrench one, go through, wrench the other",
-            paired == LinkService.Outcome.LINKED && relayNether.ref()
+            "relays on both sides of a Nether portal pair by themselves, with no wrench",
+            relayNether.ref()
                 .equals(becom.network.partnerOf(relayOverworld.ref())),
-            String.valueOf(paired));
-        t.check("...and both halves of the pair are on disk at once, each in its dimension's file", pairSaved, "");
+            "partner " + becom.network.partnerOf(relayOverworld.ref()));
         t.check(
-            "...completing Portal Relay pair for whoever linked them",
+            "...completing Portal Relay pair for the relays' owner",
             BeComQuests.reportedForSelfTest(QuestTask.PORTAL_RELAY_PAIR, owner.getUniqueID()),
             "");
         return 1;
@@ -1109,21 +1121,21 @@ final class SpaceSelfTest {
         return 1;
     }
 
-    /** One partner each, and unpairing. */
+    /** One partner each, and pairing again by themselves. */
     private int checkRelayPairRules() {
         if (nether == null) return 1;
-        becom.links.forget(owner.getUniqueID());
-        becom.links.wrench(owner, overworld, pos(relayTwilight));
-        LinkService.Outcome taken = becom.links.wrench(owner, nether, pos(relayNether));
-        t.check("a relay already paired refuses a second partner", taken == LinkService.Outcome.REFUSED, taken + "");
+        // On opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
+        t.check(
+            "a relay pairs only with one where its portal leads: not 1,000 blocks off in the Nether, but at the spot",
+            becom.network.partnerOf(relayFarNether.ref()) == null && relayNether.ref()
+                .equals(becom.network.partnerOf(relayOverworld.ref())),
+            "far's partner " + becom.network.partnerOf(relayFarNether.ref()));
         // Saving switched off, as /save-off does, or a backup while it copies the world.
         overworld.levelSaving = true;
         nether.levelSaving = true;
-        LinkService.Outcome unpaired;
         boolean waited;
         try {
-            becom.links.wrench(owner, overworld, pos(relayOverworld));
-            unpaired = becom.links.wrench(owner, nether, pos(relayNether));
+            becom.network.unpair(relayOverworld.ref(), relayNether.ref());
             waited = NetworkSavedData.get(overworld)
                 .isDirty()
                 && NetworkSavedData.get(nether)
@@ -1133,20 +1145,22 @@ final class SpaceSelfTest {
             nether.levelSaving = false;
         }
         t.check(
-            "wrenching both relays of a pair again unpairs them",
-            unpaired == LinkService.Outcome.UNLINKED && becom.network.partnerOf(relayOverworld.ref()) == null,
-            unpaired + "");
-        t.check("...and with saving switched off, as during a backup, both halves wait for the next save", waited, "");
-        // On opposite sides of one portal. 1,000 blocks off in the Nether is where another one leads.
-        becom.links.wrench(owner, overworld, pos(relayBare));
-        LinkService.Outcome far = becom.links.wrench(owner, nether, pos(relayFarNether));
-        becom.links.wrench(owner, overworld, pos(relayBare));
-        LinkService.Outcome near = becom.links.wrench(owner, nether, pos(relayNether));
+            "with saving switched off, as during a backup, both halves of an unpairing wait for the next save",
+            waited,
+            "");
+        becom.network.pairRelaysForSelfTest();
         t.check(
-            "a relay pairs only with one where its portal leads: not 1,000 blocks off in the Nether, but at the spot",
-            far == LinkService.Outcome.REFUSED && near == LinkService.Outcome.LINKED,
-            far + ", " + near);
-        becom.network.unpair(relayBare.ref(), relayNether.ref());
+            "unpaired relays by the two sides of one portal pair again by themselves",
+            relayNether.ref()
+                .equals(becom.network.partnerOf(relayOverworld.ref())),
+            "partner " + becom.network.partnerOf(relayOverworld.ref()));
+        t.check(
+            "...and both halves of the pair are on disk at once, each in its dimension's file",
+            !NetworkSavedData.get(overworld)
+                .isDirty()
+                && !NetworkSavedData.get(nether)
+                    .isDirty(),
+            "");
         return 1;
     }
 
@@ -1235,11 +1249,47 @@ final class SpaceSelfTest {
         return place(world, mte, x, tile.getYCoord(), z);
     }
 
-    private MTELineTerminal terminal(WorldServer world, int x, int y, int z, int towardsPhone) {
-        MTELineTerminal terminal = place(world, BeComMachines.lineTerminal, x, y, z);
-        t.power(terminal.getBaseMetaTileEntity());
-        world.setBlock(x, y, z + towardsPhone, BeComBlocks.phoneCable);
-        return terminal;
+    /** An Exchange facing north, powered, with its input bus for racks: what the gateways here cable to. */
+    private MTEExchange exchange(WorldServer world, int x, int y, int z) {
+        MTEExchange exchange = multiblock(world, BeComMachines.exchange, x, y, z);
+        t.power(hatch(world, exchange, 0, 1, ItemList.Hatch_Energy_LV).getBaseMetaTileEntity());
+        hatch(world, exchange, 0, -1, ItemList.Hatch_Input_Bus_LV);
+        return exchange;
+    }
+
+    /**
+     * The Exchange in front of the dish at {@code x}: Fibre runs from its front round its west side to the front of
+     * the dish's controller, past the spot a Telephone takes.
+     */
+    private MTEExchange dishExchange(int x) {
+        MTEExchange exchange = exchange(overworld, x, Y, SZ - 8);
+        for (int cx = x; cx >= x - 2; cx--) fibre(overworld, cx, Y, SZ - 9);
+        for (int z = SZ - 8; z <= SZ - 1; z++) fibre(overworld, x - 2, Y, z);
+        fibre(overworld, x - 1, Y, SZ - 1);
+        fibre(overworld, x, Y, SZ - 1);
+        return exchange;
+    }
+
+    /**
+     * The Exchange {@link #TERMINAL_GAP} blocks south of the relay at x, y + {@code up}, z: Fibre runs from its front
+     * north to beside the relay, past the spot a Telephone takes.
+     */
+    private MTEExchange relayExchange(WorldServer world, int x, int y, int z, int up) {
+        MTEExchange exchange = exchange(world, x, y, z + TERMINAL_GAP);
+        for (int cz = z + TERMINAL_GAP - 1; cz >= z + 1; cz--) fibre(world, x, y, cz);
+        for (int dy = 1; dy <= up; dy++) fibre(world, x, y + dy, z + 1);
+        return exchange;
+    }
+
+    private static void fibre(WorldServer world, int x, int y, int z) {
+        world.setBlock(
+            x,
+            y,
+            z,
+            BeComBlocks.phoneCable,
+            BlockPhoneCable.stack(CableTier.FIBRE, 1)
+                .getItemDamage(),
+            3);
     }
 
     private MTEPortalRelay relay(WorldServer world, int x, int y, int z) {

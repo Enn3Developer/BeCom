@@ -12,6 +12,7 @@ import net.minecraft.network.PacketBuffer;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.logic.SignalLevel;
+import com.enn3developer.becom.logic.app.AppManifest;
 import com.enn3developer.becom.logic.app.AppTree;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 
@@ -22,7 +23,7 @@ class PhoneViewTest {
 
     private static PhoneView view(int contacts, int blocked) {
         List<PhoneView.Contact> c = new ArrayList<>();
-        for (int i = 0; i < contacts; i++) c.add(new PhoneView.Contact(100_000 + i, "owner" + i));
+        for (int i = 0; i < contacts; i++) c.add(new PhoneView.Contact(100_000 + i, "owner" + i, i % 3));
         List<PhoneView.Blocked> b = new ArrayList<>();
         for (int i = 0; i < blocked; i++) b.add(new PhoneView.Blocked(UUID.randomUUID(), "pest" + i));
         List<PhoneView.Recent> r = List
@@ -49,7 +50,17 @@ class PhoneViewTest {
                 new PhoneView.Member(222_222, "carol", SignalLevel.NONE, true)),
             false,
             new PhoneView.Video(true, false, true, true, true),
-            new PhoneView.Battery(744_000, 1_200_000, 155, 39, true, List.of(42, 24, 21, 9, 4), false, true, true),
+            new PhoneView.Battery(
+                744_000,
+                1_200_000,
+                155,
+                39,
+                true,
+                List.of(42, 24, 21, 9, 4),
+                false,
+                true,
+                true,
+                List.of(new PhoneView.AppShare("Reactor", 4))),
             new PhoneView.Via(PhoneView.Via.Kind.ANTENNA, 2),
             new AppsView(
                 List.of(
@@ -69,7 +80,8 @@ class PhoneViewTest {
                         3000,
                         3072,
                         12_000,
-                        65_536)),
+                        65_536,
+                        AppManifest.Use.CALL.bit())),
                 new AppsView.Screen(
                     "reactor",
                     AppsView.State.RUNNING,
@@ -94,7 +106,7 @@ class PhoneViewTest {
                             AppTree.Style.DANGER,
                             "")),
                     123_456_789L),
-                new AppsView.Offer(7, true, "Lights", "1.0", "Alex", "1, 2, 3", 900, 3),
+                new AppsView.Offer(7, true, "Lights", "1.0", "Alex", "1, 2, 3", 900, 3, 0x2f5f9f, "e".repeat(64)),
                 new AppsView.Notice("Reactor", "Hull heat", "80%"),
                 List.of(
                     new AppsView.StoreApp(
@@ -110,11 +122,13 @@ class PhoneViewTest {
                         1,
                         12,
                         true,
-                        true)),
+                        true,
+                        0x6a5a1a)),
                 "li",
                 2,
                 3,
-                17));
+                17),
+            new PhoneView.Phone(2, "Base", true, 1_700_000_000_000L, true, List.of(300417, 482917, 0, 0), 2, true));
     }
 
     private static PhoneView roundTrip(PhoneView view) {

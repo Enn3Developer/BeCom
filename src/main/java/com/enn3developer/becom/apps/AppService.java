@@ -340,6 +340,16 @@ public final class AppService {
         push(number, "becom_event", id, AppTree.cap(widget, AppTree.MAX_ID), AppTree.cap(value, AppTree.MAX_TEXT * 4));
     }
 
+    /** Switches what an installed app may use on or off, from its settings page. */
+    public void setAllowed(int number, String id, AppManifest.Use use, boolean on) {
+        PhoneApps apps = data.appsIfAny(number);
+        PhoneApps.App app = apps == null ? null : apps.get(id);
+        if (app == null || use == null) return;
+        apps.replace(app.withAllowed(use, on));
+        data.markDirty();
+        changed();
+    }
+
     public void setBackground(int number, String id, boolean on) {
         PhoneApps apps = data.appsIfAny(number);
         PhoneApps.App app = apps == null ? null : apps.get(id);
@@ -485,14 +495,14 @@ public final class AppService {
     String permit(int number, String id, AppManifest.Use use) {
         PhoneApps.App app = app(number, id);
         if (app == null) return "no such app";
-        return app.manifest()
-            .uses(use) ? null : "not allowed: the app doesn't say --@uses " + use.word();
+        if (!app.manifest()
+            .uses(use)) return "not allowed: the app doesn't say --@uses " + use.word();
+        return app.allows(use) ? null : "not allowed: switched off in the app's settings";
     }
 
     void notify(int number, String id, String title, String text) {
         PhoneApps.App app = app(number, id);
-        if (app == null || !app.manifest()
-            .uses(AppManifest.Use.NOTIFY)) return;
+        if (app == null || !app.allows(AppManifest.Use.NOTIFY)) return;
         Notice notice = new Notice(
             app.manifest()
                 .name(),
@@ -897,8 +907,7 @@ public final class AppService {
             return;
         }
         PhoneApps.App app = app(d.to(), d.app());
-        if (app == null || !app.manifest()
-            .uses(AppManifest.Use.NET)) return;
+        if (app == null || !app.allows(AppManifest.Use.NET)) return;
         Object[] signal = { "becom_message", d.app(), d.from(), d.data() };
         lastData.put(d.to() + ":" + d.app(), worldTime());
         if (d.app()

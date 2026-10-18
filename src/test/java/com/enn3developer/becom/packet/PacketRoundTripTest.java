@@ -16,12 +16,13 @@ import net.minecraft.network.PacketBuffer;
 import org.junit.jupiter.api.Test;
 
 import com.enn3developer.becom.gui.AntennaView;
-import com.enn3developer.becom.gui.DishView;
-import com.enn3developer.becom.gui.LaunchPadView;
+import com.enn3developer.becom.gui.ExchangeView;
+import com.enn3developer.becom.gui.OrbitView;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.Coverage;
 import com.enn3developer.becom.logic.radio.RadioModel;
+import com.enn3developer.becom.logic.space.Forecast;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
@@ -169,10 +170,14 @@ class PacketRoundTripTest {
             3,
             12,
             List.of(new AntennaView.Link(1, 2, 3, 100, 12.5, Double.NEGATIVE_INFINITY)),
-            List.of(new AntennaView.Bridge(4, 5, 6, 10, 80)),
+            List.of(
+                new AntennaView.Bridge(2, 4, 5, 6, 10, 2, 80, 24),
+                new AntennaView.Bridge(-1, 7, 8, 9, 30, -1, -1, 0)),
             256,
             vhf,
-            uhf);
+            uhf,
+            16,
+            SignalLevel.MEDIUM.ordinal());
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);
         AntennaView read = AntennaView.read(buf);
@@ -181,40 +186,61 @@ class PacketRoundTripTest {
         assertEquals(view.calls(), read.calls());
         assertEquals(view.callSlots(), read.callSlots());
         assertEquals(view.mapRange(), read.mapRange());
+        assertEquals(view.radioRate(), read.radioRate());
+        assertEquals(view.radioLevel(), read.radioLevel());
         assertArrayEquals(vhf, read.vhfMap());
         assertArrayEquals(uhf, read.uhfMap());
         assertEquals("Alice", read.owner());
     }
 
     @Test
-    void launchPadView() {
-        LaunchPadView view = new LaunchPadView(
-            3,
+    void exchangeView() {
+        ExchangeView view = new ExchangeView(
             true,
-            List.of(new LaunchPadView.Orbit("Overworld", 37, 1_234_567L), new LaunchPadView.Orbit("Moon", 5, 0)));
+            true,
+            "Steve",
+            10,
+            64,
+            -20,
+            9,
+            72,
+            240,
+            5,
+            47,
+            1,
+            List.of(1, 1, 0),
+            List.of(
+                new ExchangeView.Joined(5, -1, -1, 900, 64, -120, List.of(0, 0, 2), 600, 512, 120),
+                new ExchangeView.Joined(-1, 4, 5551234, 12, 64, -20, List.of(1, 0, 0), 30, 16, 0)),
+            false);
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);
-        assertEquals(view, LaunchPadView.read(buf));
+        assertEquals(view, ExchangeView.read(buf));
     }
 
     @Test
-    void aDimensionWithNoNameGoesAsNone() {
-        LaunchPadView view = new LaunchPadView(0, false, List.of(new LaunchPadView.Orbit(null, 5, 0)));
+    void orbitView() {
+        OrbitView view = new OrbitView(
+            List.of(
+                new OrbitView.Sky(
+                    "Overworld",
+                    18,
+                    SignalLevel.MEDIUM,
+                    5,
+                    21,
+                    36,
+                    2,
+                    List.of(new OrbitView.Uplink("Moon", 1)),
+                    9,
+                    ""),
+                new OrbitView.Sky("Moon", 3, SignalLevel.NONE, 5, 0, 0, 0, List.of(), 0, "Overworld")),
+            "Overworld",
+            new Forecast(List.of(10, 22, 29, 29, 29), 14, SignalLevel.LOW, 29, 3, 36, 26),
+            2,
+            100);
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);
-        assertEquals(
-            "",
-            LaunchPadView.read(buf)
-                .orbits()
-                .get(0)
-                .dimension());
+        assertEquals(view, OrbitView.read(buf));
     }
 
-    @Test
-    void dishView() {
-        DishView view = new DishView(true, 37, true, true, 5, 16.0, SignalLevel.MEDIUM, 1, 2.0, "(1, 64, -3)");
-        PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
-        view.write(buf);
-        assertEquals(view, DishView.read(buf));
-    }
 }

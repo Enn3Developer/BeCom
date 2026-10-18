@@ -112,7 +112,7 @@ class GuideTest {
 
     /** The language key of an item's name, for a BeCom item, block or machine id as the guide writes it. */
     private static String nameKey(String id, Map<String, String> lang) {
-        String machines = "gregtech:gt.blockmachines:";
+        String machines = "becom:machine:";
         if (id.startsWith(machines)) return "gt.blockmachines." + BeComMachines.ids()
             .get(Integer.parseInt(id.substring(machines.length()))) + ".name";
         String name = id.substring("becom:".length());

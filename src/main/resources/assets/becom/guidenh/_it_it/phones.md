@@ -7,8 +7,8 @@ navigation:
 item_ids:
   - becom:mobile_phone:*
   - becom:me_phone:*
-  - gregtech:gt.blockmachines:25008
-  - gregtech:gt.blockmachines:25009
+  - becom:machine:25008
+  - becom:machine:25009
 quest_ids:
   - "Cs4eUVpnUBeevZzOvcInrw"
   - "1e_b8ZF0VRq1STROZstNIg"
@@ -37,18 +37,26 @@ o superiore. Un telefono scarico si spegne, e resta spento anche dopo la ricaric
 - **Tasto Telefono,** <KeyBind id="key.becom.phone">N</KeyBind>: risponde a un telefono che squilla, riaggancia durante
   una chiamata, e altrimenti apre lo schermo del telefono. Accovacciati e premilo per rifiutare una chiamata. Risponde
   anche a un Telefono che squilla entro la sua cornetta, o a un Videotelefono vicino a cui ti trovi.
-- **Squillo:** un telefono portatile squilla da chi lo porta, e lo sentono anche i giocatori vicini. Un avviso in un
-  angolo dice chi chiama. In modalità silenziosa lo senti solo tu, come una vibrazione.
-- **Tacche** accanto alla barra degli strumenti mostrano il tuo servizio mentre tieni in mano un telefono, o il livello
-  della chiamata durante una chiamata.
+- **Squillo:** un telefono portatile squilla da chi lo porta, e lo sentono anche i giocatori vicini. Un avviso in alto
+  a destra, o accanto alla finestra video, dice chi chiama, con i tasti da premere: N risponde, Maiusc+N rifiuta. In
+  modalità silenziosa lo senti solo tu, come una vibrazione.
+- **Tacche** a destra della barra degli strumenti mostrano il tuo servizio mentre tieni in mano un telefono, o il
+  livello della chiamata durante una chiamata, con sopra il nome del livello nel suo colore: "Nessun servizio" e una x
+  quando non ce n'è.
 - **Impostazioni:** accensione, modalità silenziosa, non disturbare, nascondersi dai contatti e la lista dei bloccati.
+- **Segnale:** quello che un [Analizzatore di segnale](analyzer.md) legge per i telefoni dove ti trovi: cosa ti serve e
+  quanto è lontano, da quanto parte il collegamento, quanto toglie ogni perdita e quanto manca al livello successivo.
 
 ## Videotelefono
 
-Il <ItemLink id="gregtech:gt.blockmachines:25009" showIcon="left">Videotelefono</ItemLink> è un vivavoce con uno schermo
+Il <ItemLink id="becom:machine:25009" showIcon="left">Videotelefono</ItemLink> è un vivavoce con uno schermo
 per le reti cablate, a MV e 32 EU/t. Collegalo con Cavo telefonico a un Terminale di linea, come un Telefono. Chiunque
 sia entro 4 blocchi è nella sua chiamata e sul suo schermo, e il suo altoparlante porta la chiamata a 16 blocchi.
 Riaggancia da solo 30 secondi dopo che l'ultima persona se ne va.
+
+Clic destro per usarlo: il display e i tasti di un Telefono ([La rete cablata](wired.md)) sotto uno schermo per il
+video, con tre tasti di chiamata rapida, da M1 a M3. Visto che è un vivavoce, il suo tasto largo serve anche a
+rispondere e a riagganciare, e il suo tasto **Camera** accende o spegne la sua fotocamera per le videochiamate.
 
 ## Videochiamate
 
@@ -78,7 +86,6 @@ satelliti, con il segnale di un Telefono cellulare, fino all'Alto. I Telefoni ME
 antenne. Si carica in un Caricatore.
 
 Per chiamare qualsiasi altro telefono, la rete ME vuole un
-<ItemLink id="gregtech:gt.blockmachines:25008" showIcon="left">Ponte ME</ItemLink>: mettilo su un cavo ME, dove prende
-un canale, e collegalo con la chiave a una Testa di traliccio, un Terminale di linea, una Centrale o un'antenna entro 16
-blocchi. Usa 512 EU/t, unisce le due reti al livello Massimo e porta 8 chiamate insieme. Una rete ME porta le chiamate solo all'interno di ciascuna
+<ItemLink id="becom:machine:25008" showIcon="left">Ponte ME</ItemLink>: mettilo su un cavo ME, dove prende
+un canale, e porta un cavo da lui a una Centrale: il livello del cavo ne decide la velocità. Usa 512 EU/t, unisce le due reti al livello Massimo e porta 8 chiamate insieme. Una rete ME porta le chiamate solo all'interno di ciascuna
 dimensione.

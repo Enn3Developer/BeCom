@@ -78,6 +78,19 @@ class CableWalkTest {
     }
 
     @Test
+    void tooMuchCableStillServesTheNearerDevices() {
+        // A Telephone 2 cables out, then a blob of cable past it that runs over the limit.
+        world.put(BlockPos.pack(1, 64, 0), CableWalk.Block.CABLE);
+        world.put(BlockPos.pack(2, 64, 0), CableWalk.Block.CABLE);
+        world.put(BlockPos.pack(2, 65, 0), CableWalk.Block.PHONE);
+        for (int x = 3; x <= 12; x++) for (int y = 60; y < 70; y++)
+            for (int z = -5; z < 5; z++) world.put(BlockPos.pack(x, y, z), CableWalk.Block.CABLE);
+        CableWalk.Result result = walk();
+        assertTrue(result.overflow());
+        assertEquals(List.of(BlockPos.pack(2, 65, 0)), result.phones());
+    }
+
+    @Test
     void aPhoneTouchingTheTerminalNeedsNoCable() {
         world.put(BlockPos.pack(0, 64, 1), CableWalk.Block.PHONE);
         assertEquals(

@@ -11,7 +11,7 @@ public final class LinkRules {
 
     /**
      * @param spanFactor     how many times the shorter pylon's height two pylons may be apart
-     * @param bridgeDistance how far an antenna or a gateway is wired to a pylon, a terminal or an Exchange
+     * @param bridgeDistance how far an antenna is wired to a pylon, a terminal or an Exchange
      */
     public LinkRules(double spanFactor, double bridgeDistance) {
         this.spanFactor = spanFactor;
@@ -31,7 +31,7 @@ public final class LinkRules {
     /**
      * The longest link {@code a} and {@code b} may have: the span factor times the shorter pylon's height. A terminal
      * or an Exchange on the ground borrows its pylon's height, since only the pylon's end is up in the air. An
-     * antenna's or a gateway's wiring reaches the bridge distance.
+     * antenna's wiring reaches the bridge distance.
      */
     public double maxSpan(NetNode a, NetNode b) {
         if (a.kind()
@@ -63,17 +63,11 @@ public final class LinkRules {
             .bridge()
             || b.kind()
                 .bridge()) {
-            // Antennas, ME Bridges, dishes and relays are wired to a pylon, a terminal or an Exchange,
-            // or the last three to an antenna: antennas reach each other by radio, dishes through the
-            // satellites, relays their partners through a portal, and ME Bridges join ME networks, not lines.
+            // Antennas are wired to a pylon, a terminal or an Exchange; they reach each other by radio.
             if (a.kind()
                 .bridge()
                 && b.kind()
-                    .bridge()
-                && a.kind()
-                    .antenna()
-                    == b.kind()
-                        .antenna())
+                    .bridge())
                 return Result.INCOMPATIBLE;
         } else if (!a.kind()
             .pylonHead()

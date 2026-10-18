@@ -36,6 +36,8 @@ import com.enn3developer.becom.logic.space.Gateways;
 import com.enn3developer.becom.logic.space.Portals;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WireSyncPacket;
+import com.enn3developer.becom.quest.BeComQuests;
+import com.enn3developer.becom.quest.QuestTask;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
@@ -220,6 +222,14 @@ public final class NetworkService {
         if (before == null || before != calls) version++;
     }
 
+    /** Every working Exchange. */
+    public List<NodeRef> exchanges() {
+        List<NodeRef> working = new ArrayList<>();
+        for (NodeRef exchange : exchanges.keySet())
+            if (working(exchange.dimension(), exchange.pos())) working.add(exchange);
+        return working;
+    }
+
     /** The calls a working Exchange's racks switch at once; 0 for one not heard from. */
     public int exchangeCalls(int dimension, long pos) {
         return working(dimension, pos) ? exchanges.getOrDefault(new NodeRef(dimension, pos), 0) : 0;
@@ -322,7 +332,72 @@ public final class NetworkService {
         return node != null && node.kind() == NodeKind.PORTAL_RELAY ? node : null;
     }
 
-    /** Pairs two Portal Relays through their portal; the link service checks who may. */
+    /**
+     * A working relay with no partner pairs with a relay by the far side of the portal in its reach: one with no
+     * partner either, in a loaded dimension that portal leads to, standing where the portal comes out, by a portal of
+     * the same kind when it last looked (it needn't be loaded now: its chunk may not be). A relay whose
+     * partner's dimension isn't loaded keeps it, since it can't be told. Of several, the one that sorts first.
+     */
+    private void pairRelays() {
+        double reach = tunables.relayPortalDistance();
+        for (Map.Entry<NodeRef, Set<Portals.Kind>> entry : new ArrayList<>(relays.entrySet())) {
+            NodeRef a = entry.getKey();
+            if (!working(a.dimension(), a.pos()) || !unpaired(a)) continue;
+            NodeRef best = null;
+            for (Map.Entry<Integer, NetworkModel> other : models.entrySet()) {
+                int dimension = other.getKey();
+                if (dimension == a.dimension()) continue;
+                Portals.Kind portal = Portals
+                    .pairKind(a.dimension(), providerOf(a.dimension()), dimension, providerOf(dimension));
+                if (portal == null || !entry.getValue()
+                    .contains(portal)) continue;
+                for (NetNode node : other.getValue()
+                    .nodes()) {
+                    if (node.kind() != NodeKind.PORTAL_RELAY) continue;
+                    NodeRef b = new NodeRef(dimension, node.pos());
+                    if (!unpaired(b) || best != null && compare(b, best) >= 0) continue;
+                    Set<Portals.Kind> atB = relays.get(b);
+                    if (atB == null || !atB.contains(portal)) continue;
+                    if (!Portals.sameLink(
+                        portal,
+                        movementFactorOf(a.dimension()),
+                        BlockPos.x(a.pos()),
+                        BlockPos.z(a.pos()),
+                        movementFactorOf(dimension),
+                        node.x(),
+                        node.z(),
+                        reach)) continue;
+                    NodeRef overworld = a.dimension() == Portals.OVERWORLD ? a : b;
+                    NodeRef far = overworld == a ? b : a;
+                    if (Portals.leadsInto(portal, personalTargetsOf(overworld), far.dimension())) best = b;
+                }
+            }
+            if (best == null) continue;
+            pair(a, best);
+            List<UUID> owners = new ArrayList<>();
+            for (NodeRef end : new NodeRef[] { a, best }) {
+                UUID owner = relayAt(end).owner();
+                if (owner != null && !owners.contains(owner)) owners.add(owner);
+            }
+            BeComQuests.complete(QuestTask.PORTAL_RELAY_PAIR, owners);
+        }
+    }
+
+    /** Pairs relays now, as the next second would. */
+    public void pairRelaysForSelfTest() {
+        pairRelays();
+    }
+
+    /** A relay with no partner, or one whose partner, in a loaded dimension, isn't paired back with it. */
+    private boolean unpaired(NodeRef ref) {
+        NetNode node = relayAt(ref);
+        if (node == null) return false;
+        NodeRef partner = node.partner();
+        if (partner == null) return true;
+        return models.containsKey(partner.dimension()) && partnerOf(ref) == null;
+    }
+
+    /** Pairs two Portal Relays through their portal. */
     public void pair(NodeRef a, NodeRef b) {
         NetNode nodeA = relayAt(a);
         NetNode nodeB = relayAt(b);
@@ -381,12 +456,13 @@ public final class NetworkService {
     }
 
     /**
-     * A device a terminal's cable reaches: its number, -1 for one without a number yet; how many
-     * blocks of cable lead to it; and the poorest cable on the way, which sets its rate and reach.
+     * A device a terminal's or an Exchange's cable reaches: its number, -1 for a gateway or one without a number yet;
+     * where it stands; whether it's a gateway, which only an Exchange's cable finds; how many blocks of cable lead to
+     * it; and the poorest cable on the way, which sets its rate and reach.
      */
-    public record Device(int phone, int length, CableTier cable) {}
+    public record Device(int phone, long pos, boolean gateway, int length, CableTier cable) {}
 
-    /** What a terminal's last cable scan found: every device its cable reaches, nearest first. */
+    /** What a terminal's or an Exchange's last cable scan found: every device its cable reaches, nearest first. */
     public void attach(World world, long terminalPos, List<Device> devices) {
         NodeRef ref = new NodeRef(world.provider.dimensionId, terminalPos);
         List<Device> before = devices.isEmpty() ? attachments.remove(ref) : attachments.put(ref, List.copyOf(devices));
@@ -428,16 +504,97 @@ public final class NetworkService {
         return best;
     }
 
-    /** The devices a terminal gives a line: the nearest ones, as many as its ports, within their cable's reach. */
+    /**
+     * The devices a terminal gives a line: of those that take it, the nearest ones, as many as its ports. An Exchange
+     * has no ports to run out of: its racks limit its calls instead.
+     */
     public List<Device> served(NodeRef terminal, List<Device> devices) {
-        int ports = tunables.terminalPorts(terminalTier(terminal));
+        int ports = isExchange(terminal) ? Integer.MAX_VALUE : tunables.terminalPorts(terminalTier(terminal));
         List<Device> served = new ArrayList<>();
         for (Device device : devices) {
             if (served.size() >= ports) break;
-            if (device.length() > tunables.cableReach(device.cable())) continue;
-            served.add(device);
+            if (takes(terminal, device)) served.add(device);
         }
         return served;
+    }
+
+    /**
+     * Whether a device on a terminal's or an Exchange's cable takes that one: it's within its cable's reach, and no
+     * other's cable reaches it sooner. A device on two terminals' cable takes the nearer one, then the one that sorts
+     * first, whether or not that one has a port free.
+     */
+    public boolean takes(NodeRef hub, Device device) {
+        return hub.equals(hubs().get(new NodeRef(hub.dimension(), device.pos())));
+    }
+
+    // Which terminal or Exchange each device on cable takes, by where it stands; worked out again on a change.
+    private Map<NodeRef, NodeRef> hubs = Map.of();
+    private long hubsVersion = -1;
+
+    private Map<NodeRef, NodeRef> hubs() {
+        if (hubsVersion == version) return hubs;
+        Map<NodeRef, NodeRef> best = new HashMap<>();
+        Map<NodeRef, Integer> lengths = new HashMap<>();
+        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
+            NodeRef hub = entry.getKey();
+            for (Device device : entry.getValue()) {
+                if (device.length() > tunables.cableReach(device.cable())) continue;
+                NodeRef at = new NodeRef(hub.dimension(), device.pos());
+                Integer length = lengths.get(at);
+                if (length == null || device.length() < length
+                    || device.length() == length && compare(hub, best.get(at)) < 0) {
+                    best.put(at, hub);
+                    lengths.put(at, device.length());
+                }
+            }
+        }
+        hubs = best;
+        hubsVersion = version;
+        return hubs;
+    }
+
+    private boolean isExchange(NodeRef ref) {
+        NetworkModel model = models.get(ref.dimension());
+        NetNode node = model == null ? null : model.node(ref.pos());
+        return node != null && node.kind() == NodeKind.EXCHANGE;
+    }
+
+    /** A gateway's backhaul: the Exchange whose cable reaches it, and the run of cable it takes. */
+    public record Backhaul(NodeRef exchange, Device device) {}
+
+    /**
+     * The backhaul of the gateway at {@code gateway}, or null when no Exchange's cable reaches it within its reach: of
+     * those that do, the nearest, then the one that sorts first.
+     */
+    public Backhaul backhaulOf(NodeRef gateway) {
+        return backhaulOf(gateway, true);
+    }
+
+    /** The nearest Exchange whose cable reaches the gateway at {@code gateway} at all, too long a run or not. */
+    public Backhaul cableOf(NodeRef gateway) {
+        return backhaulOf(gateway, false);
+    }
+
+    private Backhaul backhaulOf(NodeRef gateway, boolean inReach) {
+        Backhaul best = null;
+        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
+            NodeRef hub = entry.getKey();
+            if (hub.dimension() != gateway.dimension()) continue;
+            for (Device device : inReach ? served(hub, entry.getValue()) : entry.getValue()) {
+                if (!device.gateway() || device.pos() != gateway.pos()) continue;
+                if (best == null || device.length() < best.device()
+                    .length()
+                    || device.length() == best.device()
+                        .length() && compare(hub, best.exchange()) < 0)
+                    best = new Backhaul(hub, device);
+            }
+        }
+        return best;
+    }
+
+    /** The link a gateway's backhaul cable is, to ask the calls how much of it they take. */
+    public Object gatewayLink(NodeRef gateway) {
+        return new GatewayLink(gateway);
     }
 
     // Each terminal's tier, as its machine says when it's placed or loaded.
@@ -493,7 +650,7 @@ public final class NetworkService {
      * A run of wire leaving a working node, to the next working one: where it ends, how long it is, the
      * KB/s it carries, and the link calls share that rate on, to ask the calls how much of it they take.
      */
-    public record Run(long to, double length, int rate, Object link) {}
+    public record Run(long to, double length, int rate, Object link, List<CableTier> cables) {}
 
     private final Map<Integer, List<WiredTopology.Segment>> segments = new HashMap<>();
     private long segmentsVersion = -1;
@@ -516,7 +673,8 @@ public final class NetworkService {
                     segment.to(),
                     segment.length(),
                     segment.rate(),
-                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to()))));
+                    new RunLink(dimension, NetworkModel.LinkKey.of(segment.from(), segment.to())),
+                    segment.cables()));
         }
         return runs;
     }
@@ -534,6 +692,9 @@ public final class NetworkService {
 
     /** The link a device's own cable to its terminal is. */
     private record DeviceLink(int phone) {}
+
+    /** The link a gateway's cable to its Exchange is. */
+    private record GatewayLink(NodeRef gateway) {}
 
     private CallGraph build() {
         CallGraph.Builder builder = CallGraph.builder();
@@ -615,12 +776,51 @@ public final class NetworkService {
                 new DeviceLink(phone),
                 tunables.cableRate(device.cable()));
         }
+        // Each gateway's cable to its Exchange is lossless too, at its poorest cable's rate.
+        for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
+            int dimension = entry.getKey();
+            for (NetNode node : entry.getValue()
+                .nodes()) {
+                if (!node.kind()
+                    .cabled() || !working(dimension, node.pos())) continue;
+                NodeRef gateway = new NodeRef(dimension, node.pos());
+                Backhaul backhaul = backhaulOf(gateway);
+                if (backhaul == null || !working(
+                    backhaul.exchange()
+                        .dimension(),
+                    backhaul.exchange()
+                        .pos()))
+                    continue;
+                builder.twoWay(
+                    new CallGraph.NodeVertex(dimension, node.pos()),
+                    new CallGraph.NodeVertex(
+                        dimension,
+                        backhaul.exchange()
+                            .pos()),
+                    Double.POSITIVE_INFINITY,
+                    CallGraph.HopKind.CABLE,
+                    new GatewayLink(gateway),
+                    tunables.cableRate(
+                        backhaul.device()
+                            .cable()));
+            }
+        }
         return builder.build();
     }
 
     /** The satellites over a dimension that its sky hops can reach: none where it has no sky. */
     private int satellitesOver(int dimension) {
         return space.hasSky(dimension) ? space.count(dimension) : 0;
+    }
+
+    /** Every working Satellite Dish, for the Launch Pad's Orbit page. */
+    public List<Gateways.Dish> dishes() {
+        return workingDishes();
+    }
+
+    /** Every working Rocket Radio Receiver, for the Launch Pad's Orbit page. */
+    public List<Gateways.Receiver> receivers() {
+        return workingReceivers();
     }
 
     private List<Gateways.Dish> workingDishes() {
@@ -775,6 +975,7 @@ public final class NetworkService {
         tick++;
         if (tick % TICKS_PER_SECOND == 0) {
             expireOffline();
+            pairRelays();
             syncWires();
         }
         if (tick >= nextClearanceTick) {

@@ -100,6 +100,31 @@ class AppStoreTest {
     }
 
     @Test
+    void aSwitchedOffUseIsDeniedAndKeptAcrossAnUpdate() {
+        String source = "--@name Reactor\n--@version 1.2\n--@uses net notify\nreturn {}";
+        PhoneApps apps = new PhoneApps();
+        apps.install(source, "Steve", PhoneApps.Origin.STORE);
+        apps.replace(
+            apps.get("reactor")
+                .withAllowed(AppManifest.Use.NOTIFY, false));
+        assertTrue(
+            apps.get("reactor")
+                .allows(AppManifest.Use.NET));
+        assertFalse(
+            apps.get("reactor")
+                .allows(AppManifest.Use.NOTIFY));
+        apps.install(source.replace("1.2", "1.3"), "Steve", PhoneApps.Origin.STORE);
+        assertFalse(
+            apps.get("reactor")
+                .allows(AppManifest.Use.NOTIFY));
+        // What it never said it uses stays denied, whatever its switches say.
+        assertFalse(
+            apps.get("reactor")
+                .withAllowed(AppManifest.Use.CAMERA, true)
+                .allows(AppManifest.Use.CAMERA));
+    }
+
+    @Test
     void wakesCountPerDay() {
         PhoneApps.App app = PhoneApps.app(REACTOR, "Steve", PhoneApps.Origin.STORE)
             .woke(5)

@@ -34,6 +34,7 @@ public final class ClientConfig {
     private static final Corner DEFAULT_CORNER = Corner.TOP_RIGHT;
 
     private static Corner videoCorner = DEFAULT_CORNER;
+    private static Configuration config;
 
     private ClientConfig() {}
 
@@ -41,8 +42,23 @@ public final class ClientConfig {
         return videoCorner;
     }
 
+    /** Moves the video window to {@code corner}, and saves it. */
+    public static void setVideoCorner(Corner corner) {
+        videoCorner = corner;
+        if (config == null) return;
+        config.get(
+            VIDEO,
+            "videoCorner",
+            DEFAULT_CORNER.name()
+                .toLowerCase(Locale.ROOT))
+            .set(
+                corner.name()
+                    .toLowerCase(Locale.ROOT));
+        config.save();
+    }
+
     public static void load(File file) {
-        Configuration config = new Configuration(file);
+        config = new Configuration(file);
         config.load();
         String[] names = new String[Corner.values().length];
         for (int i = 0; i < names.length; i++) names[i] = Corner.values()[i].name()

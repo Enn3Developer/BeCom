@@ -20,6 +20,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.LineTerminalScreen;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
@@ -68,6 +69,12 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTELineTerminal(mName, mTier, mDescriptionArray, mTextures);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     @Override
@@ -130,7 +137,8 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
             tile.getYCoord(),
             tile.getZCoord(),
             t.cableReach(CableTier.FIBRE),
-            t.terminalCableBudget());
+            t.terminalCableBudget(),
+            false);
         tooMuchCable = walk.overflow();
         devices = PhoneCables.devicesOf(tile.getWorld(), walk);
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
@@ -265,9 +273,11 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     @Override
     public String[] getDescription() {
         Tunables t = BeComConfig.get();
-        return new String[] { StatCollector.translateToLocal("becom.machine.terminal.info"),
+        return Tips.wrap(
+            Tips.MACHINE,
+            StatCollector.translateToLocal("becom.machine.terminal.info"),
             StatCollector.translateToLocalFormatted("becom.machine.terminal.ports", t.terminalPorts(tier())),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.terminalPower(), tier().voltage()) };
+            Tips.power(t.terminalPower(), tier().voltage()));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -291,52 +301,84 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /**
+     * Its lines for WAILA and the scanner, as on the Scanner board: its state, or that more devices want a line than
+     * it has ports; its devices; its uplink. The scanner adds each device and span.
+     */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        info.add(working ? "becom.info.online" : "becom.info.offline");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         Tunables t = BeComConfig.get();
-        if (tooMuchCable) info.add("becom.info.too_much_cable", t.terminalCableBudget());
-        else if (devices.isEmpty()) info.add("becom.info.no_phone");
-        if (becom != null && tile != null) {
-            NetworkService.Device[] all = devices.toArray(new NetworkService.Device[0]);
-            NodeRef self = new NodeRef(
-                tile.getWorld().provider.dimensionId,
-                BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
-            List<NetworkService.Device> served = becom.network.served(self, devices);
-            if (!devices.isEmpty()) info.add("becom.info.devices", served.size(), t.terminalPorts(tier()));
-            for (NetworkService.Device device : all) {
-                if (!served.contains(device)) {
-                    info.detail(
-                        device.length() > t.cableReach(device.cable()) ? "becom.info.device_too_far"
-                            : "becom.info.device_no_port",
-                        device.phone(),
-                        device.length(),
-                        t.cableReach(device.cable()));
-                } else if (!self.equals(becom.network.terminalOf(device.phone()))) {
-                    info.detail("becom.info.device_nearer", device.phone());
-                } else {
-                    info.detail(
-                        "becom.info.device",
-                        device.phone(),
-                        InfoLines.cableName(device.cable()),
-                        device.length(),
-                        t.cableReach(device.cable()));
-                }
-            }
-            // Only a loaded dimension's model: asking by world would load one that isn't.
-            NetworkModel model = becom.network.model(self.dimension());
-            NetNode node = model == null ? null : model.node(self.pos());
-            if (node != null) {
-                info.add(
-                    "becom.info.links",
-                    node.links()
-                        .size(),
-                    1);
-                for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
+        int ports = t.terminalPorts(tier());
+        if (becom == null || tile == null || !working) {
+            InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
+            if (becom == null || tile == null) return info;
+        }
+        NodeRef self = new NodeRef(
+            tile.getWorld().provider.dimensionId,
+            BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
+        List<NetworkService.Device> served = becom.network.served(self, devices);
+        int wanting = 0;
+        for (NetworkService.Device device : devices) {
+            if (device.length() <= t.cableReach(device.cable()) && becom.network.takes(self, device)) wanting++;
+        }
+        if (working && wanting > ports) {
+            info.problem("becom.info.too_many_devices", wanting, ports)
+                .status();
+            info.add(
+                wanting - ports == 1 ? "becom.info.farthest_no_line" : "becom.info.farthest_no_lines",
+                wanting - ports)
+                .sub();
+        } else if (working) info.add("becom.info.online")
+            .status();
+        if (tooMuchCable) info.warn("becom.info.too_much_cable", t.terminalCableBudget());
+        // Over its ports, the status line already counts them, as on the Scanner board.
+        if (!working || wanting <= ports) info.add("becom.info.of", served.size(), ports)
+            .row("becom.info.row.devices");
+        if (devices.isEmpty()) info.add("becom.info.no_phone")
+            .sub();
+        // Only a loaded dimension's model: asking by world would load one that isn't.
+        NetworkModel model = becom.network.model(self.dimension());
+        NetNode node = model == null ? null : model.node(self.pos());
+        if (node == null || node.links()
+            .isEmpty()) {
+            info.problem("becom.ui.terminal.no_uplink")
+                .row("becom.info.row.uplink");
+        } else {
+            List<NetworkService.Run> runs = becom.network.runsFrom(self.dimension(), self.pos());
+            if (runs.isEmpty()) info.problem("becom.ui.terminal.uplink_down")
+                .row("becom.info.row.uplink");
+            else {
+                NetworkService.Run run = runs.get(0);
+                if (run.rate() <= 0) info.problem("becom.ui.terminal.too_long")
+                    .row("becom.info.row.uplink");
+                else info
+                    .bundle(
+                        run.cables(),
+                        "becom.info.uplink",
+                        becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link()),
+                        run.rate())
+                    .row("becom.info.row.uplink");
             }
         }
+        for (NetworkService.Device device : devices) {
+            if (device.length() > t.cableReach(device.cable())) {
+                info.detail("becom.info.device_too_far", device.phone(), device.length(), t.cableReach(device.cable()));
+            } else if (!becom.network.takes(self, device)) {
+                info.detail("becom.info.device_nearer", device.phone());
+            } else if (!served.contains(device)) {
+                info.detail("becom.info.device_no_port", device.phone(), device.length(), t.cableReach(device.cable()));
+            } else {
+                info.detail(
+                    "becom.info.device",
+                    device.phone(),
+                    InfoLines.cableName(device.cable()),
+                    device.length(),
+                    t.cableReach(device.cable()));
+            }
+        }
+        if (node != null) for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
         return info;
     }
 

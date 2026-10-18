@@ -15,11 +15,13 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
+import com.enn3developer.becom.logic.net.WiredTopology;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NodeHost;
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
@@ -84,6 +86,12 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTEPylonHead(mName);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     @Override
@@ -247,14 +255,16 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         Tunables t = BeComConfig.get();
         MultiblockTooltipBuilder tt = new MultiblockTooltipBuilder();
         tt.addMachineType(StatCollector.translateToLocal("becom.machine.pylon.type"))
-            .addInfo(StatCollector.translateToLocal("becom.machine.pylon.info"))
-            .addInfo(
-                StatCollector.translateToLocalFormatted(
-                    "becom.machine.pylon.span",
-                    (int) t.pylonSpanFactor(),
-                    KIND.linkSlots(),
-                    t.bundleSize()))
-            .addInfo(StatCollector.translateToLocal("becom.machine.pylon.wrench"));
+            .addInfoAll(
+                Tips.wrap(
+                    Tips.MACHINE,
+                    StatCollector.translateToLocal("becom.machine.pylon.info"),
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.pylon.span",
+                        (int) t.pylonSpanFactor(),
+                        KIND.linkSlots(),
+                        t.bundleSize()),
+                    StatCollector.translateToLocal("becom.machine.pylon.wrench")));
         int width = 2 * ARM_REACH + 1;
         tt.beginVariableStructureBlock(width, width, t.pylonMinHeight() + 1, t.pylonMaxHeight() + 1, 1, 1, false)
             .addController(StatCollector.translateToLocal("becom.machine.pylon.controller"))
@@ -290,25 +300,46 @@ public class MTEPylonHead extends MTEEnhancedMultiBlockBase<MTEPylonHead> implem
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /** Its lines for WAILA and the scanner, as on the Scanner board: its pole, each span by its direction, its run. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        info.add("becom.info.formed", mMachine ? height : 0);
+        if (!mMachine) info.problem("becom.info.state_unformed")
+            .status();
+        info.add("becom.info.blocks", mMachine ? height : 0)
+            .row("becom.info.row.pole");
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (becom != null && tile != null) {
-            // Only a loaded dimension's model: asking by world would load one that isn't.
-            NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
-            NetNode node = model == null ? null
-                : model.node(BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
-            if (node != null) {
-                info.add(
-                    "becom.info.links",
-                    node.links()
-                        .size(),
-                    KIND.linkSlots());
-                for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
-            }
+        if (becom == null || tile == null) return info;
+        // Only a loaded dimension's model: asking by world would load one that isn't.
+        NetworkModel model = becom.network.model(tile.getWorld().provider.dimensionId);
+        long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
+        NetNode node = model == null ? null : model.node(pos);
+        if (node == null || node.links()
+            .isEmpty()) return info;
+        for (long other : node.links()) {
+            String way = InfoLines
+                .direction(BlockPos.x(other) - tile.getXCoord(), BlockPos.z(other) - tile.getZCoord());
+            info.bundle(
+                model.cables(pos, other),
+                "becom.info.span_row",
+                (int) Math.round(BlockPos.distance(pos, other)))
+                .row("becom.info.row.dir." + way);
+            if (model.isBlocked(pos, other)) info.problem("becom.info.span_blocked")
+                .sub();
         }
+        WiredTopology.Through run = WiredTopology.through(model, pos);
+        int length = (int) Math.round(run.length());
+        if (run.cable() == null) info.problem("becom.info.run_no_cable", length)
+            .row("becom.info.row.run");
+        else {
+            int reach = BeComConfig.get()
+                .cableReach(run.cable());
+            if (length > reach) info.problem("becom.info.of", length, reach)
+                .row("becom.info.row.run");
+            else info.add("becom.info.of", length, reach)
+                .row("becom.info.row.run");
+        }
+        for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
         return info;
     }
 

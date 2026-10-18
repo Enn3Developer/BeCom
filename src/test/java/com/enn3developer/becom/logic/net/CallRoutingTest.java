@@ -45,6 +45,45 @@ class CallRoutingTest {
     }
 
     @Test
+    void aVideoCallTakesVideosRateAndFallsBackToVoiceWhereItHasNoRoom() {
+        // 16 KB/s: room for two video calls at 8, then only voice for the third.
+        CallGraph graph = twoTerminals(3, 16).build();
+        List<CallGraph.Demand> demands = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            demands.add(
+                new CallGraph.Demand(
+                    i,
+                    "stream" + i,
+                    CallGraph.Entry.of(100 + i),
+                    CallGraph.Entry.of(200 + i),
+                    8,
+                    VOICE));
+        }
+        CallGraph.Routing routing = graph.route(demands);
+        assertEquals(
+            8,
+            routing.route("stream0")
+                .rate());
+        assertEquals(
+            8,
+            routing.route("stream1")
+                .rate());
+        assertEquals(
+            0,
+            routing.route("stream2")
+                .rate(),
+            "16 KB/s is full: the third has no room even for voice");
+        CallGraph.Routing small = twoTerminals(1, 4).build()
+            .route(List.of(new CallGraph.Demand(0, "s", CallGraph.Entry.of(100), CallGraph.Entry.of(200), 8, VOICE)));
+        // Low radio's 4 KB/s carries the voice, not the video.
+        assertEquals(
+            VOICE,
+            small.route("s")
+                .rate());
+        assertEquals(VOICE, small.used("run"));
+    }
+
+    @Test
     void aRunCarriesAsManyCallsAsItsRateHasRoomFor() {
         CallGraph graph = twoTerminals(9, 16).build();
         List<CallGraph.Demand> demands = new ArrayList<>();

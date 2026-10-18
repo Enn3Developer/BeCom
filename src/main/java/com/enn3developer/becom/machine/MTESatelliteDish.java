@@ -7,32 +7,30 @@ import static gregtech.api.enums.HatchElement.Maintenance;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import org.jetbrains.annotations.NotNull;
 
-import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
-import com.enn3developer.becom.gui.DishView;
 import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.gui.ViewSync;
+import com.enn3developer.becom.gui.machine.ReadoutUi;
+import com.enn3developer.becom.item.Tips;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -65,9 +63,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  * The Satellite Dish: a late-HV ground station under open sky. A stepped bowl of clean
  * stainless steel casings faces straight up, with a feed horn held over it by four struts of stainless steel frame
  * boxes, on a pedestal; the controller stands in a plinth at the foot with its energy hatch and maintenance hatch.
- * Wrench-linked to an
- * antenna, a Pylon Head or a Line Terminal within 16 blocks, it joins that network to the satellites over its
- * dimension: to every other dish there and, in the Overworld, to every planet's uplink. Rain at the dish weakens that
+ * Cabled to an Exchange from its controller, it joins that Exchange's network to the satellites over its dimension: to
+ * every other dish there and, in the Overworld, to every planet's uplink. Rain at the dish weakens that
  * hop, and so does each maintenance problem, since it has no process to slow down.
  * <p>
  * Like the antennas, it isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick
@@ -145,6 +142,12 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTESatelliteDish(mName);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     @Override
@@ -310,41 +313,21 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         super.onBlockDestroyed();
     }
 
-    @Override
-    public boolean onWrenchRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer player, float x,
-        float y, float z, ItemStack tool) {
-        if (player.isSneaking()) return super.onWrenchRightClick(side, wrenchingSide, player, x, y, z, tool);
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || !tile.isServerSide()) return false;
-        if (tooNew != null) {
-            player.addChatComponentMessage(new ChatComponentTranslation("becom.info.too_new"));
-            return true;
-        }
-        refreshStructure();
-        becom.links.wrench(player, tile.getWorld(), pos());
-        return true;
-    }
-
     // endregion
 
     // region Screen
 
-    /**
-     * What the screen and a scanner show: the satellites over this dimension, the hop up to them, its
-     * maintenance problems and what it's linked to. Built on the server only: the view sync never asks for it on a
-     * client.
-     */
-    private DishView view() {
+    /** Its hop now, for its screen, WAILA and the scanner; on the server. */
+    private Hop view() {
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (becom == null || tile == null) return DishView.EMPTY;
+        if (becom == null || tile == null) return new Hop(false, 0, false, false, 0, 0, SignalLevel.NONE, 0, 0);
         int dimension = tile.getWorld().provider.dimensionId;
         Tunables t = becom.tunables;
         int satellites = becom.space.count(dimension);
         double snr = becom.space.sky()
             .snr(satellites) - loss();
-        return new DishView(
+        return new Hop(
             mMachine,
             satellites,
             sky,
@@ -354,78 +337,102 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
             t.levelScale()
                 .levelOf(snr),
             problems(),
-            t.dishMaintenanceLoss(),
-            InfoScreen.fit(more(new InfoLines()).encode()));
+            t.dishMaintenanceLoss());
     }
 
-    /** The lines only the server can make: its calls, the sky's, and its backhaul. */
-    private InfoLines more(InfoLines info) {
-        BeComServer becom = BeComServer.get();
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (becom == null || tile == null) return info;
-        int dimension = tile.getWorld().provider.dimensionId;
-        InfoLines.calls(info, tile, becom.tunables.dishCalls());
-        int[] sky = becom.calls.skyCalls(dimension);
-        if (sky[1] > 0) info.add("becom.dish.sky_calls", sky[0], sky[1]);
-        InfoLines.backhaul(info, becom, dimension, pos(), "becom.info.backhaul");
-        return info;
-    }
-
-    /** The view's lines, which whoever reads them translates: the client on the screen and in WAILA. */
-    private static InfoLines lines(DishView view, InfoLines lines) {
-        lines.add("becom.info.satellites", view.satellites());
-        if (!view.formed()) return lines;
-        if (!view.sky()) {
-            lines.problem("becom.info.no_sky");
-        } else if (!view.enough()) {
-            lines.problem("becom.dish.too_few", view.satellitesLow());
-        } else {
-            lines.add(
-                "becom.dish.hop",
-                String.format(Locale.ROOT, "%.1f", view.snr()),
-                new InfoLines.Key(
-                    "becom.level." + view.level()
-                        .name()
-                        .toLowerCase(Locale.ROOT)));
-        }
-        if (view.problems() > 0) {
-            lines.problem(
-                "becom.dish.problems",
-                view.problems(),
-                String.format(Locale.ROOT, "%.0f", view.problems() * view.problemLoss()));
-        }
-        return lines;
-    }
-
-    /** Its lines and the server's, what's wrong in red on top. */
-    private static String screenText(DishView view) {
-        List<String> all = new ArrayList<>(lines(view, new InfoLines()).translate());
-        all.addAll(InfoLines.decode(view.more()));
-        List<String> ordered = new ArrayList<>(all.size());
-        for (String line : all) if (line.startsWith("§c")) ordered.add(line);
-        for (String line : all) if (!line.startsWith("§c")) ordered.add(line);
-        return String.join("\n", ordered);
-    }
+    /**
+     * Its hop as its screen reads it: whether it's formed, the satellites over this dimension, whether open sky is
+     * over the whole dish and there are satellites enough, how many that takes, the hop's SNR and level, and its
+     * maintenance problems and what each costs.
+     */
+    private record Hop(boolean formed, int satellites, boolean sky, boolean enough, int satellitesLow, double snr,
+        SignalLevel level, int problems, double problemLoss) {}
 
     @Override
     protected @NotNull MTEMultiBlockBaseGui<?> getGui() {
         return new MTEMultiBlockBaseGui<>(this) {
 
             @Override
+            protected int getBasePanelWidth() {
+                return super.getBasePanelWidth() + ReadoutUi.TERMINAL_EXTRA;
+            }
+
+            @Override
+            protected int getTerminalRowWidth() {
+                return super.getTerminalRowWidth() + ReadoutUi.TERMINAL_EXTRA;
+            }
+
+            @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
-                ViewSync<DishView> view = new ViewSync<>(
-                    MTESatelliteDish.this::view,
-                    DishView::write,
-                    DishView::read,
-                    DishView.EMPTY);
-                sync.syncValue("becomDish", view);
-                return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(() -> screenText(view.view()))
-                        .asWidget()
-                        .marginBottom(2)
-                        .fullWidth());
+                ViewSync<String> text = InfoScreen.lines(MTESatelliteDish.this::readout);
+                sync.syncValue("becomDish", text);
+                return ReadoutUi.intoTerminal(
+                    super.createTerminalTextWidget(sync, parent),
+                    text::view,
+                    getTerminalWidgetWidth() - 10,
+                    getTerminalWidgetHeight() - 8,
+                    null);
             }
         };
+    }
+
+    /**
+     * Its screen, as the Machines board lays it out: the hop on top with its calls, the satellites overhead, the sky,
+     * its maintenance and its backhaul, then what's wrong. Built on the server; each client translates it.
+     */
+    private InfoLines readout() {
+        InfoLines info = new InfoLines();
+        BeComServer becom = BeComServer.get();
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (becom == null || tile == null) return info;
+        Hop view = view();
+        int dimension = tile.getWorld().provider.dimensionId;
+        Tunables t = becom.tunables;
+        if (!view.formed()) info.problem("becom.info.state_unformed")
+            .status();
+        else if (!tile.isAllowedToWork()) info.problem("becom.info.state_off")
+            .status();
+        else if (!view.sky()) info.problem("becom.dish.status_no_sky")
+            .status();
+        else if (!view.enough()) info.problem("becom.dish.status_no_hop")
+            .status();
+        else if (!working) info.problem("becom.info.state_no_power")
+            .status();
+        else info
+            .add(
+                "becom.dish.hop_status",
+                String.format(Locale.ROOT, "%.0f", view.snr()),
+                new InfoLines.Key(
+                    "becom.level." + view.level()
+                        .name()
+                        .toLowerCase(Locale.ROOT)))
+            .status(view.level());
+        int calls = becom.calls.callsAt(dimension, pos());
+        info.add("becom.dish.calls_right", calls, t.dishCalls())
+            .right();
+        if (t.dishCalls() > 0 && calls >= t.dishCalls()) info.warn("becom.info.calls_full", t.dishCalls());
+        int[] sky = becom.calls.skyCalls(dimension);
+        if (sky[1] > 0) info.add("becom.dish.overhead_calls", view.satellites(), sky[0], sky[1])
+            .row("becom.info.row.satellites");
+        else info.add("becom.dish.overhead", view.satellites())
+            .row("becom.info.row.satellites");
+        if (view.sky()) info.add("becom.dish.sky_clear")
+            .good("becom.info.row.sky");
+        else info.problem("becom.dish.sky_covered")
+            .row("becom.info.row.sky");
+        if (view.problems() > 0) info
+            .problem(
+                "becom.dish.problems_short",
+                view.problems(),
+                String.format(Locale.ROOT, "%.0f", view.problems() * view.problemLoss()))
+            .row("becom.info.row.maintenance");
+        else info.add("becom.dish.no_problems")
+            .good("becom.info.row.maintenance");
+        InfoLines.backhaul(info, becom, dimension, pos(), "becom.info.row.backhaul", InfoLines.Backhaul.CABLE);
+        if (view.formed() && view.sky() && !view.enough()) {
+            info.problem("becom.dish.too_few_short", view.satellites(), view.satellitesLow());
+        }
+        return info;
     }
 
     // endregion
@@ -454,17 +461,15 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         Tunables t = BeComConfig.get();
         MultiblockTooltipBuilder tt = new MultiblockTooltipBuilder();
         tt.addMachineType(StatCollector.translateToLocal("becom.machine.satellite_dish.type"))
-            .addInfo(StatCollector.translateToLocal("becom.machine.satellite_dish.info"))
-            .addInfo(
-                StatCollector.translateToLocalFormatted(
-                    "becom.machine.satellite_dish.link",
-                    (int) t.wrenchLinkDistance(),
-                    t.satellitesLow()))
-            .addInfo(
-                StatCollector.translateToLocalFormatted(
-                    "becom.machine.satellite_dish.maintenance",
-                    String.format(Locale.ROOT, "%.0f", t.dishMaintenanceLoss())))
-            .addInfo(StatCollector.translateToLocalFormatted("becom.machine.power", t.dishPower(), "HV"))
+            .addInfoAll(
+                Tips.wrap(
+                    Tips.MACHINE,
+                    StatCollector.translateToLocal("becom.machine.satellite_dish.info"),
+                    StatCollector.translateToLocalFormatted("becom.machine.satellite_dish.link", t.satellitesLow()),
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.satellite_dish.maintenance",
+                        String.format(Locale.ROOT, "%.0f", t.dishMaintenanceLoss())),
+                    Tips.power(t.dishPower(), "HV")))
             .beginStructureBlock(SIDE, HEIGHT, SIDE, false)
             .addController(StatCollector.translateToLocal("becom.machine.satellite_dish.controller"))
             .addCasingInfoExactly(
@@ -510,13 +515,10 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     }
 
     private InfoLines info() {
-        InfoLines info = new InfoLines();
-        if (tooNew != null) info.problem("becom.info.too_new");
-        if (working) info.add("becom.info.online");
-        else info.problem("becom.info.offline");
         // GT's scanner reads on the server and sends its text as it is; WAILA translates on the client.
-        lines(view(), info);
-        return more(info);
+        InfoLines info = readout();
+        if (tooNew != null) info.problem("becom.info.too_new");
+        return info;
     }
 
     @Override

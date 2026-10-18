@@ -25,6 +25,7 @@ import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.PhoneScreen;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.phone.PhoneKind;
@@ -74,6 +75,12 @@ public class MTEVideophone extends MTETieredMachineBlock {
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTEVideophone(mName, mTier, mDescriptionArray, mTextures);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     /** Its number, or -1 before its first tick or when a newer BeCom saved it. */
@@ -285,13 +292,15 @@ public class MTEVideophone extends MTETieredMachineBlock {
     @Override
     public String[] getDescription() {
         Tunables t = BeComConfig.get();
-        return new String[] { StatCollector.translateToLocal("becom.machine.videophone.info"),
+        return Tips.wrap(
+            Tips.MACHINE,
+            StatCollector.translateToLocal("becom.machine.videophone.info"),
             StatCollector.translateToLocalFormatted(
                 "becom.machine.videophone.room",
                 (int) t.videophoneRoom(),
                 (int) t.videophoneLoudspeaker(),
                 t.videophoneEmptySeconds()),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.videophonePower(), "MV") };
+            Tips.power(t.videophonePower(), "MV"));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -315,11 +324,14 @@ public class MTEVideophone extends MTETieredMachineBlock {
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /** Its lines for WAILA and the scanner: its state and number. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.add("becom.info.too_new");
-        info.add(working ? "becom.info.online" : "becom.info.offline");
-        if (number >= 0) info.add("becom.info.phone", number);
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (tooNew != null) info.problem("becom.info.too_new");
+        InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
+        if (number >= 0) info.add("becom.info.value", number)
+            .row("becom.info.row.number");
         return info;
     }
 

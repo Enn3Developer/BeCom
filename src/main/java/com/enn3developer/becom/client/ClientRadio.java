@@ -2,12 +2,17 @@ package com.enn3developer.becom.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.MouseEvent;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GL11;
 
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.item.Carried;
@@ -15,6 +20,7 @@ import com.enn3developer.becom.item.ItemWalkieTalkie;
 import com.enn3developer.becom.machine.MTETransceiver;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.WalkieChannelPacket;
+import com.enn3developer.becom.voice.RadioGroup;
 import com.enn3developer.gtnhvoice.api.client.IAddonActivation;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
@@ -91,12 +97,71 @@ public final class ClientRadio {
         if (activation != null) activation.setKeyed(false);
     }
 
+    // The client self-test's gallery shows the TX lamp and the strip without a voice mod keying anything.
+    private static ItemStack txForTest;
+
+    /** For the client self-test: the HUD shows {@code walkie} transmitting, just turned to its channel; null stops. */
+    public static void showForTest(ItemStack walkie) {
+        txForTest = walkie;
+        if (walkie != null) turned = System.currentTimeMillis();
+    }
+
+    // When the channel last turned by sneak + scroll, in ms: the strip shows for a while after.
+    private static long turned = Long.MIN_VALUE / 2;
+    private static final long STRIP_MS = 2000;
+
+    /**
+     * The walkie on the HUD, as on the HUD board: over the hotbar, a red TX lamp with its channel while the player
+     * transmits, and a strip of the channels either side for a moment after they turn it.
+     */
+    @SubscribeEvent
+    public void onOverlay(RenderGameOverlayEvent.Post event) {
+        if (event.type != RenderGameOverlayEvent.ElementType.HOTBAR) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityClientPlayerMP player = mc.thePlayer;
+        if (player == null) return;
+        ItemStack walkie = txForTest != null ? txForTest
+            : ItemWalkieTalkie.is(player.getHeldItem()) ? player.getHeldItem() : talkingOn;
+        if (walkie == null) return;
+        FontRenderer font = mc.fontRenderer;
+        int centre = event.resolution.getScaledWidth() / 2;
+        // Over the armour and health rows.
+        int bottom = event.resolution.getScaledHeight() - 51;
+        int channel = ItemWalkieTalkie.channel(walkie);
+        boolean tx = transmittingOn(walkie) || txForTest != null;
+        if (tx) {
+            String label = StatCollector.translateToLocalFormatted("becom.hud.channel", channel);
+            int w = 6 + 6 + font.getStringWidth("TX") + 5 + font.getStringWidth(label) + 6;
+            int left = centre - w / 2;
+            int top = bottom - font.FONT_HEIGHT - 5;
+            Gui.drawRect(left, top, left + w, bottom, 0xC0202820);
+            Gui.drawRect(left + 6, top + 4, left + 11, top + 9, 0xFFFF4444);
+            font.drawStringWithShadow("TX", left + 13, top + 3, 0xFFFF5555);
+            font.drawStringWithShadow(label, left + 13 + font.getStringWidth("TX") + 5, top + 3, 0xFFE0E0E0);
+            bottom = top - 3;
+        }
+        if (System.currentTimeMillis() - turned < STRIP_MS
+            && (txForTest != null || ItemWalkieTalkie.is(player.getHeldItem()))) {
+            int before = Math.floorMod(channel - 2, RadioGroup.CHANNELS) + 1;
+            int after = Math.floorMod(channel, RadioGroup.CHANNELS) + 1;
+            String now = "\u25c2 " + channel + " \u25b8";
+            int y = bottom - font.FONT_HEIGHT;
+            int nw = font.getStringWidth(now);
+            font.drawStringWithShadow(now, centre - nw / 2, y, 0xFFFFFFFF);
+            String b = String.valueOf(before);
+            font.drawStringWithShadow(b, centre - nw / 2 - 10 - font.getStringWidth(b), y, 0xFF707070);
+            font.drawStringWithShadow(String.valueOf(after), centre + nw / 2 + 10, y, 0xFF707070);
+        }
+        GL11.glColor4f(1, 1, 1, 1);
+    }
+
     @SubscribeEvent
     public void onMouse(MouseEvent event) {
         if (event.dwheel == 0) return;
         EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
         if (player == null || !player.isSneaking() || !ItemWalkieTalkie.is(player.getHeldItem())) return;
         BeComPackets.CHANNEL.sendToServer(new WalkieChannelPacket(event.dwheel > 0 ? 1 : -1));
+        turned = System.currentTimeMillis();
         // The wheel turns the channel, not the hotbar.
         event.setCanceled(true);
     }

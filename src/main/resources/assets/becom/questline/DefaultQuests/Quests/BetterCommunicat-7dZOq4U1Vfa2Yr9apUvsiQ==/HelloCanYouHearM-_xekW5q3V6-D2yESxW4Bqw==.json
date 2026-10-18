@@ -64,7 +64,7 @@
           "Count:3": 2,
           "Damage:2": 25000,
           "OreDict:8": "",
-          "id:8": "gregtech:gt.blockmachines"
+          "id:8": "becom:machine"
         }
       },
       "ignoreDisabled:1": 0,

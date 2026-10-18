@@ -70,7 +70,7 @@ public final class AnalyzerPacket implements IMessage {
             return new RadioModel.Losses(budget, distance, terrain, cover, 0, weather, noise);
         }
 
-        static Reading read(ByteBuf buf) {
+        public static Reading read(ByteBuf buf) {
             if (!buf.readBoolean()) return NONE;
             return new Reading(
                 true,
@@ -88,7 +88,7 @@ public final class AnalyzerPacket implements IMessage {
                 SignalLevel.byOrdinal(buf.readByte()));
         }
 
-        void write(ByteBuf buf) {
+        public void write(ByteBuf buf) {
             buf.writeBoolean(served);
             if (!served) return;
             buf.writeInt(satellites);

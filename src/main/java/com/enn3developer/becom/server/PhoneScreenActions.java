@@ -14,6 +14,7 @@ import com.enn3developer.becom.apps.AppService;
 import com.enn3developer.becom.gui.AppsView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.item.ItemCarriedPhone;
+import com.enn3developer.becom.item.ItemMePhone;
 import com.enn3developer.becom.logic.PhoneNumbers;
 import com.enn3developer.becom.logic.RateLimiter;
 import com.enn3developer.becom.logic.SignalLevel;
@@ -105,7 +106,14 @@ public final class PhoneScreenActions {
         List<PhoneView.Contact> contacts = new ArrayList<>();
         for (PhoneRegistry.Contact contact : becom.phones.registry()
             .contacts(player.getUniqueID(), number, becom.calls.reachableFrom(number))) {
-            contacts.add(new PhoneView.Contact(contact.number(), contact.ownerName()));
+            PhoneRecord other = becom.phones.record(contact.number());
+            contacts.add(
+                new PhoneView.Contact(
+                    contact.number(),
+                    contact.ownerName(),
+                    other == null ? 0
+                        : other.kind()
+                            .ordinal()));
         }
         // Calls are private to the people in them: a phone's history is for its owner and their team.
         List<PhoneView.Recent> recent = new ArrayList<>();
@@ -146,7 +154,65 @@ public final class PhoneScreenActions {
             videoOf(becom, player, record, call, own),
             stack == null ? PhoneView.Battery.NONE : batteryOf(becom, number, stack),
             carried ? viaOf(becom, number) : PhoneView.Via.NONE,
-            carried && manage ? appsOf(becom, number) : AppsView.NONE);
+            carried && manage ? appsOf(becom, number) : AppsView.NONE,
+            new PhoneView.Phone(
+                record.kind()
+                    .ordinal(),
+                stack != null && stack.getItem() instanceof ItemMePhone me ? me.networkName(stack) : "",
+                stack != null && stack.getItem() instanceof ItemMePhone && inMeRange(becom, number),
+                manage ? record.missedSeen() : 0,
+                call != null && call.video(),
+                speedDialOf(record),
+                handle instanceof PhoneHandle.Videophone ? becom.calls.hereAt(number) : 0,
+                record.camera()));
+    }
+
+    private static List<Integer> speedDialOf(PhoneRecord record) {
+        List<Integer> keys = new ArrayList<>(PhoneRecord.SPEED_DIAL_KEYS);
+        for (int i = 0; i < PhoneRecord.SPEED_DIAL_KEYS; i++) keys.add(record.speedDial(i));
+        return keys;
+    }
+
+    /** Stores {@code target} on a desk phone's speed-dial key, or clears the key for 0; its owner and team only. */
+    public static void setSpeedDial(EntityPlayer player, PhoneHandle handle, int key, int target) {
+        if (handle instanceof PhoneHandle.CarriedPhone) return;
+        PhoneRecord record = managed(player, handle);
+        if (record == null || key < 0 || key >= PhoneRecord.SPEED_DIAL_KEYS) return;
+        if (target != 0 && !PhoneNumbers.isValid(target)) return;
+        record.setSpeedDial(key, target);
+        BeComServer.get().phones.registry()
+            .changed();
+    }
+
+    /** A Videophone's Camera key: whether its calls start as video calls; its owner and team only. */
+    public static void setVideophoneCamera(EntityPlayer player, PhoneHandle handle, boolean on) {
+        if (!(handle instanceof PhoneHandle.Videophone)) return;
+        PhoneRecord record = managed(player, handle);
+        if (record == null) return;
+        record.setCamera(on);
+        BeComServer.get().phones.registry()
+            .changed();
+    }
+
+    /** {@code player} looked at the phone's missed calls: they aren't new any more. */
+    public static void missedSeen(EntityPlayer player, PhoneHandle handle) {
+        BeComServer becom = BeComServer.get();
+        if (becom == null || !handle.usableBy(player)) return;
+        PhoneRecord record = becom.phones.record(handle.number());
+        if (record == null || !Ownership.mayManage(player, record.owner())) return;
+        long latest = 0;
+        for (PhoneRecord.HistoryEntry entry : record.history()) latest = Math.max(latest, entry.time());
+        if (latest <= record.missedSeen()) return;
+        record.setMissedSeen(latest);
+        becom.phones.registry()
+            .changed();
+    }
+
+    /** Whether a carried phone's service comes in through its ME network: an ME Phone in its wireless range. */
+    private static boolean inMeRange(BeComServer becom, int number) {
+        for (CallGraph.Entry entry : becom.carried.serviceOf(number)
+            .entries()) if (entry.vertex() instanceof CallGraph.MeVertex) return true;
+        return false;
     }
 
     private record CachedApps(long version, AppsView view) {}
@@ -197,7 +263,8 @@ public final class PhoneScreenActions {
                     app.euToday(),
                     app.size(),
                     apps.storageUsed(number, m.id()),
-                    apps.storageLimit()));
+                    apps.storageLimit(),
+                    app.denied()));
         }
         AppService.Screen screen = apps.screen(number);
         AppsView.Screen shown = screen == null ? AppsView.Screen.NONE
@@ -223,7 +290,11 @@ public final class PhoneScreenActions {
                 offer.source()
                     .getBytes(java.nio.charset.StandardCharsets.UTF_8).length,
                 offer.manifest()
-                    .uses());
+                    .uses(),
+                offer.manifest()
+                    .accent(),
+                offer.manifest()
+                    .icon());
         AppService.Notice notice = apps.notice(number);
         AppService.StoreQuery query = apps.query(number);
         List<AppStore.Entry> found;
@@ -264,7 +335,8 @@ public final class PhoneScreenActions {
                     (int) Math.max(0, (now - e.published()) / 86_400_000L),
                     e.team(),
                     owner != null && apps.store()
-                        .reported(e.id(), owner)));
+                        .reported(e.id(), owner),
+                    m == null ? 0 : m.accent()));
         }
         return new AppsView(
             installed,
@@ -297,7 +369,26 @@ public final class PhoneScreenActions {
                 .toList(),
             ItemCarriedPhone.saver(stack),
             becom.carried.saving(number),
-            ItemCarriedPhone.warns(stack));
+            ItemCarriedPhone.warns(stack),
+            appShares(becom, number, ItemCarriedPhone.use(stack)));
+    }
+
+    /** Each app's share of today's drain, most first: what it drew while awake, of all the phone drew today. */
+    private static List<PhoneView.AppShare> appShares(BeComServer becom, int number, BatteryUse use) {
+        long total = 0;
+        for (long eu : use.eu()) total += eu;
+        List<PhoneView.AppShare> shares = new java.util.ArrayList<>();
+        if (total <= 0) return shares;
+        for (com.enn3developer.becom.logic.app.PhoneApps.App app : becom.apps.installed(number)) {
+            if (app.day() != use.day() || app.euToday() <= 0) continue;
+            shares.add(
+                new PhoneView.AppShare(
+                    app.manifest()
+                        .name(),
+                    (int) Math.round(100.0 * app.euToday() / total)));
+        }
+        shares.sort((a, b) -> Integer.compare(b.share(), a.share()));
+        return shares;
     }
 
     /** What a carried phone's service comes through: the way in with the best SNR. */
@@ -358,6 +449,14 @@ public final class PhoneScreenActions {
      * adds it to the call.
      */
     public static void dial(EntityPlayer player, PhoneHandle handle, int target) {
+        dial(player, handle, target, false);
+    }
+
+    /**
+     * Dials {@code target} as {@link #dial(EntityPlayer, PhoneHandle, int)} does; from a carried phone, a video call
+     * when {@code video}.
+     */
+    public static void dial(EntityPlayer player, PhoneHandle handle, int target, boolean video) {
         BeComServer becom = BeComServer.get();
         if (becom == null || !(player instanceof EntityPlayerMP mp) || !handle.usableBy(player)) return;
         if (!PhoneNumbers.isValid(target)) return;
@@ -375,7 +474,7 @@ public final class PhoneScreenActions {
             becom.calls.dial(mp, handle.number(), target);
             return;
         }
-        becom.calls.dialCarried(mp, handle.number(), target);
+        becom.calls.dialCarried(mp, handle.number(), target, video);
     }
 
     /** Picks up: answers a ringing phone, or takes a Telephone's handset to dial. */
@@ -466,6 +565,12 @@ public final class PhoneScreenActions {
     public static void appBackground(EntityPlayer player, PhoneHandle handle, String id, boolean on) {
         int number = appPhone(player, handle);
         if (number >= 0 && mayChange(player)) BeComServer.get().apps.setBackground(number, id, on);
+    }
+
+    public static void appAllowed(EntityPlayer player, PhoneHandle handle, String id, int use, boolean on) {
+        int number = appPhone(player, handle);
+        if (number < 0 || !mayChange(player) || use < 0 || use >= AppManifest.Use.VALUES.length) return;
+        BeComServer.get().apps.setAllowed(number, id, AppManifest.Use.VALUES[use], on);
     }
 
     public static void appUninstall(EntityPlayer player, PhoneHandle handle, String id) {

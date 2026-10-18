@@ -173,6 +173,12 @@ public final class GlobalSavedData extends WorldSavedData {
         record.setDoNotDisturb(tag.getBoolean("dnd"));
         record.setHidden(tag.getBoolean("hidden"));
         record.setSilent(tag.getBoolean("silent"));
+        int[] speedDial = tag.getIntArray("speedDial");
+        for (int i = 0; i < Math.min(speedDial.length, PhoneRecord.SPEED_DIAL_KEYS); i++) {
+            record.setSpeedDial(i, speedDial[i]);
+        }
+        record.setMissedSeen(tag.getLong("missedSeen"));
+        record.setCamera(!tag.getBoolean("cameraOff"));
         NBTTagList blocked = tag.getTagList("blocked", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < blocked.tagCount(); i++) {
             NBTTagCompound entry = blocked.getCompoundTagAt(i);
@@ -211,6 +217,11 @@ public final class GlobalSavedData extends WorldSavedData {
         tag.setBoolean("dnd", record.doNotDisturb());
         tag.setBoolean("hidden", record.hidden());
         tag.setBoolean("silent", record.silent());
+        int[] speedDial = new int[PhoneRecord.SPEED_DIAL_KEYS];
+        for (int i = 0; i < speedDial.length; i++) speedDial[i] = record.speedDial(i);
+        tag.setIntArray("speedDial", speedDial);
+        tag.setLong("missedSeen", record.missedSeen());
+        tag.setBoolean("cameraOff", !record.camera());
         NBTTagList blocked = new NBTTagList();
         for (Map.Entry<UUID, String> entry : record.blocked()
             .entrySet()) {

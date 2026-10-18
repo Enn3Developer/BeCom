@@ -1,16 +1,22 @@
 package com.enn3developer.becom.client;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
+import org.lwjgl.opengl.GL11;
+
+import com.enn3developer.becom.gui.paint.Paint;
 import com.enn3developer.becom.logic.SignalLevel;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
- * Signal bars next to the hotbar while the player is in a call or holds a phone: one bar per level,
- * Low to Max, lit up to the level they hear the call at, or else to the service of the phone they carry, none lit when
- * it has none.
+ * Signal bars next to the hotbar while the player is in a call or holds a phone, as on the HUD board: one bar per
+ * level, Low to Max, lit in the level's colour up to the level they hear the call at, or else to the service of the
+ * phone they carry, with the level's word over them; "No service" and an x when it has none.
  */
 public final class SignalBars {
 
@@ -22,6 +28,7 @@ public final class SignalBars {
     private static final int MARGIN = 6;
     private static final int LIT = 0xFFE0E0E0;
     private static final int UNLIT = 0x80404040;
+    private static final int NO_SERVICE = 0xFFFF5555;
 
     @SubscribeEvent
     public void onOverlay(RenderGameOverlayEvent.Post event) {
@@ -29,10 +36,28 @@ public final class SignalBars {
         SignalLevel level = ClientPhone.callLevel();
         if (level == null) level = ClientPhone.heldService();
         if (level == null) return;
-        bars(
-            event.resolution.getScaledWidth() / 2 + HOTBAR_HALF_WIDTH + MARGIN,
-            event.resolution.getScaledHeight() - 4,
-            level);
+        int left = event.resolution.getScaledWidth() / 2 + HOTBAR_HALF_WIDTH + MARGIN;
+        int bottom = event.resolution.getScaledHeight() - 4;
+        int colour = level == SignalLevel.NONE ? NO_SERVICE : 0xFF000000 | Paint.level(level);
+        for (int i = 0; i < BARS; i++) {
+            int height = 3 + 2 * i;
+            int x = left + i * (BAR_WIDTH + GAP);
+            Gui.drawRect(x, bottom - height, x + BAR_WIDTH, bottom, i < level.ordinal() ? colour : UNLIT);
+        }
+        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+        if (level == SignalLevel.NONE)
+            font.drawStringWithShadow("x", left + BARS * (BAR_WIDTH + GAP) + 1, bottom - 8, NO_SERVICE);
+        // The level's word over the bars, at half size.
+        String word = StatCollector.translateToLocal(
+            level == SignalLevel.NONE ? "becom.hud.no_service"
+                : "becom.level." + level.name()
+                    .toLowerCase(java.util.Locale.ROOT));
+        GL11.glPushMatrix();
+        GL11.glTranslatef(left, bottom - 9 - 2 - 5, 0);
+        GL11.glScalef(0.5f, 0.5f, 1);
+        font.drawStringWithShadow(word, 0, 0, colour);
+        GL11.glPopMatrix();
+        GL11.glColor4f(1, 1, 1, 1);
     }
 
     /** Draws the bars from {@code (left, bottom)}; nothing at None, so a screen shows them only during a call. */

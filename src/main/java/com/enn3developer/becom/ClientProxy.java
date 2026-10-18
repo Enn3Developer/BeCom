@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.AnalyzerOverlay;
@@ -25,6 +26,7 @@ import com.enn3developer.becom.client.ClientVideo;
 import com.enn3developer.becom.client.ClientWires;
 import com.enn3developer.becom.client.CoverageMapDrawer;
 import com.enn3developer.becom.client.DistanceFade;
+import com.enn3developer.becom.client.GlCanvas;
 import com.enn3developer.becom.client.MachineTooltips;
 import com.enn3developer.becom.client.PhoneCableRenderer;
 import com.enn3developer.becom.client.RenderLaunchRocket;
@@ -35,6 +37,7 @@ import com.enn3developer.becom.client.VideoRenderer;
 import com.enn3developer.becom.client.WireRenderer;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
+import com.enn3developer.becom.gui.paint.CanvasScreen;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 import com.enn3developer.becom.packet.CallBarsPacket;
@@ -155,6 +158,11 @@ public class ClientProxy extends CommonProxy {
     }
 
     @Override
+    public String phoneKeyName() {
+        return ClientPhone.keyName();
+    }
+
+    @Override
     public boolean isTransmittingOn(ItemStack stack) {
         return ClientRadio.transmittingOn(stack);
     }
@@ -210,6 +218,38 @@ public class ClientProxy extends CommonProxy {
     public long worldTime() {
         net.minecraft.client.multiplayer.WorldClient world = net.minecraft.client.Minecraft.getMinecraft().theWorld;
         return world == null ? 0 : world.getTotalWorldTime();
+    }
+
+    @Override
+    public long dayTime() {
+        net.minecraft.client.multiplayer.WorldClient world = net.minecraft.client.Minecraft.getMinecraft().theWorld;
+        return world == null ? 0 : world.getWorldTime();
+    }
+
+    @Override
+    public int guiHeight() {
+        Minecraft mc = Minecraft.getMinecraft();
+        return new net.minecraft.client.gui.ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaledHeight();
+    }
+
+    @Override
+    public int videoCorner() {
+        return ClientConfig.videoCorner()
+            .ordinal();
+    }
+
+    @Override
+    public void setVideoCorner(int corner) {
+        ClientConfig.Corner[] corners = ClientConfig.Corner.values();
+        ClientConfig.setVideoCorner(corners[Math.floorMod(corner, corners.length)]);
+    }
+
+    @Override
+    public void paint(CanvasScreen screen, float scale, float mouseX, float mouseY, ModularGuiContext context) {
+        org.lwjgl.opengl.GL11.glPushMatrix();
+        org.lwjgl.opengl.GL11.glScalef(scale, scale, 1);
+        screen.paint(new GlCanvas(scale, context), mouseX, mouseY);
+        org.lwjgl.opengl.GL11.glPopMatrix();
     }
 
     @Override

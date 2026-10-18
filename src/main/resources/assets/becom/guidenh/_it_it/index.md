@@ -33,6 +33,14 @@ Ogni collegamento di BeCom finisce su uno di cinque livelli, da Nessuno a Massim
 segnale](signal.md) mostra da dove viene il livello, e [l'Analizzatore di segnale](analyzer.md) lo mostra per il punto
 in cui ti trovi.
 
+## WAILA e lo scanner
+
+Guarda una macchina di BeCom con WAILA, o fai clic destro su di lei con uno scanner di GT, e la sua prima riga è il suo
+stato, a colori: verde se funziona, o rosso con cosa la ferma, come **Non formato**, **Spento** con un soft mallet, o
+**Senza energia**. In WAILA, un Telefono dice **Squilla** o **Cornetta alzata** in arancione, altrimenti **Pronto**.
+Seguono righe brevi, ognuna un'etichetta grigia e un valore bianco: "Albero 24 blocchi", "Chiamate 9 di 12",
+"Uplink 2× Telefonico, 12 di 32 KB/s".
+
 ## Le macchine sotto la pioggia
 
 GTNH lascia attivi i pericoli della pioggia di GregTech, che colpiscono le macchine di BeCom come ogni macchina GT che

@@ -40,7 +40,7 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
      */
     public record App(String id, String name, String version, String author, String about, int accent, String icon,
         int uses, boolean store, String where, boolean background, int woke, long euToday, int size, long stored,
-        long storage) {}
+        long storage, int denied) {}
 
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum State {
@@ -69,9 +69,9 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
 
     /** An app a computer offers this phone, to install or to publish as its holder, for them to accept or decline. */
     public record Offer(long id, boolean publish, String name, String version, String author, String where, int size,
-        int uses) {
+        int uses, int accent, String icon) {
 
-        public static final Offer NONE = new Offer(0, false, "", "", "", "", 0, 0);
+        public static final Offer NONE = new Offer(0, false, "", "", "", "", 0, 0, 0, "");
 
         public boolean any() {
             return !name.isEmpty();
@@ -89,7 +89,7 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
      * it.
      */
     public record StoreApp(String id, String name, String version, String author, String about, int installs, int size,
-        String installed, String icon, int uses, int days, boolean team, boolean reported) {}
+        String installed, String icon, int uses, int days, boolean team, boolean reported, int accent) {}
 
     public void write(PacketBuffer buf) {
         List<App> apps = cap(installed, MAX_INSTALLED);
@@ -111,6 +111,7 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
             buf.writeInt(a.size());
             buf.writeLong(a.stored());
             buf.writeLong(a.storage());
+            buf.writeByte(a.denied());
         }
         str(buf, screen.id());
         buf.writeByte(
@@ -144,6 +145,8 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
         str(buf, offer.where());
         buf.writeInt(offer.size());
         buf.writeByte(offer.uses());
+        buf.writeInt(offer.accent());
+        str(buf, offer.icon());
         str(buf, notice.app());
         str(buf, notice.title());
         str(buf, notice.text());
@@ -163,6 +166,7 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
             buf.writeShort(Math.min(a.days(), Short.MAX_VALUE));
             buf.writeBoolean(a.team());
             buf.writeBoolean(a.reported());
+            buf.writeInt(a.accent());
         }
         str(buf, query);
         buf.writeByte(tab);
@@ -191,7 +195,8 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
                     buf.readLong(),
                     buf.readInt(),
                     buf.readLong(),
-                    buf.readLong()));
+                    buf.readLong(),
+                    buf.readUnsignedByte()));
         }
         String id = str(buf);
         State state = State.byOrdinal(buf.readByte());
@@ -219,7 +224,9 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
             str(buf),
             str(buf),
             buf.readInt(),
-            buf.readUnsignedByte());
+            buf.readUnsignedByte(),
+            buf.readInt(),
+            str(buf));
         Notice notice = new Notice(str(buf), str(buf), str(buf));
         count = Math.min(buf.readUnsignedByte(), STORE_ROWS);
         List<StoreApp> store = new ArrayList<>(count);
@@ -238,7 +245,8 @@ public record AppsView(List<App> installed, Screen screen, Offer offer, Notice n
                     buf.readUnsignedByte(),
                     buf.readShort(),
                     buf.readBoolean(),
-                    buf.readBoolean()));
+                    buf.readBoolean(),
+                    buf.readInt()));
         }
         String query = str(buf);
         return new AppsView(

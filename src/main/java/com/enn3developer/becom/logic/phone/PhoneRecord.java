@@ -19,6 +19,8 @@ public final class PhoneRecord {
     public static final int HISTORY_SIZE = 32;
     /** How many players one phone can block; enough for any grudge, small enough for one screen packet. */
     public static final int MAX_BLOCKED = 128;
+    /** Speed-dial keys on a desk phone: M1 to M4 on a Telephone, M1 to M3 on a Videophone. */
+    public static final int SPEED_DIAL_KEYS = 4;
 
     private final int number;
     private final PhoneKind kind;
@@ -31,6 +33,12 @@ public final class PhoneRecord {
     private boolean silent;
     private final Map<UUID, String> blocked = new LinkedHashMap<>();
     private final Deque<HistoryEntry> history = new ArrayDeque<>();
+    // The number each speed-dial key stores, 0 for none.
+    private final int[] speedDial = new int[SPEED_DIAL_KEYS];
+    // A Videophone's camera: on, its calls start as video calls.
+    private boolean camera = true;
+    // When its owner last saw its missed calls, by the history's wall clock; a missed call after it is new.
+    private long missedSeen;
 
     public PhoneRecord(int number, PhoneKind kind, UUID owner, String ownerName) {
         this.number = number;
@@ -121,6 +129,42 @@ public final class PhoneRecord {
 
     public boolean unblock(UUID player) {
         return blocked.remove(player) != null;
+    }
+
+    /** The number speed-dial key {@code key} (0 for M1) stores, or 0. */
+    public int speedDial(int key) {
+        return key >= 0 && key < SPEED_DIAL_KEYS ? speedDial[key] : 0;
+    }
+
+    /** Stores {@code number} on speed-dial key {@code key}, 0 to clear it. */
+    public void setSpeedDial(int key, int number) {
+        if (key >= 0 && key < SPEED_DIAL_KEYS) speedDial[key] = Math.max(0, number);
+    }
+
+    /** A Videophone's Camera key: on, the calls it makes and answers are video calls. */
+    public boolean camera() {
+        return camera;
+    }
+
+    public void setCamera(boolean camera) {
+        this.camera = camera;
+    }
+
+    /** When its owner last saw its missed calls, by the history's wall clock. */
+    public long missedSeen() {
+        return missedSeen;
+    }
+
+    public void setMissedSeen(long time) {
+        missedSeen = time;
+    }
+
+    /** How many missed calls came after its owner last saw them. */
+    public int newMissed() {
+        int count = 0;
+        for (HistoryEntry entry : history)
+            if (entry.direction() == Direction.MISSED && entry.time() > missedSeen) count++;
+        return count;
     }
 
     /** Newest first. */

@@ -2,20 +2,17 @@ package com.enn3developer.becom.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.item.ItemSignalAnalyzer;
 import com.enn3developer.becom.logic.SignalLevel;
-import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
 
@@ -42,19 +39,6 @@ public final class AnalyzerOverlay {
     private static final int BUDGET = 0xFF5A5A5A;
     // By SignalLevel ordinal: None, Low, Medium, High, Max.
     private static final int[] LEVEL = { 0xFFFF5555, 0xFFFFAA00, 0xFFFFFF55, 0xFF55FF55, 0xFF55FFFF };
-    // By RadioModel.Loss ordinal (distance, terrain, cover, weather, noise): a bar's colour and, lighter, its text's.
-    private static final int[] LOSS_BAR = { 0xFFB4442E, 0xFF8A6A3A, 0xFF6B6F78, 0xFF3F6FB0, 0xFF7A4FA0 };
-    private static final int[] LOSS_TEXT = { 0xFFFF6B55, 0xFFC9A46A, 0xFFA9ADB6, 0xFF7FA8E0, 0xFFB48ADC };
-    // Each loss's 8 by 8 icon, drawn a pixel at a time.
-    private static final String[][] LOSS_ICON = {
-        { "        ", "        ", "#      #", "########", "########", "#      #", "        ", "        " },
-        { "        ", "   ##   ", "  ####  ", "  ####  ", " ###### ", " ###### ", "########", "        " },
-        { "   ##   ", "  ####  ", " ###### ", "########", " #    # ", " #    # ", " ###### ", "        " },
-        { "  ###   ", " #####  ", "########", "########", "        ", " #  #  #", "#  #  # ", "        " },
-        { "        ", "        ", "#   #   ", " # # # #", "  #   # ", "        ", "        ", "        " } };
-    private static final int ICON = 8;
-    // The way to the antenna, turned to where the player looks: ahead, then clockwise.
-    private static final String[] ARROWS = { "↑", "↗", "→", "↘", "↓", "↙", "←", "↖" };
     // A reading older than a few refreshes is stale: the server stopped sending, or the player just picked it up.
     private static final int STALE_REFRESHES = 3;
 
@@ -138,15 +122,10 @@ public final class AnalyzerOverlay {
                 snr,
                 LEVEL[level],
                 biggest,
-                lossName(biggest) + " -" + lost,
-                LOSS_TEXT[biggest.ordinal()]);
+                SignalTerms.lossName(biggest) + " -" + lost,
+                SignalTerms.LOSS_TEXT[biggest.ordinal()]);
         }
-        return new Summary(columns, font, level, name, snr, LEVEL[level], null, source(r), GREY);
-    }
-
-    private static String source(AnalyzerPacket.Reading r) {
-        return r.sky() ? StatCollector.translateToLocal("becom.analyzer.source_sky")
-            : StatCollector.translateToLocalFormatted("becom.analyzer.source_antenna", r.tier());
+        return new Summary(columns, font, level, name, snr, LEVEL[level], null, SignalTerms.source(r), GREY);
     }
 
     private static final class Summary implements Line {
@@ -169,7 +148,7 @@ public final class AnalyzerOverlay {
             this.extraColour = extraColour;
             columns[0] = Math.max(columns[0], font.getStringWidth(name));
             columns[1] = Math.max(columns[1], font.getStringWidth(snr));
-            columns[2] = Math.max(columns[2], (icon == null ? 0 : ICON + 2) + font.getStringWidth(extra));
+            columns[2] = Math.max(columns[2], (icon == null ? 0 : SignalTerms.ICON + 2) + font.getStringWidth(extra));
         }
 
         @Override
@@ -187,7 +166,7 @@ public final class AnalyzerOverlay {
             x += columns[1] + GAP;
             if (icon != null) {
                 icon(icon, x, y, extraColour);
-                x += ICON + 2;
+                x += SignalTerms.ICON + 2;
             }
             font.drawStringWithShadow(extra, x, y, extraColour);
         }
@@ -221,18 +200,7 @@ public final class AnalyzerOverlay {
             lines.add(
                 new Text(StatCollector.translateToLocalFormatted("becom.analyzer.overhead", r.satellites()), GREY));
         } else {
-            double dx = r.x() + 0.5 - player.posX, dz = r.z() + 0.5 - player.posZ;
-            // Minecraft's yaw turns clockwise from south; the player looks along (-sin yaw, cos yaw).
-            double toward = Math.toDegrees(Math.atan2(-dx, dz)) - player.rotationYaw;
-            String arrow = ARROWS[Math.floorMod((int) Math.round(MathHelper.wrapAngleTo180_double(toward) / 45), 8)];
-            lines.add(
-                new Text(
-                    source(r) + " · "
-                        + StatCollector.translateToLocalFormatted(
-                            "becom.analyzer.away",
-                            Math.round(Math.sqrt(dx * dx + dz * dz)),
-                            arrow),
-                    GREY));
+            lines.add(new Text(SignalTerms.source(r) + " · " + SignalTerms.away(r, player), GREY));
         }
         double budget = losses.budget();
         lines.add(
@@ -246,7 +214,7 @@ public final class AnalyzerOverlay {
                 BUDGET,
                 Math.round(budget)));
         boolean lost = false;
-        for (RadioModel.Loss loss : byBiggest(losses)) {
+        for (RadioModel.Loss loss : SignalTerms.byBiggest(losses)) {
             long dB = Math.round(losses.of(loss));
             if (dB <= 0) continue;
             lost = true;
@@ -256,71 +224,25 @@ public final class AnalyzerOverlay {
                     labels,
                     font,
                     loss,
-                    capitalised(lossName(loss)),
-                    LOSS_TEXT[i],
+                    SignalTerms.lossLabel(loss),
+                    SignalTerms.LOSS_TEXT[i],
                     losses.of(loss) / budget,
-                    LOSS_BAR[i],
+                    SignalTerms.LOSS_BAR[i],
                     -dB));
         }
-        String levelName = StatCollector.translateToLocal(
-            "becom.level." + level.name()
-                .toLowerCase(Locale.ROOT));
         lines.add(
             new Term(
                 labels,
                 font,
                 null,
-                "= " + levelName,
+                "= " + SignalTerms.levelName(level),
                 colour,
                 Math.max(0, losses.snr()) / budget,
                 colour,
                 Math.round(losses.snr())));
         if (!lost) lines.add(new Text(StatCollector.translateToLocal("becom.analyzer.biggest_none"), GREY));
-        if (level != SignalLevel.MAX) {
-            SignalLevel next = level.up();
-            double threshold = threshold(BeComConfig.get(), next);
-            long shortBy = (long) Math.ceil(threshold - losses.snr());
-            if (shortBy > 0) {
-                lines.add(
-                    new Text(
-                        StatCollector.translateToLocalFormatted(
-                            "becom.analyzer.short",
-                            StatCollector.translateToLocal(
-                                "becom.level." + next.name()
-                                    .toLowerCase(Locale.ROOT)),
-                            Math.round(threshold),
-                            shortBy),
-                        GREY));
-            }
-        }
-    }
-
-    private static List<RadioModel.Loss> byBiggest(RadioModel.Losses losses) {
-        List<RadioModel.Loss> all = new ArrayList<>(List.of(RadioModel.Loss.values()));
-        all.sort((a, b) -> Double.compare(losses.of(b), losses.of(a)));
-        return all;
-    }
-
-    private static double threshold(Tunables t, SignalLevel level) {
-        return switch (level) {
-            case NONE -> 0;
-            case LOW -> t.levelLow();
-            case MEDIUM -> t.levelMedium();
-            case HIGH -> t.levelHigh();
-            case MAX -> t.levelMax();
-        };
-    }
-
-    private static String lossName(RadioModel.Loss loss) {
-        return StatCollector.translateToLocal(
-            "becom.loss." + loss.name()
-                .toLowerCase(Locale.ROOT));
-    }
-
-    private static String capitalised(String s) {
-        return s.isEmpty() ? s
-            : s.substring(0, 1)
-                .toUpperCase(Locale.ROOT) + s.substring(1);
+        String shortOf = SignalTerms.shortOf(r);
+        if (shortOf != null) lines.add(new Text(shortOf, GREY));
     }
 
     /** A band's name and tag, then its bars and SNR. */
@@ -378,13 +300,13 @@ public final class AnalyzerOverlay {
 
         @Override
         public int width(FontRenderer font) {
-            return ICON + GAP + labels[0] + GAP + TERM_BAR + GAP + VALUE;
+            return SignalTerms.ICON + GAP + labels[0] + GAP + TERM_BAR + GAP + VALUE;
         }
 
         @Override
         public void draw(FontRenderer font, int x, int y, int width) {
             if (icon != null) icon(icon, x, y, labelColour);
-            x += ICON + GAP;
+            x += SignalTerms.ICON + GAP;
             font.drawStringWithShadow(label, x, y, labelColour);
             x += labels[0] + GAP;
             int filled = (int) Math.round(TERM_BAR * share);
@@ -445,7 +367,7 @@ public final class AnalyzerOverlay {
     }
 
     private static void icon(RadioModel.Loss loss, int x, int y, int colour) {
-        String[] rows = LOSS_ICON[loss.ordinal()];
+        String[] rows = SignalTerms.LOSS_ICON[loss.ordinal()];
         for (int row = 0; row < rows.length; row++) {
             for (int col = 0; col < rows[row].length(); col++) {
                 if (rows[row].charAt(col) == '#') Gui.drawRect(x + col, y + row, x + col + 1, y + row + 1, colour);

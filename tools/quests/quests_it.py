@@ -108,18 +108,16 @@ QUESTS_IT = {
         "chiamano senza nessuna antenna."),
     "me_bridge": ("Unire le reti",
         "Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi "
-        "telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con la chiave a una Testa di "
-        "traliccio, un Terminale di linea, una Centrale o un'antenna entro 16 blocchi. Usa 512 EU/t e porta 8 "
-        "chiamate insieme."),
+        "telefono.%n%nMettilo su un cavo ME, dove prende un canale, e porta un cavo da lui a una Centrale: quel "
+        "cavo porta le sue chiamate. Usa 512 EU/t e porta 8 chiamate insieme."),
     "me_bridge_call": ("Interurbana",
         "Il tuo Telefono ME può arrivare oltre la tua rete ME. Da un Telefono ME, chiama un Telefono su una linea, "
         "un Telefono cellulare o un Videotelefono, attraverso un Ponte ME."),
     "portal_relay": ("Attraverso il portale",
         "La radio da sola non passa da una dimensione all'altra. Un Ripetitore di portale funziona entro 4 blocchi "
         "da un portale del Nether, dell'End, del Twilight Forest o di Personal Space, con 32 EU/t di corrente "
-        "MV.%n%nCollegalo con la chiave a un'antenna, una Testa di traliccio, un Terminale di linea o una Centrale "
-        "della tua rete. Poi usa la chiave sul ripetitore, attraversa il portale e usala su un ripetitore "
-        "dall'altra parte entro 5 minuti. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI "
+        "MV.%n%nCollegalo con il cavo a una Centrale della tua rete. Poi attraversa il portale e metti un "
+        "ripetitore dall'altra parte, collegato a una Centrale di là: i due si accoppiano da soli. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI "
         "ripetitori HV ed EV ne portano 48 e 128; una coppia lavora al livello del ripetitore più basso."),
     "satellite_rocket": ("Carico utile",
         "Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 "
@@ -142,8 +140,7 @@ QUESTS_IT = {
         "ogni altra parabola della stessa dimensione, attraverso i satelliti in orbita.%n%nÈ una parabola di Clean "
         "Stainless Steel Machine Casing rivolta al cielo, con un illuminatore su quattro sostegni sopra di lei, su un "
         "piedistallo di Stainless Steel Frame Box; l'Energy Hatch e il Maintenance Hatch vanno nel basamento ai suoi "
-        "piedi, accanto al controller. Usa 512 EU/t.%n%nCollegala con la chiave a un'antenna, una Testa "
-        "di traliccio o un Terminale di linea. Tienila in ordine: ogni problema di manutenzione le costa 2 dB."),
+        "piedi, accanto al controller. Usa 512 EU/t.%n%nPorta un cavo dal suo controller a una Centrale. Tienila in ordine: ogni problema di manutenzione le costa 2 dB."),
     "rocket_receiver": ("Chiamare casa",
         "Il tuo razzo è parcheggiato su un altro pianeta: perché non renderlo utile? Metti un Ricevitore radio per "
         "razzi nella sua stiva mentre è fermo su una piattaforma di lancio, e il razzo diventa un'antenna lì, "

@@ -218,7 +218,7 @@ class SavedDataTest {
     }
 
     @Test
-    void phoneRegistryRoundTripsSettingsBlockListAndHistory() {
+    void phoneRegistryRoundTripsSettingsBlockListSpeedDialAndHistory() {
         GlobalSavedData data = new GlobalSavedData(GlobalSavedData.NAME);
         UUID owner = UUID.randomUUID();
         UUID pest = UUID.randomUUID();
@@ -229,6 +229,9 @@ class SavedDataTest {
         record.setHidden(true);
         record.setSilent(true);
         record.block(pest, "pest");
+        record.setSpeedDial(0, 482_917);
+        record.setSpeedDial(3, 606_212);
+        record.setMissedSeen(1);
         UUID carol = UUID.randomUUID();
         record.addHistory(new PhoneRecord.HistoryEntry(1, 222_222, "bob", PhoneRecord.Direction.OUTGOING, null));
         record.addHistory(new PhoneRecord.HistoryEntry(2, 333_333, "carol", PhoneRecord.Direction.MISSED, carol));
@@ -247,6 +250,11 @@ class SavedDataTest {
         assertTrue(back.hidden());
         assertTrue(back.silent());
         assertTrue(back.blocks(pest));
+        assertEquals(482_917, back.speedDial(0));
+        assertEquals(0, back.speedDial(1));
+        assertEquals(606_212, back.speedDial(3));
+        // Carol's missed call came after the owner last looked.
+        assertEquals(1, back.newMissed());
         assertEquals(
             2,
             back.history()

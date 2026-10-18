@@ -109,64 +109,25 @@ class LinkRulesTest {
     }
 
     @Test
-    void anMeBridgeBridgesAnyOtherNodeWithinTheBridgeDistance() {
-        NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
-        NetNode exchange = node(10, 0, NodeKind.EXCHANGE, 16);
-        NetNode antenna = node(0, 12, NodeKind.ANTENNA_T1, 0);
-        NetNode far = node(20, 0, NodeKind.TERMINAL, 0);
-        NetNode other = node(0, 5, NodeKind.ME_BRIDGE, 0);
-        assertEquals(LinkRules.Result.OK, rules.check(model, bridge, exchange));
-        assertEquals(LinkRules.Result.OK, rules.check(model, antenna, bridge));
-        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, bridge, far));
-        // Two ME Bridges would join two ME networks, which is AE2's business.
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, other));
-        model.link(bridge.pos(), exchange.pos());
-        // One link only.
-        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, bridge, antenna));
-    }
-
-    @Test
-    void aDishBridgesAnAntennaAPylonHeadOrALineTerminalWithinTheBridgeDistance() {
-        // Wrench-linked to an antenna, Pylon Head or Line Terminal within 16 blocks.
-        NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
-        assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(16, 0, NodeKind.ANTENNA_T3, 8)));
-        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 16, NodeKind.PYLON, 6), dish));
-        assertEquals(LinkRules.Result.OK, rules.check(model, dish, node(-10, 0, NodeKind.TERMINAL, 0)));
-        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, dish, node(17, 0, NodeKind.PYLON, 16)));
-        // Dishes reach each other through the satellites; Transceivers take no links.
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, dish, node(5, 5, NodeKind.SATELLITE_DISH, 0)));
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, dish, node(-5, 5, NodeKind.TRANSCEIVER, 0)));
-    }
-
-    @Test
-    void aRelayJoinsItsNetworkTheWayADishDoes() {
-        // A relay's one wrench link bridges an antenna, a Pylon Head or a Line Terminal within 16 blocks; its
-        // partner through the portal is no wrench link of the same dimension.
-        NetNode relay = node(0, 0, NodeKind.PORTAL_RELAY, 0);
-        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(16, 0, NodeKind.TERMINAL, 0)));
-        assertEquals(LinkRules.Result.OK, rules.check(model, node(0, 9, NodeKind.ANTENNA_T2, 8), relay));
-        assertEquals(LinkRules.Result.OK, rules.check(model, relay, node(-9, 0, NodeKind.EXCHANGE, 16)));
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(3, 3, NodeKind.PORTAL_RELAY, 0)));
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, relay, node(-3, 3, NodeKind.SATELLITE_DISH, 0)));
-        assertEquals(LinkRules.Result.TOO_FAR, rules.check(model, relay, node(0, -17, NodeKind.PYLON, 16)));
-    }
-
-    @Test
-    void anMeBridgeDoesntLinkOntoADishOrARelay() {
-        // A dish and a relay link to pylons, terminals, Exchanges and antennas; an ME Bridge links to no antenna.
-        NetNode bridge = node(0, 0, NodeKind.ME_BRIDGE, 0);
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, bridge, node(5, 0, NodeKind.SATELLITE_DISH, 0)));
-        assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, node(0, 5, NodeKind.PORTAL_RELAY, 0), bridge));
-    }
-
-    @Test
-    void aDishHasOneLinkAndNeedsItsStructure() {
-        NetNode dish = node(0, 0, NodeKind.SATELLITE_DISH, 0);
-        NetNode antenna = node(8, 0, NodeKind.ANTENNA_T1, 8);
-        model.link(dish.pos(), antenna.pos());
-        assertEquals(LinkRules.Result.NO_FREE_SLOT, rules.check(model, dish, node(0, 8, NodeKind.PYLON, 6)));
-        NetNode unformed = node(40, 40, NodeKind.SATELLITE_DISH, 0);
-        unformed.setFormed(false);
-        assertEquals(LinkRules.Result.NOT_FORMED, rules.check(model, unformed, node(40, 44, NodeKind.PYLON, 6)));
+    void gatewaysTakeNoWrenchLinks() {
+        // They join by cable to an Exchange instead.
+        NetNode head = node(0, 0, NodeKind.PYLON, 16);
+        NetNode terminal = node(4, 0, NodeKind.TERMINAL, 0);
+        NetNode exchange = node(8, 0, NodeKind.EXCHANGE, 0);
+        NetNode antenna = node(12, 0, NodeKind.ANTENNA_T2, 0);
+        for (NodeKind kind : new NodeKind[] { NodeKind.ME_BRIDGE, NodeKind.SATELLITE_DISH, NodeKind.PORTAL_RELAY }) {
+            NetNode gateway = node(2, 2, kind, 0);
+            for (NetNode other : new NetNode[] { head, terminal, exchange, antenna }) {
+                assertEquals(
+                    LinkRules.Result.INCOMPATIBLE,
+                    rules.check(model, gateway, other),
+                    kind + " to " + other.kind());
+                assertEquals(
+                    LinkRules.Result.INCOMPATIBLE,
+                    rules.check(model, other, gateway),
+                    other.kind() + " to " + kind);
+            }
+            model.remove(gateway.pos());
+        }
     }
 }

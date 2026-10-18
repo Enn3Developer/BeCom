@@ -17,12 +17,13 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 @Mod(
     modid = BeCom.MODID,
     version = Tags.VERSION,
-    name = "Better Communications",
+    name = BeCom.NAME,
     acceptedMinecraftVersions = "[1.7.10]",
     dependencies = "required-after:gtnhvoice@[v0.11.0,);required-after:gregtech;required-after:appliedenergistics2;required-after:Baubles;required-after:GalacticraftCore;required-after:OpenComputers;after:betterquesting")
 public class BeCom {
 
     public static final String MODID = "becom";
+    public static final String NAME = "Better Communications";
     public static final Logger LOG = LogManager.getLogger(MODID);
 
     @Mod.Instance(MODID)

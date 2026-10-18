@@ -67,7 +67,7 @@ public class ItemBecomCard extends Item {
             int number = stack.getTagCompound()
                 .getCompoundTag("oc:data")
                 .getInteger(com.enn3developer.becom.apps.BecomCard.NUMBER);
-            if (number > 0) lines.add(StatCollector.translateToLocalFormatted("becom.mobile.number", number));
+            if (number > 0) lines.add(Tips.row("becom.tip.number", number));
         }
     }
 

@@ -14,7 +14,7 @@
         "Count:3": 1,
         "Damage:2": 25007,
         "OreDict:8": "",
-        "id:8": "gregtech:gt.blockmachines"
+        "id:8": "becom:machine"
       },
       "isGlobal:1": 0,
       "isMain:1": 0,
@@ -63,7 +63,7 @@
           "Count:3": 1,
           "Damage:2": 25007,
           "OreDict:8": "",
-          "id:8": "gregtech:gt.blockmachines"
+          "id:8": "becom:machine"
         }
       },
       "taskID:8": "bq_standard:retrieval"

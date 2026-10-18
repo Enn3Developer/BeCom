@@ -16,9 +16,22 @@ public final class PhoneApps {
         public static final Origin STORE = new Origin(true, "");
     }
 
-    /** One installed app. */
+    /**
+     * One installed app. {@code denied} holds the bits of the {@link AppManifest.Use}s its holder switched off in its
+     * settings: it says it uses them, but may not.
+     */
     public record App(AppManifest manifest, String source, String author, Origin origin, boolean background, long day,
-        int woke, long euToday) {
+        int woke, long euToday, int denied) {
+
+        /** Whether it may use {@code use}: it says so, and its holder didn't switch it off. */
+        public boolean allows(AppManifest.Use use) {
+            return manifest.uses(use) && (denied & use.bit()) == 0;
+        }
+
+        public App withAllowed(AppManifest.Use use, boolean on) {
+            int bits = on ? denied & ~use.bit() : denied | use.bit();
+            return new App(manifest, source, author, origin, background, day, woke, euToday, bits);
+        }
 
         public String id() {
             return manifest.id();
@@ -29,18 +42,18 @@ public final class PhoneApps {
         }
 
         public App withBackground(boolean on) {
-            return new App(manifest, source, author, origin, on, day, woke, euToday);
+            return new App(manifest, source, author, origin, on, day, woke, euToday, denied);
         }
 
         /** Counts a wake on {@code today}, starting over on a new day. */
         public App woke(long today) {
-            return today == day ? new App(manifest, source, author, origin, background, day, woke + 1, euToday)
-                : new App(manifest, source, author, origin, background, today, 1, 0);
+            return today == day ? new App(manifest, source, author, origin, background, day, woke + 1, euToday, denied)
+                : new App(manifest, source, author, origin, background, today, 1, 0, denied);
         }
 
         public App used(long today, long eu) {
-            return today == day ? new App(manifest, source, author, origin, background, day, woke, euToday + eu)
-                : new App(manifest, source, author, origin, background, today, 0, eu);
+            return today == day ? new App(manifest, source, author, origin, background, day, woke, euToday + eu, denied)
+                : new App(manifest, source, author, origin, background, today, 0, eu, denied);
         }
     }
 
@@ -64,7 +77,7 @@ public final class PhoneApps {
 
     public static App app(String source, String author, Origin origin) {
         AppManifest manifest = AppManifest.parse(source);
-        return manifest == null ? null : new App(manifest, source, author, origin, false, 0, 0, 0);
+        return manifest == null ? null : new App(manifest, source, author, origin, false, 0, 0, 0, 0);
     }
 
     /**
@@ -92,7 +105,8 @@ public final class PhoneApps {
                         old.background(),
                         old.day(),
                         old.woke(),
-                        old.euToday()));
+                        old.euToday(),
+                        old.denied()));
                 return Installed.UPDATED;
             }
         }

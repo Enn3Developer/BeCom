@@ -3,11 +3,11 @@ navigation:
   title: Antennas
   parent: index.md
   position: 75
-  icon: gregtech:gt.blockmachines:25004
+  icon: becom:machine:25004
 item_ids:
-  - gregtech:gt.blockmachines:25004
-  - gregtech:gt.blockmachines:25005
-  - gregtech:gt.blockmachines:25006
+  - becom:machine:25004
+  - becom:machine:25005
+  - becom:machine:25006
 quest_ids:
   - "UYdKN4lyUKWOiqsyX6luCQ"
   - "BRsUHvwqVhSei0mx4y1eWg"
@@ -29,9 +29,9 @@ same antenna in a valley. NEI's preview shows each one block by block.
 
 | Antenna | Head | Build | Casings | Mast | Power | Reach on open ground |
 | --- | --- | --- | --- | --- | --- | --- |
-| T1 (late LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Antenna T1 Head</ItemImage> | Guyed mast, one dipole | LV Machine Casings | 6 to 32 Steel Frame Boxes | 32 EU/t | about 64 blocks |
-| T2 (mid MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
-| T3 (mid HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
+| T1 (late LV) | <ItemImage id="becom:machine:25004">Antenna T1 Head</ItemImage> | Guyed mast, one dipole | LV Machine Casings | 6 to 32 Steel Frame Boxes | 32 EU/t | about 64 blocks |
+| T2 (mid MV) | <ItemImage id="becom:machine:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 128 EU/t | about 128 blocks |
+| T3 (mid HV) | <ItemImage id="becom:machine:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 512 EU/t | about 256 blocks |
 
 An antenna works only while it's loaded and powered.
 
@@ -40,9 +40,8 @@ An antenna works only while it's loaded and powered.
 - **Serves devices** in its reach on both bands: walkie-talkies on the radio band, phones on the phone band.
 - **Links to other antennas** wherever their signal reaches at least Low, separately for each band: radio channels
   travel between antennas on the radio band, calls on the phone band.
-- **Bridges lines:** wrench it, then a Pylon Head or Line Terminal within 16 blocks, and that line's calls go over
-  the air, to every phone the antennas reach. An antenna has 15 link slots, shared by its bridges and any Satellite
-  Dish, Portal Relay or ME Bridge linked onto it.
+- **Bridges lines:** wrench it, then a Pylon Head, a Line Terminal or an Exchange within 16 blocks, and that line's
+  calls go over the air, to every phone the antennas reach. An antenna has 15 link slots for its bridges.
 
 ## Its screen
 

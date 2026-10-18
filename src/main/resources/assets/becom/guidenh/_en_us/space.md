@@ -8,11 +8,11 @@ item_ids:
   - becom:satellite:*
   - becom:satellite_rocket:*
   - becom:rocket_radio_receiver:*
-  - gregtech:gt.blockmachines:25010
-  - gregtech:gt.blockmachines:25011
-  - gregtech:gt.blockmachines:25012
-  - gregtech:gt.blockmachines:25014
-  - gregtech:gt.blockmachines:25015
+  - becom:machine:25010
+  - becom:machine:25011
+  - becom:machine:25012
+  - becom:machine:25014
+  - becom:machine:25015
 quest_ids:
   - "oNm-cIc3Xoy6hejGu6UM7Q"
   - "78j3bHKHWF6_v27ljQ8cYg"
@@ -29,7 +29,7 @@ quest_ids:
 
 A <ItemLink id="becom:satellite" showIcon="left">Satellite</ItemLink> goes up on a
 <ItemLink id="becom:satellite_rocket" showIcon="left">Satellite Rocket</ItemLink>, from a
-<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Satellite Launch Pad</ItemLink>: a launch complex of Clean
+<ItemLink id="becom:machine:25010" showIcon="left">Satellite Launch Pad</ItemLink>: a launch complex of Clean
 Stainless Steel Machine Casings and Stainless Steel Frame Boxes. A 7 by 7 pad round a flame pit, the controller on its
 front edge with the energy hatch and maintenance hatch beside it; a service tower behind the pad with an input bus for
 rockets in its base and two swing arms reaching over the pad; a propellant tank beside it with an input hatch for
@@ -39,8 +39,15 @@ when it ends. Maintenance problems make it take longer, and any light-blocking b
 it's clear; glass doesn't.
 
 Satellites come down after about 100 Minecraft days, give or take a fifth: about 33 hours of the server running.
-Sleeping through the night doesn't bring them down sooner. Keep launching. The pad's screen shows each dimension's
-satellites and when the next comes down.
+Sleeping through the night doesn't bring them down sooner. Keep launching.
+
+The pad's screen says **Launching**, with the seconds and a progress bar, **On hold** or **Ready**, then the rockets
+waiting, the fuel in litres and how many launches that is, and each dimension's satellites, with their calls and when
+the next comes down. Its **Orbit** tab, beside **Launches**, has a table of the skies: **Over**, **Up**, **Level**,
+**Calls** and **Who's using it**: dishes, uplinks from receivers on other planets, and phones under open sky. Under it
+is a forecast of the pad's own sky over the next 60 days, if nothing more goes up, with the count below which its level
+drops, and a warning in red when it will: "Drops to Low in 29 days, when 3 come down together: the sky then carries 26
+calls, not 36."
 
 ## Sky hops
 
@@ -64,15 +71,19 @@ carry 36 calls at once, and the next call is busy until one ends.
 
 ## Satellite Dish
 
-A <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
+A <ItemLink id="becom:machine:25011" showIcon="left">Satellite Dish</ItemLink> joins its network to every
 other dish in its dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver.
 It's a ground station on 512 EU/t: a bowl of Clean Stainless Steel Machine Casings facing straight up, 7 across at the
 rim, with a feed horn held over it by four struts of Stainless Steel Frame Boxes, on a pedestal. The controller stands
-in a plinth at its foot, with the energy hatch and maintenance hatch beside it. It needs open sky over the whole dish. Wrench-link it to an antenna, a Pylon Head or a Line
-Terminal. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
+in a plinth at its foot, with the energy hatch and maintenance hatch beside it. It needs open sky over the whole dish. Run cable from its controller to an
+Exchange: that is its backhaul, and the cable's tier sets its rate. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
 A dish carries 32 calls at most, and never more than its hop's level has room for: a hop at Low carries 4 KB/s, room
 for 2 calls, Medium 16 KB/s, High 64 and Max 256, at 2 KB/s a call.
+
+Its screen shows its hop in dB, with signal bars and its level, and how many of its 32 calls are in use. Then come the
+satellites overhead and how many of the sky's calls are in use, **Sky** clear in green or covered in red,
+**Maintenance** problems and the dB they cost, and its **Backhaul**.
 
 ## Rocket Radio Receiver
 
@@ -90,18 +101,18 @@ wired lines in, bridge them onto an antenna within reach of the rocket.
 
 ## Portal Relay
 
-A <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Portal Relay</ItemLink> works within 4 blocks of a
-Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal. Wrench-link it to an antenna, a Pylon
-Head, a Line Terminal or an Exchange of your network. Then wrench it, go through the portal, and wrench a relay on the
-other side within 5 minutes: the pair joins the two networks at High.
+A <ItemLink id="becom:machine:25012" showIcon="left">Portal Relay</ItemLink> works within 4 blocks of a
+Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal. Cable it to an Exchange of your
+network. Then go through the portal and place a relay by the other side, cabled to an Exchange there: the two pair by
+themselves, and the pair joins the two networks at High. Its screen says **Unpaired** until they do.
 
 It comes in three tiers, and a pair works at its lower relay's:
 
 | Relay | Power | Calls | Rate |
 | --- | --- | --- | --- |
-| <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Portal Relay</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
-| <ItemLink id="gregtech:gt.blockmachines:25014" showIcon="left">Portal Relay (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
-| <ItemLink id="gregtech:gt.blockmachines:25015" showIcon="left">Portal Relay (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
+| <ItemLink id="becom:machine:25012" showIcon="left">Portal Relay</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
+| <ItemLink id="becom:machine:25014" showIcon="left">Portal Relay (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
+| <ItemLink id="becom:machine:25015" showIcon="left">Portal Relay (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
 
 The two relays must stand on the two sides of one portal. Through the Nether, the far relay stands where the portal
 leads, an eighth of the distance from the world's center; through the Twilight Forest, near the same spot. A Personal

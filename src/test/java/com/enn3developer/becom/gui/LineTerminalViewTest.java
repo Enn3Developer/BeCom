@@ -30,9 +30,9 @@ class LineTerminalViewTest {
             List.of(new LineTerminalView.Uplink(2, 100, 70, -200, 45, new int[] { 2, 0, 1 }, 32, 12, 5)),
             8,
             List.of(
-                new LineTerminalView.Device(0, 482913, 0, 8, 128, LineTerminalView.Now.CALL, "300417"),
-                new LineTerminalView.Device(4, 300210, 2, 40, 4096, LineTerminalView.Now.IDLE, ""),
-                new LineTerminalView.Device(-1, -1, 0, 200, 128, LineTerminalView.Now.TOO_FAR, "")));
+                new LineTerminalView.Device(0, 482913, 0, 8, 128, LineTerminalView.Now.CALL, "Alex", 0),
+                new LineTerminalView.Device(4, 300210, 2, 40, 4096, LineTerminalView.Now.IDLE, "", 10),
+                new LineTerminalView.Device(-1, -1, 0, 200, 128, LineTerminalView.Now.TOO_FAR, "", 0)));
         LineTerminalView back = roundTrip(view);
         assertEquals(view.tier(), back.tier());
         assertEquals(view.working(), back.working());
@@ -53,7 +53,7 @@ class LineTerminalViewTest {
     void capsTheDevicesItSends() {
         List<LineTerminalView.Device> many = new ArrayList<>();
         for (int i = 0; i < LineTerminalView.MAX_DEVICES + 10; i++) {
-            many.add(new LineTerminalView.Device(0, i, 0, i, 128, LineTerminalView.Now.NO_PORT, ""));
+            many.add(new LineTerminalView.Device(0, i, 0, i, 128, LineTerminalView.Now.NO_PORT, "", 0));
         }
         LineTerminalView back = roundTrip(new LineTerminalView(0, false, "", List.of(), 4, many));
         assertEquals(

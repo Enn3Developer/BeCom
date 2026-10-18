@@ -124,7 +124,7 @@ public record Tunables(
         d.put("terminalPortsLV", 4);
         d.put("terminalPortsMV", 8);
         d.put("terminalPortsHV", 16);
-        d.put("terminalCableBudget", 2048);
+        d.put("terminalCableBudget", 8192);
         d.put("exchangePower", 64);
         d.put("rackCallsLV", 8);
         d.put("rackCallsMV", 32);

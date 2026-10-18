@@ -1,47 +1,62 @@
 package com.enn3developer.becom.gui;
 
-import java.util.function.Supplier;
+import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.StatCollector;
 
-import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
-import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.cleanroommc.modularui.widgets.ButtonWidget;
-import com.cleanroommc.modularui.widgets.ToggleButton;
-import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.gui.paint.CanvasWidget;
+import com.enn3developer.becom.gui.radio.RadioUi;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
+import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.server.BeComServer;
 
 /**
- * The walkie-talkie's screen: its channel, 1 to 16, and its power. The server changes the stack the
+ * The walkie-talkie's screen (the Radios board): its channel, 1 to 16, TX and RX, its power and its battery. The server
+ * changes the stack the
  * screen was opened from, and only while it's still a walkie.
  */
 public final class WalkieScreen {
 
-    private static final int WIDTH = 150;
-    private static final int HEIGHT = 84;
     private static final String CHANNEL = "channel";
     private static final String POWER = "power";
 
-    /** What the screen shows. */
-    public record View(int channel, boolean on, long charge, long max) {
+    /** What the screen shows: its reach in blocks, and whether it transmits and receives now. */
+    public record View(int channel, boolean on, long charge, long max, int reach, boolean tx, boolean rx) {
 
-        static final View EMPTY = new View(1, false, 0, 0);
+        static final View EMPTY = new View(1, false, 0, 0, 0, false, false);
 
         void write(PacketBuffer buf) {
             buf.writeByte(channel);
             buf.writeBoolean(on);
             buf.writeLong(charge);
             buf.writeLong(max);
+            buf.writeShort(reach);
+            buf.writeBoolean(tx);
+            buf.writeBoolean(rx);
         }
 
         static View read(PacketBuffer buf) {
-            return new View(buf.readByte(), buf.readBoolean(), buf.readLong(), buf.readLong());
+            return new View(
+                buf.readByte(),
+                buf.readBoolean(),
+                buf.readLong(),
+                buf.readLong(),
+                buf.readShort(),
+                buf.readBoolean(),
+                buf.readBoolean());
+        }
+
+        int percent() {
+            return max <= 0 ? 0 : (int) Math.min(100, charge * 100 / max);
         }
     }
 
@@ -52,78 +67,42 @@ public final class WalkieScreen {
         sync.syncValue("view", viewSync);
         sync.registerSyncedAction(CHANNEL, false, true, buf -> step(data, buf.readByte()));
         sync.registerSyncedAction(POWER, false, true, buf -> setOn(data, buf.readBoolean()));
-        Supplier<View> view = viewSync::view;
-
-        ModularPanel panel = new ModularPanel("becom_walkie").size(WIDTH, HEIGHT);
-        Flow column = Flow.column()
-            .sizeRel(1f)
-            .padding(6, 6, 6, 6)
-            .childPadding(3);
-        column.child(
-            IKey.lang("item.becom.walkie_talkie.name")
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        Flow channel = Flow.row()
-            .widthRel(1f)
-            .height(14)
-            .childPadding(4);
-        channel.child(
-            new ButtonWidget<>().size(20, 14)
-                .overlay(IKey.str("<"))
-                .onMousePressed(button -> {
-                    sync.callSyncedAction(CHANNEL, buf -> buf.writeByte(-1));
-                    return true;
-                }));
-        channel.child(
-            IKey.dynamic(
-                () -> StatCollector.translateToLocalFormatted(
-                    "becom.walkie.channel",
-                    view.get()
-                        .channel()))
-                .asWidget()
-                .width(WIDTH - 12 - 48)
-                .height(14));
-        channel.child(
-            new ButtonWidget<>().size(20, 14)
-                .overlay(IKey.str(">"))
-                .onMousePressed(button -> {
-                    sync.callSyncedAction(CHANNEL, buf -> buf.writeByte(1));
-                    return true;
-                }));
-        column.child(channel);
-        column.child(
-            new ToggleButton().size(WIDTH - 12, 14)
-                .overlay(IKey.lang("becom.walkie.power"))
-                .value(
-                    new BoolValue.Dynamic(
-                        () -> view.get()
-                            .on(),
-                        on -> sync.callSyncedAction(POWER, buf -> buf.writeBoolean(on)))));
-        column.child(
-            IKey.dynamic(
-                () -> StatCollector.translateToLocalFormatted(
-                    "becom.walkie.charge",
-                    view.get()
-                        .charge(),
-                    view.get()
-                        .max()))
-                .asWidget()
-                .widthRel(1f)
-                .height(10));
-        panel.child(column);
-        return panel;
+        RadioUi ui = new RadioUi(true, () -> {
+            View v = viewSync.view();
+            return new RadioUi.State(
+                v.channel(),
+                v.on(),
+                v.on(),
+                v.tx(),
+                v.rx(),
+                v.percent(),
+                List.of(),
+                StatCollector.translateToLocalFormatted("becom.ui.radio.walkie_note", v.reach()));
+        },
+            delta -> sync.callSyncedAction(CHANNEL, buf -> buf.writeByte(delta)),
+            on -> sync.callSyncedAction(POWER, buf -> buf.writeBoolean(on)));
+        CanvasWidget screen = new CanvasWidget(ui, RadioUi.scale(BeCom.proxy.guiHeight()));
+        return new ModularPanel("becom_walkie").size(screen.width(), screen.height())
+            .background(IDrawable.EMPTY)
+            .child(screen);
     }
 
     private static View view(PlayerInventoryGuiData data) {
         ItemStack stack = data.getUsedItemStack();
         if (!ItemWalkieTalkie.is(stack)) return View.EMPTY;
         ItemWalkieTalkie item = (ItemWalkieTalkie) stack.getItem();
+        Tunables t = BeComConfig.get();
+        BeComServer becom = BeComServer.get();
+        java.util.UUID id = data.getPlayer()
+            .getUniqueID();
         return new View(
             ItemWalkieTalkie.channel(stack),
             ItemWalkieTalkie.on(stack),
             (long) ItemWalkieTalkie.charge(stack),
-            (long) item.getMaxCharge(stack));
+            (long) item.getMaxCharge(stack),
+            (int) Math.round(t.rangeToLow(t.walkieBudget())),
+            becom != null && becom.radio.walkieTransmits(id),
+            becom != null && becom.radio.walkieReceives(id));
     }
 
     /** Server side: one channel up or down, wrapping round. */

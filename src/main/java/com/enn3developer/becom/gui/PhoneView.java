@@ -18,7 +18,7 @@ import com.enn3developer.becom.logic.phone.PhoneRecord;
 public record PhoneView(int number, String owner, boolean mayManage, State state, String otherName, int otherNumber,
     SignalLevel hearing, boolean doNotDisturb, boolean hidden, List<Contact> contacts, List<Recent> recent,
     List<Blocked> blocked, boolean carried, boolean on, boolean silent, SignalLevel service, List<Member> members,
-    boolean offline, Video video, Battery battery, Via via, AppsView apps) {
+    boolean offline, Video video, Battery battery, Via via, AppsView apps, Phone phone) {
 
     // Caps on each list, so the view stays well inside one packet: about 11 KB of contacts at most, 5 KB of blocked
     // players, and the whole history.
@@ -49,7 +49,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         Video.NONE,
         Battery.NONE,
         Via.NONE,
-        AppsView.NONE);
+        AppsView.NONE,
+        Phone.NONE);
 
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum State {
@@ -68,7 +69,20 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         }
     }
 
-    public record Contact(int number, String name) {}
+    /** A contact: its number, its owner's name, and its kind's ordinal (PhoneKind), a Telephone shown as one. */
+    public record Contact(int number, String name, int kind) {}
+
+    /**
+     * The phone itself: its kind's ordinal (PhoneKind); an ME Phone's network name, empty for none, and whether it's in
+     * its wireless range; when its owner last saw its missed calls, by the history's clock; and whether its call is a
+     * video call; a desk phone's speed-dial numbers (0 for an empty key), how many players stand in a Videophone's
+     * room, and whether a Videophone's camera is on.
+     */
+    public record Phone(int kind, String meName, boolean meInRange, long missedSeen, boolean videoCall,
+        List<Integer> speedDial, int here, boolean camera) {
+
+        public static final Phone NONE = new Phone(0, "", false, 0, false, List.of(), 0, true);
+    }
 
     /** A recent call; {@code time} names the row when the owner blocks from it. */
     public record Recent(long time, int number, String name, PhoneRecord.Direction direction) {}
@@ -90,17 +104,21 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
     /**
      * A carried phone's battery (the Battery settings page): its charge, how long that lasts on standby and in calls
      * (-1 for ever), whether it's charging, each use's share of today's drain by {@link
-     * com.enn3developer.becom.logic.phone.BatteryUse.Use} ordinal, and the saver and warning switches.
+     * com.enn3developer.becom.logic.phone.BatteryUse.Use} ordinal, the saver and warning switches, and each app's
+     * share of today's drain, most first, which the apps' share stands for on the page.
      */
     public record Battery(long charge, long max, long standbyMinutes, long callMinutes, boolean charging,
-        List<Integer> shares, boolean saver, boolean saving, boolean warns) {
+        List<Integer> shares, boolean saver, boolean saving, boolean warns, List<AppShare> apps) {
 
-        public static final Battery NONE = new Battery(0, 0, -1, -1, false, List.of(), false, false, true);
+        public static final Battery NONE = new Battery(0, 0, -1, -1, false, List.of(), false, false, true, List.of());
 
         public int percent() {
             return max <= 0 ? 0 : (int) Math.min(100, charge * 100 / max);
         }
     }
+
+    /** An app's share of a phone's drain today, in whole percent. */
+    public record AppShare(String name, int share) {}
 
     /** What a carried phone's service comes through: the best of its ways in, and an antenna's tier. */
     public record Via(Kind kind, int tier) {
@@ -126,6 +144,13 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
     // A battery's use shares go on the wire as bytes, at most this many.
     private static final int MAX_SHARES = 16;
 
+    private static List<AppShare> readAppShares(PacketBuffer buf) {
+        int count = Math.min(buf.readUnsignedByte(), MAX_SHARES);
+        List<AppShare> apps = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) apps.add(new AppShare(readString(buf), buf.readUnsignedByte()));
+        return apps;
+    }
+
     public void write(PacketBuffer buf) {
         buf.writeInt(number);
         writeString(buf, owner);
@@ -141,6 +166,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         for (Contact contact : c) {
             buf.writeInt(contact.number());
             writeString(buf, contact.name());
+            buf.writeByte(contact.kind());
         }
         List<Recent> r = cap(recent, MAX_RECENT);
         buf.writeVarIntToBuffer(r.size());
@@ -194,11 +220,29 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         buf.writeBoolean(battery.saver());
         buf.writeBoolean(battery.saving());
         buf.writeBoolean(battery.warns());
+        List<AppShare> appShares = cap(battery.apps(), MAX_SHARES);
+        buf.writeByte(appShares.size());
+        for (AppShare app : appShares) {
+            writeString(buf, app.name());
+            buf.writeByte(app.share());
+        }
         buf.writeByte(
             via.kind()
                 .ordinal());
         buf.writeByte(via.tier());
         apps.write(buf);
+        buf.writeByte(phone.kind());
+        writeString(buf, phone.meName());
+        buf.writeBoolean(phone.meInRange());
+        buf.writeLong(phone.missedSeen());
+        buf.writeBoolean(phone.videoCall());
+        List<Integer> keys = phone.speedDial()
+            .size() > PhoneRecord.SPEED_DIAL_KEYS ? phone.speedDial()
+                .subList(0, PhoneRecord.SPEED_DIAL_KEYS) : phone.speedDial();
+        buf.writeByte(keys.size());
+        for (int key : keys) buf.writeInt(key);
+        buf.writeByte(Math.min(phone.here(), 255));
+        buf.writeBoolean(phone.camera());
     }
 
     public static PhoneView read(PacketBuffer buf) {
@@ -213,7 +257,7 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
         boolean hidden = buf.readBoolean();
         int count = Math.min(buf.readVarIntFromBuffer(), MAX_CONTACTS);
         List<Contact> contacts = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) contacts.add(new Contact(buf.readInt(), readString(buf)));
+        for (int i = 0; i < count; i++) contacts.add(new Contact(buf.readInt(), readString(buf), buf.readByte()));
         count = Math.min(buf.readVarIntFromBuffer(), MAX_RECENT);
         List<Recent> recent = new ArrayList<>(count);
         PhoneRecord.Direction[] directions = PhoneRecord.Direction.values();
@@ -263,9 +307,27 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             shares,
             buf.readBoolean(),
             buf.readBoolean(),
-            buf.readBoolean());
+            buf.readBoolean(),
+            readAppShares(buf));
         Via via = new Via(Via.Kind.byOrdinal(buf.readByte()), buf.readByte());
         AppsView apps = AppsView.read(buf);
+        int kind = buf.readByte();
+        String meName = readString(buf);
+        boolean meInRange = buf.readBoolean();
+        long missedSeen = buf.readLong();
+        boolean videoCall = buf.readBoolean();
+        int keyCount = Math.min(buf.readUnsignedByte(), PhoneRecord.SPEED_DIAL_KEYS);
+        List<Integer> speedDial = new ArrayList<>(keyCount);
+        for (int i = 0; i < keyCount; i++) speedDial.add(buf.readInt());
+        Phone phone = new Phone(
+            kind,
+            meName,
+            meInRange,
+            missedSeen,
+            videoCall,
+            speedDial,
+            buf.readUnsignedByte(),
+            buf.readBoolean());
         return new PhoneView(
             number,
             owner,
@@ -288,7 +350,8 @@ public record PhoneView(int number, String owner, boolean mayManage, State state
             video,
             battery,
             via,
-            apps);
+            apps,
+            phone);
     }
 
     private static <T> List<T> cap(List<T> list, int max) {

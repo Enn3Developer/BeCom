@@ -6,7 +6,7 @@ navigation:
   icon: becom:walkie_talkie
 item_ids:
   - becom:walkie_talkie:*
-  - gregtech:gt.blockmachines:25007
+  - becom:machine:25007
 quest_ids:
   - "VdecT0iBUsCxBEbIo6xNeA"
   - "82uwmy_wU3eMPoGqyurVlw"
@@ -22,7 +22,8 @@ push-to-talk key, <KeyBind id="key.becom.radio">Caps Lock</KeyBind>, to talk.
 
 <ItemLink id="becom:walkie_talkie" showIcon="left">Walkie-Talkie</ItemLink> runs on its own MV battery: charge it in a
 GT charger or battery buffer of MV or better. It works from your inventory or a bauble slot. Right-click it to pick a
-channel or switch it off, or sneak and scroll with it in hand to change channel.
+channel or switch it off, or sneak and scroll with it in hand to change channel: for a moment, a strip above the hotbar
+shows the channels either side, "3 ◂ 4 ▸ 5". While you talk on it, a red TX lamp and its channel show above the hotbar.
 
 On its own it reaches about 80 blocks on open ground, and much further through antennas. Anyone within 6 blocks of a
 walkie that's receiving hears it too. It drains a little on standby and more while receiving or talking. A flat one
@@ -30,7 +31,7 @@ switches off, and stays off once charged until you switch it back on.
 
 ## Transceiver
 
-<ItemLink id="gregtech:gt.blockmachines:25007" showIcon="left">Transceiver</ItemLink> is a radio on a block, at MV and
+<ItemLink id="becom:machine:25007" showIcon="left">Transceiver</ItemLink> is a radio on a block, at MV and
 32 EU/t. Stand within 2 blocks of it and hold push-to-talk to talk through it instead of your walkie. Its loudspeaker
 plays its channel to everyone within 16 blocks. On its own it reaches about 125 blocks on open ground.
 

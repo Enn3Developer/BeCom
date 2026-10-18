@@ -191,15 +191,22 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         return waila;
     }
 
+    /** Its lines for WAILA, as on the Scanner board: ringing or not, its number and its owner. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (isTooNew()) info.add("becom.info.too_new");
+        if (isTooNew()) info.problem("becom.info.too_new");
         BeComServer becom = BeComServer.get();
         PhoneRecord record = number < 0 || becom == null ? null : becom.phones.record(number);
-        if (number >= 0) info.add("becom.mobile.number", number);
-        if (record != null && record.ownerName() != null) info.add("becom.antenna.owner", record.ownerName());
-        if (ringing()) info.add("becom.info.ringing");
-        else if (offHook()) info.add("becom.info.off_hook");
+        if (ringing()) info.add("becom.info.ringing")
+            .statusBusy();
+        else if (offHook()) info.add("becom.info.off_hook")
+            .statusBusy();
+        else info.add("becom.info.state_idle")
+            .status();
+        if (number >= 0) info.add("becom.info.value", number)
+            .row("becom.info.row.number");
+        if (record != null && record.ownerName() != null) info.add("becom.info.value", record.ownerName())
+            .row("becom.info.row.owner");
         return info;
     }
 

@@ -28,10 +28,15 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.AntennaScreen;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.CableTier;
+import com.enn3developer.becom.logic.net.NetNode;
+import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
+import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.RadioHops;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NodeHost;
@@ -143,6 +148,12 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTEAntenna(mName, tier);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     /** Its mast's frame boxes: steel, aluminium, stainless steel. */
@@ -491,18 +502,28 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         Tunables t = BeComConfig.get();
         MultiblockTooltipBuilder tt = new MultiblockTooltipBuilder();
         tt.addMachineType(StatCollector.translateToLocal("becom.machine.antenna.type"))
-            .addInfo(StatCollector.translateToLocal("becom.machine.antenna.info"))
-            .addInfo(
-                StatCollector.translateToLocalFormatted(
-                    "becom.machine.antenna.range",
-                    (int) Math.round(t.rangeToLow(t.antennaBudget(tier))),
-                    (int) t.antennaBudget(tier)))
-            .addInfo(
-                StatCollector
-                    .translateToLocalFormatted("becom.machine.antenna.bridge", (int) t.wrenchLinkDistance(), 15))
-            .addInfo(
-                StatCollector
-                    .translateToLocalFormatted("becom.machine.power", t.antennaPower(tier), VOLTAGE_NAMES[tier]))
+            .addInfoAll(
+                Tips.wrap(
+                    Tips.MACHINE,
+                    StatCollector.translateToLocal("becom.machine.antenna.info"),
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.antenna.range",
+                        Tips.number(
+                            "~" + StatCollector.translateToLocalFormatted(
+                                "becom.info.blocks",
+                                (int) Math.round(t.rangeToLow(t.antennaBudget(tier))))),
+                        "\u00a78"
+                            + StatCollector
+                                .translateToLocalFormatted("becom.machine.antenna.budget", (int) t.antennaBudget(tier))
+                            + "\u00a77"),
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.antenna.bridge",
+                        Tips.number((int) t.wrenchLinkDistance()),
+                        Tips.number(15)),
+                    Tips.power(t.antennaPower(tier), VOLTAGE_NAMES[tier]),
+                    Tips.howTo(
+                        "becom.machine.antenna.looks." + tier,
+                        frameOf(tier).getLocalizedNameForItem("%material"))))
             .beginVariableStructureBlock(
                 FEET[tier][0][0].length(),
                 FEET[tier][0][0].length(),
@@ -562,12 +583,44 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /**
+     * Its lines for WAILA and the scanner, as on the Scanner board: its state, mast, links, calls and who it serves.
+     */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.add("becom.info.too_new");
-        info.add("becom.info.mast", mMachine ? mast : 0);
-        info.add(working ? "becom.info.online" : "becom.info.offline");
-        if (locked) info.add("becom.info.locked");
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (tooNew != null) info.problem("becom.info.too_new");
+        InfoLines.state(info, mMachine, tile != null && tile.isAllowedToWork(), working);
+        info.add("becom.info.blocks", mMachine ? mast : 0)
+            .row("becom.info.row.mast");
+        BeComServer becom = BeComServer.get();
+        if (becom == null || tile == null) return info;
+        NodeRef ref = ref();
+        int antennas = 0;
+        for (AntennaNetwork.LinkKey key : becom.antennas.links(ref.dimension())
+            .keySet()) if (key.a() == ref.pos() || key.b() == ref.pos()) antennas++;
+        NetworkModel model = becom.network.model(ref.dimension());
+        NetNode node = model == null ? null : model.node(ref.pos());
+        CableTier backhaul = null;
+        if (node != null) for (long other : node.links()) for (CableTier cable : model.cables(ref.pos(), other)) {
+            if (backhaul == null || cable.compareTo(backhaul) > 0) backhaul = cable;
+        }
+        if (backhaul != null) info.add("becom.info.links_backhaul", antennas, InfoLines.shortName(backhaul))
+            .row("becom.info.row.links");
+        else info.add("becom.info.links_antennas", antennas)
+            .row("becom.info.row.links");
+        info.add(
+            "becom.info.of",
+            becom.calls.callsAt(ref.dimension(), ref.pos()),
+            BeComConfig.get()
+                .antennaCalls(tier))
+            .row("becom.info.row.calls");
+        UUID owner = owner();
+        String name = owner == null ? null : net.minecraftforge.common.UsernameCache.getLastKnownUsername(owner);
+        if (locked) info.add("becom.info.serves_team", name == null ? "?" : name)
+            .row("becom.info.row.serves");
+        else info.add("becom.info.serves_all")
+            .row("becom.info.row.serves");
         return info;
     }
 

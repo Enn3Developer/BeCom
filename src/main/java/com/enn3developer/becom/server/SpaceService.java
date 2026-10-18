@@ -1,6 +1,8 @@
 package com.enn3developer.becom.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -99,6 +101,16 @@ public final class SpaceService {
     public long untilNextDown(int dimension) {
         long next = satellites.nextDown(dimension);
         return next == Long.MAX_VALUE ? -1 : Math.max(0, next - now());
+    }
+
+    /** The ticks until each satellite over {@code dimension} comes down. */
+    public List<Long> ticksLeft(int dimension) {
+        long now = now();
+        List<Long> left = new ArrayList<>();
+        for (Satellites.Satellite satellite : satellites.all()) {
+            if (satellite.dimension() == dimension) left.add(satellite.comesDown() - now);
+        }
+        return left;
     }
 
     /** Goes up whenever a satellite goes up or comes down, which moves sky hops. */

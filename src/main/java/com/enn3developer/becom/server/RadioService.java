@@ -709,6 +709,44 @@ public final class RadioService {
         return published;
     }
 
+    /** Whether {@code player} transmits on their walkie now, for its screen's TX light. */
+    public boolean walkieTransmits(UUID player) {
+        Radio radio = radios.get(player);
+        return active.contains(player) && radio != null && radio.transceiver == null;
+    }
+
+    /** Whether someone's transmission reaches {@code player}'s walkie now, for its screen's RX light. */
+    public boolean walkieReceives(UUID player) {
+        for (UUID speaker : active) {
+            RadioSnapshot.Transmission tx = published.transmission(speaker);
+            if (tx == null) continue;
+            for (RadioSnapshot.Link link : tx.walkies()) if (player.equals(link.holder())) return true;
+        }
+        return false;
+    }
+
+    /** Whether someone talks through Transceiver {@code ref} now. */
+    public boolean transceiverTransmits(NodeRef ref) {
+        for (UUID speaker : active) {
+            Radio radio = radios.get(speaker);
+            if (radio != null && ref.equals(radio.transceiver)) return true;
+        }
+        return false;
+    }
+
+    /** Whether someone's transmission reaches Transceiver {@code ref} now. */
+    public boolean transceiverReceives(NodeRef ref) {
+        for (UUID speaker : active) {
+            RadioSnapshot.Transmission tx = published.transmission(speaker);
+            if (tx == null) continue;
+            for (RadioSnapshot.Link link : tx.transceivers()) {
+                RadioSnapshot.Transceiver t = link.transceiver();
+                if (t != null && t.dimension() == ref.dimension() && t.pos() == ref.pos()) return true;
+            }
+        }
+        return false;
+    }
+
     // endregion
 
     // region Batteries

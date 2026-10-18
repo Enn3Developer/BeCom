@@ -225,12 +225,16 @@ public class ItemWalkieTalkie extends Item
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
         if (isTooNew(stack)) lines.add(StatCollector.translateToLocal("becom.info.too_new"));
-        lines.add(StatCollector.translateToLocalFormatted("becom.walkie.channel", channel(stack)));
-        lines.add(StatCollector.translateToLocal(on(stack) ? "becom.walkie.on" : "becom.walkie.off"));
         lines.add(
-            StatCollector
-                .translateToLocalFormatted("becom.walkie.charge", (long) charge(stack), (long) getMaxCharge(stack)));
-        lines.add(StatCollector.translateToLocal("becom.walkie.help"));
+            Tips.state(
+                on(stack),
+                StatCollector.translateToLocalFormatted("becom.tip.channel", Tips.value(channel(stack)))));
+        lines.add(Tips.battery(charge(stack), getMaxCharge(stack)));
+        // Switched off, as on the board, it only says so.
+        if (on(stack)) {
+            lines.add(Tips.howTo("becom.tip.walkie_talk"));
+            lines.add(Tips.howTo("becom.tip.walkie_channel"));
+        }
     }
 
     @Override

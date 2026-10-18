@@ -12,7 +12,8 @@ item_ids:
 
 Telefono cellulare e Telefono ME eseguono app scritte in Lua. Ogni telefono contiene un computer di OpenComputers che si
 accende quando si apre un'app, o quando un'app in background ha da fare, e si spegne quando non serve. Finché è acceso,
-le app consumano 8 EU/t dalla batteria del telefono, alla voce **App** della schermata batteria.
+le app consumano 8 EU/t dalla batteria del telefono: **Impostazioni › Batteria** elenca il consumo di oggi per uso,
+Standby, Chiamate, Video e Schermo, e ogni app per nome, con la sua quota.
 
 ## Avere le app
 
@@ -25,9 +26,11 @@ le app consumano 8 EU/t dalla batteria del telefono, alla voce **App** della sch
   l'offerta nella home, con chi la manda, da dove e cosa può fare, e la installa o la annulla. Installa solo app di
   persone di cui ti fidi.
 
-Un telefono tiene 16 app. **Impostazioni › App** le elenca, mostra quante volte ognuna si è svegliata, quanta batteria
-ha usato oggi e quanta memoria occupa, permette a un'app di girare in background e la disinstalla. Un'app andata in
-errore, o che non è potuta partire, ha **Riprova**.
+Un telefono tiene 16 app. **Impostazioni › App** le elenca. La pagina di ogni app ha un interruttore **In background**,
+quante volte si è svegliata e quanta batteria ha usato oggi, sotto **Può** un interruttore per ogni cosa che l'app
+dichiara (Rete, Notifiche, Chiamate, Camera), quanta memoria occupa e **Disinstalla**. Spegnerne uno nega quella cosa
+all'app, anche se l'ha chiesta. Un'app che non raggiunge il suo computer, senza segnale o col computer spento, ha
+**Riprova**; un'app andata in errore mostra l'errore su cui si è fermata.
 
 ## La Scheda BeCom
 

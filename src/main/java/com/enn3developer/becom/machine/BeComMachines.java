@@ -3,15 +3,17 @@ package com.enn3developer.becom.machine;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import net.minecraft.item.ItemStack;
+
 import com.enn3developer.becom.logic.net.CableTier;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 
 /**
- * BeCom's GregTech machines and their IDs. The range is one of the three fixed tunables. Every
- * ID is checked before anything is registered, so another mod already using one stops the game with a clear error
- * instead of two machines quietly sharing an ID and corrupting worlds.
+ * BeCom's GregTech machines and their IDs, and the block they stand in, {@code becom:machine}. The range is one of the
+ * three fixed tunables. Every ID is checked before anything is registered, so another mod already using one stops the
+ * game with a clear error instead of two machines quietly sharing an ID and corrupting worlds.
  */
 public final class BeComMachines {
 
@@ -35,6 +37,7 @@ public final class BeComMachines {
     public static final int PORTAL_RELAY_HV_ID = 25014;
     public static final int PORTAL_RELAY_EV_ID = 25015;
 
+    public static BlockBeComMachines block;
     public static MTEPylonHead pylonHead;
     public static MTEExchange exchange;
     public static MTELineTerminal lineTerminal;
@@ -109,8 +112,18 @@ public final class BeComMachines {
         }
     }
 
+    /** A machine's item: BeCom's machine block at the machine's ID. */
+    public static ItemStack stack(IMetaTileEntity machine, long amount) {
+        return new ItemStack(
+            block,
+            (int) amount,
+            machine.getBaseMetaTileEntity()
+                .getMetaTileID());
+    }
+
     public static void register() {
         checkIds();
+        block = new BlockBeComMachines();
         BeComTextures.init();
         pylonHead = new MTEPylonHead(PYLON_HEAD_ID, "becom.pylon_head", "Pylon Head");
         exchange = new MTEExchange(EXCHANGE_ID, "becom.exchange", "Exchange");

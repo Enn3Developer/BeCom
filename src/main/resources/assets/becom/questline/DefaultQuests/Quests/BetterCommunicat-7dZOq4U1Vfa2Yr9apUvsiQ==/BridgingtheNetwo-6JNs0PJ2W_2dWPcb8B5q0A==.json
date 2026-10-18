@@ -8,13 +8,13 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal, an Exchange or an antenna within 16 blocks. It uses 512 EU/t and carries 8 calls at once.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
+      "desc:8": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it on ME cable, where it takes one channel, and run cable from it to an Exchange: that cable carries its calls. It uses 512 EU/t and carries 8 calls at once.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
         "Damage:2": 25008,
         "OreDict:8": "",
-        "id:8": "gregtech:gt.blockmachines"
+        "id:8": "becom:machine"
       },
       "isGlobal:1": 0,
       "isMain:1": 0,
@@ -63,7 +63,7 @@
           "Count:3": 1,
           "Damage:2": 25008,
           "OreDict:8": "",
-          "id:8": "gregtech:gt.blockmachines"
+          "id:8": "becom:machine"
         }
       },
       "taskID:8": "bq_standard:retrieval"

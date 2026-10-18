@@ -8,13 +8,13 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a Line Terminal. Keep up its maintenance: each problem costs it 2 dB.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
+      "desc:8": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 EU/t.%n%nRun cable from its controller to an Exchange. Keep up its maintenance: each problem costs it 2 dB.%n%nMore in the guide: [guide page=becom:space.md]Space and other dimensions[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
         "Damage:2": 25011,
         "OreDict:8": "",
-        "id:8": "gregtech:gt.blockmachines"
+        "id:8": "becom:machine"
       },
       "isGlobal:1": 0,
       "isMain:1": 0,
@@ -63,7 +63,7 @@
           "Count:3": 1,
           "Damage:2": 25011,
           "OreDict:8": "",
-          "id:8": "gregtech:gt.blockmachines"
+          "id:8": "becom:machine"
         }
       },
       "taskID:8": "bq_standard:retrieval"

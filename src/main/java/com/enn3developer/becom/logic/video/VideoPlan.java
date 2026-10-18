@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
@@ -55,9 +56,12 @@ public final class VideoPlan {
      *
      * @param kinds   each phone's kind, null when it has none
      * @param cameras each player's switches
+     * @param room    whether the stream from one phone to another got video's rate; where it fell back to voice's, the
+     *                picture is frozen, as at Low
      */
-    public static VideoPlan of(Call call, IntFunction<PhoneKind> kinds, Function<UUID, Cameras> cameras) {
-        if (call.state() != Call.State.CONNECTED) return EMPTY;
+    public static VideoPlan of(Call call, IntFunction<PhoneKind> kinds, Function<UUID, Cameras> cameras,
+        BiPredicate<Call.Leg, Call.Leg> room) {
+        if (call.state() != Call.State.CONNECTED || !call.video()) return EMPTY;
         List<Call.Leg> video = new ArrayList<>();
         for (Call.Leg leg : call.activeLegs()) {
             PhoneKind kind = kinds.apply(leg.phone());
@@ -76,6 +80,7 @@ public final class VideoPlan {
                 if (seen == viewing) continue;
                 SignalLevel level = call.level(seen, viewing);
                 if (level == SignalLevel.NONE) continue;
+                if (!room.test(seen, viewing) && level.atLeast(SignalLevel.MEDIUM)) level = SignalLevel.LOW;
                 boolean rearPhone = oneToOne && kinds.apply(seen.phone())
                     .carried();
                 for (UUID source : seen.players()) {

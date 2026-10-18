@@ -11,8 +11,13 @@ import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -26,7 +31,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import org.jetbrains.annotations.NotNull;
 
-import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.IPanelHandler;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
@@ -34,11 +40,21 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
-import com.enn3developer.becom.gui.LaunchPadView;
+import com.enn3developer.becom.gui.InfoScreen;
+import com.enn3developer.becom.gui.OrbitView;
 import com.enn3developer.becom.gui.ViewSync;
+import com.enn3developer.becom.gui.machine.OrbitUi;
+import com.enn3developer.becom.gui.machine.ReadoutUi;
+import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.item.BeComItems;
+import com.enn3developer.becom.item.Tips;
+import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.net.CallGraph;
+import com.enn3developer.becom.logic.space.Forecast;
+import com.enn3developer.becom.logic.space.Gateways;
 import com.enn3developer.becom.logic.space.Satellites;
+import com.enn3developer.becom.logic.space.SkyStrength;
 import com.enn3developer.becom.quest.BeComQuests;
 import com.enn3developer.becom.quest.QuestTask;
 import com.enn3developer.becom.server.BeComServer;
@@ -165,6 +181,12 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTELaunchPad(mName);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     /** A casing, or one of {@code kinds} of hatch in its place, shown in the hologram with {@code hint}'s dot. */
@@ -405,46 +427,169 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
     }
 
     /**
-     * What its screen shows: the rockets waiting, a launch on hold, and each dimension's satellites, its name, how
-     * many and the ticks until the next comes down. Built on the server only: the view sync never asks for it on a
-     * client.
+     * Its screen, as the Machines board lays it out: the launch on top with its progress, the rockets waiting and the
+     * fuel, then each dimension's satellites, how many calls they carry and when the next falls. Built on the server;
+     * each client translates it.
      */
-    public LaunchPadView screenView() {
+    public InfoLines readout() {
+        return readout(true);
+    }
+
+    private InfoLines readout(boolean skies) {
+        InfoLines info = new InfoLines();
         BeComServer becom = BeComServer.get();
-        if (becom == null) return LaunchPadView.EMPTY;
-        List<LaunchPadView.Orbit> orbits = new ArrayList<>();
+        if (becom == null) return info;
+        Tunables t = becom.tunables;
+        int rockets = rocketsWaiting();
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (!mMachine) info.problem("becom.info.state_unformed")
+            .status();
+        else if (tile != null && !tile.isAllowedToWork()) info.problem("becom.info.state_off")
+            .status();
+        else if (held()) info.problem("becom.launch_pad.status_held")
+            .status();
+        else if (mMaxProgresstime > 0) {
+            info.add("becom.launch_pad.status_launching")
+                .status();
+            info.add("becom.launch_pad.seconds", mProgresstime / TICKS_PER_SECOND, mMaxProgresstime / TICKS_PER_SECOND)
+                .right();
+            info.add("")
+                .bar("", mProgresstime / (double) mMaxProgresstime);
+        } else info.add("becom.launch_pad.status_ready")
+            .status();
+        info.add("becom.launch_pad.rockets", rockets)
+            .row("becom.info.row.waiting");
+        long fuel = 0;
+        for (FluidStack fluid : getStoredFluids()) {
+            if (fluid != null && FluidUtil.testFuel(FluidRegistry.getFluidName(fluid))) fuel += fluid.amount;
+        }
+        if (t.launchFuel() > 0) {
+            info.add("becom.launch_pad.litres", fuel)
+                .row("becom.info.row.fuel");
+            info.add("becom.launch_pad.launches", fuel / t.launchFuel())
+                .sub();
+        }
+        if (!skies) {
+            problems(info, rockets, fuel, t);
+            return info;
+        }
+        info.add("becom.launch_pad.in_orbit")
+            .section();
+        SkyStrength sky = SkyStrength.of(t);
         for (Map.Entry<Integer, Integer> entry : becom.space.counts()
             .entrySet()) {
-            orbits.add(
-                new LaunchPadView.Orbit(
-                    becom.space.dimensionName(entry.getKey()),
-                    entry.getValue(),
-                    becom.space.untilNextDown(entry.getKey())));
+            int dimension = entry.getKey();
+            int satellites = entry.getValue();
+            SignalLevel level = sky.enough(satellites) ? t.levelScale()
+                .levelOf(sky.snr(satellites)) : SignalLevel.NONE;
+            info.add("becom.launch_pad.count", satellites)
+                .value(becom.space.dimensionName(dimension), level);
+            if (sky.enough(satellites)) {
+                int[] calls = becom.calls.skyCalls(dimension);
+                info.add(
+                    "becom.launch_pad.orbit_calls",
+                    calls[0],
+                    calls[1],
+                    String.format(
+                        Locale.ROOT,
+                        "%.0f",
+                        Math.ceil(becom.space.untilNextDown(dimension) / (double) Satellites.DAY_TICKS)))
+                    .sub();
+            } else info.add("becom.launch_pad.dish_needs", t.satellitesLow())
+                .sub();
         }
-        return new LaunchPadView(rocketsWaiting(), held(), orbits);
+        if (becom.space.counts()
+            .isEmpty()) info.add("becom.launch_pad.orbit_none");
+        problems(info, rockets, fuel, t);
+        return info;
     }
 
-    /** The rockets waiting, and a launch on hold, as the client shows them. */
-    private static String showQueue(LaunchPadView view) {
-        String queue = StatCollector.translateToLocalFormatted("becom.launch_pad.queue", view.rocketsWaiting());
-        return view.held() ? queue + "\n" + StatCollector.translateToLocal("becom.launch_pad.held") : queue;
+    /** What keeps it from launching, when it isn't. */
+    private void problems(InfoLines info, int rockets, long fuel, Tunables t) {
+        if (!mMachine || mMaxProgresstime != 0) return;
+        if (!openSky()) info.problem("becom.info.no_sky");
+        if (rockets == 0) info.warn("becom.launch_pad.no_rocket");
+        else if (t.launchFuel() > 0 && fuel < t.launchFuel()) info.warn("becom.launch_pad.no_fuel", t.launchFuel());
     }
 
-    /** The orbits as the client shows them, each dimension on a line, in the client's language. */
-    private static String showOrbits(LaunchPadView view) {
-        if (view.orbits()
-            .isEmpty()) return StatCollector.translateToLocal("becom.launch_pad.orbit_none");
-        StringBuilder text = new StringBuilder(StatCollector.translateToLocal("becom.launch_pad.orbit"));
-        for (LaunchPadView.Orbit orbit : view.orbits()) {
-            text.append('\n')
-                .append(
-                    StatCollector.translateToLocalFormatted(
-                        "becom.launch_pad.dimension",
-                        orbit.dimension(),
-                        orbit.satellites(),
-                        String.format("%.1f", orbit.untilNextDown() / (double) Satellites.DAY_TICKS)));
+    /** The Orbit page over its GT screen; its Launches tab closes it. */
+    private ModularPanel orbitPanel(PanelSyncManager sync, IPanelHandler handler) {
+        ViewSync<OrbitView> view = new ViewSync<>(this::orbitView, OrbitView::write, OrbitView::read, OrbitView.EMPTY);
+        sync.syncValue("becomOrbitView", view);
+        CanvasWidget widget = new CanvasWidget(
+            new OrbitUi(view::view, handler::closePanel),
+            OrbitUi.scale(BeCom.proxy.guiHeight()));
+        return new ModularPanel("becom_orbit").size(widget.width(), widget.height())
+            .background(IDrawable.EMPTY)
+            .child(widget);
+    }
+
+    /**
+     * Its Orbit page, as the Orbit board lays it out: every sky with satellites or a receiver under it, the pad's own
+     * first, and how the pad's sky thins out if nothing more goes up. Built on the server.
+     */
+    public OrbitView orbitView() {
+        BeComServer becom = BeComServer.get();
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (becom == null || tile == null) return OrbitView.EMPTY;
+        Tunables t = becom.tunables;
+        int here = tile.getWorld().provider.dimensionId;
+        SkyStrength strength = SkyStrength.of(t);
+        Map<Integer, Integer> dishes = new HashMap<>();
+        for (Gateways.Dish dish : becom.network.dishes()) dishes.merge(dish.dimension(), 1, Integer::sum);
+        Map<Integer, Integer> receivers = new TreeMap<>();
+        for (Gateways.Receiver receiver : becom.network.receivers()) {
+            if (receiver.dimension() != Gateways.OVERWORLD) receivers.merge(receiver.dimension(), 1, Integer::sum);
         }
-        return text.toString();
+        Map<Integer, Integer> underSky = new HashMap<>();
+        for (int number : becom.carried.working()) {
+            for (CallGraph.Entry entry : becom.carried.serviceOf(number)
+                .entries()) {
+                if (entry.vertex() instanceof CallGraph.SkyVertex sky) underSky.merge(sky.dimension(), 1, Integer::sum);
+            }
+        }
+        Set<Integer> dimensions = new TreeSet<>(
+            becom.space.counts()
+                .keySet());
+        dimensions.addAll(receivers.keySet());
+        dimensions.addAll(dishes.keySet());
+        List<Integer> order = new ArrayList<>(dimensions);
+        order.remove((Integer) here);
+        order.sort((a, b) -> Integer.compare(becom.space.count(b), becom.space.count(a)));
+        order.add(0, here);
+        String overworld = becom.space.dimensionName(Gateways.OVERWORLD);
+        List<OrbitView.Sky> skies = new ArrayList<>();
+        for (int dimension : order) {
+            int up = becom.space.count(dimension);
+            SignalLevel level = strength.enough(up) ? t.levelScale()
+                .levelOf(strength.snr(up)) : SignalLevel.NONE;
+            int[] calls = becom.calls.skyCalls(dimension);
+            List<OrbitView.Uplink> uplinks = new ArrayList<>();
+            if (dimension == Gateways.OVERWORLD) {
+                for (Map.Entry<Integer, Integer> receiver : receivers.entrySet()) {
+                    uplinks
+                        .add(new OrbitView.Uplink(becom.space.dimensionName(receiver.getKey()), receiver.getValue()));
+                }
+            }
+            skies.add(
+                new OrbitView.Sky(
+                    becom.space.dimensionName(dimension),
+                    up,
+                    level,
+                    t.satellitesLow(),
+                    calls[0],
+                    calls[1],
+                    dishes.getOrDefault(dimension, 0),
+                    uplinks,
+                    underSky.getOrDefault(dimension, 0),
+                    receivers.containsKey(dimension) ? overworld : ""));
+        }
+        return new OrbitView(
+            skies,
+            becom.space.dimensionName(here),
+            Forecast.of(t, becom.space.count(here), becom.space.ticksLeft(here), Forecast.DAYS),
+            t.satelliteCalls(),
+            (int) Math.round(t.satelliteLifetimeDays()));
     }
 
     @Override
@@ -452,23 +597,27 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         return new MTEMultiBlockBaseGui<>(this) {
 
             @Override
+            protected int getBasePanelWidth() {
+                return super.getBasePanelWidth() + ReadoutUi.TERMINAL_EXTRA;
+            }
+
+            @Override
+            protected int getTerminalRowWidth() {
+                return super.getTerminalRowWidth() + ReadoutUi.TERMINAL_EXTRA;
+            }
+
+            @Override
             protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel parent) {
-                ViewSync<LaunchPadView> view = new ViewSync<>(
-                    MTELaunchPad.this::screenView,
-                    LaunchPadView::write,
-                    LaunchPadView::read,
-                    LaunchPadView.EMPTY);
-                sync.syncValue("becomPad", view);
-                return super.createTerminalTextWidget(sync, parent).child(
-                    IKey.dynamic(() -> showQueue(view.view()))
-                        .asWidget()
-                        .marginBottom(2)
-                        .fullWidth())
-                    .child(
-                        IKey.dynamic(() -> showOrbits(view.view()))
-                            .asWidget()
-                            .marginBottom(2)
-                            .fullWidth());
+                ViewSync<String> text = InfoScreen.lines(MTELaunchPad.this::readout);
+                sync.syncValue("becomPad", text);
+                IPanelHandler orbit = sync
+                    .panel("becomOrbit", (panelSync, handler) -> orbitPanel(panelSync, handler), true);
+                return ReadoutUi.intoTerminal(
+                    super.createTerminalTextWidget(sync, parent),
+                    text::view,
+                    getTerminalWidgetWidth() - 10,
+                    getTerminalWidgetHeight() - 8,
+                    orbit::openPanel);
             }
         };
     }
@@ -499,14 +648,16 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         Tunables t = BeComConfig.get();
         MultiblockTooltipBuilder tt = new MultiblockTooltipBuilder();
         tt.addMachineType(StatCollector.translateToLocal("becom.machine.launch_pad.type"))
-            .addInfo(StatCollector.translateToLocal("becom.machine.launch_pad.info"))
-            .addInfo(
-                StatCollector.translateToLocalFormatted(
-                    "becom.machine.launch_pad.launch",
-                    t.launchSeconds(),
-                    t.launchPower(),
-                    t.launchFuel()))
-            .addInfo(StatCollector.translateToLocal("becom.machine.launch_pad.sky"))
+            .addInfoAll(
+                Tips.wrap(
+                    Tips.MACHINE,
+                    StatCollector.translateToLocal("becom.machine.launch_pad.info"),
+                    StatCollector.translateToLocalFormatted(
+                        "becom.machine.launch_pad.launch",
+                        t.launchSeconds(),
+                        t.launchPower(),
+                        t.launchFuel()),
+                    StatCollector.translateToLocal("becom.machine.launch_pad.sky")))
             .beginStructureBlock(SHAPE[0][0].length(), SHAPE.length, SHAPE[0].length, false)
             .addController(StatCollector.translateToLocal("becom.machine.launch_pad.controller"))
             .addCasingInfoMin(CASING.getLocalizedName(), count('C') + count('B') + count('T') + count('P') - 4, false)
@@ -542,17 +693,9 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /** Its lines for WAILA and the scanner: its screen's, without the skies. */
     private InfoLines info() {
-        InfoLines info = new InfoLines();
-        BeComServer becom = BeComServer.get();
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (becom != null && tile != null) {
-            info.add("becom.info.satellites", becom.space.count(tile.getWorld().provider.dimensionId));
-        }
-        if (mMachine) info.add("becom.launch_pad.queue", rocketsWaiting());
-        if (held()) info.add("becom.launch_pad.held");
-        else if (mMachine && !openSky()) info.add("becom.info.no_sky");
-        return info;
+        return readout(false);
     }
 
     @Override

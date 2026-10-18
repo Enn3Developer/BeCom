@@ -41,7 +41,7 @@ class QuestRefreshTest {
         retrieval.setString("taskID", "bq_standard:retrieval");
         retrieval.setInteger("index", 0);
         NBTTagList required = new NBTTagList();
-        required.appendTag(item("gregtech:gt.blockmachines", relays));
+        required.appendTag(item("becom:machine", relays));
         retrieval.setTag("requiredItems", required);
         tasks.appendTag(retrieval);
         NBTTagCompound becom = new NBTTagCompound();

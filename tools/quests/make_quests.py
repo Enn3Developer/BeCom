@@ -39,13 +39,13 @@ TIER = {
     "EV": {"bag": 7, "coin": "dreamcraft:CoinTechnicianII", "coins": 2, "colour": "§8§l"},
 }
 
-GT_MACHINE = "gregtech:gt.blockmachines"
+MACHINE = "becom:machine"
 
 # Some big steps offer their coins as a choice, against something for the next step: Pylon Heads
 # to carry the first line further, a walkie for whoever answered on the radio, a rocket to keep the satellites up.
 # GTNH's own quests never put coins in a choice, so these are BeCom's own picks.
 COIN_CHOICE = {
-    "first_call": (GT_MACHINE, 25000, 2),
+    "first_call": (MACHINE, 25000, 2),
     "radio_contact": ("becom:walkie_talkie", 0, 1),
     "five_satellites": ("becom:satellite_rocket", 0, 1),
 }
@@ -143,9 +143,9 @@ QUESTS = [
         "it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for "
         "the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a "
         "Pylon Head, with cable in your hotbar.",
-        "icon": (GT_MACHINE, 25003),
+        "icon": (MACHINE, 25003),
         "pre": ["phone_cable"],
-        "tasks": [("item", GT_MACHINE, 25003, 1)],
+        "tasks": [("item", MACHINE, 25003, 1)],
         "big": False,
         "pos": (48, 72),
     },
@@ -159,9 +159,9 @@ QUESTS = [
         "wrench one head and the other: that strings the span, one cable for every 4 blocks of it.%n%nPylons need "
         "no power and keep working in unloaded chunks. A run of Phone Cable reaches 128 blocks, terminal to "
         "terminal; past that it carries nothing.",
-        "icon": (GT_MACHINE, 25000),
+        "icon": (MACHINE, 25000),
         "pre": ["line_terminal"],
-        "tasks": [("item", GT_MACHINE, 25000, 2)],
+        "tasks": [("item", MACHINE, 25000, 2)],
         "big": False,
         "pos": (96, 72),
     },
@@ -201,9 +201,9 @@ QUESTS = [
         "LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to "
         "15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack "
         "switches 8 calls at once, MV 32, HV 128.",
-        "icon": (GT_MACHINE, 25001),
+        "icon": (MACHINE, 25001),
         "pre": ["first_call"],
-        "tasks": [("item", GT_MACHINE, 25001, 1)],
+        "tasks": [("item", MACHINE, 25001, 1)],
         "big": True,
         "pos": (144, 120),
     },
@@ -217,9 +217,9 @@ QUESTS = [
         "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links "
         "carry little. Wire it to a pylon, a terminal or an Exchange within 16 blocks, with cable in your hotbar, "
         "and it carries all 4 of its calls over the wire.",
-        "icon": (GT_MACHINE, 25004),
+        "icon": (MACHINE, 25004),
         "pre": ["first_call"],
-        "tasks": [("item", GT_MACHINE, 25004, 1)],
+        "tasks": [("item", MACHINE, 25004, 1)],
         "big": True,
         "pos": (192, 48),
     },
@@ -230,9 +230,9 @@ QUESTS = [
         "desc": "A Transceiver is a radio in a block. It runs on MV, 32 EU/t, and reaches about 125 blocks on open "
         "ground on its own.%n%nStand within 2 blocks of it and hold the radio push-to-talk key (Caps Lock, unless "
         "you changed it) to talk on its channel. Its loudspeaker plays the channel to everyone within 16 blocks.",
-        "icon": (GT_MACHINE, 25007),
+        "icon": (MACHINE, 25007),
         "pre": ["first_call"],
-        "tasks": [("item", GT_MACHINE, 25007, 1)],
+        "tasks": [("item", MACHINE, 25007, 1)],
         "big": False,
         "pos": (192, 96),
     },
@@ -286,9 +286,9 @@ QUESTS = [
         "Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
         "doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls "
         "between the lines bridged onto them.",
-        "icon": (GT_MACHINE, 25005),
+        "icon": (MACHINE, 25005),
         "pre": ["antenna_t1"],
-        "tasks": [("item", GT_MACHINE, 25005, 1)],
+        "tasks": [("item", MACHINE, 25005, 1)],
         "big": False,
         "pos": (288, 48),
     },
@@ -299,9 +299,9 @@ QUESTS = [
         "desc": "An Antenna T3 Head tops a self-supporting lattice tower of Stainless Steel Frame Boxes on HV "
         "Machine Casings, panel antennas round its top, uses 512 EU/t and reaches about 256 blocks.%n%nBuild it high. It surveys the land around it every five minutes, "
         "and a hill in the way can cost you more than the distance does.",
-        "icon": (GT_MACHINE, 25006),
+        "icon": (MACHINE, 25006),
         "pre": ["antenna_t2"],
-        "tasks": [("item", GT_MACHINE, 25006, 1)],
+        "tasks": [("item", MACHINE, 25006, 1)],
         "big": True,
         "pos": (336, 48),
     },
@@ -313,9 +313,9 @@ QUESTS = [
         "to a Line Terminal with Phone Cable, just like a Telephone.%n%nRight-click it to dial, answer or hang up. "
         "Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It "
         "hangs up by itself 30 seconds after the last person walks away.",
-        "icon": (GT_MACHINE, 25009),
+        "icon": (MACHINE, 25009),
         "pre": ["first_call"],
-        "tasks": [("item", GT_MACHINE, 25009, 1)],
+        "tasks": [("item", MACHINE, 25009, 1)],
         "big": False,
         "pos": (192, 144),
     },
@@ -327,7 +327,7 @@ QUESTS = [
         "camera on.%n%nThe front camera shows your character; the rear camera shows what you see, in calls of two "
         "at High or better. Video needs at least Medium: at Low the picture freezes, but the voice carries "
         "on.%n%nThe phone screen's Video tab shows the call full size and switches each camera on or off.",
-        "icon": (GT_MACHINE, 25009),
+        "icon": (MACHINE, 25009),
         "pre": ["videophone"],
         "tasks": [("becom", "VIDEO_CALL")],
         "big": True,
@@ -379,11 +379,11 @@ QUESTS = [
         "tier": "EV",
         "name": "Bridging the Networks",
         "desc": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it "
-        "on ME cable, where it takes one channel, and wrench-link it to a Pylon Head, a Line Terminal, an Exchange "
-        "or an antenna within 16 blocks. It uses 512 EU/t and carries 8 calls at once.",
-        "icon": (GT_MACHINE, 25008),
+        "on ME cable, where it takes one channel, and run cable from it to an Exchange: that cable carries its "
+        "calls. It uses 512 EU/t and carries 8 calls at once.",
+        "icon": (MACHINE, 25008),
         "pre": ["me_phone"],
-        "tasks": [("item", GT_MACHINE, 25008, 1)],
+        "tasks": [("item", MACHINE, 25008, 1)],
         "big": False,
         "pos": (432, 144),
     },
@@ -405,13 +405,13 @@ QUESTS = [
         "name": "Through the Portal",
         "desc": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether "
         "portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV "
-        "power.%n%nWrench-link it to an antenna, a Pylon Head, a Line Terminal or an Exchange of your network. Then "
-        "wrench the relay, go through the portal, and wrench a relay on the other side within 5 minutes. The pair "
-        "joins the two networks at High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at "
+        "power.%n%nCable it to an Exchange of your network. Then go through the portal and place a relay by the "
+        "other side, cabled to an Exchange there: the two pair by themselves. The pair joins the two networks at "
+        "High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at "
         "its lower relay's tier.",
-        "icon": (GT_MACHINE, 25012),
+        "icon": (MACHINE, 25012),
         "pre": ["first_call"],
-        "tasks": [("item", GT_MACHINE, 25012, 2), ("becom", "PORTAL_RELAY_PAIR")],
+        "tasks": [("item", MACHINE, 25012, 2), ("becom", "PORTAL_RELAY_PAIR")],
         "big": True,
         "pos": (192, 216),
     },
@@ -437,9 +437,9 @@ QUESTS = [
         "a propellant tank with an Input Hatch for rocket fuel, lightning masts, and an Energy Hatch and a "
         "Maintenance Hatch on the pad's front edge. Keep the sky open over the pit.%n%nA launch takes 30 seconds at 480 EU/t and 1,000 L of fuel, and puts a satellite into orbit over "
         "the pad's dimension. Build the pad and watch your first satellite go up.",
-        "icon": (GT_MACHINE, 25010),
+        "icon": (MACHINE, 25010),
         "pre": ["satellite_rocket"],
-        "tasks": [("item", GT_MACHINE, 25010, 1), ("becom", "FIRST_SATELLITE")],
+        "tasks": [("item", MACHINE, 25010, 1), ("becom", "FIRST_SATELLITE")],
         "big": False,
         "pos": (384, 192),
     },
@@ -463,11 +463,11 @@ QUESTS = [
         "desc": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every "
         "other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel "
         "Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame "
-        "Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 EU/t.%n%nWrench-link it to an antenna, a Pylon Head or a "
-        "Line Terminal. Keep up its maintenance: each problem costs it 2 dB.",
-        "icon": (GT_MACHINE, 25011),
+        "Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 "
+        "EU/t.%n%nRun cable from its controller to an Exchange. Keep up its maintenance: each problem costs it 2 dB.",
+        "icon": (MACHINE, 25011),
         "pre": ["five_satellites"],
-        "tasks": [("item", GT_MACHINE, 25011, 1)],
+        "tasks": [("item", MACHINE, 25011, 1)],
         "big": False,
         "pos": (480, 168),
     },

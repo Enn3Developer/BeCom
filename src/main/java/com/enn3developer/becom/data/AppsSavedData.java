@@ -145,7 +145,8 @@ public final class AppsSavedData extends WorldSavedData {
                         tag.getBoolean("background"),
                         tag.getLong("day"),
                         tag.getInteger("woke"),
-                        tag.getLong("eu")));
+                        tag.getLong("eu"),
+                        tag.getInteger("denied")));
             }
         }
         NBTTagList entries = nbt.getTagList("store", Constants.NBT.TAG_COMPOUND);
@@ -216,6 +217,7 @@ public final class AppsSavedData extends WorldSavedData {
                 tag.setLong("day", app.day());
                 tag.setInteger("woke", app.woke());
                 tag.setLong("eu", app.euToday());
+                tag.setInteger("denied", app.denied());
                 installed.appendTag(tag);
             }
             phone.setTag("apps", installed);

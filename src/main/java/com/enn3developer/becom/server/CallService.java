@@ -35,6 +35,7 @@ import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.call.CallHistory;
 import com.enn3developer.becom.logic.call.CallQuests;
 import com.enn3developer.becom.logic.net.CallGraph;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
@@ -322,6 +323,8 @@ public final class CallService implements CallBook.Listener {
                                 Stream.of(call.id(), a, b),
                                 entriesOf(a),
                                 entriesOf(b),
+                                call.video() && showsVideo(a) && showsVideo(b) ? tunables.videoRate()
+                                    : tunables.voiceRate(),
                                 tunables.voiceRate()));
                     }
                 }
@@ -332,6 +335,13 @@ public final class CallService implements CallBook.Listener {
             routedTick = ticks / TICKS_PER_SECOND;
         }
         return routing;
+    }
+
+    /** Whether the stream between two phones of a video call got video's rate, rather than falling back to voice's. */
+    public boolean videoRoom(Call call, int a, int b) {
+        CallGraph.Route route = routing().route(Stream.of(call.id(), a, b));
+        if (!route.routed()) route = routing().route(Stream.of(call.id(), b, a));
+        return route.rate() >= tunables.videoRate();
     }
 
     /** The weakest hop on the route a call's stream between two of its phones got; none when nothing had room. */
@@ -369,6 +379,22 @@ public final class CallService implements CallBook.Listener {
             if (!found.contains(number) && graph.width(from, entriesOf(number)) >= low) found.add(number);
         }
         return found.size();
+    }
+
+    /**
+     * How many other working Exchanges a call from the node at {@code (dimension, pos)} could reach now, at Low or
+     * better.
+     */
+    public int exchangesFrom(int dimension, long pos) {
+        CallGraph graph = network.graph();
+        CallGraph.NodeVertex from = new CallGraph.NodeVertex(dimension, pos);
+        double low = levels.threshold(SignalLevel.LOW);
+        int found = 0;
+        for (NodeRef exchange : network.exchanges()) {
+            CallGraph.NodeVertex to = new CallGraph.NodeVertex(exchange.dimension(), exchange.pos());
+            if (!to.equals(from) && graph.width(from, to) >= low) found++;
+        }
+        return found;
     }
 
     /** The ME Phones in service through ME network {@code grid}'s part in {@code dimension}: [in service, in calls]. */
@@ -469,6 +495,7 @@ public final class CallService implements CallBook.Listener {
         Call call = book.callOf(id);
         if (call != null) return add(player, call, from, to);
         CallBook.DialResult result = book.dial(id, from, to, now(), () -> worldCheck(player, from, to));
+        if (result == CallBook.DialResult.RINGING) startsVideo(book.callOf(id), false);
         switch (result) {
             case RINGING -> tone(player, TonePacket.Tone.RINGBACK);
             case BUSY -> tone(player, TonePacket.Tone.BUSY);
@@ -536,6 +563,11 @@ public final class CallService implements CallBook.Listener {
      * it, another phone added to it (group calls).
      */
     public CallBook.DialResult dialCarried(EntityPlayerMP player, int from, int to) {
+        return dialCarried(player, from, to, false);
+    }
+
+    /** {@code player} calls {@code to} from the phone they carry, a video call when {@code video}. */
+    public CallBook.DialResult dialCarried(EntityPlayerMP player, int from, int to, boolean video) {
         if (!carries(player, from) || !carried.working()
             .contains(from)) return CallBook.DialResult.INVALID;
         UUID id = player.getUniqueID();
@@ -544,7 +576,27 @@ public final class CallService implements CallBook.Listener {
         if (call != null) return add(player, call, from, to);
         CallBook.DialResult result = book.dial(id, from, to, now(), () -> worldCheck(player, from, to));
         report(player, result);
+        if (result == CallBook.DialResult.RINGING) startsVideo(book.callOf(id), video);
         return result;
+    }
+
+    /** Whether a phone shows video: a carried phone or a Videophone, not a Telephone or a computer. */
+    private boolean showsVideo(int phone) {
+        PhoneKind kind = videoKindOf(phone);
+        return kind != null && kind.video();
+    }
+
+    /**
+     * A new call is a video call when its caller chose one, or when either end is a Videophone with its camera on.
+     */
+    private void startsVideo(Call call, boolean chosen) {
+        if (call == null) return;
+        boolean video = chosen;
+        for (Call.Leg leg : call.legs()) {
+            PhoneRecord record = phones.record(leg.phone());
+            if (record != null && record.kind() == PhoneKind.VIDEOPHONE && record.camera()) video = true;
+        }
+        call.setVideo(video);
     }
 
     /**
@@ -807,6 +859,7 @@ public final class CallService implements CallBook.Listener {
         if (call != null) return add(player, call, number, to);
         CallBook.DialResult result = book.dial(id, number, to, now(), () -> worldCheck(player, number, to));
         report(player, result);
+        if (result == CallBook.DialResult.RINGING) startsVideo(book.callOfPhone(number), false);
         // Whoever stands around it is in the call from the start, ringing out included.
         if (result == CallBook.DialResult.RINGING) updateRoom(number, now());
         return result;
@@ -877,6 +930,12 @@ public final class CallService implements CallBook.Listener {
             if (inRoom || hasVoice.test(player) && !ownPhoneRinging(player)) room.add(player);
         }
         book.setRoom(number, room, now);
+    }
+
+    /** How many players stand in Videophone {@code number}'s room, for its display's "N HERE". */
+    public int hereAt(int number) {
+        Videophone phone = videophones.get(number);
+        return phone == null ? 0 : playersAround(phone, tunables.videophoneRoom()).size();
     }
 
     private boolean ownPhoneRinging(UUID player) {

@@ -98,8 +98,32 @@ class VideoPlanTest {
     }
 
     private VideoPlan plan(Call call) {
+        call.setVideo(true);
         book.evaluate(call, 1000, quality);
-        return VideoPlan.of(call, kinds::get, player -> cameras.getOrDefault(player, VideoPlan.Cameras.START));
+        return VideoPlan.of(
+            call,
+            kinds::get,
+            player -> cameras.getOrDefault(player, VideoPlan.Cameras.START),
+            (seen, viewing) -> true);
+    }
+
+    @Test
+    void aVoiceCallShowsNoVideo() {
+        Call call = call(alice, MOBILE_A, bob, MOBILE_B);
+        book.evaluate(call, 1000, quality);
+        assertTrue(
+            VideoPlan.of(call, kinds::get, player -> VideoPlan.Cameras.START, (seen, viewing) -> true)
+                .tilesOf(alice)
+                .isEmpty());
+    }
+
+    @Test
+    void aStreamThatFellBackToVoiceFreezesThePicture() {
+        Call call = call(alice, MOBILE_A, bob, MOBILE_B);
+        call.setVideo(true);
+        book.evaluate(call, 1000, quality);
+        VideoPlan plan = VideoPlan.of(call, kinds::get, player -> VideoPlan.Cameras.START, (seen, viewing) -> false);
+        assertFalse(plan.seesLive(alice));
     }
 
     @Test
@@ -243,7 +267,9 @@ class VideoPlanTest {
     @Test
     void aCallStillRingingShowsNothing() {
         assertEquals(CallBook.DialResult.RINGING, book.dial(alice, MOBILE_A, MOBILE_B, 0, CallBook.Check.OK));
-        VideoPlan plan = VideoPlan.of(book.callOf(alice), kinds::get, player -> VideoPlan.Cameras.START);
+        Call ringing = book.callOf(alice);
+        ringing.setVideo(true);
+        VideoPlan plan = VideoPlan.of(ringing, kinds::get, player -> VideoPlan.Cameras.START, (seen, viewing) -> true);
         assertTrue(
             plan.tilesOf(alice)
                 .isEmpty());

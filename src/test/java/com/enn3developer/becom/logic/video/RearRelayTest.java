@@ -94,8 +94,13 @@ class RearRelayTest {
 
     private VideoPlan plan() {
         Call call = book.callOf(alice);
-        return call == null ? VideoPlan.EMPTY
-            : VideoPlan.of(call, kinds::get, player -> cameras.getOrDefault(player, VideoPlan.Cameras.START));
+        if (call == null) return VideoPlan.EMPTY;
+        call.setVideo(true);
+        return VideoPlan.of(
+            call,
+            kinds::get,
+            player -> cameras.getOrDefault(player, VideoPlan.Cameras.START),
+            (seen, viewing) -> true);
     }
 
     @Test

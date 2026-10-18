@@ -12,7 +12,8 @@ item_ids:
 
 Mobile Phones and ME Phones run apps written in Lua. Each phone holds an OpenComputers computer that starts when an app
 opens, or when a background app has work, and stops when nothing needs it. While it runs, apps draw 8 EU/t from the
-phone's battery, shown as **Apps** in the battery screen.
+phone's battery: **Settings › Battery** lists today's drain by use, Standby, Calls, Video and Screen, and each app by
+name, with its share.
 
 ## Getting apps
 
@@ -25,9 +26,11 @@ phone's battery, shown as **Apps** in the battery screen.
   the home screen, with who sent it, from where and what it may do, and installs or cancels it. Only install apps from
   people you trust.
 
-A phone holds 16 apps. **Settings › Apps** lists them, how often each woke and how much battery it used today, how much
-of its storage it uses, lets an app run in the background, and uninstalls it. An app that crashed or couldn't run has
-**Retry**.
+A phone holds 16 apps. **Settings › Apps** lists them. Each app's page there has a **Run in background** switch, how
+often it woke and how much battery it used today, a switch under **It can** for each thing the app declares (Network,
+Notifications, Calls, Camera), how much of its storage it uses, and **Uninstall**. Switching one off denies it to the
+app even though it asked for it. An app that can't reach its computer, out of signal or with the computer off, has
+**Retry**; one that crashed shows the error it stopped at.
 
 ## The BeCom Card
 

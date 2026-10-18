@@ -8,11 +8,11 @@ item_ids:
   - becom:satellite:*
   - becom:satellite_rocket:*
   - becom:rocket_radio_receiver:*
-  - gregtech:gt.blockmachines:25010
-  - gregtech:gt.blockmachines:25011
-  - gregtech:gt.blockmachines:25012
-  - gregtech:gt.blockmachines:25014
-  - gregtech:gt.blockmachines:25015
+  - becom:machine:25010
+  - becom:machine:25011
+  - becom:machine:25012
+  - becom:machine:25014
+  - becom:machine:25015
 quest_ids:
   - "oNm-cIc3Xoy6hejGu6UM7Q"
   - "78j3bHKHWF6_v27ljQ8cYg"
@@ -29,7 +29,7 @@ quest_ids:
 
 Un <ItemLink id="becom:satellite" showIcon="left">Satellite</ItemLink> va in orbita su un
 <ItemLink id="becom:satellite_rocket" showIcon="left">Razzo per satelliti</ItemLink>, da una
-<ItemLink id="gregtech:gt.blockmachines:25010" showIcon="left">Rampa di lancio per satelliti</ItemLink>: un complesso di
+<ItemLink id="becom:machine:25010" showIcon="left">Rampa di lancio per satelliti</ItemLink>: un complesso di
 lancio di Clean Stainless Steel Machine Casing e Stainless Steel Frame Box. Una rampa 7 per 7 intorno a una fossa di
 scarico, con il controller sul bordo anteriore e accanto l'energy hatch e il maintenance hatch; una torre di servizio
 dietro la rampa, con un bus d'ingresso per i razzi alla base e due bracci mobili che sporgono sulla rampa; un serbatoio
@@ -39,8 +39,15 @@ fossa durante il conto alla rovescia e decolla quando finisce. I problemi di man
 blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no.
 
 I satelliti scendono dopo circa 100 giorni di Minecraft, un quinto in più o in meno: circa 33 ore di server acceso.
-Dormire la notte non li fa scendere prima. Continua a lanciarne. Lo schermo della rampa mostra i satelliti di ogni
-dimensione e quando scende il prossimo.
+Dormire la notte non li fa scendere prima. Continua a lanciarne.
+
+Lo schermo della rampa dice **Lancio in corso**, con i secondi e una barra di avanzamento, **In pausa** o **Pronta**,
+poi i razzi in attesa, il carburante in litri e per quanti lanci basta, e i satelliti di ogni dimensione, con le loro
+chiamate e quando scende il prossimo. La sua scheda **Orbita**, accanto a **Lanci**, ha una tabella dei cieli:
+**Sopra**, **Su**, **Livello**, **Chiamate** e **Chi lo usa**: parabole, collegamenti dai ricevitori di altri pianeti e
+telefoni a cielo aperto. Sotto c'è una previsione del cielo della rampa per i prossimi 60 giorni, se non sale altro,
+con il numero sotto cui il suo livello scende, e un avviso in rosso quando succederà: "Scende a Basso tra 29 giorni,
+quando ne cadono 3 insieme: il cielo porta allora 26 chiamate, non 36."
 
 ## Salti ai satelliti
 
@@ -65,17 +72,21 @@ satelliti portano 36 chiamate insieme, e la chiamata successiva trova occupato f
 
 ## Parabola satellitare
 
-Una <ItemLink id="gregtech:gt.blockmachines:25011" showIcon="left">Parabola satellitare</ItemLink> collega la sua rete a
+Una <ItemLink id="becom:machine:25011" showIcon="left">Parabola satellitare</ItemLink> collega la sua rete a
 ogni altra parabola della sua dimensione, attraverso i satelliti, e nell'Overworld a ogni pianeta con un Ricevitore
 radio per razzi. È una stazione di terra a 512 EU/t: una parabola di Clean Stainless Steel Machine Casing rivolta dritta in
 alto, larga 7 al bordo, con un illuminatore tenuto sopra di lei da quattro sostegni di Stainless Steel Frame Box, su un
 piedistallo. Il controller sta in un basamento ai suoi piedi, con accanto l'energy hatch e il maintenance hatch. Vuole
-cielo aperto sopra tutta la parabola. Collegala con la chiave a un'antenna,
-una Testa di traliccio o un Terminale di linea. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
+cielo aperto sopra tutta la parabola. Porta un cavo dal suo controller a una Centrale: è la sua dorsale, e il
+livello del cavo ne decide la velocità. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 
 Una parabola porta al massimo 32 chiamate, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
 porta 4 KB/s, posto per 2 chiamate, al Medio 16 KB/s, all'Alto 64 e al Massimo 256, a 2 KB/s per chiamata.
+
+Il suo schermo mostra il suo salto in dB, con le tacche di segnale e il suo livello, e quante delle sue 32 chiamate sono
+in uso. Poi vengono i satelliti sopra di lei e quante chiamate del cielo sono in uso, **Cielo** libero in verde o
+coperto in rosso, **Manutenzione** con i problemi e i dB che costano, e la sua dorsale (**Backhaul**).
 
 ## Ricevitore radio per razzi
 
@@ -94,19 +105,19 @@ un'antenna a portata del razzo.
 
 ## Ripetitore di portale
 
-Un <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Ripetitore di portale</ItemLink> funziona entro 4
+Un <ItemLink id="becom:machine:25012" showIcon="left">Ripetitore di portale</ItemLink> funziona entro 4
 blocchi da un portale del Nether, un portale dell'End, un portale del Twilight Forest o un portale di Personal Space,
-Collegalo con la chiave a un'antenna, una Testa di traliccio, un Terminale di linea o una Centrale della tua rete. Poi
-usa la chiave su di lui, attraversa il portale e usala su un ripetitore dall'altra parte entro 5 minuti: la coppia
-unisce le due reti al livello Alto.
+Collegalo con il cavo a una Centrale della tua rete. Poi attraversa il portale e metti un ripetitore dall'altra parte,
+collegato a una Centrale di là: i due si accoppiano da soli, e la coppia unisce le due reti al livello Alto. Il suo
+schermo dice **Non accoppiato** finché non succede.
 
 Ne esistono tre livelli, e una coppia lavora al livello del ripetitore più basso:
 
 | Ripetitore | Corrente | Chiamate | Velocità |
 | --- | --- | --- | --- |
-| <ItemLink id="gregtech:gt.blockmachines:25012" showIcon="left">Ripetitore di portale</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
-| <ItemLink id="gregtech:gt.blockmachines:25014" showIcon="left">Ripetitore di portale (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
-| <ItemLink id="gregtech:gt.blockmachines:25015" showIcon="left">Ripetitore di portale (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
+| <ItemLink id="becom:machine:25012" showIcon="left">Ripetitore di portale</ItemLink> | 32 EU/t, MV | 16 | 64 KB/s |
+| <ItemLink id="becom:machine:25014" showIcon="left">Ripetitore di portale (HV)</ItemLink> | 128 EU/t, HV | 48 | 256 KB/s |
+| <ItemLink id="becom:machine:25015" showIcon="left">Ripetitore di portale (EV)</ItemLink> | 512 EU/t, EV | 128 | 1024 KB/s |
 
 I due ripetitori devono stare ai due lati dello stesso portale. Attraverso il Nether, quello lontano sta dove porta il
 portale, a un ottavo della distanza dal centro del mondo; attraverso il Twilight Forest, vicino allo stesso punto. Un

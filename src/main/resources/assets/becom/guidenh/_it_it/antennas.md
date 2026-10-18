@@ -3,11 +3,11 @@ navigation:
   title: Antenne
   parent: index.md
   position: 75
-  icon: gregtech:gt.blockmachines:25004
+  icon: becom:machine:25004
 item_ids:
-  - gregtech:gt.blockmachines:25004
-  - gregtech:gt.blockmachines:25005
-  - gregtech:gt.blockmachines:25006
+  - becom:machine:25004
+  - becom:machine:25005
+  - becom:machine:25006
 quest_ids:
   - "UYdKN4lyUKWOiqsyX6luCQ"
   - "BRsUHvwqVhSei0mx4y1eWg"
@@ -29,9 +29,9 @@ copre molto più della stessa antenna in una valle. L'anteprima di NEI le mostra
 
 | Antenna | Testa | Struttura | Casing | Albero | Corrente | Portata in campo aperto |
 | --- | --- | --- | --- | --- | --- | --- |
-| T1 (fine LV) | <ItemImage id="gregtech:gt.blockmachines:25004">Testa d'antenna T1</ItemImage> | Albero strallato, un dipolo | LV Machine Casing | 6-32 Steel Frame Box | 32 EU/t | circa 64 blocchi |
-| T2 (metà MV) | <ItemImage id="gregtech:gt.blockmachines:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
-| T3 (metà HV) | <ItemImage id="gregtech:gt.blockmachines:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
+| T1 (fine LV) | <ItemImage id="becom:machine:25004">Testa d'antenna T1</ItemImage> | Albero strallato, un dipolo | LV Machine Casing | 6-32 Steel Frame Box | 32 EU/t | circa 64 blocchi |
+| T2 (metà MV) | <ItemImage id="becom:machine:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 128 EU/t | circa 128 blocchi |
+| T3 (metà HV) | <ItemImage id="becom:machine:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 512 EU/t | circa 256 blocchi |
 
 Un'antenna funziona solo se caricata e alimentata.
 
@@ -41,10 +41,9 @@ Un'antenna funziona solo se caricata e alimentata.
   banda telefonica.
 - **Si collega alle altre antenne** dove il loro segnale arriva almeno al livello Basso, separatamente per ogni banda: i
   canali radio viaggiano tra le antenne sulla banda radio, le chiamate sulla banda telefonica.
-- **Aggancia le linee:** usa la chiave su di lei, poi su una Testa di traliccio o un Terminale di linea entro 16
-  blocchi, e le chiamate di quella linea passano via etere, a ogni telefono che le antenne raggiungono. Un'antenna ha 15
-  collegamenti, condivisi tra i suoi agganci e ogni Parabola satellitare, Ripetitore di portale o Ponte ME collegati a
-  lei.
+- **Aggancia le linee:** usa la chiave su di lei, poi su una Testa di traliccio, un Terminale di linea o una
+  Centrale entro 16 blocchi, e le chiamate di quella linea passano via etere, a ogni telefono che le antenne
+  raggiungono. Un'antenna ha 15 collegamenti per i suoi agganci.
 
 ## Il suo schermo
 

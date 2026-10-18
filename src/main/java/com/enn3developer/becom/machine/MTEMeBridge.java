@@ -21,6 +21,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -46,7 +47,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 /**
  * The ME Bridge: joins an ME network to a BeCom network, so ME Phones on it can call any phone.
  * It connects to ME cable on any side the way GT's ME hatches do, with an AE2 grid proxy of its own that takes one
- * channel, and is wrench-linked to a Pylon Head, a Line Terminal or an antenna within 16 blocks. Late EV, 512
+ * channel, and joins BeCom by cable to an Exchange. Late EV, 512
  * EU/t; works only while loaded, powered and online in its ME network.
  */
 @IMetaTileEntity.SkipGenerateName
@@ -63,6 +64,8 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     private AENetworkProxy proxy;
     private boolean working;
+    // Whether it had the power to work at its last tick, switched on.
+    private boolean powered;
     private boolean registered;
 
     public MTEMeBridge(int id, String name, String regionalName) {
@@ -76,6 +79,12 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTEMeBridge(mName, mTier, mDescriptionArray, mTextures);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     @Override
@@ -163,8 +172,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         }
         long power = BeComConfig.get()
             .meBridgePower();
-        boolean powered = tile.isAllowedToWork() && tile.getStoredEU() >= power
-            && tile.decreaseStoredEnergyUnits(power, false);
+        powered = tile.isAllowedToWork() && tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
         working = powered && meOnline();
         if (working) {
             becom.network.heartbeat(world, pos);
@@ -191,19 +199,6 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         super.onBlockDestroyed();
     }
 
-    @Override
-    public boolean onWrenchRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer player, float x,
-        float y, float z, ItemStack tool) {
-        if (player.isSneaking()) return super.onWrenchRightClick(side, wrenchingSide, player, x, y, z, tool);
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || !tile.isServerSide() || tooNew != null) return false;
-        long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-        becom.network.ensureNode(tile.getWorld(), pos, NodeKind.ME_BRIDGE, tile.getOwnerUuid());
-        becom.links.wrench(player, tile.getWorld(), pos);
-        return true;
-    }
-
     // region Screen
 
     @Override
@@ -219,7 +214,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
 
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
-        return InfoScreen.build("becom_me_bridge", getLocalName(), this::info, sync);
+        return InfoScreen.build("becom_me_bridge", getLocalName(), null, this::info, sync);
     }
 
     // endregion
@@ -307,9 +302,11 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public String[] getDescription() {
         Tunables t = BeComConfig.get();
-        return new String[] { StatCollector.translateToLocal("becom.machine.me_bridge.info"),
-            StatCollector.translateToLocalFormatted("becom.machine.me_bridge.link", (int) t.wrenchLinkDistance()),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.meBridgePower(), "EV") };
+        return Tips.wrap(
+            Tips.MACHINE,
+            StatCollector.translateToLocal("becom.machine.me_bridge.info"),
+            StatCollector.translateToLocal("becom.machine.me_bridge.link"),
+            Tips.power(t.meBridgePower(), "EV"));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -333,14 +330,24 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /** What it says about itself: on WAILA and the scanner, and laid out as the Gateways board on its screen. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
         if (tooNew != null) info.problem("becom.info.too_new");
-        if (working) info.add("becom.info.online");
-        else info.problem("becom.info.offline");
-        if (meOnline()) info.add("becom.info.me_online");
-        else info.problem("becom.bridge.no_channel");
         IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (!powered) InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), false);
+        else if (working) info.add("becom.info.online")
+            .status();
+        else info.problem("becom.bridge.status_no_channel")
+            .status();
+        info.add(
+            "becom.info.eu_t",
+            working ? BeComConfig.get()
+                .meBridgePower() : 0)
+            .right();
+        if (meOnline()) info.add("becom.bridge.channel_held")
+            .row("becom.info.row.me_network");
+        else info.problem("becom.bridge.no_channel");
         BeComServer server = BeComServer.get();
         if (server != null && tile != null && meOnline()) {
             int[] phones = server.calls.mePhones(
@@ -348,24 +355,31 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
                     getProxy().getNode()
                         .getGrid()),
                 tile.getWorld().provider.dimensionId);
-            info.add("becom.bridge.phones", phones[0], phones[1]);
+            info.add("becom.bridge.linked", phones[0])
+                .row("becom.info.row.me_phones");
+            info.add("becom.bridge.in_calls", phones[1])
+                .sub();
         }
-        info.add(
-            "becom.bridge.power",
-            working ? BeComConfig.get()
-                .meBridgePower() : 0);
-        InfoLines.calls(
+        int slots = BeComConfig.get()
+            .meBridgeCalls();
+        if (InfoLines.calls(info, tile, slots)) {
+            // "Full: the 9th ME Phone call hears busy", as on the Gateways board.
+            int next = slots + 1;
+            String suffix = next % 100 / 10 == 1 ? "th" : switch (next % 10) {
+                case 1 -> "st";
+                case 2 -> "nd";
+                case 3 -> "rd";
+                default -> "th";
+            };
+            info.warn("becom.bridge.calls_full_" + suffix, next);
+        }
+        if (server != null && tile != null) InfoLines.backhaul(
             info,
-            tile,
-            BeComConfig.get()
-                .meBridgeCalls());
-        BeComServer becom = BeComServer.get();
-        if (becom != null && tile != null) InfoLines.backhaul(
-            info,
-            becom,
+            server,
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()),
-            "becom.info.backhaul");
+            "becom.info.row.backhaul",
+            InfoLines.Backhaul.RATE_AND_EXCHANGE);
         return info;
     }
 

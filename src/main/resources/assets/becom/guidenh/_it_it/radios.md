@@ -6,7 +6,7 @@ navigation:
   icon: becom:walkie_talkie
 item_ids:
   - becom:walkie_talkie:*
-  - gregtech:gt.blockmachines:25007
+  - becom:machine:25007
 quest_ids:
   - "VdecT0iBUsCxBEbIo6xNeA"
   - "82uwmy_wU3eMPoGqyurVlw"
@@ -24,7 +24,8 @@ parlare.
 Il <ItemLink id="becom:walkie_talkie" showIcon="left">Walkie-talkie</ItemLink> va con la sua batteria MV: si carica in
 un charger o in un battery buffer GT di livello MV o superiore. Funziona dall'inventario o da uno slot bauble. Clic
 destro per scegliere un canale o spegnerlo, oppure accovacciati e usa la rotellina tenendolo in mano per cambiare
-canale.
+canale: per un attimo, una striscia sopra la barra degli strumenti mostra i canali ai due lati, "3 ◂ 4 ▸ 5". Mentre
+parli con lui, una spia TX rossa e il suo canale compaiono sopra la barra degli strumenti.
 
 Da solo arriva a circa 80 blocchi in campo aperto, e molto più lontano attraverso le antenne. Chiunque sia entro 6
 blocchi da un walkie che riceve lo sente anche lui. Consuma un po' in attesa e di più mentre riceve o trasmette. Uno
@@ -32,7 +33,7 @@ scarico si spegne, e resta spento anche dopo la ricarica finché non lo riaccend
 
 ## Ricetrasmettitore
 
-Il <ItemLink id="gregtech:gt.blockmachines:25007" showIcon="left">Ricetrasmettitore</ItemLink> è una radio su un blocco,
+Il <ItemLink id="becom:machine:25007" showIcon="left">Ricetrasmettitore</ItemLink> è una radio su un blocco,
 a MV e 32 EU/t. Stagli entro 2 blocchi e tieni premuto il tasto per parlare per trasmettere con lui invece che con il
 tuo walkie. Il suo altoparlante riproduce il suo canale a chiunque sia entro 16 blocchi. Da solo arriva a circa 125
 blocchi in campo aperto.

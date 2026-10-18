@@ -10,10 +10,11 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
 
 /**
- * Follows cable out from a Line Terminal: a breadth-first walk over the cable touching it,
+ * Follows cable out from a Line Terminal or an Exchange: a breadth-first walk over the cable touching it,
  * collecting the devices within {@code maxLength} blocks of cable, each with the length of its shortest run and the
- * poorest cable on it. A run of more than {@code maxCables} blocks in all serves nothing, so a solid blob of cable
- * can't make every scan read thousands of blocks, and what a terminal finds never depends on walk order.
+ * poorest cable on it. The walk stops after {@code maxCables} blocks of cable in all, so a solid blob of cable can't
+ * make every scan read thousands of blocks; it then keeps the devices nearer than where it stopped, which never
+ * depend on walk order.
  */
 public final class CableWalk {
 
@@ -41,8 +42,8 @@ public final class CableWalk {
     public record Found(long pos, int length, CableTier cable) {}
 
     /**
-     * The devices found, nearest first, or {@code overflow} when the cable ran past the limit. A device touching the
-     * terminal itself has length 0 and the best cable.
+     * The devices found, nearest first; {@code overflow} when the cable ran past the limit, and only the nearer ones
+     * are kept. A device touching the terminal itself has length 0 and the best cable.
      */
     public record Result(List<Found> devices, int cables, boolean overflow) {
 
@@ -79,7 +80,7 @@ public final class CableWalk {
                     case PHONE -> phones.add(new Found(next, (int) length, tiers[poorest]));
                     case CABLE -> {
                         if (length >= maxLength) continue;
-                        if (++cables > maxCables) return new Result(List.of(), cables, true);
+                        if (++cables > maxCables) return new Result(nearerThan(phones, length), cables, true);
                         int tier = Math.min(
                             poorest,
                             probe.tier(nx, ny, nz)
@@ -91,6 +92,13 @@ public final class CableWalk {
             }
         }
         return new Result(phones, cables, false);
+    }
+
+    /** The devices found with a run shorter than {@code length}: every one of those the walk has found. */
+    private static List<Found> nearerThan(List<Found> found, long length) {
+        List<Found> nearer = new ArrayList<>();
+        for (Found device : found) if (device.length() < length) nearer.add(device);
+        return nearer;
     }
 
     private static final int[] DX = { 0, 0, 0, 0, -1, 1 };

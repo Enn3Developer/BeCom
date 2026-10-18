@@ -2,17 +2,20 @@ package com.enn3developer.becom.machine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.Constants;
 
+import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
-import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
+import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.server.BeComServer;
+import com.enn3developer.becom.server.NetworkService;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
@@ -31,15 +34,80 @@ public final class InfoLines {
         }
     }
 
-    private record Line(String key, boolean detail, boolean problem, List<Arg> args) {
+    /**
+     * How a screen lays a line out, from the machine boards: a plain line; the status on top ({@code STATUS}) and what
+     * goes on its right ({@code RIGHT}); a row with {@code label} on its left; a bar filled to {@code fraction}; grey
+     * words added to the row before ({@code SUB}); or a warning, orange where a problem is red. Readers without a
+     * layout
+     * (WAILA, the scanner) show the line's text alone.
+     */
+    public record Shape(char kind, String label, double fraction) {
 
+        public static final char PLAIN = 'p';
+        public static final char STATUS = 's';
+        public static final char RIGHT = 'r';
+        public static final char BAR = 'b';
+        public static final char SUB = 'u';
+        public static final char WARN = 'w';
+        public static final char LEVEL = 'l';
+        public static final char SECTION = 'h';
+        public static final char VALUE = 'v';
+        public static final char GOOD = 'g';
+
+        static final Shape NONE = new Shape(PLAIN, "", 0);
+    }
+
+    private record Line(String key, boolean detail, boolean problem, List<Arg> args, Shape shape) {
+
+        Line(String key, boolean detail, boolean problem, List<Arg> args) {
+            this(key, detail, problem, args, Shape.NONE);
+        }
+
+        Line shaped(Shape shape) {
+            return new Line(key, detail, problem, args, shape);
+        }
+
+        /**
+         * The line as a reader without a layout shows it, as on the Scanner board: the state with a coloured square,
+         * then a grey label before each row's value, white, or green, red or a level's colour; grey words after.
+         */
         String translate() {
-            String colour = problem ? "§c" : "";
-            if (args.isEmpty()) return colour + StatCollector.translateToLocal(key);
+            String text = text();
+            char kind = shape.kind();
+            if (kind == Shape.STATUS) {
+                String colour = problem ? "\u00a7c"
+                    : shape.fraction() < 0 ? "\u00a76"
+                        : shape.fraction() >= 1 ? levelCode(shape.fraction() - 1) : "\u00a7a";
+                return colour + "\u25a0 " + text;
+            }
+            if (kind == Shape.SUB || kind == Shape.RIGHT || kind == Shape.SECTION) return "\u00a77" + text;
+            if (kind == Shape.WARN) return "\u00a76" + text;
+            String label = shape.label()
+                .isEmpty() ? "" : StatCollector.translateToLocal(shape.label());
+            if (label.isEmpty()) return problem ? "\u00a7c" + text : text;
+            String value = problem ? "\u00a7c"
+                : kind == Shape.GOOD ? "\u00a7a"
+                    : kind == Shape.VALUE || kind == Shape.LEVEL ? levelCode(shape.fraction()) : "\u00a7f";
+            return "\u00a77" + label + " " + value + text;
+        }
+
+        /** A level's colour as a formatting code: orange below Low, as on the screens. */
+        private static String levelCode(double ordinal) {
+            return switch ((int) Math.round(ordinal)) {
+                case 1 -> "\u00a76";
+                case 2 -> "\u00a7e";
+                case 3 -> "\u00a7a";
+                case 4 -> "\u00a7b";
+                default -> "\u00a76";
+            };
+        }
+
+        String text() {
+            if (args.isEmpty()) return StatCollector.translateToLocal(key);
             Object[] values = new Object[args.size()];
             for (int i = 0; i < values.length; i++) values[i] = args.get(i)
                 .resolve();
-            return colour + StatCollector.translateToLocalFormatted(key, values);
+            return StatCollector.translateToLocalFormatted(key, values);
         }
     }
 
@@ -69,6 +137,37 @@ public final class InfoLines {
         }
     }
 
+    /** One of eight compass points from a step east and south, as a lang key's last part: north is -z. */
+    public static String direction(int dx, int dz) {
+        if (dx == 0 && dz == 0) return "here";
+        String[] names = { "east", "south_east", "south", "south_west", "west", "north_west", "north", "north_east" };
+        int i = (int) Math.round(Math.atan2(dz, dx) / (Math.PI / 4));
+        return names[(i + 8) % 8];
+    }
+
+    /** A cable's short name, "Fibre", for the reader to translate. */
+    public static Key shortName(CableTier tier) {
+        return new Key(
+            "becom.ui.cable." + tier.name()
+                .toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Adds a bundle's line, "2\u00d7 Fibre, " then {@code key}'s text with {@code args}: the best cable strung and how
+     * many of it, or "no cable".
+     */
+    public InfoLines bundle(List<CableTier> cables, String key, Object... args) {
+        CableTier best = null;
+        for (CableTier cable : cables) if (best == null || cable.compareTo(best) > 0) best = cable;
+        int count = 0;
+        for (CableTier cable : cables) if (cable == best) count++;
+        Object[] all = new Object[args.length + 2];
+        all[0] = count;
+        all[1] = best == null ? new Key("becom.info.no_cable") : shortName(best);
+        System.arraycopy(args, 0, all, 2, args.length);
+        return add(count > 1 ? key + "_many" : key, all);
+    }
+
     /** A cable tier's name, for the reader to translate. */
     public static Key cableName(CableTier tier) {
         return new Key("tile.becom." + com.enn3developer.becom.block.BlockPhoneCable.nameOf(tier) + ".name");
@@ -92,11 +191,111 @@ public final class InfoLines {
         return this;
     }
 
+    /**
+     * A warning: shown like a problem, above the other lines, but orange: the machine works, not as well as it could.
+     */
+    public InfoLines warn(String key, Object... args) {
+        lines.add(new Line(key, false, true, args(args), new Shape(Shape.WARN, "", 0)));
+        return this;
+    }
+
+    private InfoLines shape(char kind, String label, double fraction) {
+        if (lines.isEmpty()) return this;
+        int last = lines.size() - 1;
+        lines.set(
+            last,
+            lines.get(last)
+                .shaped(new Shape(kind, label, fraction)));
+        return this;
+    }
+
+    /** The last line is the screen's status, on top. */
+    public InfoLines status() {
+        return shape(Shape.STATUS, "", 0);
+    }
+
+    /** The last line is the status, orange: something's happening, such as a phone ringing. */
+    public InfoLines statusBusy() {
+        return shape(Shape.STATUS, "", -1);
+    }
+
+    /**
+     * The state line: Online, or why it isn't, as the Scanner board splits it: not formed, switched off, or without
+     * the power it needs.
+     */
+    public static void state(InfoLines info, boolean formed, boolean switchedOn, boolean working) {
+        if (!formed) info.problem("becom.info.state_unformed")
+            .status();
+        else if (!switchedOn) info.problem("becom.info.state_off")
+            .status();
+        else if (!working) info.problem("becom.info.state_no_power")
+            .status();
+        else info.add("becom.info.online")
+            .status();
+    }
+
+    /** The last line goes on the right of the status, such as the power it draws. */
+    public InfoLines right() {
+        return shape(Shape.RIGHT, "", 0);
+    }
+
+    /** The last line is a row of the screen, with {@code labelKey} on its left. */
+    public InfoLines row(String labelKey) {
+        return shape(Shape.PLAIN, labelKey, 0);
+    }
+
+    /** The last line is the status, after signal bars at {@code level}, in the level's colour. */
+    public InfoLines status(com.enn3developer.becom.logic.SignalLevel level) {
+        return shape(Shape.STATUS, "", level.ordinal() + 1);
+    }
+
+    /** The last line heads a section of rows, under a rule. */
+    public InfoLines section() {
+        return shape(Shape.SECTION, "", 0);
+    }
+
+    /** The last line is a row whose text is in {@code level}'s colour, orange below Low. */
+    public InfoLines value(String labelKey, com.enn3developer.becom.logic.SignalLevel level) {
+        return shape(Shape.VALUE, labelKey, level.ordinal());
+    }
+
+    /** The last line is a row whose text is green: all is well. */
+    public InfoLines good(String labelKey) {
+        return shape(Shape.GOOD, labelKey, 0);
+    }
+
+    /** The last line is a row of signal bars at {@code level}, its text in the level's colour. */
+    public InfoLines level(String labelKey, com.enn3developer.becom.logic.SignalLevel level) {
+        return shape(Shape.LEVEL, labelKey, level.ordinal());
+    }
+
+    /** The last line is a row with a bar filled to {@code fraction}, its text on the bar's right. */
+    public InfoLines bar(String labelKey, double fraction) {
+        return shape(Shape.BAR, labelKey, fraction);
+    }
+
+    /** The last line adds grey words to the row before it. */
+    public InfoLines sub() {
+        return shape(Shape.SUB, "", 0);
+    }
+
+    /** One line as a screen lays it out, in this side's language. */
+    public record Row(char kind, String label, String text, double fraction, boolean problem) {}
+
     /** The lines, problems first, otherwise in the order they were added. */
+    // The state goes first, then what's wrong, so a screen that cuts lines short keeps them; a problem that's a row of
+    // a screen's layout stays in its place there.
     private List<Line> ordered() {
         List<Line> ordered = new ArrayList<>(lines.size());
-        for (Line line : lines) if (line.problem()) ordered.add(line);
-        for (Line line : lines) if (!line.problem()) ordered.add(line);
+        for (Line line : lines) if (line.shape()
+            .kind() == Shape.STATUS) ordered.add(line);
+        for (Line line : lines) if (line.problem() && line.shape()
+            .equals(Shape.NONE)) ordered.add(line);
+        for (Line line : lines) if (line.shape()
+            .kind() != Shape.STATUS
+            && (!line.problem() || !line.shape()
+                .equals(Shape.NONE)))
+            ordered.add(line);
         return ordered;
     }
 
@@ -108,16 +307,26 @@ public final class InfoLines {
         return list;
     }
 
-    // How encode() joins a line's key and arguments, and marks an argument the reader translates too, and a problem.
+    // How encode() joins a line's key and arguments, and marks an argument the reader translates too, a problem, and
+    // a line's shape: SHAPE, its kind, its label key, SHAPE, its fraction, SHAPE, then the key.
     private static final char FIELD = '\u0001';
     private static final char TRANSLATED = '\u0002';
     private static final char PROBLEM = '\u0003';
+    private static final char SHAPE = '\u0004';
 
     /** Every line, detail ones too, untranslated, for a screen that sends them to its viewer's client. */
     public List<String> encode() {
         List<String> encoded = new ArrayList<>(lines.size());
         for (Line line : ordered()) {
-            StringBuilder text = new StringBuilder(line.problem() ? String.valueOf(PROBLEM) : "").append(line.key());
+            StringBuilder text = new StringBuilder(line.problem() ? String.valueOf(PROBLEM) : "");
+            Shape shape = line.shape();
+            if (!shape.equals(Shape.NONE)) text.append(SHAPE)
+                .append(shape.kind())
+                .append(shape.label())
+                .append(SHAPE)
+                .append(shape.fraction())
+                .append(SHAPE);
+            text.append(line.key());
             for (Arg arg : line.args()) text.append(FIELD)
                 .append(arg.key() ? String.valueOf(TRANSLATED) : "")
                 .append(arg.text());
@@ -129,19 +338,52 @@ public final class InfoLines {
     /** Lines {@link #encode} made, joined by newlines, in this side's language. */
     public static List<String> decode(String joined) {
         List<String> text = new ArrayList<>();
-        if (joined == null || joined.isEmpty()) return text;
+        for (Line line : lines(joined)) text.add(line.translate());
+        return text;
+    }
+
+    /** Lines {@link #encode} made, joined by newlines, as a screen lays them out, in this side's language. */
+    public static List<Row> rows(String joined) {
+        List<Row> rows = new ArrayList<>();
+        for (Line line : lines(joined)) {
+            Shape shape = line.shape();
+            String label = shape.label()
+                .isEmpty() ? "" : StatCollector.translateToLocal(shape.label());
+            rows.add(new Row(shape.kind(), label, line.text(), shape.fraction(), line.problem()));
+        }
+        return rows;
+    }
+
+    private static List<Line> lines(String joined) {
+        List<Line> lines = new ArrayList<>();
+        if (joined == null || joined.isEmpty()) return lines;
         for (String encoded : joined.split("\n")) {
             boolean problem = !encoded.isEmpty() && encoded.charAt(0) == PROBLEM;
             if (problem) encoded = encoded.substring(1);
+            Shape shape = Shape.NONE;
+            if (!encoded.isEmpty() && encoded.charAt(0) == SHAPE) {
+                String[] parts = encoded.substring(1)
+                    .split(String.valueOf(SHAPE), 3);
+                if (parts.length == 3 && !parts[0].isEmpty()) {
+                    double fraction;
+                    try {
+                        fraction = Double.parseDouble(parts[1]);
+                    } catch (NumberFormatException e) {
+                        fraction = 0;
+                    }
+                    shape = new Shape(parts[0].charAt(0), parts[0].substring(1), fraction);
+                    encoded = parts[2];
+                }
+            }
             String[] fields = encoded.split(String.valueOf(FIELD), -1);
             List<Arg> args = new ArrayList<>();
             for (int i = 1; i < fields.length; i++) {
                 boolean key = !fields[i].isEmpty() && fields[i].charAt(0) == TRANSLATED;
                 args.add(new Arg(key ? fields[i].substring(1) : fields[i], key));
             }
-            text.add(new Line(fields[0], false, problem, args).translate());
+            lines.add(new Line(fields[0], false, problem, args, shape));
         }
-        return text;
+        return lines;
     }
 
     /** Every line, in this side's language: the server's, for GT's scanner. */
@@ -163,6 +405,22 @@ public final class InfoLines {
             NBTTagCompound entry = new NBTTagCompound();
             entry.setString("k", line.key());
             if (line.problem()) entry.setBoolean("p", true);
+            if (!line.shape()
+                .equals(Shape.NONE)) {
+                entry.setString(
+                    "s",
+                    String.valueOf(
+                        line.shape()
+                            .kind()));
+                entry.setString(
+                    "l",
+                    line.shape()
+                        .label());
+                entry.setDouble(
+                    "f",
+                    line.shape()
+                        .fraction());
+            }
             NBTTagList args = new NBTTagList();
             for (Arg arg : line.args()) {
                 NBTTagCompound value = new NBTTagCompound();
@@ -188,63 +446,86 @@ public final class InfoLines {
                 values.add(
                     value.hasKey("k") ? new Arg(value.getString("k"), true) : new Arg(value.getString("s"), false));
             }
-            tip.add(new Line(entry.getString("k"), false, entry.getBoolean("p"), values).translate());
+            String kind = entry.getString("s");
+            Shape shape = kind.isEmpty() ? Shape.NONE
+                : new Shape(kind.charAt(0), entry.getString("l"), entry.getDouble("f"));
+            tip.add(new Line(entry.getString("k"), false, entry.getBoolean("p"), values, shape).translate());
         }
+    }
+
+    /** How a gateway's board writes its backhaul. */
+    public enum Backhaul {
+        /** "Coaxial, 4 of 64 KB/s", then "to the Exchange at 100, 70, 200" under it: the ME Bridge. */
+        RATE_AND_EXCHANGE,
+        /** "Fibre, 10 of 256 KB/s": the Portal Relay, for its own side and for the far side. */
+        RATE,
+        /** "Fibre to the Exchange": the Satellite Dish. */
+        CABLE
     }
 
     /**
-     * Its backhaul: each run of wire from the node at {@code pos} to the next working node, its span's
-     * best cable, and how much of its KB/s calls take; a problem when it has none.
+     * A gateway's backhaul: the cable from the node at {@code pos} to the Exchange it reaches, as a row labelled
+     * {@code label} written as {@code style} says; a problem when it has none.
      */
-    public static void backhaul(InfoLines info, BeComServer becom, int dimension, long pos, String key) {
-        NetworkModel model = becom.network.model(dimension);
-        NetNode node = model == null ? null : model.node(pos);
-        List<com.enn3developer.becom.server.NetworkService.Run> runs = becom.network.runsFrom(dimension, pos);
-        if (node == null || node.links()
-            .isEmpty()) {
-            info.problem("becom.info.no_backhaul");
+    public static void backhaul(InfoLines info, BeComServer becom, int dimension, long pos, String label,
+        Backhaul style) {
+        NodeRef gateway = new NodeRef(dimension, pos);
+        NetworkService.Backhaul backhaul = becom.network.backhaulOf(gateway);
+        if (backhaul == null) {
+            NetworkService.Backhaul cable = becom.network.cableOf(gateway);
+            if (cable == null) info.problem("becom.info.no_backhaul");
+            else info.problem(
+                "becom.info.backhaul_too_long",
+                cable.device()
+                    .length(),
+                cableName(
+                    cable.device()
+                        .cable()),
+                BeComConfig.get()
+                    .cableReach(
+                        cable.device()
+                            .cable()));
             return;
         }
-        // Runs start only at working nodes: an offline machine says so itself, and its wire may be fine.
-        if (!becom.network.working(dimension, pos)) return;
-        if (runs.isEmpty()) {
-            info.problem("becom.info.backhaul_dead");
+        NodeRef exchange = backhaul.exchange();
+        if (!becom.network.working(exchange.dimension(), exchange.pos())) {
+            info.problem("becom.info.backhaul_dead", BlockPos.toString(exchange.pos()));
             return;
         }
-        long first = node.links()
-            .iterator()
-            .next();
-        CableTier best = null;
-        for (CableTier cable : model.cables(pos, first))
-            if (best == null || cable.ordinal() > best.ordinal()) best = cable;
-        for (com.enn3developer.becom.server.NetworkService.Run run : runs) {
-            NetNode far = model.node(run.to());
-            if (run.rate() <= 0) {
-                info.problem("becom.info.backhaul_too_long", BlockPos.toString(run.to()));
-                continue;
-            }
-            info.add(
-                key,
-                best == null ? "-" : cableName(best),
-                becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link()),
-                run.rate(),
-                new Key(
-                    "becom.node." + (far == null ? "pylon"
-                        : far.kind()
-                            .name()
-                            .toLowerCase(java.util.Locale.ROOT))),
-                BlockPos.toString(run.to()));
+        Object link = becom.network.gatewayLink(gateway);
+        CableTier cable = backhaul.device()
+            .cable();
+        Key name = new Key(
+            "becom.ui.cable." + cable.name()
+                .toLowerCase(Locale.ROOT));
+        if (style == Backhaul.CABLE) {
+            info.add("becom.info.backhaul_cable", name)
+                .row(label);
+            return;
         }
+        info.add(
+            "becom.info.backhaul_value",
+            name,
+            becom.calls.usedOn(link) + becom.apps.dataOn(link),
+            BeComConfig.get()
+                .cableRate(cable))
+            .row(label);
+        if (style == Backhaul.RATE_AND_EXCHANGE) info.add("becom.info.to_exchange", BlockPos.toString(exchange.pos()))
+            .sub();
     }
 
-    /** How many calls go through the machine on {@code tile} now, out of the {@code slots} it carries at once. */
-    public static void calls(InfoLines info, IGregTechTileEntity tile, int slots) {
+    /**
+     * How many calls go through the machine on {@code tile} now, out of the {@code slots} it carries at once; whether
+     * they're all taken, for the caller to say so in its board's words.
+     */
+    public static boolean calls(InfoLines info, IGregTechTileEntity tile, int slots) {
         BeComServer becom = BeComServer.get();
-        if (becom == null || tile == null) return;
+        if (becom == null || tile == null) return false;
         int calls = becom.calls.callsAt(
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
-        info.add("becom.info.calls", calls, slots);
-        if (slots > 0 && calls >= slots) info.problem("becom.info.calls_full", slots);
+        info.add("becom.info.of_slots", calls, slots)
+            .bar("becom.info.row.calls", slots <= 0 ? 0 : Math.min(1, calls / (double) slots));
+        return slots > 0 && calls >= slots;
     }
 }

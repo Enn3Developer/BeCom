@@ -1,5 +1,6 @@
 package com.enn3developer.becom.item;
 
+import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.creativetab.CreativeTabs;
@@ -24,6 +25,7 @@ import appeng.api.implementations.items.IAEItemPowerStorage;
 public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, IAEItemPowerStorage {
 
     private static final String KEY = "becomMeKey";
+    private static final String NETWORK_NAME = "becomMeName";
     private static final String POWER = "becomAePower";
 
     public ItemMePhone() {
@@ -114,23 +116,31 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
     public void setEncryptionKey(ItemStack stack, String key, String name) {
         if (isTooNew(stack)) return;
         tag(stack).setString(KEY, key == null ? "" : key);
+        tag(stack).setString(NETWORK_NAME, name == null ? "" : name);
+    }
+
+    /** The name of the ME network it's linked to, as its Security Terminal gave it; empty for none. */
+    public String networkName(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        return tag == null ? "" : tag.getString(NETWORK_NAME);
     }
 
     // endregion
 
     @Override
-    protected String chargeLine(ItemStack stack) {
-        return StatCollector.translateToLocalFormatted(
-            "becom.me_phone.charge",
-            (long) getAECurrentPower(stack),
-            (long) getAEMaxPower(stack));
+    protected String batteryLine(ItemStack stack) {
+        return Tips.battery(getAECurrentPower(stack), getAEMaxPower(stack));
     }
 
     @Override
-    protected void moreInformation(ItemStack stack, List<String> lines) {
-        lines.add(
-            StatCollector.translateToLocal(
-                getEncryptionKey(stack).isEmpty() ? "becom.me_phone.unlinked" : "becom.me_phone.linked"));
+    protected boolean moreInformation(ItemStack stack, List<String> lines) {
+        if (!getEncryptionKey(stack).isEmpty()) {
+            lines.add("\u00a7a" + StatCollector.translateToLocal("becom.tip.me_linked"));
+            return false;
+        }
+        lines.add("\u00a76" + StatCollector.translateToLocal("becom.tip.me_unlinked"));
+        Collections.addAll(lines, Tips.wrap(Tips.ITEM, Tips.howTo("becom.tip.me_link")));
+        return true;
     }
 
     @Override

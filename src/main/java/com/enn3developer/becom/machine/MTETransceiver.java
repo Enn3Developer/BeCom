@@ -20,6 +20,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.TransceiverScreen;
+import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -68,6 +69,12 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
         return new MTETransceiver(mName, mTier, mDescriptionArray, mTextures);
+    }
+
+    /** Its item is BeCom's, as its block is. */
+    @Override
+    public ItemStack getStackForm(long amount) {
+        return BeComMachines.stack(this, amount);
     }
 
     @Override
@@ -247,13 +254,15 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
     @Override
     public String[] getDescription() {
         Tunables t = BeComConfig.get();
-        return new String[] { StatCollector.translateToLocal("becom.machine.transceiver.info"),
+        return Tips.wrap(
+            Tips.MACHINE,
+            StatCollector.translateToLocal("becom.machine.transceiver.info"),
             StatCollector.translateToLocalFormatted(
                 "becom.machine.transceiver.range",
                 (int) Math.round(t.rangeToLow(t.transceiverBudget())),
                 (int) t.talkRange(),
                 (int) t.loudspeakerRange()),
-            StatCollector.translateToLocalFormatted("becom.machine.power", t.transceiverPower(), "MV") };
+            Tips.power(t.transceiverPower(), "MV"));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -277,12 +286,16 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
         InfoLines.read(accessor.getNBTData(), tip);
     }
 
+    /** Its lines for WAILA and the scanner: its state, channel and loudspeaker. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
-        if (tooNew != null) info.add("becom.info.too_new");
-        info.add(working ? "becom.info.online" : "becom.info.offline");
-        info.add("becom.walkie.channel", channel);
-        info.add(loudspeaker ? "becom.info.loudspeaker_on" : "becom.info.loudspeaker_off");
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (tooNew != null) info.problem("becom.info.too_new");
+        InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
+        info.add("becom.info.value", channel)
+            .row("becom.info.row.channel");
+        info.add(loudspeaker ? "becom.info.on" : "becom.info.off")
+            .row("becom.info.row.loudspeaker");
         return info;
     }
 

@@ -15,7 +15,7 @@ import com.enn3developer.becom.logic.radio.Coverage;
  */
 public record AntennaView(int tier, boolean formed, boolean working, int mast, int range, boolean surveyed,
     boolean locked, boolean mayManage, String owner, int calls, int callSlots, List<Link> links, List<Bridge> bridges,
-    int mapRange, byte[] vhfMap, byte[] uhfMap) {
+    int mapRange, byte[] vhfMap, byte[] uhfMap, int radioRate, int radioLevel) {
 
     // A dimension rarely has more antennas in reach than this; the screen lists the strongest.
     public static final int MAX_LINKS = 64;
@@ -37,15 +37,21 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         Collections.emptyList(),
         0,
         new byte[0],
-        new byte[0]);
+        new byte[0],
+        0,
+        0);
 
     private static final int MAP_SIZE = Coverage.CELLS * Coverage.CELLS;
 
     /** A link to another antenna: where, how far, and its SNR on each band (negative infinity below Low). */
     public record Link(int x, int y, int z, int distance, double vhf, double uhf) {}
 
-    /** Its wiring onto a line: where, how far, and the KB/s its span's cables carry. */
-    public record Bridge(int x, int y, int z, int distance, int rate) {}
+    /**
+     * Its backhaul: the working node its cable leads to (its NodeKind ordinal, -1 for none), where and how far, its
+     * best
+     * cable (a CableTier ordinal, -1 for none), the KB/s the run carries (-1 for none) and what calls take of it.
+     */
+    public record Bridge(int kind, int x, int y, int z, int distance, int cable, int rate, int used) {}
 
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
@@ -77,12 +83,17 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             buf.writeInt(bridge.x);
             buf.writeShort(bridge.y);
             buf.writeInt(bridge.z);
+            buf.writeByte(bridge.kind);
             buf.writeInt(bridge.distance);
+            buf.writeByte(bridge.cable);
             buf.writeInt(bridge.rate);
+            buf.writeInt(bridge.used);
         }
         buf.writeShort(mapRange);
         writeMap(buf, vhfMap);
         writeMap(buf, uhfMap);
+        buf.writeInt(radioRate);
+        buf.writeByte(radioLevel);
     }
 
     private static void writeMap(PacketBuffer buf, byte[] map) {
@@ -124,11 +135,18 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         count = Math.min(buf.readShort(), MAX_BRIDGES);
         List<Bridge> bridges = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            bridges.add(new Bridge(buf.readInt(), buf.readShort(), buf.readInt(), buf.readInt(), buf.readInt()));
+            int x = buf.readInt();
+            int y = buf.readShort();
+            int z = buf.readInt();
+            int kind = buf.readByte();
+            bridges.add(new Bridge(kind, x, y, z, buf.readInt(), buf.readByte(), buf.readInt(), buf.readInt()));
         }
         int mapRange = buf.readShort();
         byte[] vhfMap = readMap(buf);
         byte[] uhfMap = readMap(buf);
+        int radioRate = buf.readInt();
+        int radioLevel = Math
+            .min(buf.readUnsignedByte(), com.enn3developer.becom.logic.SignalLevel.values().length - 1);
         return new AntennaView(
             tier,
             formed,
@@ -145,7 +163,9 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
             bridges,
             mapRange,
             vhfMap,
-            uhfMap);
+            uhfMap,
+            radioRate,
+            radioLevel);
     }
 
     private static final int MAX_NAME = 64;

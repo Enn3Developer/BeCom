@@ -8,10 +8,12 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.command.CommandBeCom;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.entity.EntityLaunchRocket;
+import com.enn3developer.becom.gui.paint.CanvasScreen;
 import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.machine.BeComMachines;
@@ -159,6 +161,11 @@ public class CommonProxy {
 
     public void onRearFrame(RearFramePacket packet) {}
 
+    /** The Phone key's name, for tooltips: its default where there are no key bindings. */
+    public String phoneKeyName() {
+        return "N";
+    }
+
     /** Whether this client is transmitting on that walkie, for its TX light; never on a server. */
     public boolean isTransmittingOn(ItemStack stack) {
         return false;
@@ -208,6 +215,26 @@ public class CommonProxy {
     public long worldTime() {
         return 0;
     }
+
+    /** This client's world's time of day, Minecraft's own clock; 0 on a server. */
+    public long dayTime() {
+        return 0;
+    }
+
+    /** Which corner the video window sits in, a ClientConfig.Corner ordinal. */
+    /** How tall the game's screen is in GUI pixels; 0 on a server. */
+    public int guiHeight() {
+        return 0;
+    }
+
+    public int videoCorner() {
+        return 1;
+    }
+
+    public void setVideoCorner(int corner) {}
+
+    /** Paints a board-drawn screen, {@code scale} GUI pixels a board pixel; nothing to paint on a server. */
+    public void paint(CanvasScreen screen, float scale, float mouseX, float mouseY, ModularGuiContext context) {}
 
     /** The coverage map's colour key, Low up to {@code cap}. */
     public IDrawable coverageLegend(Supplier<SignalLevel> cap) {
