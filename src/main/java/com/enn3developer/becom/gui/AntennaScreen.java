@@ -84,11 +84,10 @@ public final class AntennaScreen {
             if (key.a() != ref.pos() && key.b() != ref.pos()) continue;
             long other = key.a() == ref.pos() ? key.b() : key.a();
             AntennaNetwork.Link link = entry.getValue();
+            AntennaNetwork.Antenna far = becom.antennas.antenna(new NodeRef(ref.dimension(), other));
             links.add(
                 new AntennaView.Link(
-                    BlockPos.x(other),
-                    BlockPos.y(other),
-                    BlockPos.z(other),
+                    far == null ? 0 : far.tier(),
                     (int) Math.round(BlockPos.distance(ref.pos(), other)),
                     link.vhf()
                         .snr(),

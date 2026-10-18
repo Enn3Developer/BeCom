@@ -17,9 +17,9 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * The Router's screen, from the Router board: the calls it carries, then a table with a row a bus of cable joining it:
- * its cable, length and what it carries; and what's on those buses: each phone, its number and what it's doing, then
- * the routers and gateways they join.
+ * The Router's screen, from the Router board: the calls it carries, then each bus of cable joining it, with its cable
+ * and what it carries, and under it what's on it: each phone, its number and what it's doing, and the routers and
+ * gateways it joins.
  */
 public final class RouterUi extends CanvasScreen {
 
@@ -27,12 +27,14 @@ public final class RouterUi extends CanvasScreen {
     private static final float HEIGHT = 484;
     private static final float X0 = 16;
     private static final float INNER = 572;
-    private static final float ROW = 26;
+    private static final float ROW = 24;
     static final int CALLS = 0x55ff55;
     static final int FREE = 0x2a3038;
-    static final float HEAD = 24;
-    static final int HEAD_STRIP = 0x252c35;
-    static final int STRIPE = 0x181d23;
+    // A bus's strip, a shade darker than the panel; text in colours that read on grey.
+    static final int STRIP = 0xb4b4b4;
+    static final int GOOD_TEXT = 0x2f7f2f;
+    static final int BUSY_TEXT = 0x8a6a10;
+    static final int BAD_TEXT = 0xa02818;
 
     private final Supplier<RouterView> view;
     private int page;
@@ -73,15 +75,6 @@ public final class RouterUi extends CanvasScreen {
         };
     }
 
-    /** A voltage's colour as text on a display: LV light grey, MV orange, HV yellow, as the Exchange's racks. */
-    static int voltageText(int tier) {
-        return switch (CableTier.byOrdinal(tier)) {
-            case PHONE -> Paint.LIGHT;
-            case COAXIAL -> 0xff8a3a;
-            case FIBRE -> 0xf0d040;
-        };
-    }
-
     /**
      * A node kind's name on its own, as a label starts with it: "Antenna T3", where a sentence says "the" before it.
      */
@@ -119,7 +112,7 @@ public final class RouterUi extends CanvasScreen {
             v.working() ? Grey.GOOD : Grey.BAD);
         y += 22 + 10;
         y = paintCalls(c, v, y) + 10;
-        paintTable(c, v, y, HEIGHT - X0);
+        paintBuses(c, v, y, HEIGHT - X0);
     }
 
     /** Its display: the calls it carries now, of the most it carries at once; or why it carries none. */
@@ -144,178 +137,124 @@ public final class RouterUi extends CanvasScreen {
     }
 
     /**
-     * The table, in a display: a row a bus, then what's on the buses under their own heading, paged when it doesn't
-     * fit. Each page heads its first section.
+     * What's on its buses, a bus at a time: a strip with its cable and what it carries, then each phone, router and
+     * gateway on it, a phone with its number and what it's doing. Paged when it doesn't fit.
      */
-    private void paintTable(Canvas c, RouterView v, float y, float bottom) {
+    private void paintBuses(Canvas c, RouterView v, float y, float bottom) {
         if (v.buses()
             .isEmpty()) {
-            c.text(t("becom.ui.router.no_bus"), X0, y + 4, 14, Grey.BAD);
+            c.text(t("becom.ui.router.no_bus"), X0, y + 4, 14, BAD_TEXT);
             return;
         }
-        float[] col = { X0 + 10, X0 + 40, X0 + 178, X0 + 270, X0 + INNER - 150 };
-        String[] buses = { "#", t("becom.ui.router.bus"), t("becom.ui.router.length"), t("becom.ui.router.cable"),
-            t("becom.ui.router.carries") };
-        String[] devices = { "#", t("becom.ui.router.device"), t("becom.ui.router.number"), t("becom.ui.router.cable"),
-            t("becom.ui.router.now") };
         List<Object> rows = new ArrayList<>();
         for (int i = 0; i < v.buses()
-            .size(); i++) rows.add(i);
-        if (!v.devices()
-            .isEmpty()) rows.add(devices);
-        rows.addAll(v.devices());
-        int fit = fit(bottom - y);
+            .size(); i++) {
+            rows.add(
+                v.buses()
+                    .get(i));
+            int before = rows.size();
+            for (RouterView.Device d : v.devices()) if (d.bus() == i) rows.add(d);
+            if (rows.size() == before) rows.add(t("becom.ui.router.nothing_on"));
+        }
+        int fit = Math.max(1, (int) ((bottom - y) / ROW));
         if (rows.size() > fit) {
             bottom -= 24 + 8;
-            fit = fit(bottom - y);
+            fit = Math.max(1, (int) ((bottom - y) / ROW));
         }
         int pages = Math.max(1, (rows.size() + fit - 1) / fit);
         page = Math.min(page, pages - 1);
-        Grey.display(c, X0, y, INNER, bottom - y);
-        int first = page * fit;
-        String[] head = buses;
-        for (int i = 0; i <= first; i++) if (rows.get(i) instanceof String[]h) head = h;
-        if (rows.get(first) instanceof String[]) first++;
-        heads(c, head, col, X0, y, INNER);
-        y += HEAD;
-        int last = Math.min(rows.size(), (page + 1) * fit);
-        for (int i = first; i < last; i++) {
+        for (int i = page * fit; i < Math.min(rows.size(), (page + 1) * fit); i++) {
             Object row = rows.get(i);
-            float ty = y + (ROW - c.lineHeight(14)) / 2;
-            if (row instanceof String[]h) {
-                heads(c, h, col, X0, y, INNER);
-                y += HEAD;
-                continue;
-            }
-            stripe(c, i, X0, y, INNER);
-            if (row instanceof Integer index) {
-                c.text(String.valueOf(index + 1), col[0], ty, 14, Paint.GREY);
-                paintBusColumns(
-                    c,
-                    v.buses()
-                        .get(index),
-                    col,
-                    ty);
+            float ty = y + Math.round((ROW - 2 - c.lineHeight(14)) / 2);
+            if (row instanceof RouterView.Bus bus) {
+                c.rect(X0, y, INNER, ROW - 2, STRIP);
+                busLine(c, bus, X0 + 8, ty, INNER - 16, false);
             } else if (row instanceof RouterView.Device d) {
-                paintDevice(c, d, col, ty);
+                paintDevice(c, d, X0 + 28, ty, INNER - 36);
+            } else {
+                c.text((String) row, X0 + 28, ty, 14, Grey.FAINT);
             }
             y += ROW;
         }
         if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom + 8, page, pages, () -> page--, () -> page++);
     }
 
-    /** How many rows a display {@code h} tall holds under its heading. */
-    private static int fit(float h) {
-        return Math.max(1, (int) ((h - HEAD - 4) / ROW));
-    }
-
-    /** A table's heading: a lighter strip across the display, grey column names on it. */
-    static void heads(Canvas c, String[] heads, float[] col, float x, float y, float w) {
-        c.rect(x + 2, y + 2, w - 4, HEAD - 2, HEAD_STRIP);
-        for (int i = 0; i < heads.length; i++)
-            c.text(heads[i], col[i], y + 2 + (HEAD - 2 - c.lineHeight(12)) / 2, 12, Paint.GREY);
-    }
-
-    /** Every other row a shade lighter, so a row reads across. */
-    static void stripe(Canvas c, int i, float x, float y, float w) {
-        if (i % 2 == 1) c.rect(x + 2, y, w - 4, ROW, STRIPE);
-    }
-
-    /** A bus's row past its first column: what it joins, its length, its cable and what it carries. */
-    static void paintBusColumns(Canvas c, RouterView.Bus bus, float[] col, float ty) {
-        List<String> joins = new ArrayList<>();
-        if (bus.phones() > 0)
-            joins.add(t(bus.phones() == 1 ? "becom.ui.router.phone" : "becom.ui.router.phones", bus.phones()));
-        if (bus.routers() > 0)
-            joins.add(t(bus.routers() == 1 ? "becom.ui.router.router" : "becom.ui.router.routers", bus.routers()));
-        if (bus.gateways() > 0)
-            joins.add(t(bus.gateways() == 1 ? "becom.ui.router.gateway" : "becom.ui.router.gateways", bus.gateways()));
-        String joined = joins.isEmpty() ? t("becom.ui.router.joins_nothing") : String.join(", ", joins);
-        c.text(
-            Paint.fit(c, joined, 14, col[2] - col[1] - 8),
-            col[1],
-            ty,
-            14,
-            joins.isEmpty() ? Paint.GREY : Paint.TEXT);
-        c.text(
-            (bus.tooLong() ? ">" + blocks(bus.limit()) : String.valueOf(bus.cables())) + "/" + blocks(bus.limit()),
-            col[2],
-            ty,
-            14,
-            bus.tooLong() ? Paint.RED : Paint.TEXT);
-        cable(c, bus.cable(), col[3], ty);
+    /**
+     * A bus on one line from {@code x}, {@code w} wide: its cable, with what it joins after when {@code joins}, and on
+     * the right what it carries, or why it carries nothing.
+     */
+    static void busLine(Canvas c, RouterView.Bus bus, float x, float ty, float w, boolean joins) {
         String carries;
         int colour;
         if (bus.tooLong()) {
-            carries = t("becom.ui.router.bus_too_long");
-            colour = Paint.RED;
+            carries = t("becom.ui.router.too_long", bus.cables(), blocks(bus.limit()));
+            colour = BAD_TEXT;
         } else if (bus.rate() <= 0) {
             carries = t("becom.ui.router.bus_down");
-            colour = Paint.RED;
+            colour = BAD_TEXT;
         } else {
             carries = t("becom.ui.router.of", bus.used() + bus.data(), bus.rate());
-            colour = bus.used() + bus.data() >= bus.rate() ? Paint.ORANGE : Paint.TEXT;
+            colour = bus.used() + bus.data() >= bus.rate() ? BAD_TEXT : Grey.TEXT;
         }
-        c.text(Paint.fit(c, carries, 14, 140), col[4], ty, 14, colour);
+        float right = x + w - c.width(carries, 14);
+        c.text(carries, right, ty, 14, colour);
+        float after = cable(c, bus.cable(), x, ty);
+        if (!joins) return;
+        List<String> joined = new ArrayList<>();
+        if (bus.phones() > 0)
+            joined.add(t(bus.phones() == 1 ? "becom.ui.router.phone" : "becom.ui.router.phones", bus.phones()));
+        if (bus.routers() > 0)
+            joined.add(t(bus.routers() == 1 ? "becom.ui.router.router" : "becom.ui.router.routers", bus.routers()));
+        if (bus.gateways() > 0)
+            joined.add(t(bus.gateways() == 1 ? "becom.ui.router.gateway" : "becom.ui.router.gateways", bus.gateways()));
+        if (!joined.isEmpty())
+            c.text(Paint.fit(c, String.join(", ", joined), 14, right - after - 20), after + 12, ty, 14, Grey.NOTE);
     }
 
-    /** A cable's swatch and short name. */
-    static void cable(Canvas c, int tier, float x, float ty) {
-        c.rect(x, ty + 4, 14, 5, cableColour(tier));
-        c.text(
+    /** A cable's swatch and its name, "Phone cable"; returns where it ends. */
+    static float cable(Canvas c, int tier, float x, float ty) {
+        c.rect(x, ty + Math.round((c.lineHeight(14) - 5) / 2), 14, 5, cableColour(tier));
+        String name = t(
+            "becom.ui.router.cable_named",
             t(
                 "becom.ui.cable." + CableTier.byOrdinal(tier)
                     .name()
-                    .toLowerCase(Locale.ROOT)),
-            x + 20,
-            ty,
-            14,
-            Paint.TEXT);
+                    .toLowerCase(Locale.ROOT)));
+        c.text(name, x + 20, ty, 14, Grey.TITLE);
+        return x + 20 + c.width(name, 14);
     }
 
-    private void paintDevice(Canvas c, RouterView.Device d, float[] col, float ty) {
-        RouterView v = view.get();
-        c.text(String.valueOf(d.bus() + 1), col[0], ty, 14, Paint.GREY);
+    /** A thing on a bus: a phone's kind and number, and what it's doing; a router's or gateway's kind alone. */
+    private static void paintDevice(Canvas c, RouterView.Device d, float x, float ty, float w) {
         String kind = d.node() >= 0 ? kindLabel(d.node())
             : d.kind() < 0 ? "?"
                 : t(
                     "becom.phone.kind." + PhoneKind.values()[d.kind()].name()
                         .toLowerCase(Locale.ROOT));
-        c.text(Paint.fit(c, kind, 14, col[2] - col[1] - 8), col[1], ty, 14, Paint.TEXT);
-        c.text(d.number() < 0 ? "-" : String.valueOf(d.number()), col[2], ty, 14, Paint.TEXT);
-        if (d.bus() >= 0 && d.bus() < v.buses()
-            .size()) cable(
-                c,
-                v.buses()
-                    .get(d.bus())
-                    .cable(),
-                col[3],
-                ty);
+        c.text(kind, x, ty, 14, Grey.TEXT);
+        if (d.node() >= 0) return;
+        if (d.number() >= 0) c.text(String.valueOf(d.number()), x + c.width(kind, 14) + 10, ty, 14, Grey.NOTE);
         String now;
         int colour;
         switch (d.now()) {
             case CALL -> {
                 now = t("becom.ui.router.now_call", d.with());
-                colour = Paint.GREEN;
+                colour = GOOD_TEXT;
             }
             case RINGING -> {
                 now = t("becom.ui.router.now_ringing");
-                colour = Paint.YELLOW;
+                colour = BUSY_TEXT;
             }
             case TOO_LONG -> {
                 now = t("becom.ui.router.now_too_long");
-                colour = Paint.RED;
-            }
-            case JOINED -> {
-                now = t("becom.ui.router.now_joined");
-                colour = Paint.GREY;
+                colour = BAD_TEXT;
             }
             default -> {
                 now = t("becom.ui.router.now_idle");
-                colour = Paint.GREY;
+                colour = Grey.FAINT;
             }
         }
-        c.text(Paint.fit(c, now, 14, 140), col[4], ty, 14, colour);
+        Paint.right(c, Paint.fit(c, now, 14, w / 2), x + w, ty, 14, colour);
     }
 
     @Override

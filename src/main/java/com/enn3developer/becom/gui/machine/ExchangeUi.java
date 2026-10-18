@@ -226,51 +226,40 @@ public final class ExchangeUi extends CanvasScreen {
         Paint.centered(c, "+", x + w / 2, y + (h - c.lineHeight(11)) / 2, 11, 0x7a7a7a);
     }
 
-    /** A row a Line Hatch in a display, as the Router board's bus rows, its first column the hatch's tier; paged. */
+    /** A row a Line Hatch: its tier, then the bus at its front as the Router board writes one; paged. */
     private void paintLines(Canvas c, ExchangeView v, float y) {
         int count = v.lines()
             .size();
         if (count == 0) {
-            c.text(t("becom.ui.exchange.nothing"), X0, y + 4, 14, Grey.BAD);
+            c.text(t("becom.ui.exchange.nothing"), X0, y + 4, 14, RouterUi.BAD_TEXT);
             return;
         }
-        float[] col = { X0 + 10, X0 + 54, X0 + 192, X0 + 284, X0 + INNER - 150 };
-        String[] heads = { t("becom.ui.exchange.hatch"), t("becom.ui.router.bus"), t("becom.ui.router.length"),
-            t("becom.ui.router.cable"), t("becom.ui.router.carries") };
         float bottom = HEIGHT - X0;
-        int fit = fit(bottom - y);
+        int fit = Math.max(1, (int) ((bottom - y) / ROW));
         if (count > fit) {
             bottom -= 24 + 8;
-            fit = fit(bottom - y);
+            fit = Math.max(1, (int) ((bottom - y) / ROW));
         }
         int pages = Math.max(1, (count + fit - 1) / fit);
         page = Math.min(page, pages - 1);
-        Grey.display(c, X0, y, INNER, bottom - y);
-        RouterUi.heads(c, heads, col, X0, y, INNER);
-        y += RouterUi.HEAD;
         for (int i = page * fit; i < Math.min(count, (page + 1) * fit); i++) {
             ExchangeView.Line line = v.lines()
                 .get(i);
-            float ty = y + (ROW - c.lineHeight(14)) / 2;
-            RouterUi.stripe(c, i, X0, y, INNER);
+            float ty = y + Math.round((ROW - 1 - c.lineHeight(14)) / 2);
             int hatch = line.hatch();
-            c.text(
+            float x = X0 + Grey.chip(
+                c,
+                X0,
+                y + Math.round((ROW - 1 - 17) / 2),
                 CableTier.byOrdinal(hatch)
                     .voltage(),
-                col[0],
-                ty,
-                14,
-                RouterUi.voltageText(hatch));
-            if (line.bus() == null) c.text(t("becom.ui.exchange.no_cable"), col[1], ty, 14, Paint.GREY);
-            else RouterUi.paintBusColumns(c, line.bus(), col, ty);
+                RouterUi.voltageColour(hatch)) + 12;
+            if (line.bus() == null) c.text(t("becom.ui.exchange.no_cable"), x, ty, 14, Grey.FAINT);
+            else RouterUi.busLine(c, line.bus(), x, ty, X0 + INNER - x, true);
             y += ROW;
+            c.rect(X0, y - 1, INNER, 1, 0xa8a8a8);
         }
         if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom + 8, page, pages, () -> page--, () -> page++);
-    }
-
-    /** How many rows a display {@code h} tall holds under its heading. */
-    private static int fit(float h) {
-        return Math.max(1, (int) ((h - RouterUi.HEAD - 4) / ROW));
     }
 
     @Override

@@ -44,7 +44,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
     private static final int MAP_SIZE = Coverage.CELLS * Coverage.CELLS;
 
     /** A link to another antenna: where, how far, and its SNR on each band (negative infinity below Low). */
-    public record Link(int x, int y, int z, int distance, double vhf, double uhf) {}
+    public record Link(int tier, int distance, double vhf, double uhf) {}
 
     /**
      * A bus its Line Hatches join: its cable (a CableTier ordinal) and cable blocks, how many phones, other routers and
@@ -74,9 +74,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         buf.writeShort(links);
         for (int i = 0; i < links; i++) {
             Link link = this.links.get(i);
-            buf.writeInt(link.x);
-            buf.writeShort(link.y);
-            buf.writeInt(link.z);
+            buf.writeByte(link.tier);
             buf.writeInt(link.distance);
             buf.writeDouble(link.vhf);
             buf.writeDouble(link.uhf);
@@ -127,14 +125,7 @@ public record AntennaView(int tier, boolean formed, boolean working, int mast, i
         int count = Math.min(buf.readShort(), MAX_LINKS);
         List<Link> links = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            links.add(
-                new Link(
-                    buf.readInt(),
-                    buf.readShort(),
-                    buf.readInt(),
-                    buf.readInt(),
-                    buf.readDouble(),
-                    buf.readDouble()));
+            links.add(new Link(buf.readByte(), buf.readInt(), buf.readDouble(), buf.readDouble()));
         }
         count = Math.min(buf.readShort(), MAX_BUSES);
         List<Bus> buses = new ArrayList<>();
