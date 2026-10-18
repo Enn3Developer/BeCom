@@ -14,8 +14,8 @@ public final class BeComTextures {
     public static final IIconContainer PYLON_HEAD = icon("OVERLAY_PYLON_HEAD");
     public static final IIconContainer EXCHANGE = icon("OVERLAY_EXCHANGE");
     public static final IIconContainer EXCHANGE_GLOW = icon("OVERLAY_EXCHANGE_GLOW");
-    public static final IIconContainer LINE_TERMINAL = icon("OVERLAY_LINE_TERMINAL");
-    public static final IIconContainer LINE_TERMINAL_GLOW = icon("OVERLAY_LINE_TERMINAL_GLOW");
+    public static final IIconContainer ROUTER = icon("OVERLAY_ROUTER");
+    public static final IIconContainer ROUTER_GLOW = icon("OVERLAY_ROUTER_GLOW");
     public static final IIconContainer ANTENNA_T1 = icon("OVERLAY_ANTENNA_T1");
     public static final IIconContainer ANTENNA_T1_GLOW = icon("OVERLAY_ANTENNA_T1_GLOW");
     public static final IIconContainer ANTENNA_T2 = icon("OVERLAY_ANTENNA_T2");

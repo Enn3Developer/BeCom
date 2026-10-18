@@ -111,8 +111,8 @@ final class SpaceSelfTest {
     // A Nether relay where a different portal leads, 1,000 blocks off.
     private static final int FAR_NX = NX + 1000;
     private static final int NETHER = -1;
-    // A terminal stands this far from the relay or dish it's wrench-linked to, with its cable and Telephone beyond.
-    private static final int TERMINAL_GAP = 10;
+    // An Exchange stands this far from the relay it's cabled to, with a Telephone on the cable between.
+    private static final int ROUTER_GAP = 10;
     private static final int RADIO_CHANNEL = 9;
     private static final int ROOF = 4;
 
@@ -243,12 +243,12 @@ final class SpaceSelfTest {
         dishPhoneA = telephone(overworld, DISH_X - 3, Y, SZ - 5, owner);
         dishExchangeB = dishExchange(DISH_X + DISH_GAP);
         dishPhoneB = telephone(overworld, DISH_X + DISH_GAP - 3, Y, SZ - 5, owner);
-        // A relay by a Nether portal, its terminal and Telephone; relays by the Twilight Forest's and Personal
+        // A relay by a Nether portal, its Exchange and Telephone; relays by the Twilight Forest's and Personal
         // Space's portals, and one by no portal at all.
         netherPortal(overworld, SX + 2, Y, RELAY_Z);
         relayOverworld = relay(overworld, SX, Y + 1, RELAY_Z);
         relayExchangeOverworld = relayExchange(overworld, SX, Y, RELAY_Z, 1);
-        relayPhoneOverworld = telephone(overworld, SX - 1, Y, RELAY_Z + TERMINAL_GAP / 2, owner);
+        relayPhoneOverworld = telephone(overworld, SX - 1, Y, RELAY_Z + ROUTER_GAP / 2, owner);
         relayTwilight = relay(overworld, SX + 40, Y, RELAY_Z);
         twilightPlaced = placeByClass(overworld, SX + 42, Y, RELAY_Z, Portals.TWILIGHT_PORTAL);
         relayPersonal = relay(overworld, SX + 60, Y, RELAY_Z);
@@ -330,15 +330,15 @@ final class SpaceSelfTest {
             for (int cx = (x - 32) >> 4; cx <= (x + 32) >> 4; cx++) {
                 for (int cz = (NZ - 32) >> 4; cz <= (NZ + 32) >> 4; cz++) t.keepLoaded(nether, cx, cz);
             }
-            clear(nether, x - 6, NY - 2, NZ - 6, x + 10, NY + 6, NZ + TERMINAL_GAP + 6);
-            forgetNodes(nether, x - 6, NZ - 6, x + 10, NZ + TERMINAL_GAP + 6);
+            clear(nether, x - 6, NY - 2, NZ - 6, x + 10, NY + 6, NZ + ROUTER_GAP + 6);
+            forgetNodes(nether, x - 6, NZ - 6, x + 10, NZ + ROUTER_GAP + 6);
         }
         netherHand = FakePlayerFactory.get(nether, profile("BeComNetherHand", 0x10));
         netherPortal(nether, NX + 2, NY - 1, NZ);
         relayNether = relay(nether, NX, NY, NZ);
         relayFarNether = relay(nether, FAR_NX, NY, NZ);
         relayExchangeNether = relayExchange(nether, NX, NY, NZ, 0);
-        relayPhoneNether = telephone(nether, NX - 1, NY, NZ + TERMINAL_GAP / 2, netherHand);
+        relayPhoneNether = telephone(nether, NX - 1, NY, NZ + ROUTER_GAP / 2, netherHand);
         // Machines join the network as they first tick.
         return 5;
     }
@@ -1270,12 +1270,12 @@ final class SpaceSelfTest {
     }
 
     /**
-     * The Exchange {@link #TERMINAL_GAP} blocks south of the relay at x, y + {@code up}, z: Fibre runs from its front
+     * The Exchange {@link #ROUTER_GAP} blocks south of the relay at x, y + {@code up}, z: Fibre runs from its front
      * north to beside the relay, past the spot a Telephone takes.
      */
     private MTEExchange relayExchange(WorldServer world, int x, int y, int z, int up) {
-        MTEExchange exchange = exchange(world, x, y, z + TERMINAL_GAP);
-        for (int cz = z + TERMINAL_GAP - 1; cz >= z + 1; cz--) fibre(world, x, y, cz);
+        MTEExchange exchange = exchange(world, x, y, z + ROUTER_GAP);
+        for (int cz = z + ROUTER_GAP - 1; cz >= z + 1; cz--) fibre(world, x, y, cz);
         for (int dy = 1; dy <= up; dy++) fibre(world, x, y + dy, z + 1);
         return exchange;
     }

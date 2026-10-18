@@ -137,7 +137,7 @@ public final class NetworkService {
         if (buses.remove(dimension) != null) indexPhones();
         exchanges.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
-        terminalTiers.keySet()
+        routerTiers.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
         meBridges.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
@@ -198,7 +198,7 @@ public final class NetworkService {
         model.remove(pos);
         lastHeard.remove(ref);
         exchanges.remove(ref);
-        terminalTiers.remove(ref);
+        routerTiers.remove(ref);
         meBridges.remove(ref);
         dishes.remove(ref);
         relays.remove(ref);
@@ -587,17 +587,17 @@ public final class NetworkService {
 
     // endregion
 
-    // Each terminal's tier, as its machine says when it's placed or loaded.
-    private final Map<NodeRef, CableTier> terminalTiers = new HashMap<>();
+    // Each router's tier, as its machine says when it's placed or loaded.
+    private final Map<NodeRef, CableTier> routerTiers = new HashMap<>();
 
-    /** A terminal's tier, which sets how many calls it carries at once. */
-    public void terminalTier(World world, long pos, CableTier tier) {
-        CableTier before = terminalTiers.put(new NodeRef(world.provider.dimensionId, pos), tier);
+    /** A router's tier, which sets how many calls it carries at once. */
+    public void routerTier(World world, long pos, CableTier tier) {
+        CableTier before = routerTiers.put(new NodeRef(world.provider.dimensionId, pos), tier);
         if (before != tier) version++;
     }
 
-    private CableTier terminalTier(NodeRef terminal) {
-        return terminalTiers.getOrDefault(terminal, CableTier.PHONE);
+    private CableTier routerTier(NodeRef router) {
+        return routerTiers.getOrDefault(router, CableTier.PHONE);
     }
 
     // endregion
@@ -716,8 +716,8 @@ public final class NetworkService {
                             node.kind()
                                 .antennaTier()));
                 if (node.kind() == NodeKind.EXCHANGE) builder.slots(vertex, exchangeCalls(dimension, node.pos()));
-                if (node.kind() == NodeKind.TERMINAL)
-                    builder.slots(vertex, tunables.routerCalls(terminalTier(new NodeRef(dimension, node.pos()))));
+                if (node.kind() == NodeKind.ROUTER)
+                    builder.slots(vertex, tunables.routerCalls(routerTier(new NodeRef(dimension, node.pos()))));
             }
         }
         // An ME Bridge joins its ME network to the line it bridges, losing nothing, and

@@ -53,18 +53,18 @@ class WiredTopologyTest {
 
     /** A 300-block line with pylons at 30, 90, 150, 210 and 270, every span strung with {@code strung}. */
     private long[] line300(CableTier... strung) {
-        long[] nodes = { node(0, NodeKind.TERMINAL), node(30, NodeKind.PYLON), node(90, NodeKind.PYLON),
+        long[] nodes = { node(0, NodeKind.ROUTER), node(30, NodeKind.PYLON), node(90, NodeKind.PYLON),
             node(150, NodeKind.PYLON), node(210, NodeKind.PYLON), node(270, NodeKind.PYLON),
-            node(300, NodeKind.TERMINAL) };
+            node(300, NodeKind.ROUTER) };
         for (int i = 0; i + 1 < nodes.length; i++) link(nodes[i], nodes[i + 1], strung);
         return nodes;
     }
 
     @Test
     void aRunWithinItsCablesReachCarriesItsRateBothWays() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(50, NodeKind.PYLON);
-        long b = node(100, NodeKind.TERMINAL);
+        long b = node(100, NodeKind.ROUTER);
         link(a, p);
         link(p, b);
         List<WiredTopology.Segment> segments = segments();
@@ -90,9 +90,9 @@ class WiredTopologyTest {
 
     @Test
     void cablesOnOneSpanAddUp() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(50, NodeKind.PYLON);
-        long b = node(100, NodeKind.TERMINAL);
+        long b = node(100, NodeKind.ROUTER);
         link(a, p, CableTier.PHONE, CableTier.PHONE, CableTier.COAXIAL);
         link(p, b, CableTier.PHONE, CableTier.PHONE, CableTier.COAXIAL);
         assertEquals(2 * cables.cableRatePhone() + cables.cableRateCoaxial(), from(segments(), a).rate());
@@ -100,9 +100,9 @@ class WiredTopologyTest {
 
     @Test
     void theThinnestSpanSetsTheRate() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(40, NodeKind.PYLON);
-        long b = node(80, NodeKind.TERMINAL);
+        long b = node(80, NodeKind.ROUTER);
         link(a, p, CableTier.COAXIAL);
         link(p, b, CableTier.PHONE);
         assertEquals(cables.cableRatePhone(), from(segments(), a).rate());
@@ -110,9 +110,9 @@ class WiredTopologyTest {
 
     @Test
     void aSpanWithNoCableCarriesNothing() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(40, NodeKind.PYLON);
-        long b = node(80, NodeKind.TERMINAL);
+        long b = node(80, NodeKind.ROUTER);
         link(a, p);
         link(p, b, new CableTier[0]);
         assertEquals(0, from(segments(), a).rate());
@@ -120,11 +120,11 @@ class WiredTopologyTest {
 
     @Test
     void anOfflineExchangeCarriesNothing() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p1 = node(30, NodeKind.PYLON);
         long exchange = node(60, NodeKind.EXCHANGE);
         long p2 = node(90, NodeKind.PYLON);
-        long b = node(120, NodeKind.TERMINAL);
+        long b = node(120, NodeKind.ROUTER);
         link(a, p1);
         link(p1, exchange);
         link(exchange, p2);
@@ -137,10 +137,10 @@ class WiredTopologyTest {
     @Test
     void cuttingAPylonDownBreaksSpansItCanNoLongerHold() {
         // Two 16-high pylons 60 blocks apart are in span (4 x 16 = 64); cut one to 6 frames and the span is 24.
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p1 = node(10, NodeKind.PYLON);
         long p2 = node(70, NodeKind.PYLON);
-        long b = node(80, NodeKind.TERMINAL);
+        long b = node(80, NodeKind.ROUTER);
         link(a, p1);
         link(p1, p2);
         link(p2, b);
@@ -152,9 +152,9 @@ class WiredTopologyTest {
 
     @Test
     void aBlockedLinkBreaksTheLine() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(50, NodeKind.PYLON);
-        long b = node(100, NodeKind.TERMINAL);
+        long b = node(100, NodeKind.ROUTER);
         link(a, p);
         link(p, b);
         assertEquals(2, segments().size());
@@ -164,9 +164,9 @@ class WiredTopologyTest {
 
     @Test
     void anUnformedPylonBreaksTheLine() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p = node(50, NodeKind.PYLON);
-        long b = node(100, NodeKind.TERMINAL);
+        long b = node(100, NodeKind.ROUTER);
         link(a, p);
         link(p, b);
         model.node(p)
@@ -176,7 +176,7 @@ class WiredTopologyTest {
 
     @Test
     void deadEndsAndLoopsOfPassivePylonsCarryNothing() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p1 = node(50, NodeKind.PYLON);
         link(a, p1);
         assertTrue(segments().isEmpty());
@@ -194,12 +194,12 @@ class WiredTopologyTest {
     void anExchangeEndsEachBranchItsOwnRun() {
         long exchange = node(0, NodeKind.EXCHANGE);
         long p0 = node(30, NodeKind.PYLON);
-        long a = node(60, NodeKind.TERMINAL);
+        long a = node(60, NodeKind.ROUTER);
         // The second branch runs 200 blocks over pylons: too far for Phone Cable, so it's strung with Coaxial.
         long p1 = node(0, 60, NodeKind.PYLON);
         long p2 = node(0, 120, NodeKind.PYLON);
         long p3 = node(0, 180, NodeKind.PYLON);
-        long c = node(0, 200, NodeKind.TERMINAL);
+        long c = node(0, 200, NodeKind.ROUTER);
         link(exchange, p0);
         link(p0, a);
         link(exchange, p1, CableTier.COAXIAL);
@@ -226,7 +226,7 @@ class WiredTopologyTest {
 
     @Test
     void anAntennaWiredToALineEndsItsRun() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long p1 = node(30, NodeKind.PYLON);
         long antenna = node(40, NodeKind.ANTENNA_T1);
         link(a, p1);
@@ -241,7 +241,7 @@ class WiredTopologyTest {
 
     @Test
     void aBridgeLongerThanTheBridgeDistanceCarriesNothing() {
-        long a = node(0, NodeKind.TERMINAL);
+        long a = node(0, NodeKind.ROUTER);
         long antenna = node(10, NodeKind.ANTENNA_T2);
         link(a, antenna);
         assertEquals(2, segments().size());

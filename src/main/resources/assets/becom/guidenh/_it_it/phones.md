@@ -50,7 +50,7 @@ o superiore. Un telefono scarico si spegne, e resta spento anche dopo la ricaric
 ## Videotelefono
 
 Il <ItemLink id="becom:machine:25009" showIcon="left">Videotelefono</ItemLink> è un vivavoce con uno schermo
-per le reti cablate, a MV e 32 EU/t. Collegalo con Cavo telefonico a un Terminale di linea, come un Telefono. Chiunque
+per le reti cablate, a MV e 32 EU/t. Collegalo con Cavo telefonico a un Router, come un Telefono. Chiunque
 sia entro 4 blocchi è nella sua chiamata e sul suo schermo, e il suo altoparlante porta la chiamata a 16 blocchi.
 Riaggancia da solo 30 secondi dopo che l'ultima persona se ne va.
 

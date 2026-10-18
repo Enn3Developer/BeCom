@@ -20,7 +20,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
-import com.enn3developer.becom.gui.LineTerminalScreen;
+import com.enn3developer.becom.gui.RouterScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
@@ -44,30 +44,30 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Line Terminal, a router: where a building's line starts. An LV, MV or HV machine drawing a few EU/t that links
+ * The Router: where a building's line starts. An LV, MV or HV machine drawing a few EU/t that links
  * to one pylon and carries the calls of every bus of cable joining it, up to its tier's cable, as many at once as its
  * tier carries. The phones on a bus share its rate.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, CableEnd {
+public class MTERouter extends MTETieredMachineBlock implements NodeHost, CableEnd {
 
     private static final int TICKS_PER_SECOND = 20;
 
     private boolean working;
     private boolean registered;
 
-    public MTELineTerminal(int id, String name, String regionalName, CableTier tier) {
+    public MTERouter(int id, String name, String regionalName, CableTier tier) {
         super(id, name, regionalName, tier.voltageTier(), 0, (String) null);
     }
 
-    public MTELineTerminal(String name, int tier, String[] description, ITexture[][][] textures) {
+    public MTERouter(String name, int tier, String[] description, ITexture[][][] textures) {
         super(name, tier, 0, description, textures);
     }
 
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
-        return new MTELineTerminal(mName, mTier, mDescriptionArray, mTextures);
+        return new MTERouter(mName, mTier, mDescriptionArray, mTextures);
     }
 
     /** Its item is BeCom's, as its block is. */
@@ -83,7 +83,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
 
     @Override
     public NodeKind nodeKind() {
-        return NodeKind.TERMINAL;
+        return NodeKind.ROUTER;
     }
 
     public boolean isWorking() {
@@ -134,12 +134,12 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         World world = tile.getWorld();
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
         if (!registered) {
-            becom.network.ensureNode(world, pos, NodeKind.TERMINAL, tile.getOwnerUuid());
-            becom.network.terminalTier(world, pos, tier());
+            becom.network.ensureNode(world, pos, NodeKind.ROUTER, tile.getOwnerUuid());
+            becom.network.routerTier(world, pos, tier());
             registered = true;
         }
         long power = BeComConfig.get()
-            .terminalPower();
+            .routerPower();
         working = tile.isAllowedToWork() && tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
         if (working) becom.network.heartbeat(world, pos);
         tile.setActive(working);
@@ -164,7 +164,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         BeComServer becom = BeComServer.get();
         if (becom == null || !tile.isServerSide()) return false;
         long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-        becom.network.ensureNode(tile.getWorld(), pos, NodeKind.TERMINAL, tile.getOwnerUuid());
+        becom.network.ensureNode(tile.getWorld(), pos, NodeKind.ROUTER, tile.getOwnerUuid());
         becom.links.wrench(player, tile.getWorld(), pos);
         return true;
     }
@@ -184,7 +184,7 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
 
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
-        return LineTerminalScreen.build(this, data, sync);
+        return RouterScreen.build(this, data, sync);
     }
 
     // endregion
@@ -258,12 +258,12 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         ITexture casing = Textures.BlockIcons.MACHINE_CASINGS[mTier][colorIndex + 1];
         if (side != facing) return new ITexture[] { casing };
         ITexture overlay = TextureFactory.builder()
-            .addIcon(BeComTextures.LINE_TERMINAL)
+            .addIcon(BeComTextures.ROUTER)
             .extFacing()
             .build();
         if (!active) return new ITexture[] { casing, overlay };
         return new ITexture[] { casing, overlay, TextureFactory.builder()
-            .addIcon(BeComTextures.LINE_TERMINAL_GLOW)
+            .addIcon(BeComTextures.ROUTER_GLOW)
             .extFacing()
             .glow()
             .build() };
@@ -274,12 +274,12 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         Tunables t = BeComConfig.get();
         return Tips.wrap(
             Tips.MACHINE,
-            StatCollector.translateToLocal("becom.machine.terminal.info"),
-            StatCollector.translateToLocalFormatted("becom.machine.terminal.calls", t.routerCalls(tier())),
+            StatCollector.translateToLocal("becom.machine.router.info"),
+            StatCollector.translateToLocalFormatted("becom.machine.router.calls", t.routerCalls(tier())),
             StatCollector.translateToLocalFormatted(
-                "becom.machine.terminal.cable",
+                "becom.machine.router.cable",
                 StatCollector.translateToLocal("tile.becom." + BlockPhoneCable.nameOf(tier()) + ".name")),
-            Tips.power(t.terminalPower(), tier().voltage()));
+            Tips.power(t.routerPower(), tier().voltage()));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);
@@ -325,15 +325,15 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         NetNode node = model == null ? null : model.node(self.pos());
         if (node == null || node.links()
             .isEmpty()) {
-            info.problem("becom.ui.terminal.no_uplink")
+            info.problem("becom.ui.router.no_uplink")
                 .row("becom.info.row.uplink");
         } else {
             List<NetworkService.Run> runs = becom.network.runsFrom(self.dimension(), self.pos());
-            if (runs.isEmpty()) info.problem("becom.ui.terminal.uplink_down")
+            if (runs.isEmpty()) info.problem("becom.ui.router.uplink_down")
                 .row("becom.info.row.uplink");
             else {
                 NetworkService.Run run = runs.get(0);
-                if (run.rate() <= 0) info.problem("becom.ui.terminal.too_long")
+                if (run.rate() <= 0) info.problem("becom.ui.router.too_long")
                     .row("becom.info.row.uplink");
                 else info
                     .bundle(

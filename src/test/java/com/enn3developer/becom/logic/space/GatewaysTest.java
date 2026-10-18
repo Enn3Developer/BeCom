@@ -96,11 +96,11 @@ class GatewaysTest {
 
     @Test
     void anOverworldDishTakesItsWholeNetworkToThePlanet() {
-        CallGraph.NodeVertex terminal = node(OVERWORLD, 1);
+        CallGraph.NodeVertex router = node(OVERWORLD, 1);
         CallGraph.NodeVertex dish = node(OVERWORLD, 2);
         CallGraph.Builder builder = CallGraph.builder()
-            .twoWay(new CallGraph.PhoneVertex(111111), terminal, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
-            .twoWay(terminal, dish, 28, CallGraph.HopKind.LINE);
+            .twoWay(new CallGraph.PhoneVertex(111111), router, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(router, dish, 28, CallGraph.HopKind.LINE);
         gateways.addTo(
             builder,
             d -> d == OVERWORLD ? 37 : 0,
@@ -154,15 +154,15 @@ class GatewaysTest {
     @Test
     void aRelayPairIsAHighHopBetweenTheOverworldAndTheNether() {
         // A Telephone in the Overworld calls one in the Nether through a pair.
-        CallGraph.NodeVertex terminalA = node(OVERWORLD, 1);
+        CallGraph.NodeVertex routerA = node(OVERWORLD, 1);
         CallGraph.NodeVertex relayA = node(OVERWORLD, 2);
         CallGraph.NodeVertex relayB = node(NETHER, 3);
-        CallGraph.NodeVertex terminalB = node(NETHER, 4);
+        CallGraph.NodeVertex routerB = node(NETHER, 4);
         CallGraph.Builder builder = CallGraph.builder()
-            .twoWay(new CallGraph.PhoneVertex(111111), terminalA, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
-            .twoWay(terminalA, relayA, 28, CallGraph.HopKind.LINE)
-            .twoWay(relayB, terminalB, 28, CallGraph.HopKind.LINE)
-            .twoWay(new CallGraph.PhoneVertex(222222), terminalB, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE);
+            .twoWay(new CallGraph.PhoneVertex(111111), routerA, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(routerA, relayA, 28, CallGraph.HopKind.LINE)
+            .twoWay(relayB, routerB, 28, CallGraph.HopKind.LINE)
+            .twoWay(new CallGraph.PhoneVertex(222222), routerB, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE);
         gateways
             .addTo(builder, d -> 0, List.of(), List.of(), List.of(new Gateways.RelayPair(OVERWORLD, 2, NETHER, 3, 2)));
         CallGraph graph = builder.build();
@@ -176,17 +176,13 @@ class GatewaysTest {
     void longerChainsCombineRelaysAndSatellites() {
         // Nether to Overworld to planet. A Nether phone on a relay pair's far side, the Overworld's
         // relay on a line to a dish, and a receiver on the Moon.
-        CallGraph.NodeVertex netherTerminal = node(NETHER, 1);
+        CallGraph.NodeVertex netherRouter = node(NETHER, 1);
         CallGraph.NodeVertex netherRelay = node(NETHER, 2);
         CallGraph.NodeVertex relay = node(OVERWORLD, 3);
         CallGraph.NodeVertex dish = node(OVERWORLD, 4);
         CallGraph.Builder builder = CallGraph.builder()
-            .twoWay(
-                new CallGraph.PhoneVertex(111111),
-                netherTerminal,
-                Double.POSITIVE_INFINITY,
-                CallGraph.HopKind.CABLE)
-            .twoWay(netherTerminal, netherRelay, 28, CallGraph.HopKind.LINE)
+            .twoWay(new CallGraph.PhoneVertex(111111), netherRouter, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(netherRouter, netherRelay, 28, CallGraph.HopKind.LINE)
             .twoWay(relay, dish, 28, CallGraph.HopKind.LINE);
         gateways.addTo(
             builder,

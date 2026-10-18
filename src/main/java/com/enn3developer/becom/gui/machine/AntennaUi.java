@@ -213,7 +213,7 @@ public final class AntennaUi extends CanvasScreen {
 
     private static void paintBridge(Canvas c, AntennaView.Bridge bridge, float[] col, float y, float ty) {
         icon(c, col[0] + 3, y + 6, true);
-        String name = LineTerminalUi.kindLabel(bridge.kind());
+        String name = RouterUi.kindLabel(bridge.kind());
         c.text(
             Paint.fit(c, t("becom.ui.antenna.at", name, bridge.x(), bridge.y(), bridge.z()), 14, col[2] - col[1] - 6),
             col[1],

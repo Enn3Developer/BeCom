@@ -57,8 +57,8 @@ class LinkRulesTest {
 
     @Test
     void terminalsLinkOnlyToPylonHeadsAndOnlyOne() {
-        NetNode terminal = node(0, 0, NodeKind.TERMINAL, 0);
-        NetNode otherTerminal = node(5, 0, NodeKind.TERMINAL, 0);
+        NetNode terminal = node(0, 0, NodeKind.ROUTER, 0);
+        NetNode otherTerminal = node(5, 0, NodeKind.ROUTER, 0);
         assertEquals(LinkRules.Result.INCOMPATIBLE, rules.check(model, terminal, otherTerminal));
         NetNode head = node(10, 0, NodeKind.PYLON, 16);
         // A terminal borrows its pylon's height for the span.
@@ -84,7 +84,7 @@ class LinkRulesTest {
     void antennasBridgePylonHeadsAndTerminalsWithinTheBridgeDistance() {
         NetNode antenna = node(0, 0, NodeKind.ANTENNA_T1, 8);
         NetNode pylon = node(16, 0, NodeKind.PYLON, 6);
-        NetNode terminal = node(0, 16, NodeKind.TERMINAL, 0);
+        NetNode terminal = node(0, 16, NodeKind.ROUTER, 0);
         assertEquals(16, rules.maxSpan(antenna, pylon), 1e-9);
         assertEquals(LinkRules.Result.OK, rules.check(model, antenna, pylon));
         assertEquals(LinkRules.Result.OK, rules.check(model, terminal, antenna));
@@ -112,7 +112,7 @@ class LinkRulesTest {
     void gatewaysTakeNoWrenchLinks() {
         // They join by cable to an Exchange instead.
         NetNode head = node(0, 0, NodeKind.PYLON, 16);
-        NetNode terminal = node(4, 0, NodeKind.TERMINAL, 0);
+        NetNode terminal = node(4, 0, NodeKind.ROUTER, 0);
         NetNode exchange = node(8, 0, NodeKind.EXCHANGE, 0);
         NetNode antenna = node(12, 0, NodeKind.ANTENNA_T2, 0);
         for (NodeKind kind : new NodeKind[] { NodeKind.ME_BRIDGE, NodeKind.SATELLITE_DISH, NodeKind.PORTAL_RELAY }) {

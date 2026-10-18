@@ -246,7 +246,7 @@ public final class ExchangeUi extends CanvasScreen {
                 .get(tier);
             if (n <= 0) continue;
             for (int k = 0; k < n; k++) {
-                c.rect(bx, ty + 2, 5, 9, LineTerminalUi.cableColour(tier));
+                c.rect(bx, ty + 2, 5, 9, RouterUi.cableColour(tier));
                 bx += 7;
             }
             if (bundle.length() > 0) bundle.append(", ");
@@ -294,7 +294,7 @@ public final class ExchangeUi extends CanvasScreen {
     }
 
     /**
-     * What's joined, as the board names it: "Exchange 900, 64, -120", "Antenna T3, backhaul", "Line Terminal, west".
+     * What's joined, as the board names it: "Exchange 900, 64, -120", "Antenna T3, backhaul", "Router, west".
      */
     static String name(ExchangeView v, ExchangeView.Joined j) {
         if (j.node() < 0) {
@@ -305,11 +305,11 @@ public final class ExchangeUi extends CanvasScreen {
             return j.number() < 0 ? kind : kind + " " + j.number();
         }
         NodeKind kind = NodeKind.values()[j.node()];
-        String name = LineTerminalUi.kindLabel(j.node());
+        String name = RouterUi.kindLabel(j.node());
         return switch (kind) {
             case EXCHANGE -> t("becom.ui.exchange.at", name, j.x(), j.y(), j.z());
             case ANTENNA_T1, ANTENNA_T2, ANTENNA_T3 -> t("becom.ui.exchange.backhaul", name);
-            case TERMINAL -> t(
+            case ROUTER -> t(
                 "becom.ui.exchange.toward",
                 name,
                 t("becom.ui.dir." + com.enn3developer.becom.machine.InfoLines.direction(j.x() - v.x(), j.z() - v.z())));

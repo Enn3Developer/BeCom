@@ -237,10 +237,10 @@ final class PhoneGallery {
                     com.enn3developer.becom.gui.machine.AntennaUi.scale(h))));
         shots.add(
             new Shot(
-                "line-terminal",
+                "router",
                 () -> open(
-                    new com.enn3developer.becom.gui.machine.LineTerminalUi(PhoneGallery::terminal),
-                    com.enn3developer.becom.gui.machine.LineTerminalUi.scale(h))));
+                    new com.enn3developer.becom.gui.machine.RouterUi(PhoneGallery::router),
+                    com.enn3developer.becom.gui.machine.RouterUi.scale(h))));
         shots.add(
             new Shot("me-bridge", () -> readout(PhoneGallery::bridge, "gt.blockmachines.becom.me_bridge.name", null)));
         shots.add(
@@ -447,7 +447,7 @@ final class PhoneGallery {
 
     /** An Exchange as on the Router board: two MV racks and an LV, five things joined, one too far. */
     private static com.enn3developer.becom.gui.ExchangeView exchange() {
-        int terminal = com.enn3developer.becom.logic.net.NodeKind.TERMINAL.ordinal();
+        int router = com.enn3developer.becom.logic.net.NodeKind.ROUTER.ordinal();
         return new com.enn3developer.becom.gui.ExchangeView(
             true,
             true,
@@ -486,7 +486,7 @@ final class PhoneGallery {
                     512,
                     120),
                 new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    terminal,
+                    router,
                     -1,
                     -1,
                     20,
@@ -497,7 +497,7 @@ final class PhoneGallery {
                     32,
                     12),
                 new com.enn3developer.becom.gui.ExchangeView.Joined(
-                    terminal,
+                    router,
                     -1,
                     -1,
                     100,
@@ -521,18 +521,18 @@ final class PhoneGallery {
     }
 
     /**
-     * An MV Line Terminal as on its board: a bus of Phone Cable with two Telephones, one in a call, and a bus of
+     * An MV Router as on its board: a bus of Phone Cable with two Telephones, one in a call, and a bus of
      * Coaxial with a Videophone, a computer, an Exchange and an ME Bridge.
      */
-    private static com.enn3developer.becom.gui.LineTerminalView terminal() {
-        com.enn3developer.becom.gui.LineTerminalView.Now idle = com.enn3developer.becom.gui.LineTerminalView.Now.IDLE;
-        com.enn3developer.becom.gui.LineTerminalView.Now joined = com.enn3developer.becom.gui.LineTerminalView.Now.JOINED;
-        return new com.enn3developer.becom.gui.LineTerminalView(
+    private static com.enn3developer.becom.gui.RouterView router() {
+        com.enn3developer.becom.gui.RouterView.Now idle = com.enn3developer.becom.gui.RouterView.Now.IDLE;
+        com.enn3developer.becom.gui.RouterView.Now joined = com.enn3developer.becom.gui.RouterView.Now.JOINED;
+        return new com.enn3developer.becom.gui.RouterView(
             1,
             true,
             "Steve",
             List.of(
-                new com.enn3developer.becom.gui.LineTerminalView.Uplink(
+                new com.enn3developer.becom.gui.RouterView.Uplink(
                     com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
                     100,
                     70,
@@ -545,27 +545,27 @@ final class PhoneGallery {
             1,
             32,
             List.of(
-                new com.enn3developer.becom.gui.LineTerminalView.Bus(0, 14, 128, 16, 8, 0, 2, 0, 0),
-                new com.enn3developer.becom.gui.LineTerminalView.Bus(1, 40, 512, 64, 0, 10, 2, 1, 1)),
+                new com.enn3developer.becom.gui.RouterView.Bus(0, 14, 128, 16, 8, 0, 2, 0, 0),
+                new com.enn3developer.becom.gui.RouterView.Bus(1, 40, 512, 64, 0, 10, 2, 1, 1)),
             List.of(
-                new com.enn3developer.becom.gui.LineTerminalView.Device(4, -1, 300210, 1, idle, ""),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(3, -1, 300417, 1, idle, ""),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(
+                new com.enn3developer.becom.gui.RouterView.Device(4, -1, 300210, 1, idle, ""),
+                new com.enn3developer.becom.gui.RouterView.Device(3, -1, 300417, 1, idle, ""),
+                new com.enn3developer.becom.gui.RouterView.Device(
                     0,
                     -1,
                     482913,
                     0,
-                    com.enn3developer.becom.gui.LineTerminalView.Now.CALL,
+                    com.enn3developer.becom.gui.RouterView.Now.CALL,
                     "Alex"),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(0, -1, 482914, 0, idle, ""),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(
+                new com.enn3developer.becom.gui.RouterView.Device(0, -1, 482914, 0, idle, ""),
+                new com.enn3developer.becom.gui.RouterView.Device(
                     -1,
                     com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
                     -1,
                     1,
                     joined,
                     ""),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(
+                new com.enn3developer.becom.gui.RouterView.Device(
                     -1,
                     com.enn3developer.becom.logic.net.NodeKind.ME_BRIDGE.ordinal(),
                     -1,

@@ -68,7 +68,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 /**
  * The Exchange: a ground-level building of LV machine casings, three blocks each way, that switches
  * calls between every line wired to it, up to fifteen. Switching Racks in its input buses set how many calls it
- * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Pylons, terminals, antennas and
+ * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Pylons, routers, antennas and
  * gateways are wired to it like to any ground node.
  * <p>
  * It isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick and tells the

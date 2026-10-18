@@ -54,7 +54,7 @@ public final class BeComRecipes {
 
     private BeComRecipes() {}
 
-    private static void terminal(gregtech.api.metatileentity.MetaTileEntity machine, CableTier tier, Materials circuit,
+    private static void router(gregtech.api.metatileentity.MetaTileEntity machine, CableTier tier, Materials circuit,
         ItemList hull) {
         GTModHandler.addCraftingRecipe(
             machine.getStackForm(1),
@@ -163,11 +163,11 @@ public final class BeComRecipes {
                 OrePrefixes.plate.get(Materials.Steel), 'G', OrePrefixes.plate.get(Materials.Glass), 'F',
                 OrePrefixes.frameGt.get(Materials.Steel) });
 
-        // Line Terminals: a hull of the tier with its circuit, two of its cables to the devices and two wires to the
+        // Routers: a hull of the tier with its circuit, two of its cables to the devices and two wires to the
         // line.
-        terminal(BeComMachines.lineTerminal, CableTier.PHONE, Materials.LV, ItemList.Hull_LV);
-        terminal(BeComMachines.lineTerminalMV, CableTier.COAXIAL, Materials.MV, ItemList.Hull_MV);
-        terminal(BeComMachines.lineTerminalHV, CableTier.FIBRE, Materials.HV, ItemList.Hull_HV);
+        router(BeComMachines.router, CableTier.PHONE, Materials.LV, ItemList.Hull_LV);
+        router(BeComMachines.routerMV, CableTier.COAXIAL, Materials.MV, ItemList.Hull_MV);
+        router(BeComMachines.routerHV, CableTier.FIBRE, Materials.HV, ItemList.Hull_HV);
 
         // Exchange: an LV hull among circuits and the lines it switches.
         GTModHandler.addCraftingRecipe(
@@ -192,7 +192,7 @@ public final class BeComRecipes {
                 OrePrefixes.cableGt01.get(Materials.Copper) });
 
         // Videophone: an MV hull with a screen, a sensor for the camera, its circuits, a note block for the loudspeaker
-        // and two Phone Cables to its Line Terminal.
+        // and two Phone Cables to its Router.
         GTModHandler.addCraftingRecipe(
             BeComMachines.videophone.getStackForm(1),
             GTModHandler.RecipeBits.BUFFERED,

@@ -16,7 +16,7 @@ public record Tunables(
     // Wired network
     int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, int cableRatePhone,
     int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial, int cableReachFibre,
-    int bundleSize, int cableBlocksPerItem, int terminalPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
+    int bundleSize, int cableBlocksPerItem, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
     int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
     // Calls
     double directHearingRange, int sessionGraceSeconds, int halfLinkSeconds, int ringSeconds, int callAttemptsPerMinute,
@@ -119,7 +119,7 @@ public record Tunables(
         d.put("cableReachFibre", 4096);
         d.put("bundleSize", 4);
         d.put("cableBlocksPerItem", 4);
-        d.put("terminalPower", 4);
+        d.put("routerPower", 4);
         d.put("routerCallsLV", 8);
         d.put("routerCallsMV", 32);
         d.put("routerCallsHV", 128);

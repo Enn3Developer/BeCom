@@ -11,7 +11,7 @@ public enum PhoneKind {
     MOBILE(SignalLevel.HIGH, true, true),
     /** The ME Phone: carried, with service inside its ME network's wireless range. */
     ME_PHONE(SignalLevel.MAX, true, true),
-    /** The Videophone: a speakerphone block on a Line Terminal, like a Telephone. */
+    /** The Videophone: a speakerphone block on a router's bus, like a Telephone. */
     VIDEOPHONE(SignalLevel.HIGH, false, true),
     /** A computer with a BeCom Card: it has a number for apps' data, but takes no calls. */
     COMPUTER(SignalLevel.HIGH, false, false);

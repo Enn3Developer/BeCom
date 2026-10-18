@@ -55,7 +55,7 @@ again, until it turns into this one. Its `becom` program does the common jobs:
 Apps and computers send each other data by number, up to 8 KB at a time. Data travels like a call, so both ends need a
 path between them, and its speed is the slower end's rate: 4, 16, 64 or 256 KB/s by radio from Low to Max, or the
 cable's rate on a line. A sender's messages go one after another at that rate. Data takes what calls leave of each link: calls
-always come first, and when they fill a link, data waits. The Line Terminal, the Exchange and every backhaul show what
+always come first, and when they fill a link, data waits. The Router, the Exchange and every backhaul show what
 data takes. An app in the background wakes for data at most once a minute, and data waits for it until then; data for
 an app that isn't installed, doesn't use `net`, or isn't allowed in the background while the phone's apps are stopped,
 is dropped. Under an app that shows data, the screen says how old the last data is once it's a few seconds old.

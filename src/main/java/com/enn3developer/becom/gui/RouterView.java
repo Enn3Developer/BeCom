@@ -6,32 +6,24 @@ import java.util.List;
 import net.minecraft.network.PacketBuffer;
 
 /**
- * What the Line Terminal's screen shows: its state, its uplink and how much of it calls take, the calls it carries,
+ * What the Router's screen shows: its state, its uplink and how much of it calls take, the calls it carries,
  * each bus of cable joining it, and what's on those buses, with what each device is doing now. Built on the server,
  * formatted on the client.
  *
- * @param tier    the terminal's cable tier ordinal, which names its voltage
+ * @param tier    the router's cable tier ordinal, which names its voltage
  * @param calls   the calls through it now
  * @param slots   the calls it carries at once
  * @param buses   the buses joining it, by id
  * @param devices what's on those buses: phones by number, then routers and gateways
  */
-public record LineTerminalView(int tier, boolean working, String owner, List<Uplink> uplinks, int calls, int slots,
+public record RouterView(int tier, boolean working, String owner, List<Uplink> uplinks, int calls, int slots,
     List<Bus> buses, List<Device> devices) {
 
     public static final int MAX_UPLINKS = 4;
     public static final int MAX_BUSES = 6;
     public static final int MAX_DEVICES = 64;
 
-    public static final LineTerminalView EMPTY = new LineTerminalView(
-        0,
-        false,
-        "",
-        List.of(),
-        0,
-        0,
-        List.of(),
-        List.of());
+    public static final RouterView EMPTY = new RouterView(0, false, "", List.of(), 0, 0, List.of(), List.of());
 
     /**
      * Where its link goes and what the run carries: the node at the far end ({@code kind} a NodeKind ordinal, -1 for an
@@ -128,7 +120,7 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
         }
     }
 
-    public static LineTerminalView read(PacketBuffer buf) {
+    public static RouterView read(PacketBuffer buf) {
         int tier = buf.readByte();
         boolean working = buf.readBoolean();
         String owner = AntennaView.readString(buf);
@@ -173,6 +165,6 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
                     Now.byOrdinal(buf.readByte()),
                     AntennaView.readString(buf)));
         }
-        return new LineTerminalView(tier, working, owner, uplinks, calls, slots, buses, devices);
+        return new RouterView(tier, working, owner, uplinks, calls, slots, buses, devices);
     }
 }

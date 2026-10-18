@@ -8,7 +8,7 @@ navigation:
 
 # Come funziona il segnale
 
-Una chiamata o un canale radio viaggia salto per salto: dal Telefono al Terminale di linea ai tralicci, da un walkie a
+Una chiamata o un canale radio viaggia salto per salto: dal Telefono al Router ai tralicci, da un walkie a
 un'antenna all'antenna successiva, da un telefono su fino ai satelliti. Ogni salto ha un rapporto segnale/rumore, l'SNR,
 in decibel (dB). Il collegamento vale quanto il suo salto più debole, e non più di quanto permettono i dispositivi ai due
 capi.

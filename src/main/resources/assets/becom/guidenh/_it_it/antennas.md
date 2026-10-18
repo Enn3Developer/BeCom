@@ -41,7 +41,7 @@ Un'antenna funziona solo se caricata e alimentata.
   banda telefonica.
 - **Si collega alle altre antenne** dove il loro segnale arriva almeno al livello Basso, separatamente per ogni banda: i
   canali radio viaggiano tra le antenne sulla banda radio, le chiamate sulla banda telefonica.
-- **Aggancia le linee:** usa la chiave su di lei, poi su una Testa di traliccio, un Terminale di linea o una
+- **Aggancia le linee:** usa la chiave su di lei, poi su una Testa di traliccio, un Router o una
   Centrale entro 16 blocchi, e le chiamate di quella linea passano via etere, a ogni telefono che le antenne
   raggiungono. Un'antenna ha 15 collegamenti per i suoi agganci.
 

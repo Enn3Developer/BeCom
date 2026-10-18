@@ -77,7 +77,7 @@ class NetworkModelTest {
         model.add(new NetNode(a, NodeKind.PYLON, null));
         model.add(new NetNode(b, NodeKind.PYLON, null));
         model.link(a, b);
-        model.add(new NetNode(a, NodeKind.TERMINAL, null));
+        model.add(new NetNode(a, NodeKind.ROUTER, null));
         assertFalse(model.linked(a, b));
         assertTrue(
             model.node(b)

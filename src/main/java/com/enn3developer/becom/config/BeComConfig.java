@@ -128,10 +128,10 @@ public final class BeComConfig {
         integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Most Fibre blocks a bus carries over.");
         integer(config, v, WIRED, "bundleSize", 1, Tunables.MAX_BUNDLE, "Most cables a pylon span holds.");
         integer(config, v, WIRED, "cableBlocksPerItem", "Blocks of span one cable item strings.");
-        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
-        integer(config, v, WIRED, "routerCallsLV", "Calls an LV Line Terminal carries at once.");
-        integer(config, v, WIRED, "routerCallsMV", "Calls an MV Line Terminal carries at once.");
-        integer(config, v, WIRED, "routerCallsHV", "Calls an HV Line Terminal carries at once.");
+        integer(config, v, WIRED, "routerPower", "EU/t a Router draws.");
+        integer(config, v, WIRED, "routerCallsLV", "Calls an LV Router carries at once.");
+        integer(config, v, WIRED, "routerCallsMV", "Calls an MV Router carries at once.");
+        integer(config, v, WIRED, "routerCallsHV", "Calls an HV Router carries at once.");
         integer(config, v, WIRED, "exchangePower", "EU/t an Exchange draws.");
         integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");
@@ -176,12 +176,7 @@ public final class BeComConfig {
         integer(config, v, ANTENNAS, "antennaMastMinT2", "Shortest Antenna T2 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMinT3", "Shortest Antenna T3 mast, in frame boxes.");
         integer(config, v, ANTENNAS, "antennaMastMax", 1, Tunables.MAX_COLUMN, "Tallest antenna mast, in frame boxes.");
-        dbl(
-            config,
-            v,
-            ANTENNAS,
-            "wrenchLinkDistance",
-            "Blocks an antenna reaches to bridge a Pylon Head or Line Terminal.");
+        dbl(config, v, ANTENNAS, "wrenchLinkDistance", "Blocks an antenna reaches to bridge a Pylon Head or Router.");
         dbl(config, v, RADIOS, "transceiverBudget", "Transceiver link budget in dB, for direct links.");
         dbl(config, v, RADIOS, "walkieBudget", "Walkie-Talkie link budget in dB, for direct links.");
         integer(config, v, RADIOS, "transceiverPower", "EU/t a Transceiver draws.");

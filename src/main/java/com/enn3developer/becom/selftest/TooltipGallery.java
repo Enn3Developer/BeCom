@@ -35,9 +35,9 @@ final class TooltipGallery extends GuiScreen {
         if (scanner) {
             // The Scanner board's boxes, as their machines word them today.
             boxes.add(waila());
-            boxes.add(terminal(false));
+            boxes.add(router(false));
             boxes.add(telephone());
-            boxes.add(terminal(true));
+            boxes.add(router(true));
             boxes.add(pylon());
             boxes.add(relay());
             at = new int[][] { { 12, 24 }, { 220, 24 }, { 430, 24 }, { 12, 150 }, { 220, 150 }, { 400, 150 } };
@@ -86,8 +86,8 @@ final class TooltipGallery extends GuiScreen {
         return stack;
     }
 
-    /** A Line Terminal's WAILA lines as on the Scanner board: working, or with every call taken and a bus too long. */
-    private static List<String> terminal(boolean full) {
+    /** A Router's WAILA lines as on the Scanner board: working, or with every call taken and a bus too long. */
+    private static List<String> router(boolean full) {
         InfoLines info = new InfoLines();
         info.add("becom.info.online")
             .status();
@@ -108,7 +108,7 @@ final class TooltipGallery extends GuiScreen {
             info.bundle(List.of(CableTier.PHONE, CableTier.PHONE), "becom.info.uplink", 12, 32)
                 .row("becom.info.row.uplink");
         }
-        return box(BeComMachines.lineTerminal.getStackForm(1), info);
+        return box(BeComMachines.router.getStackForm(1), info);
     }
 
     /** A ringing Telephone's WAILA lines as on the Scanner board. */

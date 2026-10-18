@@ -56,19 +56,19 @@ Ci sono tre cavi, e ognuno porta la sua velocità su una tratta fino alla sua po
 Una chiamata vocale prende 2 KB/s, una videochiamata 8 KB/s. I cavi di ogni livello si uniscono tra loro, e la tratta
 di un dispositivo vale quanto il cavo più scarso sulla sua strada.
 
-## Terminale di linea
+## Router
 
-Un <ItemLink id="becom:machine:25003" showIcon="left">Terminale di linea</ItemLink> è dove parte la linea
+Un <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> è dove parte la linea
 di un edificio. Va a 4 EU/t e serve ogni dispositivo sul suo cavo, dal più vicino, quanti ne ha di porte: 4 quello LV,
-8 il <ItemLink id="becom:machine:25002" showIcon="left">Terminale di linea (MV)</ItemLink>, 16 il
-<ItemLink id="becom:machine:25013" showIcon="left">Terminale di linea (HV)</ItemLink>. I dispositivi più
-lontani restano senza linea, e uno sul cavo di due terminali prende il più vicino. Quando i dispositivi che vogliono una
+8 il <ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink>, 16 il
+<ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink>. I dispositivi più
+lontani restano senza linea, e uno sul cavo di due router prende il più vicino. Quando i dispositivi che vogliono una
 linea sono più delle porte, WAILA lo dice in rosso, "9 dispositivi su 8 porte", con "Il più lontano resta senza linea."
 Tutti dividono il suo unico collegamento: una campata verso un traliccio, o un'antenna collegata a lui.
 
 Cliccalo col tasto destro per la sua schermata: il collegamento e quanto ne usano le chiamate, e una riga per ogni
 porta, col dispositivo, la tratta del suo cavo e cosa sta facendo. Un dispositivo che non può servire dice perché:
-nessuna porta libera, una tratta più lunga di quanto arriva il suo cavo, o un terminale più vicino. La Parabola
+nessuna porta libera, una tratta più lunga di quanto arriva il suo cavo, o un router più vicino. La Parabola
 satellitare, la Rampa di lancio per satelliti, il Ponte ME e il Ripetitore di portale mostrano in cima una riga di
 stato, verde se la macchina funziona e rossa col motivo se non funziona, poi righe con un'etichetta, come chiamate e
 dorsale. Quel che non va è elencato sotto le righe, dopo una linea di separazione: in rosso, o in arancione se è un
@@ -88,7 +88,7 @@ a 4, e le loro velocità si sommano. Quando è piena, un cavo migliore prende il
 indietro. Senza cavo nella barra rapida la scolleghi, e ti tornano tutti i cavi. Rompere un traliccio fa cadere i cavi
 delle sue campate.
 
-Una tratta è il filo tra due nodi alimentati: terminali, Centrali, antenne e gateway. Porta quanto la sua campata più
+Una tratta è il filo tra due nodi alimentati: router, Centrali, antenne e gateway. Porta quanto la sua campata più
 sottile, contando solo i cavi la cui portata copre tutta la tratta. WAILA su un traliccio mostra l'altezza del suo palo,
 ogni campata per punto cardinale con i suoi cavi e la sua lunghezza, e la lunghezza della tratta rispetto alla portata
 del cavo migliore teso su ogni campata: "Tratta 600 di 4096". Chiunque può collegarsi a qualsiasi rete; scollegare
@@ -100,7 +100,7 @@ proprietario e gli operatori.
 
 ## Centrale
 
-Una linea di tralicci unisce due terminali. Per unirne di più, collegali a una
+Una linea di tralicci unisce due router. Per unirne di più, collegali a una
 <ItemLink id="becom:machine:25001" showIcon="left">Centrale</ItemLink>: un edificio di LV Machine Casing,
 tre blocchi per lato, con il controller al centro della facciata, un Energy Hatch e un Input Bus. Consuma 64 EU/t e
 smista le chiamate tra fino a 15 linee.
@@ -113,7 +113,7 @@ Clic destro sul suo controller per il suo schermo, al posto del terminale di GT:
 "9 di 72", con una barra, i suoi dati in KB/s su quanti percorsi, e quanti numeri raggiunge tramite quante centrali.
 Una fila di 8 slot mostra i suoi rack: uno pieno con la tensione e le chiamate del rack, uno libero come un "+"
 tratteggiato. **Collegato a** elenca ogni tratta di filo sui tralicci e tutto ciò che sta sul suo cavo: le antenne come
-"Antenna T3, backhaul", le altre Centrali per coordinate, i Terminali di linea per punto cardinale, i gateway per
+"Antenna T3, backhaul", le altre Centrali per coordinate, i Router per punto cardinale, i gateway per
 nome, e i dispositivi con un numero per tipo e numero. Ogni riga ha i cavi del fascio e una barra di quanto portano, o
 in rosso perché la tratta non porta niente: "310 blocchi: una tratta di Cavo telefonico arriva al massimo a 128".
 

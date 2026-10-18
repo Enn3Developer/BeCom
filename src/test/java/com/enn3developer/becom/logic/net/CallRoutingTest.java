@@ -18,8 +18,8 @@ class CallRoutingTest {
     private final CallGraph.NodeVertex tb = new CallGraph.NodeVertex(0, 2);
     private final CallGraph.NodeVertex exchange = new CallGraph.NodeVertex(0, 3);
 
-    /** Phones 100.. on terminal A and 200.. on terminal B, joined by one run of {@code rate} KB/s. */
-    private CallGraph.Builder twoTerminals(int phones, int rate) {
+    /** Phones 100.. on router A and 200.. on router B, joined by one run of {@code rate} KB/s. */
+    private CallGraph.Builder twoRouters(int phones, int rate) {
         CallGraph.Builder builder = CallGraph.builder();
         for (int i = 0; i < phones; i++) {
             builder.twoWay(
@@ -47,7 +47,7 @@ class CallRoutingTest {
     @Test
     void aVideoCallTakesVideosRateAndFallsBackToVoiceWhereItHasNoRoom() {
         // 16 KB/s: room for two video calls at 8, then only voice for the third.
-        CallGraph graph = twoTerminals(3, 16).build();
+        CallGraph graph = twoRouters(3, 16).build();
         List<CallGraph.Demand> demands = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             demands.add(
@@ -73,7 +73,7 @@ class CallRoutingTest {
             routing.route("stream2")
                 .rate(),
             "16 KB/s is full: the third has no room even for voice");
-        CallGraph.Routing small = twoTerminals(1, 4).build()
+        CallGraph.Routing small = twoRouters(1, 4).build()
             .route(List.of(new CallGraph.Demand(0, "s", CallGraph.Entry.of(100), CallGraph.Entry.of(200), 8, VOICE)));
         // Low radio's 4 KB/s carries the voice, not the video.
         assertEquals(
@@ -85,7 +85,7 @@ class CallRoutingTest {
 
     @Test
     void aRunCarriesAsManyCallsAsItsRateHasRoomFor() {
-        CallGraph graph = twoTerminals(9, 16).build();
+        CallGraph graph = twoRouters(9, 16).build();
         List<CallGraph.Demand> demands = new ArrayList<>();
         for (int i = 0; i < 9; i++) demands.add(call(i, 100 + i, 200 + i));
         CallGraph.Routing routing = graph.route(demands);
@@ -102,7 +102,7 @@ class CallRoutingTest {
 
     @Test
     void theOldestCallsKeepTheirRoute() {
-        CallGraph graph = twoTerminals(2, 2).build();
+        CallGraph graph = twoRouters(2, 2).build();
         CallGraph.Routing routing = graph.route(List.of(call(1, 100, 200), call(2, 101, 201)));
         assertTrue(
             routing.route("stream1")
@@ -118,7 +118,7 @@ class CallRoutingTest {
     @Test
     void aFullLinkSendsACallTheOtherWay() {
         // A direct run with room for one call, and a longer way round through the Exchange.
-        CallGraph graph = twoTerminals(2, 2)
+        CallGraph graph = twoRouters(2, 2)
             .twoWay(ta, exchange, Double.POSITIVE_INFINITY, CallGraph.HopKind.LINE, "ax", 64)
             .twoWay(exchange, tb, Double.POSITIVE_INFINITY, CallGraph.HopKind.LINE, "xb", 64)
             .slots(exchange, 8)
@@ -195,7 +195,7 @@ class CallRoutingTest {
 
     @Test
     void dataTakesWhatCallsLeave() {
-        CallGraph graph = twoTerminals(2, 16).build();
+        CallGraph graph = twoRouters(2, 16).build();
         CallGraph.Routing routing = graph.route(List.of(call(1, 100, 200)));
         CallGraph.DataRoute data = routing.data(CallGraph.Entry.of(101), CallGraph.Entry.of(201), link -> 0);
         assertTrue(data.routed());

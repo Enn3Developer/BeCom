@@ -41,7 +41,7 @@ follow, each a grey label and a white value: "Mast 24 blocks", "Calls 9 of 12", 
 ## Machines in the rain
 
 GTNH keeps GregTech's rain hazards on, and they reach BeCom's machines as they reach any GT machine that stores
-power: one left in the rain can catch fire or explode. That's the Line Terminal, the Repeater and Router Heads, the
+power: one left in the rain can catch fire or explode. That's the Router, the Repeater and Router Heads, the
 Transceiver, the Videophone, the ME Bridge and the Portal Relay, and the energy hatches of antennas, the Satellite
 Launch Pad and the Satellite Dish. Plain Pylon Heads, controllers and other hatches are safe.
 

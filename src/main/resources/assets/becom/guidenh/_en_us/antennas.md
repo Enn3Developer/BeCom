@@ -40,7 +40,7 @@ An antenna works only while it's loaded and powered.
 - **Serves devices** in its reach on both bands: walkie-talkies on the radio band, phones on the phone band.
 - **Links to other antennas** wherever their signal reaches at least Low, separately for each band: radio channels
   travel between antennas on the radio band, calls on the phone band.
-- **Bridges lines:** wrench it, then a Pylon Head, a Line Terminal or an Exchange within 16 blocks, and that line's
+- **Bridges lines:** wrench it, then a Pylon Head, a Router or an Exchange within 16 blocks, and that line's
   calls go over the air, to every phone the antennas reach. An antenna has 15 link slots for its bridges.
 
 ## Its screen

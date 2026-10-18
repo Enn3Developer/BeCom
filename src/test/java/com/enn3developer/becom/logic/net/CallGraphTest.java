@@ -36,7 +36,7 @@ class CallGraphTest {
 
     @Test
     void aPhoneIsNeverAWayThrough() {
-        // Two separate lines, A on one and C on the other. B touches the terminal of each: it may call either side,
+        // Two separate lines, A on one and C on the other. B touches the router of each: it may call either side,
         // but it doesn't join the lines.
         CallGraph.NodeVertex t1 = new CallGraph.NodeVertex(0, 1);
         CallGraph.NodeVertex t1b = new CallGraph.NodeVertex(0, 2);
@@ -71,13 +71,13 @@ class CallGraphTest {
 
     @Test
     void aCarriedPhoneJoinsAtTheAntennasItReaches() {
-        // A Telephone on a terminal an antenna bridges, and two carried phones near antennas linked over UHF.
-        CallGraph.NodeVertex terminal = new CallGraph.NodeVertex(0, 1);
+        // A Telephone on a router an antenna bridges, and two carried phones near antennas linked over UHF.
+        CallGraph.NodeVertex router = new CallGraph.NodeVertex(0, 1);
         CallGraph.NodeVertex near = new CallGraph.NodeVertex(0, 2);
         CallGraph.NodeVertex far = new CallGraph.NodeVertex(0, 3);
         CallGraph graph = CallGraph.builder()
-            .twoWay(new CallGraph.PhoneVertex(111111), terminal, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
-            .twoWay(near, terminal, 28, CallGraph.HopKind.LINE)
+            .twoWay(new CallGraph.PhoneVertex(111111), router, Double.POSITIVE_INFINITY, CallGraph.HopKind.CABLE)
+            .twoWay(near, router, 28, CallGraph.HopKind.LINE)
             .twoWay(near, far, 14, CallGraph.HopKind.RADIO)
             .build();
         java.util.List<CallGraph.Entry> mobile = java.util.List.of(new CallGraph.Entry(near, 10));

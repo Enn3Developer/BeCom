@@ -36,7 +36,7 @@ class SavedDataTest {
         na.setHeight(12);
         na.setFormed(true);
         model.add(na);
-        model.add(new NetNode(b, NodeKind.TERMINAL, null));
+        model.add(new NetNode(b, NodeKind.ROUTER, null));
         model.link(a, b);
         model.setBlocked(a, b, true);
         return data;

@@ -46,8 +46,8 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Videophone: an MV phone for wired networks, on a Line Terminal's Phone Cable like a
- * Telephone and counting as its one phone. It's a speakerphone: everyone within its room range is in its call,
+ * The Videophone: an MV phone for wired networks, on a router's bus of cable like a Telephone. It's a speakerphone:
+ * everyone within its room range is in its call,
  * which plays from its loudspeaker, and its screen shows the other side to the room. Works only while loaded and
  * powered: otherwise it can't be called and leaves its call.
  */

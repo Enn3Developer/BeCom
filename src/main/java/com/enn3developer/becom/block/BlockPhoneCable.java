@@ -43,7 +43,7 @@ import li.cil.oc.api.internal.Rack;
  * The cables, one block with a tier each by metadata: Phone Cable, Coaxial and Fibre. Like GT's own wires they run
  * through the middle of their blocks and join side by side, each side open or closed ({@link TileCable}): a cable
  * placed joins what it was placed against, and GT wire cutters open and close its sides. Cable joins cable of its own
- * tier only; it ends at devices, Line Terminals, the Exchange and gateways ({@link CableEnd}). Nothing bumps into it,
+ * tier only; it ends at phones, routers and gateways ({@link CableEnd}). Nothing bumps into it,
  * and water and lava flow around it instead of washing it away.
  */
 public class BlockPhoneCable extends BlockContainer {

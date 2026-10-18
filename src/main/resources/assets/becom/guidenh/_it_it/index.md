@@ -44,7 +44,7 @@ Seguono righe brevi, ognuna un'etichetta grigia e un valore bianco: "Albero 24 b
 ## Le macchine sotto la pioggia
 
 GTNH lascia attivi i pericoli della pioggia di GregTech, che colpiscono le macchine di BeCom come ogni macchina GT che
-accumula energia: una lasciata sotto la pioggia può prendere fuoco o esplodere. Sono il Terminale di linea, le Teste
+accumula energia: una lasciata sotto la pioggia può prendere fuoco o esplodere. Sono il Router, le Teste
 ripetitore e router, il Ricetrasmettitore, il Videotelefono, il Ponte ME e il Ripetitore di portale, e gli energy hatch
 delle antenne, della Rampa di lancio per satelliti e della Parabola satellitare. Le Teste di traliccio semplici, i
 controller e gli altri hatch non corrono rischi.

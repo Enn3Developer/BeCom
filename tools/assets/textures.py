@@ -157,7 +157,7 @@ def router_head():
     return c
 
 
-def line_terminal():
+def router():
     """A junction block: two rows of screw terminals where the line lands, and a lamp."""
     c = Canvas()
     c.panel(1, 1, 14, 14)
@@ -311,7 +311,7 @@ OVERLAYS = {
     "OVERLAY_PYLON_HEAD": pylon_head,
     "OVERLAY_REPEATER_HEAD": repeater_head,
     "OVERLAY_ROUTER_HEAD": router_head,
-    "OVERLAY_LINE_TERMINAL": line_terminal,
+    "OVERLAY_ROUTER": router,
     "OVERLAY_ANTENNA_T1": antenna_head(1),
     "OVERLAY_ANTENNA_T2": antenna_head(2),
     "OVERLAY_ANTENNA_T3": antenna_head(3),

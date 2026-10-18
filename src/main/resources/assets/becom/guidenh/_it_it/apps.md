@@ -56,7 +56,7 @@ App e computer si mandano dati tramite numero, fino a 8 KB per volta. I dati via
 percorso tra i due capi, e la velocità è quella del capo più lento: 4, 16, 64 o 256 KB/s via radio da Basso a Massimo, o la
 velocità del cavo su una linea. I messaggi di chi manda partono uno dopo l'altro, a quella velocità. I dati
 prendono ciò che le chiamate lasciano di ogni collegamento: le chiamate vengono sempre prima, e quando riempiono un
-collegamento i dati aspettano. Il Terminale di linea, la Centrale e ogni dorsale mostrano quanto prendono i dati.
+collegamento i dati aspettano. Il Router, la Centrale e ogni dorsale mostrano quanto prendono i dati.
 Un'app in background si sveglia per i dati al massimo una volta al minuto, e fino ad allora i dati la aspettano; i dati
 per un'app non installata, che non usa `net`, o non ammessa in background mentre le app del telefono sono ferme, vanno
 persi. Sotto un'app che mostra dati, lo schermo dice quanto sono vecchi gli ultimi, quando lo sono di qualche secondo.

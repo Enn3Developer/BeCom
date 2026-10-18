@@ -28,7 +28,7 @@ public final class Buses {
     public enum Kind {
         /** A Telephone, a Videophone or a wired computer. */
         PHONE,
-        /** A Line Terminal or an Exchange: what makes a bus carry. */
+        /** A Router or an Exchange: what makes a bus carry. */
         ROUTER,
         /** A Satellite Dish, a Portal Relay or an ME Bridge. */
         GATEWAY

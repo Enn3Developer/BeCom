@@ -54,19 +54,19 @@ There are three cables, and each carries its rate over a run up to its reach, an
 A voice call takes 2 KB/s, a video call 8 KB/s. Cables of any tier join each other, and a device's run is as good as
 the poorest cable on its way.
 
-## Line Terminal
+## Router
 
-A <ItemLink id="becom:machine:25003" showIcon="left">Line Terminal</ItemLink> is where a building's line
+A <ItemLink id="becom:machine:25003" showIcon="left">Router</ItemLink> is where a building's line
 starts. It runs on 4 EU/t and serves every device on its cable, the nearest first, as many as it has ports: 4 for the
-LV one, 8 for the <ItemLink id="becom:machine:25002" showIcon="left">Line Terminal (MV)</ItemLink>, 16 for
-the <ItemLink id="becom:machine:25013" showIcon="left">Line Terminal (HV)</ItemLink>. Farther devices get
-no line, and a device on two terminals' cable takes the nearer one. When more devices want a line than it has ports,
+LV one, 8 for the <ItemLink id="becom:machine:25002" showIcon="left">Router (MV)</ItemLink>, 16 for
+the <ItemLink id="becom:machine:25013" showIcon="left">Router (HV)</ItemLink>. Farther devices get
+no line, and a device on two routers' cable takes the nearer one. When more devices want a line than it has ports,
 WAILA says so in red, "9 devices on 8 ports", with "The farthest one gets no line." All its devices share its one link,
 its uplink: a span to a pylon, or an antenna wired to it.
 
 Right-click it for its screen: its uplink and how much of it calls take, and a row for each port, with the device on it,
 its cable run and what it's doing. A device it can't serve says why: no free port, a cable run longer than its cable
-reaches, or a nearer terminal. The Satellite Dish, the Satellite Launch Pad, the ME Bridge and the Portal Relay show a
+reaches, or a nearer router. The Satellite Dish, the Satellite Launch Pad, the ME Bridge and the Portal Relay show a
 status line on top, green when the machine works and red with the reason when it doesn't, then labelled rows, such as
 their calls and backhaul. Anything wrong is listed under the rows, below a rule: in red, or in orange for a warning.
 
@@ -83,7 +83,7 @@ one for every 4 blocks of span. Wrench the pair again with cable to add another:
 add up. Once it's full, a better cable swaps out the poorest one, which comes back to you. Wrench it with no cable in
 your hotbar to unlink it, and every cable on it comes back. Breaking a pylon drops the cables of its spans.
 
-A run is the wire between two powered nodes: terminals, Exchanges, antennas and gateways. It carries what its thinnest
+A run is the wire between two powered nodes: routers, Exchanges, antennas and gateways. It carries what its thinnest
 span does, counting only the cables whose reach covers the whole run. WAILA on a pylon shows its pole's height, each
 span by its compass direction with its cables and length, and its run's length against the reach of the best cable
 strung on every span: "Run 600 of 4096". Anyone
@@ -94,7 +94,7 @@ since anyone there may join it. Without ServerUtilities, only the owner and oper
 
 ## Exchange
 
-Pylon lines join two terminals. To join more, wire them to an
+Pylon lines join two routers. To join more, wire them to an
 <ItemLink id="becom:machine:25001" showIcon="left">Exchange</ItemLink>: a building of LV Machine Casings,
 three blocks each way, with the controller in the middle of its front, an Energy Hatch and an Input Bus. It draws
 64 EU/t and switches calls between up to 15 lines.
@@ -107,7 +107,7 @@ Right-click its controller for its own screen, in place of GT's terminal: whethe
 with a bar, its data in KB/s over how many routes, and how many numbers it reaches through how many exchanges. A row of
 8 slots shows its racks: a filled one with the rack's voltage and calls, a free one as a dashed "+". **Joined to** lists
 every run of wire over pylons and everything on its own cable: antennas as "Antenna T3, backhaul", other Exchanges by
-their coordinates, Line Terminals by their compass direction, gateways by name, and numbered devices by kind and number.
+their coordinates, Routers by their compass direction, gateways by name, and numbered devices by kind and number.
 Each row has the bundle's cables and a bar of what they carry, or in red why the run carries nothing:
 "310 blocks: a Phone Cable run is 128 at most".
 

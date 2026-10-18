@@ -11,7 +11,7 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.gui.machine.LineTerminalUi;
+import com.enn3developer.becom.gui.machine.RouterUi;
 import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
@@ -22,47 +22,45 @@ import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
-import com.enn3developer.becom.machine.MTELineTerminal;
+import com.enn3developer.becom.machine.MTERouter;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NetworkService;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The Line Terminal's screen: its state and owner, its uplink and what calls take of it, the calls it carries, a row
+ * The Router's screen: its state and owner, its uplink and what calls take of it, the calls it carries, a row
  * per bus of cable joining it, and what's on those buses, with what each phone is doing.
  */
-public final class LineTerminalScreen {
+public final class RouterScreen {
 
-    private LineTerminalScreen() {}
+    private RouterScreen() {}
 
-    public static ModularPanel build(MTELineTerminal terminal, PosGuiData data, PanelSyncManager sync) {
-        ViewSync<LineTerminalView> viewSync = new ViewSync<>(
-            () -> view(terminal),
-            LineTerminalView::write,
-            LineTerminalView::read,
-            LineTerminalView.EMPTY);
+    public static ModularPanel build(MTERouter router, PosGuiData data, PanelSyncManager sync) {
+        ViewSync<RouterView> viewSync = new ViewSync<>(
+            () -> view(router),
+            RouterView::write,
+            RouterView::read,
+            RouterView.EMPTY);
         sync.syncValue("view", viewSync);
-        CanvasWidget screen = new CanvasWidget(
-            new LineTerminalUi(viewSync::view),
-            LineTerminalUi.scale(BeCom.proxy.guiHeight()));
-        return new ModularPanel("becom_line_terminal").size(screen.width(), screen.height())
+        CanvasWidget screen = new CanvasWidget(new RouterUi(viewSync::view), RouterUi.scale(BeCom.proxy.guiHeight()));
+        return new ModularPanel("becom_router").size(screen.width(), screen.height())
             .background(IDrawable.EMPTY)
             .child(screen);
     }
 
-    /** Server side: what the terminal shows. */
-    public static LineTerminalView view(MTELineTerminal terminal) {
+    /** Server side: what the router shows. */
+    public static RouterView view(MTERouter router) {
         BeComServer becom = BeComServer.get();
-        IGregTechTileEntity tile = terminal.getBaseMetaTileEntity();
-        if (becom == null || tile == null) return LineTerminalView.EMPTY;
+        IGregTechTileEntity tile = router.getBaseMetaTileEntity();
+        if (becom == null || tile == null) return RouterView.EMPTY;
         Tunables t = becom.tunables;
         NodeRef self = new NodeRef(
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         NetworkModel model = becom.network.model(self.dimension());
         NetNode node = model == null ? null : model.node(self.pos());
-        List<LineTerminalView.Uplink> uplinks = new ArrayList<>();
+        List<RouterView.Uplink> uplinks = new ArrayList<>();
         if (node != null) {
             List<NetworkService.Run> runs = becom.network.runsFrom(self.dimension(), self.pos());
             for (long other : node.links()) {
@@ -73,7 +71,7 @@ public final class LineTerminalScreen {
                 long end = run == null ? other : run.to();
                 NetNode far = model.node(end);
                 uplinks.add(
-                    new LineTerminalView.Uplink(
+                    new RouterView.Uplink(
                         far == null || far.kind() == com.enn3developer.becom.logic.net.NodeKind.PYLON ? -1
                             : far.kind()
                                 .ordinal(),
@@ -88,8 +86,8 @@ public final class LineTerminalScreen {
                         run == null ? 0 : becom.apps.dataOn(run.link())));
             }
         }
-        List<LineTerminalView.Bus> buses = new ArrayList<>();
-        List<LineTerminalView.Device> devices = new ArrayList<>();
+        List<RouterView.Bus> buses = new ArrayList<>();
+        List<RouterView.Device> devices = new ArrayList<>();
         List<Buses.Bus> on = new ArrayList<>(becom.network.busesAt(self.dimension(), self.pos()));
         on.sort(java.util.Comparator.comparingLong(Buses.Bus::id));
         for (int i = 0; i < on.size(); i++) {
@@ -106,7 +104,7 @@ public final class LineTerminalScreen {
                 devices.add(device(becom, model, end, i, bus.tooLong()));
             }
             buses.add(
-                new LineTerminalView.Bus(
+                new RouterView.Bus(
                     bus.tier()
                         .ordinal(),
                     bus.cables(),
@@ -120,55 +118,55 @@ public final class LineTerminalScreen {
         }
         // Phones first, by number; then the routers and gateways, as they come.
         devices.sort(
-            java.util.Comparator.comparing((LineTerminalView.Device d) -> d.node() >= 0)
-                .thenComparingInt(LineTerminalView.Device::number));
+            java.util.Comparator.comparing((RouterView.Device d) -> d.node() >= 0)
+                .thenComparingInt(RouterView.Device::number));
         UUID owner = tile.getOwnerUuid();
         String ownerName = owner == null ? null : UsernameCache.getLastKnownUsername(owner);
-        return new LineTerminalView(
-            terminal.tier()
+        return new RouterView(
+            router.tier()
                 .ordinal(),
-            terminal.isWorking(),
+            router.isWorking(),
             ownerName == null ? "" : ownerName,
             uplinks,
             becom.calls.callsAt(self.dimension(), self.pos()),
-            t.routerCalls(terminal.tier()),
+            t.routerCalls(router.tier()),
             buses,
             devices);
     }
 
     /** One thing on a bus: a phone and what it's doing, or a router or gateway joined there. */
-    private static LineTerminalView.Device device(BeComServer becom, NetworkModel model, Buses.End end, int bus,
+    private static RouterView.Device device(BeComServer becom, NetworkModel model, Buses.End end, int bus,
         boolean tooLong) {
         if (end.kind() != Buses.Kind.PHONE) {
             NetNode node = model == null ? null : model.node(end.pos());
-            return new LineTerminalView.Device(
+            return new RouterView.Device(
                 -1,
                 node == null ? -1
                     : node.kind()
                         .ordinal(),
                 -1,
                 bus,
-                LineTerminalView.Now.JOINED,
+                RouterView.Now.JOINED,
                 "");
         }
         int number = end.number();
         PhoneRecord record = number < 0 ? null : becom.phones.record(number);
-        LineTerminalView.Now now = LineTerminalView.Now.IDLE;
+        RouterView.Now now = RouterView.Now.IDLE;
         String with = "";
         if (tooLong) {
-            now = LineTerminalView.Now.TOO_LONG;
+            now = RouterView.Now.TOO_LONG;
         } else if (number >= 0) {
             Call call = becom.calls.book()
                 .callOfPhone(number);
             Call.Leg leg = call == null ? null : call.legOf(number);
             if (leg != null && leg.state() == Call.Leg.State.RINGING) {
-                now = LineTerminalView.Now.RINGING;
+                now = RouterView.Now.RINGING;
             } else if (leg != null && leg.state() != Call.Leg.State.LEFT) {
-                now = LineTerminalView.Now.CALL;
+                now = RouterView.Now.CALL;
                 with = others(becom, call, number);
             }
         }
-        return new LineTerminalView.Device(
+        return new RouterView.Device(
             record == null ? -1
                 : record.kind()
                     .ordinal(),

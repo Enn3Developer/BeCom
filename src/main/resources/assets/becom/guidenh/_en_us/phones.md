@@ -48,7 +48,7 @@ you switch it back on.
 ## Videophone
 
 <ItemLink id="becom:machine:25009" showIcon="left">Videophone</ItemLink> is a speakerphone with a screen for
-wired networks, at MV and 32 EU/t. Give it Phone Cable to a Line Terminal, like a Telephone. Everyone within 4 blocks is
+wired networks, at MV and 32 EU/t. Give it Phone Cable to a Router, like a Telephone. Everyone within 4 blocks is
 in its call and on its screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after
 the last person walks away.
 

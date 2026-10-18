@@ -9,7 +9,7 @@ public enum NodeKind {
     /** A Pylon Head: passive, holds the cables of a line's spans. */
     PYLON(2, false, true, 0),
     /** A ground machine where a building's line starts: it serves every device on its cable. */
-    TERMINAL(1, true, false, 0),
+    ROUTER(1, true, false, 0),
     /**
      * The Exchange: a ground multiblock whose Switching Racks switch calls between every line wired
      * to it.
@@ -95,9 +95,9 @@ public enum NodeKind {
         return pylonHead || antenna() || this == SATELLITE_DISH || this == EXCHANGE;
     }
 
-    /** Stands on the ground and ends lines: a Line Terminal or an Exchange, which pylons lead to. */
+    /** Stands on the ground and ends lines: a Router or an Exchange, which pylons lead to. */
     public boolean ground() {
-        return this == TERMINAL || this == EXCHANGE;
+        return this == ROUTER || this == EXCHANGE;
     }
 
     /** The antenna kind of a tier, 1 to 3. */
