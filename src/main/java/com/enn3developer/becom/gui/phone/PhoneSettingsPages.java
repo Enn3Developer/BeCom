@@ -115,11 +115,11 @@ final class PhoneSettingsPages {
         float h = ui.rowHeight(c, sub);
         if (ui.hover(SX, y, SW, h - 1)) c.rect(SX, y, SW, h - 1, 0x141a20);
         float next = ui.row(c, y, title, sub);
-        // The board's "›" ends 11 from the right edge, in the middle of the row over its line; the count is 14-pixel
-        // text with a space before it, its capitals where a title's are.
+        // The board's "›" ends 11 from the right edge, in the middle of the row over its line, and the count before it.
         float chevronX = SX + SW - 11 - 6;
         chevron(c, chevronX, y + Math.round((h - 1 - 11) / 2), Paint.GREY);
-        if (count != null) Paint.right(c, count, chevronX - 5, y + Math.round((h - 1 - 17) / 2) + 5, 14, Paint.GREY);
+        if (count != null)
+            Paint.right(c, count, chevronX - 5, y + Math.round((h - 1 - c.lineHeight(14)) / 2), 14, Paint.GREY);
         ui.hit(SX, y, SW, next - y, open);
         return next;
     }

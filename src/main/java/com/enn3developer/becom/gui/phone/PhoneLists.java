@@ -237,8 +237,8 @@ final class PhoneLists {
         for (int i = first; i < Math.min(blocked.size(), first + ROWS); i++) {
             PhoneView.Blocked one = blocked.get(i);
             c.face(one.name(), SX + 10, y + 8, 24);
-            // The name alone in the middle of the row, where the board's font puts a 15-pixel line's capitals.
-            c.text(one.name(), SX + 44, y + 14, 15, Paint.WHITE);
+            // The name alone in the middle of the row.
+            c.text(one.name(), SX + 44, y + Math.round((ROW - 1 - c.lineHeight(15)) / 2), 15, Paint.WHITE);
             if (v.mayManage()) {
                 String label = t("becom.ui.blocked.unblock");
                 float w = c.width(label, 13) + 20;
@@ -284,14 +284,11 @@ final class PhoneLists {
         float max = SW - 44 - 10 - 30 - 10;
         float numberW = number == null ? 0 : c.width(number, 12) + 8;
         String shown = Paint.fit(c, name, 15, max - numberW);
-        c.text(shown, textX, y + 8, 15, Paint.WHITE);
-        if (number != null) c.text(
-            number,
-            textX + c.width(shown, 15) + 8,
-            y + 8 + c.lineHeight(15) - c.lineHeight(12) - 1,
-            12,
-            Paint.GREY);
-        c.text(Paint.fit(c, sub, 12, max), textX, y + 25, 12, subColor);
+        float top = y + Math.round((ROW - 1 - c.lineHeight(15) - 3 - c.lineHeight(12)) / 2);
+        c.text(shown, textX, top, 15, Paint.WHITE);
+        if (number != null)
+            c.text(number, textX + c.width(shown, 15) + 8, top + c.lineHeight(15) - c.lineHeight(12), 12, Paint.GREY);
+        c.text(Paint.fit(c, sub, 12, max), textX, top + c.lineHeight(15) + 3, 12, subColor);
         float bx = SX + SW - 10 - 30;
         float by = y + 5;
         boolean button = ui.hover(bx, by, 30, 30);

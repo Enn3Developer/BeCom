@@ -274,8 +274,7 @@ public final class PhoneUi extends CanvasScreen {
     float paintBar(Canvas c, String title, int color, int shadow) {
         float y = SY + STATUS;
         c.rect(SX, y, SW, BAR, color);
-        // The board's 16-pixel title has its capitals 12 under the bar's top.
-        Paint.shadowed(c, title, SX + 8, y + 12, 16, Paint.WHITE, shadow);
+        Paint.shadowed(c, title, SX + 8, y + Math.round((BAR - c.lineHeight(16)) / 2), 16, Paint.WHITE, shadow);
         return y + BAR;
     }
 
@@ -596,7 +595,14 @@ public final class PhoneUi extends CanvasScreen {
     private void goButton(Canvas c, float x, float y, float w, float h, String label) {
         Paint.Style go = Paint.Style.GO;
         Paint.box(c, x, y, w, h, 2, hover(x, y, w, h) ? Paint.brighter(go.face) : go.face, go.light, go.dark);
-        Paint.shadowed(c, label, x + (w - c.width(label, 17)) / 2, y + 15, 17, Paint.WHITE, 0x1a4a20);
+        Paint.shadowed(
+            c,
+            label,
+            x + (w - c.width(label, 17)) / 2,
+            y + (h - c.lineHeight(17)) / 2,
+            17,
+            Paint.WHITE,
+            0x1a4a20);
     }
 
     private PhoneView.Contact matching(PhoneView v) {
@@ -882,21 +888,34 @@ public final class PhoneUi extends CanvasScreen {
     }
 
     /**
-     * A section's heading: small, blue-grey and in capitals, in the boards' 13-pixel line with 8 above and 2 under.
-     * Returns where what's under it starts.
+     * A section's heading: small, blue-grey and in capitals, 10 under what's above. Returns where what's under starts.
      */
     float section(Canvas c, float y, String title) {
-        c.text(title.toUpperCase(), SX + 10, y + 8 + 3, 11, Paint.SECTION);
-        return y + 8 + 13 + 2;
+        c.text(title.toUpperCase(), SX + 10, y + 10, 11, Paint.SECTION);
+        return y + 10 + c.lineHeight(11) + 4;
     }
 
+    // A row's padding over and under its text, and the gap under its title and between its grey lines.
+    private static final float ROW_PAD = 7;
+    private static final float ROW_GAP = 2;
+
     /**
-     * A row of the Settings board: 30 tall over its line, the title in the middle, or at the top with a grey line under
-     * it when {@code sub} isn't null. A grey line that wraps makes the row a line taller. Returns the row's height.
+     * A row of the Settings board: its title, and under it a grey line when {@code sub} isn't null, in the middle of a
+     * row 31 tall at least, over its line. A grey line that wraps makes the row taller. Returns the row's height.
      */
     float rowHeight(Canvas c, String sub) {
-        if (sub == null) return 31;
-        return 31 + (subLines(c, sub).size() - 1) * 13;
+        return Math.max(31, ROW_PAD + textHeight(c, sub) + ROW_PAD) + 1;
+    }
+
+    /** The same with the Battery and app settings boards' 2 more padding. */
+    float paddedRowHeight(Canvas c, String sub) {
+        return Math.max(35, ROW_PAD + 2 + textHeight(c, sub) + ROW_PAD + 2) + 1;
+    }
+
+    private static float textHeight(Canvas c, String sub) {
+        float h = c.lineHeight(14);
+        if (sub != null) h += subLines(c, sub).size() * (ROW_GAP + c.lineHeight(11));
+        return h;
     }
 
     // A row's grey line wraps once, leaving room for a pill or a chevron on the right as the boards' do.
@@ -908,43 +927,22 @@ public final class PhoneUi extends CanvasScreen {
 
     /** Paints a {@link #rowHeight} row; returns where the next row starts. */
     float row(Canvas c, float y, String title, String sub) {
-        float h = rowHeight(c, sub);
-        if (sub == null) {
-            c.text(title, SX + 10, y + 12, 14, Paint.WHITE);
-        } else {
-            // The title's 17-pixel line at the top, its capitals 5 down; the grey lines' 13 under it, theirs 3 down.
-            c.text(title, SX + 10, y + 5, 14, Paint.WHITE);
-            float ty = y + 17 + 3;
-            for (String line : subLines(c, sub)) {
-                c.text(line, SX + 10, ty, 11, Paint.GREY);
-                ty += 13;
-            }
-        }
-        c.rect(SX, y + h - 1, SW, 1, Paint.LINE);
-        return y + h;
-    }
-
-    /**
-     * A row of the Battery and app settings boards: 2 of padding around a title's 17-pixel line and the grey lines'
-     * 14 each, 30 at least, over its line. Returns the row's height.
-     */
-    float paddedRowHeight(Canvas c, String sub) {
-        float lines = sub == null ? 17 : 17 + subLines(c, sub).size() * 14;
-        return 2 + Math.max(30, lines) + 2 + 1;
+        return paintRow(c, y, title, sub, rowHeight(c, sub));
     }
 
     /** Paints a {@link #paddedRowHeight} row; returns where the next row starts. */
     float paddedRow(Canvas c, float y, String title, String sub) {
-        float h = paddedRowHeight(c, sub);
-        if (sub == null) {
-            c.text(title, SX + 10, y + 14, 14, Paint.WHITE);
-        } else {
-            c.text(title, SX + 10, y + 2 + 5, 14, Paint.WHITE);
-            float ty = y + 2 + 17 + 4;
-            for (String line : subLines(c, sub)) {
-                c.text(line, SX + 10, ty, 11, Paint.GREY);
-                ty += 14;
-            }
+        return paintRow(c, y, title, sub, paddedRowHeight(c, sub));
+    }
+
+    private float paintRow(Canvas c, float y, String title, String sub, float h) {
+        float ty = y + Math.round((h - 1 - textHeight(c, sub)) / 2);
+        c.text(title, SX + 10, ty, 14, Paint.WHITE);
+        ty += c.lineHeight(14);
+        if (sub != null) for (String line : subLines(c, sub)) {
+            ty += ROW_GAP;
+            c.text(line, SX + 10, ty, 11, Paint.GREY);
+            ty += c.lineHeight(11);
         }
         c.rect(SX, y + h - 1, SW, 1, Paint.LINE);
         return y + h;
