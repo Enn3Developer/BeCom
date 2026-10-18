@@ -39,7 +39,7 @@ QUESTS_IT = {
         "Un Router smista 8 chiamate. Per un'intera città costruisci una Centrale: una sala di Rack di "
         "commutazione, larga 3 e alta 5, con fino a 8 sezioni di 4 rack tra le sue due testate e una passerella di "
         "frame box lungo il colmo. Costruiscila tutta di un livello: LV, MV o HV Machine Casing, con Frame Box di "
-        "Steel, Aluminium o Stainless Steel.%n%nConsuma tramite un Energy Hatch per la sua lunghezza e i suoi rack, e "
+        "Steel, Aluminium o Stainless Steel.%n%nConsuma tramite un Energy Hatch per il suo tier e i suoi rack, e "
         "collega un bus a ogni Line Hatch, sulle testate, sul tetto o sul pavimento. Ogni rack LV smista 8 chiamate "
         "insieme, MV 16, HV 32; rack "
         "e hatch arrivano fino al livello della sala."),

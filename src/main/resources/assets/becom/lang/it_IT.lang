@@ -42,7 +42,7 @@ becom.cable.join.nothing=Lì non c'è niente che prenda il cavo.
 
 # Machine tooltips
 becom.machine.power=Usa %s a %s
-becom.machine.overclock=Ogni tier di cui la sua Energy Hatch più bassa supera il suo: chiamate ×2, energia ×4
+becom.machine.overclock=Va in overclock come le strutture di GT: chiamate ×2 per energia ×4
 becom.machine.router.info=Smista le chiamate tra i suoi bus di cavo
 becom.machine.router.calls=Porta fino a %s chiamate alla volta
 becom.machine.router.cable=Prende cavo fino a %s, su ogni faccia
@@ -56,8 +56,8 @@ becom.machine.exchange.type=Centrale
 becom.machine.exchange.info=Smista le chiamate tra i bus delle sue Line Hatch
 becom.machine.exchange.racks=I rack smistano %s chiamate l'uno in LV, %s in MV, %s in HV
 becom.machine.exchange.tier=Il suo tier è quello dei suoi casing, da LV a HV
-becom.machine.exchange.power=Usa %s a sezione e %s a rack in LV, ×4 a ogni tier in più
-becom.machine.exchange.overclock=Ogni tier di cui la sua Energy Hatch più bassa supera la sala: chiamate ×4, energia ×4
+becom.machine.exchange.power=Usa %s, e %s a rack, in LV; ×4 a ogni tier in più
+becom.machine.exchange.overclock=Overclock perfetti, contati come nelle strutture di GT: chiamate ×4 per energia ×4
 becom.machine.exchange.controller=Testata frontale, al centro della seconda fila
 becom.machine.exchange.casing=Machine Casing LV, MV o HV, tutti dello stesso tier
 becom.machine.exchange.frame=Frame Box di acciaio, alluminio o acciaio inox, per tier: i montanti, e la passerella dei cavi sul colmo
@@ -83,7 +83,7 @@ becom.machine.launch_pad.type=Rampa di lancio per satelliti
 becom.machine.launch_pad.info=Mette satelliti in orbita sopra questa dimensione
 becom.machine.launch_pad.launch=Un lancio: %s s a %s EU/t, %s L di carburante per razzi
 becom.machine.launch_pad.sky=Serve cielo aperto sopra la fossa di scarico
-becom.machine.launch_pad.overclock=Ogni tier di cui la sua Energy Hatch più bassa supera HV: metà del tempo, energia ×4
+becom.machine.launch_pad.overclock=Va in overclock come le strutture di GT: metà del tempo per energia ×4
 becom.machine.launch_pad.controller=Al centro del bordo anteriore della rampa
 becom.machine.launch_pad.bus=Base della torre di servizio, dietro la rampa
 becom.machine.launch_pad.tank=Serbatoio del propellente, accanto alla rampa
@@ -128,7 +128,6 @@ becom.exchange.why.rack_tier=Un Rack di commutazione %s in una sala %s: i rack a
 becom.exchange.why.line_tier=Una Line Hatch %s in una sala %s: le Line Hatch arrivano fino al tier della sala
 becom.exchange.why.no_line_hatch=Nessuna Line Hatch: ne serve almeno una, su testate, tetto o pavimento
 becom.exchange.why.no_energy_hatch=Nessuna Energy Hatch: ne serve una, su testate, tetto o pavimento
-becom.exchange.why.energy_tier=Una Energy Hatch sotto il tier della sala %s
 becom.exchange.hall_one=%s, 1 sezione
 becom.exchange.hall=%s, %s sezioni
 becom.rack.in_use=In uso
@@ -269,7 +268,7 @@ betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=È ora della prima chiamata! Co
 betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.name=§6§lTubi più grossi
 betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.desc=Il Cavo telefonico porta 16 KB/s, abbastanza per 8 chiamate, su bus fino a 128 blocchi. Il Cavo coassiale porta 64 KB/s su bus fino a 512 blocchi, e si fa nell'Assembler con rame ricotto, lamina d'alluminio e polietilene. In HV, il Cavo in fibra porta 256 KB/s fino a 4096 blocchi.%n%nOgni cavo si unisce solo al cavo del suo livello, e un router lo prende solo fino al livello del router: il coassiale vuole almeno un Router MV, o una Line Hatch MV.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.name=§2§lCentralino
-betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=Un Router smista 8 chiamate. Per un'intera città costruisci una Centrale: una sala di Rack di commutazione, larga 3 e alta 5, con fino a 8 sezioni di 4 rack tra le sue due testate e una passerella di frame box lungo il colmo. Costruiscila tutta di un livello: LV, MV o HV Machine Casing, con Frame Box di Steel, Aluminium o Stainless Steel.%n%nConsuma tramite un Energy Hatch per la sua lunghezza e i suoi rack, e collega un bus a ogni Line Hatch, sulle testate, sul tetto o sul pavimento. Ogni rack LV smista 8 chiamate insieme, MV 16, HV 32; rack e hatch arrivano fino al livello della sala.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=Un Router smista 8 chiamate. Per un'intera città costruisci una Centrale: una sala di Rack di commutazione, larga 3 e alta 5, con fino a 8 sezioni di 4 rack tra le sue due testate e una passerella di frame box lungo il colmo. Costruiscila tutta di un livello: LV, MV o HV Machine Casing, con Frame Box di Steel, Aluminium o Stainless Steel.%n%nConsuma tramite un Energy Hatch per il suo tier e i suoi rack, e collega un bus a ogni Line Hatch, sulle testate, sul tetto o sul pavimento. Ogni rack LV smista 8 chiamate insieme, MV 16, HV 32; rack e hatch arrivano fino al livello della sala.%n%nAltro nella guida: [guide page=becom:wired.md]La rete cablata[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lIn onda
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=È ora di tagliare il filo. Una Testa d'antenna T1 sta in cima a un albero strallato di 6-32 Steel Frame Box, con un dipolo sotto la testa e tre stralli fino ad ancoraggi di LV Machine Casing; l'Energy Hatch va nello shelter degli apparati davanti. Usa 24 EU/t.%n%nArriva a circa 64 blocchi in campo aperto. L'altezza aiuta; colline e tetti ti costano segnale. Le antenne si trovano da sole, ma i collegamenti radio portano poco. Metti una Line Hatch nel suo shelter e collegala con il cavo al tuo Router: l'antenna porta allora le chiamate della tua rete via etere, 4 alla volta.%n%nAltro nella guida: [guide page=becom:antennas.md]Antenne[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lStazione base
@@ -623,7 +622,9 @@ becom.ui.router.now_ringing=squilla
 becom.ui.router.now_too_long=bus troppo lungo
 becom.info.eu_t=%s EU/t
 becom.info.ae_t=%s AE/t
-becom.info.overclocked=%s, chiamate ×%s
+becom.info.overclocked=chiamate ×%s, energia ×%s
+becom.info.hatch_power=Vuole %s EU/t; le sue Energy Hatch ne danno %s
+becom.info.hatch_voltage=Tensione troppo bassa: le sue Energy Hatch devono essere almeno %s
 becom.info.row.calls=Chiamate
 becom.info.row.bus=Bus
 becom.info.row.on_bus=Collegati

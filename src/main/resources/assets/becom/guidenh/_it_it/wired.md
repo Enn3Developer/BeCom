@@ -126,10 +126,11 @@ chiamate quante ne sommano i suoi rack; senza, non smista niente. I rack si riem
 sono accese mentre le chiamate lo usano, così si vede da fuori quanto è occupata. Quando ogni strada tra due telefoni è
 piena, chi chiama dopo sente occupato. Le chiamate già in corso tengono la loro strada.
 
-Consuma per la sua lunghezza e per i suoi rack: 8 EU/t a sezione in una sala LV, 32 in MV e 128 in HV, e 4, 16 o 64
-EU/t per ogni rack LV, MV o HV. Una Energy Hatch sotto il tier della sala non la fa formare. Ogni tier di cui la sua
-Energy Hatch più bassa supera quello della sala è un overclock perfetto: quattro volte le chiamate per quattro volte
-l'energia.
+Consuma per il suo tier e per i suoi rack: 24 EU/t per una sala LV, 96 per MV e 384 per HV, e 4, 16 o 64 EU/t in più
+per ogni rack LV, MV o HV. Le sue Energy Hatch la alimentano come le strutture di GT alimentano una ricetta: con la loro
+tensione media e tutti i loro ampere, uno per una hatch da sola. Sotto quanto consuma, o più di un tier sotto la
+tensione della sala, resta spenta e dice perché. Oltre, va in overclock da sola fin dove arriva la loro energia, e i
+suoi overclock sono perfetti: quattro volte le chiamate per quattro volte l'energia.
 
 Clic destro sul suo controller per il suo schermo, al posto del terminale di GT: il suo tier e se funziona, poi le sue
 chiamate, "9 di 72", con una barra, i suoi dati in KB/s su quanti percorsi, e quanti numeri raggiunge tramite quante

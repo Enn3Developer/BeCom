@@ -120,9 +120,11 @@ its racks add up to; with none it switches nothing. Racks fill from the front, a
 it, so you can see from outside how busy it is. When every way between two phones is full, the next caller hears busy.
 Calls already going keep their way.
 
-It draws for its length and its racks: 8 EU/t a slice in an LV hall, 32 in MV and 128 in HV, and 4, 16 or 64 EU/t for
-each LV, MV or HV rack. An Energy Hatch below the hall's tier keeps it from forming. Each tier its lowest Energy Hatch
-is above the hall's is a perfect overclock: four times the calls for four times the power.
+It draws for its tier and its racks: 24 EU/t for an LV hall, 96 for MV and 384 for HV, and 4, 16 or 64 EU/t more for
+each LV, MV or HV rack. Its Energy Hatches run it the way GT's multiblocks run a recipe: their average voltage, and all
+their amps, one for a lone hatch. Below what it draws, or more than a tier under its hall's voltage, it stays off and
+says why. Past that, it overclocks by itself as far as their power goes, and its overclocks are perfect: four times the
+calls for four times the power.
 
 Right-click its controller for its own screen, in place of GT's terminal: its tier and whether it works, then its calls,
 "9 of 72", with a bar, its data in KB/s over how many routes, and how many numbers it reaches through how many

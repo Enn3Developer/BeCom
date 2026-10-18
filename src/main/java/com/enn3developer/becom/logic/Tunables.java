@@ -15,9 +15,8 @@ public record Tunables(
     double dropAfterSeconds,
     // Wired network
     int cableRatePhone, int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial,
-    int cableReachFibre, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
-    int exchangeSlicePower, int rackPower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate,
-    int videoRate,
+    int cableReachFibre, int routerPower, int routerCallsLV, int routerCallsMV, int routerCallsHV, int exchangePower,
+    int rackPower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
     // Calls
     double directHearingRange, int sessionGraceSeconds, int ringSeconds, int callAttemptsPerMinute,
     // Radio simulation
@@ -116,7 +115,7 @@ public record Tunables(
         d.put("routerCallsLV", 8);
         d.put("routerCallsMV", 16);
         d.put("routerCallsHV", 32);
-        d.put("exchangeSlicePower", 8);
+        d.put("exchangePower", 24);
         d.put("rackPower", 4);
         d.put("rackCallsLV", 8);
         d.put("rackCallsMV", 16);
@@ -295,7 +294,7 @@ public record Tunables(
             if (rackCalls(tier) < 1) throw invalid("rackCalls" + tier.voltage(), rackCalls(tier), "at least 1");
         }
         if (routerPower < 0) throw invalid("routerPower", routerPower, "0 or more");
-        if (exchangeSlicePower < 0) throw invalid("exchangeSlicePower", exchangeSlicePower, "0 or more");
+        if (exchangePower < 0) throw invalid("exchangePower", exchangePower, "0 or more");
         if (rackPower < 0) throw invalid("rackPower", rackPower, "0 or more");
         if (voiceRate < 1) throw invalid("voiceRate", voiceRate, "at least 1");
         if (videoRate < voiceRate) throw invalid("videoRate", videoRate, "at least voiceRate");
@@ -578,11 +577,11 @@ public record Tunables(
     }
 
     /**
-     * What each slice of an Exchange's hall draws in EU/t, by the hall's GT voltage tier, 1 LV to 3 HV:
-     * exchangeSlicePower at LV, four times as much each tier up.
+     * What an Exchange's hall draws in EU/t before its racks, by its GT voltage tier, 1 LV to 3 HV: exchangePower at
+     * LV, four times as much each tier up.
      */
-    public long exchangeSlicePower(int voltageTier) {
-        return (long) exchangeSlicePower << 2 * (Math.max(1, voltageTier) - 1);
+    public long exchangePower(int voltageTier) {
+        return (long) exchangePower << 2 * (Math.max(1, voltageTier) - 1);
     }
 
     /** What a Switching Rack of a cable tier's voltage draws in EU/t: rackPower at LV, four times as much each up. */

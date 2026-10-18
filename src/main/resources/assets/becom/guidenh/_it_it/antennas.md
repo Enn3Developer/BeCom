@@ -33,9 +33,9 @@ copre molto più della stessa antenna in una valle. L'anteprima di NEI le mostra
 | T2 (metà MV) | <ItemImage id="becom:machine:25005">Testa d'antenna T2</ItemImage> | Albero strallato più alto, due dipoli incrociati | MV Machine Casing | 8-32 Aluminium Frame Box | 96 EU/t | 8 | circa 128 blocchi |
 | T3 (metà HV) | <ItemImage id="becom:machine:25006">Testa d'antenna T3</ItemImage> | Traliccio, antenne a pannello | HV Machine Casing | 10-32 Stainless Steel Frame Box | 384 EU/t | 16 | circa 256 blocchi |
 
-Un'antenna funziona solo se caricata e alimentata. Una Energy Hatch sotto il tier dei suoi casing non la fa formare.
-Ogni tier di cui la sua Energy Hatch più bassa li supera è un overclock: il doppio delle chiamate per quattro volte
-l'energia, con la stessa portata.
+Un'antenna funziona solo se caricata e alimentata. Le sue Energy Hatch la mandano in overclock come le
+strutture di GT con una ricetta, da sole, fin dove arriva la loro energia: ogni overclock è il doppio delle chiamate
+per quattro volte l'energia, con la stessa portata. Con troppa poca energia o tensione resta spenta e dice perché.
 
 ## Cosa fa
 

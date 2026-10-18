@@ -124,8 +124,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private final int tier;
     private final LineHatches lineHatches = new LineHatches();
     private int mast;
-    // Tiers its energy hatches run it above its own, as its last structure check found them.
-    private int overclocks;
+    // How its energy hatches run it, as its last structure check found them.
+    private EnergyHatches.Fit fit = EnergyHatches.Fit.NONE;
     private boolean working;
     private boolean registered;
     private boolean locked;
@@ -204,10 +204,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         return tier;
     }
 
-    /** The calls it carries at once: its tier's, doubled for each tier its energy hatches run it above its own. */
+    /** The calls it carries at once: its tier's, doubled for each overclock its energy hatches give it. */
     public int calls() {
         return BeComConfig.get()
-            .antennaCalls(tier) << overclocks;
+            .antennaCalls(tier) << fit.overclocks();
     }
 
     /** The mast's height at the last structure check. */
@@ -263,7 +263,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         Tunables t = BeComConfig.get();
-        overclocks = 0;
+        fit = EnergyHatches.Fit.NONE;
         int found = 0;
         // Frames below the head sit at -1, -2, ...; the pad's casing under the mast ends the count.
         while (found < t.antennaMastMax() && checkPiece(PIECE_MAST, 0, -(found + 1), 0, null)) found++;
@@ -275,8 +275,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         if (!checkPiece(PIECE_TOP, TOP_MAST[tier][0], -1, TOP_MAST[tier][1], errors)) return;
         if (!checkPiece(PIECE_FOOT, FOOT_MAST[tier][0], footOffset(found), FOOT_MAST[tier][1], errors)) return;
         checkHasEnergyHatch(errors);
-        EnergyHatches.checkTier(this, tier, errors);
-        overclocks = EnergyHatches.overclocks(this, tier);
+        fit = EnergyHatches.fit(this, t.antennaPower(tier), t.antennaPower(tier));
     }
 
     @Override
@@ -378,10 +377,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
             mUpdated = false;
         }
         if (--mUpdate == 0 || --mStartUpCheck == 0 || tick % (TICKS_PER_SECOND * 5) == 0) refreshStructure();
-        working = mMachine && tile.isAllowedToWork() && drainPower();
+        working = mMachine && tile.isAllowedToWork() && fit.runs() && drainPower();
         if (working) {
             becom.network.heartbeat(world, pos);
-            becom.network.overclocked(world, pos, overclocks);
+            becom.network.overclocked(world, pos, fit.overclocks());
             becom.antennas.seen(ref(), tier, head(), locked, tile.getOwnerUuid());
         }
         tile.setActive(working);
@@ -420,10 +419,9 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
     private boolean drainPower() {
         return EnergyHatches.drain(
             this,
-            EnergyHatches.power(
+            fit.power(
                 BeComConfig.get()
-                    .antennaPower(tier),
-                overclocks));
+                    .antennaPower(tier)));
     }
 
     @Override
@@ -616,7 +614,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         info.add("becom.info.of", becom.calls.callsAt(ref.dimension(), ref.pos()), calls())
             .row("becom.info.row.calls")
             .brief();
-        InfoLines.overclock(info, tier, overclocks, 2);
+        InfoLines.overclock(info, fit, 2);
         UUID owner = owner();
         String name = owner == null ? null : net.minecraftforge.common.UsernameCache.getLastKnownUsername(owner);
         if (locked) info.add("becom.info.serves_team", name == null ? "?" : name)

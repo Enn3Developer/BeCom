@@ -42,7 +42,7 @@ becom.cable.join.nothing=Nothing there takes cable.
 
 # Machine tooltips
 becom.machine.power=Uses %s at %s
-becom.machine.overclock=Each tier its lowest Energy Hatch is above its own: 2× calls, 4× power
+becom.machine.overclock=Overclocks as GT's multiblocks do: 2× calls for 4× power
 becom.machine.router.info=Routes calls between its buses of cable
 becom.machine.router.calls=Carries up to %s calls at once
 becom.machine.router.cable=Takes cable up to %s, on any face
@@ -56,8 +56,8 @@ becom.machine.exchange.type=Exchange
 becom.machine.exchange.info=Switches calls between the buses of its Line Hatches
 becom.machine.exchange.racks=Racks switch %s calls each at LV, %s at MV, %s at HV
 becom.machine.exchange.tier=Its tier is its casings', LV to HV
-becom.machine.exchange.power=Uses %s a slice and %s a rack at LV, 4× each tier up
-becom.machine.exchange.overclock=Each tier its lowest Energy Hatch is above the hall's: 4× calls, 4× power
+becom.machine.exchange.power=Uses %s, and %s a rack, at LV; 4× each tier up
+becom.machine.exchange.overclock=Perfect overclocks, as GT's multiblocks count them: 4× calls for 4× power
 becom.machine.exchange.controller=Front cap, middle of its second row
 becom.machine.exchange.casing=LV, MV or HV Machine Casing, all of one tier
 becom.machine.exchange.frame=Steel, Aluminium or Stainless Steel Frame Box, by tier: the posts, and the cable ladder along the ridge
@@ -83,7 +83,7 @@ becom.machine.launch_pad.type=Satellite Launch Pad
 becom.machine.launch_pad.info=Puts satellites into orbit over this dimension
 becom.machine.launch_pad.launch=A launch: %s s at %s EU/t, %s L of rocket fuel
 becom.machine.launch_pad.sky=Needs open sky over its flame pit
-becom.machine.launch_pad.overclock=Each tier its lowest Energy Hatch is above HV: half the time, 4× power
+becom.machine.launch_pad.overclock=Overclocks as GT's multiblocks do: half the time for 4× power
 becom.machine.launch_pad.controller=Middle of the pad's front edge
 becom.machine.launch_pad.bus=Base of the service tower, behind the pad
 becom.machine.launch_pad.tank=Propellant tank, beside the pad
@@ -128,7 +128,6 @@ becom.exchange.why.rack_tier=A %s Switching Rack in a %s hall: racks go up to th
 becom.exchange.why.line_tier=A %s Line Hatch in a %s hall: Line Hatches go up to the hall's tier
 becom.exchange.why.no_line_hatch=No Line Hatch: it needs at least one, on its caps, roof or floor
 becom.exchange.why.no_energy_hatch=No Energy Hatch: it needs one, on its caps, roof or floor
-becom.exchange.why.energy_tier=An Energy Hatch below the %s hall's tier
 becom.exchange.hall_one=%s, 1 slice
 becom.exchange.hall=%s, %s slices
 becom.rack.in_use=In use
@@ -269,7 +268,7 @@ betterquesting.quest._xekW5q3V6-D2yESxW4Bqw.desc=Time for your first call! Cable
 betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.name=§6§lBigger Pipes
 betterquesting.quest.EXDKXjgxXWGVm2xGizbPmw.desc=Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 KB/s on buses up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, at least.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.name=§2§lSwitchboard
-betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel frames.%n%nIt draws power through an Energy Hatch for its length and its racks, and joins a bus at each Line Hatch, on its caps, roof or floor. Each LV rack switches 8 calls at once, MV 16, HV 32; racks and hatches go up to the hall's tier.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
+betterquesting.quest.Dd10sdc7U-eNKPKXD7E0Ig.desc=One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel frames.%n%nIt draws power through an Energy Hatch for its tier and its racks, and joins a bus at each Line Hatch, on its caps, roof or floor. Each LV rack switches 8 calls at once, MV 16, HV 32; racks and hatches go up to the hall's tier.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.name=§2§lOn the Air
 betterquesting.quest.UYdKN4lyUKWOiqsyX6luCQ.desc=Time to cut the cord. An Antenna T1 Head tops a guyed mast of 6 to 32 Steel Frame Boxes, a dipole under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment shelter in front. It uses 24 EU/t.%n%nIt reaches about 64 blocks on open ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links carry little. Put a Line Hatch in its shelter and cable your Router to it: the antenna then carries your network's calls over the air, 4 at once.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].
 betterquesting.quest.VdecT0iBUsCxBEbIo6xNeA.name=§6§lBase Station
@@ -623,7 +622,9 @@ becom.ui.router.now_ringing=ringing
 becom.ui.router.now_too_long=bus too long
 becom.info.eu_t=%s EU/t
 becom.info.ae_t=%s AE/t
-becom.info.overclocked=%s, %s× calls
+becom.info.overclocked=%s× calls, %s× power
+becom.info.hatch_power=Needs %s EU/t; its Energy Hatches give %s
+becom.info.hatch_voltage=Voltage too low: its Energy Hatches need %s or more
 becom.info.row.calls=Calls
 becom.info.row.bus=Bus
 becom.info.row.on_bus=On it

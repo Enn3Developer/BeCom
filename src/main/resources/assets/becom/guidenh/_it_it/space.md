@@ -36,9 +36,8 @@ dietro la rampa, con un bus d'ingresso per i razzi alla base e due bracci mobili
 del propellente accanto, con un portello d'ingresso per il carburante; e i parafulmini sugli angoli anteriori. Un lancio
 dura 30 s a 480 EU/t con 1.000 L di carburante, e mette un satellite sopra la dimensione della rampa. Il razzo sta nella
 fossa durante il conto alla rovescia e decolla quando finisce. I problemi di manutenzione lo allungano, e qualsiasi
-blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no. Ogni tier di cui la
-sua energy hatch più bassa supera HV è un overclock: metà del tempo per quattro volte l'energia. Una sotto HV non la fa
-formare.
+blocco che ferma la luce sopra la fossa mette il lancio in pausa finché non si libera; il vetro no. La sua energy hatch la manda
+in overclock come le strutture di GT con una ricetta: ogni overclock è metà del tempo per quattro volte l'energia.
 
 I satelliti scendono dopo circa 100 giorni di Minecraft, un quinto in più o in meno: circa 33 ore di server acceso.
 Dormire la notte non li fa scendere prima. Continua a lanciarne.
@@ -83,8 +82,8 @@ Hatch. Vuole cielo aperto sopra tutta la parabola. Collega con un cavo la sua Li
 quel bus è la sua dorsale, e il livello del suo cavo ne decide la velocità. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 
-Una parabola porta al massimo 32 chiamate, il doppio per ogni tier di cui la sua energy hatch più bassa supera HV a
-quattro volte l'energia, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
+Una parabola porta al massimo 32 chiamate, il doppio per ogni overclock che le danno le sue energy hatch, come nelle
+strutture di GT, a quattro volte l'energia; e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
 porta 4 KB/s, posto per 2 chiamate, al Medio 16 KB/s, all'Alto 64 e al Massimo 256, a 2 KB/s per chiamata.
 
 Il suo schermo mostra il suo salto in dB, con le tacche di segnale e il suo livello, e quante delle sue chiamate sono in

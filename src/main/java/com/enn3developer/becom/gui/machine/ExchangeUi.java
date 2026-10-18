@@ -81,6 +81,9 @@ public final class ExchangeUi extends CanvasScreen {
             paintWhy(c, v, y);
             return;
         }
+        // Formed, but its energy hatches can't run it.
+        if (!v.why()
+            .isEmpty()) y = paintWhy(c, v, y) + 8;
         c.text(t("becom.ui.exchange.racks").toUpperCase(Locale.ROOT), X0, y, 11, Grey.NOTE);
         y += c.lineHeight(11) + 4;
         y = paintRacks(c, v, y) + 14;
@@ -138,8 +141,8 @@ public final class ExchangeUi extends CanvasScreen {
         if (sub != null) c.text(Paint.fit(c, sub, 11, w - 24), x + 12, y + h - 18, 11, Paint.GREY);
     }
 
-    /** Why it isn't formed, under the cells. */
-    private static void paintWhy(Canvas c, ExchangeView v, float y) {
+    /** Why it isn't formed, or can't run, under the cells; returns where it ends. */
+    private static float paintWhy(Canvas c, ExchangeView v, float y) {
         List<String> why = v.why();
         String reason = why.isEmpty() ? t("becom.exchange.why.shape")
             : t(
@@ -150,6 +153,7 @@ public final class ExchangeUi extends CanvasScreen {
             c.text(line, X0, y, 14, Grey.BAD);
             y += 18;
         }
+        return y;
     }
 
     /**

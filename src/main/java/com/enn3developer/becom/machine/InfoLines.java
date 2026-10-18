@@ -565,16 +565,19 @@ public final class InfoLines {
     }
 
     /**
-     * A row for a multiblock its energy hatches run {@code overclocks} tiers above its own {@code tier}, each
-     * multiplying its calls by {@code factor}; nothing when they don't.
+     * A multiblock's overclocks as a row, each multiplying its calls by {@code factor}; or, as a problem, why its
+     * energy hatches can't run it.
      */
-    public static void overclock(InfoLines info, int tier, int overclocks, int factor) {
-        if (overclocks <= 0) return;
-        info.add(
-            "becom.info.overclocked",
-            gregtech.api.enums.GTValues.VN[tier + overclocks],
-            (long) Math.pow(factor, overclocks))
-            .row("becom.info.row.overclock");
+    static void overclock(InfoLines info, EnergyHatches.Fit fit, int factor) {
+        switch (fit.problem()) {
+            case POWER -> info.problem("becom.info.hatch_power", fit.needs(), fit.gives());
+            case VOLTAGE -> info.problem("becom.info.hatch_voltage", gregtech.api.enums.GTValues.VN[(int) fit.needs()]);
+            case NONE -> {
+                if (fit.overclocks() > 0)
+                    info.add("becom.info.overclocked", (long) Math.pow(factor, fit.overclocks()), fit.power(1))
+                        .row("becom.info.row.overclock");
+            }
+        }
     }
 
     /**

@@ -33,9 +33,9 @@ same antenna in a valley. NEI's preview shows each one block by block.
 | T2 (mid MV) | <ItemImage id="becom:machine:25005">Antenna T2 Head</ItemImage> | Taller guyed mast, two crossed dipoles | MV Machine Casings | 8 to 32 Aluminium Frame Boxes | 96 EU/t | 8 | about 128 blocks |
 | T3 (mid HV) | <ItemImage id="becom:machine:25006">Antenna T3 Head</ItemImage> | Lattice tower, panel antennas | HV Machine Casings | 10 to 32 Stainless Steel Frame Boxes | 384 EU/t | 16 | about 256 blocks |
 
-An antenna works only while it's loaded and powered. An Energy Hatch below its casings' tier keeps it from forming.
-Each tier its lowest Energy Hatch is above them is an overclock: twice the calls for four times the power, with the same
-reach.
+An antenna works only while it's loaded and powered. Its Energy Hatches overclock it the way GT's multiblocks
+overclock a recipe, by themselves, as far as their power goes: each overclock is twice the calls for four times the
+power, with the same reach. With too little power or voltage it stays off and says why.
 
 ## What it does
 

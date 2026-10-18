@@ -205,7 +205,7 @@ QUESTS = [
         "desc": "One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 "
         "wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its "
         "ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel "
-        "frames.%n%nIt draws power through an Energy Hatch for its length and its racks, and joins a bus at each Line "
+        "frames.%n%nIt draws power through an Energy Hatch for its tier and its racks, and joins a bus at each Line "
         "Hatch, on its caps, roof or floor. Each LV rack switches 8 calls at once, MV 16, HV 32; racks and hatches go "
         "up to the hall's tier.",
         "icon": (MACHINE, 25001),

@@ -79,8 +79,6 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     private static final String PIECE_DISH = "dish";
     private static final int TICKS_PER_SECOND = 20;
-    // An HV machine; its energy hatches overclock it from there.
-    private static final int TIER = 3;
     // The bowl's rim is this wide; the whole dish stands this high, plinth to feed horn.
     private static final int SIDE = 7;
     private static final int HEIGHT = 9;
@@ -128,8 +126,8 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     private final LineHatches lineHatches = new LineHatches();
     private boolean registered;
-    // Tiers its energy hatches run it above HV, as its last structure check found them.
-    private int overclocks;
+    // How its energy hatches run it, as its last structure check found them.
+    private EnergyHatches.Fit fit = EnergyHatches.Fit.NONE;
     private boolean working;
     private boolean sky;
     private boolean rains;
@@ -199,12 +197,13 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        overclocks = 0;
+        fit = EnergyHatches.Fit.NONE;
         if (!checkPiece(PIECE_DISH, SIDE / 2, HEIGHT - 1, CONTROLLER_ROW, errors)) return;
         if (mMaintenanceHatches.size() != 1) errors.add(StructureErrors.missingHatch(Maintenance));
         checkHasEnergyHatch(errors);
-        EnergyHatches.checkTier(this, TIER, errors);
-        overclocks = EnergyHatches.overclocks(this, TIER);
+        long power = BeComConfig.get()
+            .dishPower();
+        fit = EnergyHatches.fit(this, power, power);
         // A gateway on two buses would carry calls between them like a router: it takes a single Line Hatch.
         int lines = lineHatches.count();
         if (lines != 1) errors.add(
@@ -306,10 +305,14 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         if (mMachine && tick % TICKS_PER_SECOND == 0) sky = openSky();
         // The maintenance hatch's tools fix problems the way they do on any GT machine.
         if (mMachine) checkMaintenance();
-        working = mMachine && sky && tile.isAllowedToWork() && drainPower() && doRandomMaintenanceDamage();
+        working = mMachine && sky
+            && tile.isAllowedToWork()
+            && fit.runs()
+            && drainPower()
+            && doRandomMaintenanceDamage();
         if (working) {
             becom.network.heartbeat(world, pos());
-            becom.network.overclocked(world, pos(), overclocks);
+            becom.network.overclocked(world, pos(), fit.overclocks());
             becom.network.dish(world, pos(), loss());
         } else {
             becom.network.dishOff(world, pos());
@@ -335,16 +338,15 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     private boolean drainPower() {
         return EnergyHatches.drain(
             this,
-            EnergyHatches.power(
+            fit.power(
                 BeComConfig.get()
-                    .dishPower(),
-                overclocks));
+                    .dishPower()));
     }
 
-    /** The calls it carries at once, doubled for each tier its energy hatches run it above HV. */
+    /** The calls it carries at once, doubled for each overclock its energy hatches give it. */
     public int calls() {
         return BeComConfig.get()
-            .dishCalls() << overclocks;
+            .dishCalls() << fit.overclocks();
     }
 
     @Override
@@ -456,7 +458,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         info.add("becom.dish.calls_right", calls, calls())
             .right();
         if (calls >= calls()) info.warn("becom.info.calls_full", calls());
-        InfoLines.overclock(info, TIER, overclocks, 2);
+        InfoLines.overclock(info, fit, 2);
         int[] sky = becom.calls.skyCalls(dimension);
         if (sky[1] > 0) info.add("becom.dish.overhead_calls", view.satellites(), sky[0], sky[1])
             .row("becom.info.row.satellites")

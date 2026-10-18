@@ -130,8 +130,8 @@ public final class BeComConfig {
             config,
             v,
             WIRED,
-            "exchangeSlicePower",
-            "EU/t each slice of an LV Exchange draws; four times as much each tier up.");
+            "exchangePower",
+            "EU/t an LV Exchange draws before its racks; four times as much each tier up.");
         integer(config, v, WIRED, "rackPower", "EU/t an LV Switching Rack draws; four times as much each tier up.");
         integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");
