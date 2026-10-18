@@ -341,6 +341,7 @@ becom.phone.kind.me_phone=ME Phone
 becom.phone.kind.videophone=Videophone
 becom.phone.kind.computer=Computer
 becom.info.no_backhaul=No backhaul: cable it to a Router or an Exchange
+becom.info.no_backhaul_hatch=No backhaul: cable its Line Hatch to a Router or an Exchange
 becom.info.backhaul_dead=No backhaul: no working router on its cable
 becom.info.backhaul_too_long=No backhaul: its %s bus is over %s blocks
 becom.info.calls_full=Full: the next call hears busy, %s at most

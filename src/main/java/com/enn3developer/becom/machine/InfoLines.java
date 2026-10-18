@@ -434,7 +434,8 @@ public final class InfoLines {
         Backhaul style) {
         Buses.Bus bus = becom.network.backhaulOf(dimension, pos);
         if (bus == null) {
-            info.problem("becom.info.no_backhaul");
+            // The dish's cable goes into its Line Hatch; the others take it on any face.
+            info.problem(style == Backhaul.CABLE ? "becom.info.no_backhaul_hatch" : "becom.info.no_backhaul");
             return;
         }
         Tunables t = BeComConfig.get();

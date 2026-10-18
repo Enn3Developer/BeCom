@@ -368,7 +368,7 @@ final class PhoneGallery {
         info.add("becom.info.backhaul_cable", new InfoLines.Key("becom.ui.cable.fibre"))
             .row("becom.info.row.backhaul");
         info.problem("becom.dish.too_few_short", 3, 5);
-        info.problem("becom.info.no_backhaul");
+        info.problem("becom.info.no_backhaul_hatch");
         return info;
     }
 

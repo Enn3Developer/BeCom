@@ -341,6 +341,7 @@ becom.phone.kind.me_phone=Telefono ME
 becom.phone.kind.videophone=Videotelefono
 becom.phone.kind.computer=Computer
 becom.info.no_backhaul=Nessuna dorsale: collegalo con il cavo a un Router o a una Centrale
+becom.info.no_backhaul_hatch=Nessuna dorsale: collega con un cavo la sua Line Hatch a un Router o a una Centrale
 becom.info.backhaul_dead=Nessuna dorsale: nessun router in funzione sul suo cavo
 becom.info.backhaul_too_long=Nessuna dorsale: il suo bus di %s supera i %s blocchi
 becom.info.calls_full=Pieno: la prossima chiamata trova occupato, al massimo %s
