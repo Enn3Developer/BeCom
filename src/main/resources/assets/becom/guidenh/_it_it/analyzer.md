@@ -48,7 +48,7 @@ Dai satelliti, la prima barra è quanto danno, secondo quanti sono in orbita, e 
 
 - **Basso e disturbato:** guarda la perdita maggiore. Terreno vuol dire che l'antenna deve stare più in alto; distanza
   vuol dire che serve un'antenna di livello più alto o una seconda a metà strada.
-- **Nessuno sotto terra:** la copertura è oltre quello che qualsiasi antenna può recuperare. Porta giù una linea, con
-  un'antenna che la aggancia in superficie.
+- **Nessuno sotto terra:** la copertura è oltre quello che qualsiasi antenna può recuperare. Porta giù un cavo dalla Line
+  Hatch di un'antenna in superficie, e chiama da un Telefono collegato.
 - **Bene fuori, niente dentro:** è la copertura. Conta ogni blocco dai tuoi occhi fino alla cima del tetto: sotto un
   tetto di un blocco sopra una stanza alta due, circa 3,5 dB sulla banda telefonica, e di più con un soffitto più alto.

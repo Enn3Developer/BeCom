@@ -48,7 +48,7 @@ off it.
 
 - **Low and breaking up:** look at the biggest loss. Terrain means the antenna needs height; distance means it needs
   a higher tier or a second antenna halfway.
-- **None underground:** cover is past what any antenna can make up. Run a line down, with an antenna bridging it at
-  the surface.
+- **None underground:** cover is past what any antenna can make up. Run cable down from an antenna's Line Hatch at the
+  surface, and call from a Telephone on it.
 - **Fine outside, gone inside:** that's cover. It counts every block from your eyes up to the top of the roof: under a
   one-block roof over a room two blocks high, about 3.5 dB on the phone band, and more with a higher ceiling.

@@ -17,7 +17,7 @@ quest_ids:
 # Antenne
 
 Un'antenna serve ogni radio e ogni telefono nel suo raggio, tranne i Telefoni ME nella portata della loro rete ME, ripete tutti i 16 canali radio, si
-collega alle altre antenne e porta le linee agganciate a lei.
+collega alle altre antenne e smista i bus cablati alle sue Line Hatch.
 
 ## Costruirne una
 
@@ -42,8 +42,8 @@ Un'antenna funziona solo se caricata e alimentata.
 - **Si collega alle altre antenne** dove il loro segnale arriva almeno al livello Basso, separatamente per ogni banda: i
   canali radio viaggiano tra le antenne sulla banda radio, le chiamate sulla banda telefonica.
 - **Smista i bus:** tramite le Line Hatch nel suo shelter, è il router di ogni bus collegato. Un Telefono cablato a
-  una di loro passa le sue chiamate per l'antenna, e un Router cablato a una aggancia la sua linea: le chiamate di
-  quella linea passano via etere, a ogni telefono che le antenne raggiungono.
+  una di loro passa le sue chiamate per l'antenna, e un Router cablato a una le unisce i suoi bus: le loro chiamate
+  passano via etere, a ogni telefono che le antenne raggiungono.
 
 ## Il suo schermo
 

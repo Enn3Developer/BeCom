@@ -37,7 +37,7 @@ all'app, anche se l'ha chiesta. Un'app che non raggiunge il suo computer, senza 
 <ItemLink id="becom:becom_card:0" showIcon="left">Scheda BeCom (radio)</ItemLink> e
 <ItemLink id="becom:becom_card:1" showIcon="left">Scheda BeCom (cablata)</ItemLink> sono schede di OpenComputers. Danno
 al computer un numero e il componente `becom`. La scheda radio ha il segnale di un Telefono cellulare tenuto dove sta il
-computer. Quella cablata si unisce alla linea il cui cavo tocca il computer, a Massimo e alla velocità del cavo.
+computer. Quella cablata si unisce al bus il cui cavo è collegato al computer, a Massimo e alla velocità del suo cavo.
 
 Il disco degli strumenti, **becom**, è un disco loot di OpenComputers: combina un qualsiasi disco loot, come OpenOS,
 con una chiave inglese, più volte, finché non diventa questo. Il suo programma `becom` fa i lavori comuni:
@@ -54,7 +54,7 @@ con una chiave inglese, più volte, finché non diventa questo. Il suo programma
 
 App e computer si mandano dati tramite numero, fino a 8 KB per volta. I dati viaggiano come una chiamata: serve un
 percorso tra i due capi, e la velocità è quella del capo più lento: 4, 16, 64 o 256 KB/s via radio da Basso a Massimo, o la
-velocità del cavo su una linea. I messaggi di chi manda partono uno dopo l'altro, a quella velocità. I dati
+velocità di un bus sul cavo. I messaggi di chi manda partono uno dopo l'altro, a quella velocità. I dati
 prendono ciò che le chiamate lasciano di ogni collegamento: le chiamate vengono sempre prima, e quando riempiono un
 collegamento i dati aspettano. Il Router, la Centrale e ogni dorsale mostrano quanto prendono i dati.
 Un'app in background si sveglia per i dati al massimo una volta al minuto, e fino ad allora i dati la aspettano; i dati

@@ -70,7 +70,7 @@ niente. Tutto quel che sta su un bus ne divide la velocità. Una chiamata tra du
 attraversa due volte, verso il router e di ritorno.
 
 Un router chiude un bus: il cavo su un'altra sua faccia è un altro bus, che si conta di nuovo da zero. Un bus tra due
-router li collega, così le chiamate passano dall'uno all'altro; è così che una linea arriva all'edificio dopo. Oltre
+router li collega, così le chiamate passano dall'uno all'altro; è così che una rete arriva all'edificio dopo. Oltre
 quanto arriva un bus di fibra, le chiamate vanno via radio, tramite le antenne, o tramite una rete ME.
 
 ## Router

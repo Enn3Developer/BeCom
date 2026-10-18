@@ -42,8 +42,8 @@ seconds. Then:
 
 ## Wires
 
-Each powered node drives a line with 30 dB, and the wire loses 0.08 dB a block. A line breaks up past 225 blocks from
-its last powered node and drops at 300. A Repeater or a Router starts the count again.
+Cable is digital and loses nothing: a call on the wired network is as good as its phones, and only its radio hops, if
+it has any, cost it signal. What a bus limits is room for calls, and its length: see [The wired network](wired.md).
 
 ## Radio
 

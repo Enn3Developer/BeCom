@@ -45,8 +45,9 @@ secondo, quindi il conto finisce dopo 3 o 4 secondi. Allora:
 
 ## Cavi
 
-Ogni nodo alimentato spinge la linea con 30 dB, e il cavo perde 0,08 dB per blocco. Una linea si disturba oltre 225
-blocchi dal suo ultimo nodo alimentato e cade a 300. Un ripetitore o un router fa ripartire il conto.
+Il cavo è digitale e non perde niente: una chiamata sulla rete cablata è buona quanto i suoi telefoni, e solo i suoi
+salti radio, se ne ha, le tolgono segnale. Quello che un bus limita è lo spazio per le chiamate, e la sua lunghezza: vedi
+[La rete cablata](wired.md).
 
 ## Radio
 

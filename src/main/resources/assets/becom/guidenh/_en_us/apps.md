@@ -37,7 +37,7 @@ app even though it asked for it. An app that can't reach its computer, out of si
 <ItemLink id="becom:becom_card:0" showIcon="left">BeCom Card (Radio)</ItemLink> and
 <ItemLink id="becom:becom_card:1" showIcon="left">BeCom Card (Wired)</ItemLink> are OpenComputers cards. They give the
 computer a number and the `becom` component. The radio card has signal like a Mobile Phone held where the computer
-stands. The wired card joins the line whose cable touches the computer, at Max and at the cable's rate.
+stands. The wired card joins the bus whose cable is joined to the computer, at Max and at its cable's rate.
 
 The tools disk, **becom**, is an OpenComputers loot disk: craft any loot disk, such as OpenOS, with a wrench, and
 again, until it turns into this one. Its `becom` program does the common jobs:
@@ -53,8 +53,8 @@ again, until it turns into this one. Its `becom` program does the common jobs:
 ## Data
 
 Apps and computers send each other data by number, up to 8 KB at a time. Data travels like a call, so both ends need a
-path between them, and its speed is the slower end's rate: 4, 16, 64 or 256 KB/s by radio from Low to Max, or the
-cable's rate on a line. A sender's messages go one after another at that rate. Data takes what calls leave of each link: calls
+path between them, and its speed is the slower end's rate: 4, 16, 64 or 256 KB/s by radio from Low to Max, or a
+bus's rate on cable. A sender's messages go one after another at that rate. Data takes what calls leave of each link: calls
 always come first, and when they fill a link, data waits. The Router, the Exchange and every backhaul show what
 data takes. An app in the background wakes for data at most once a minute, and data waits for it until then; data for
 an app that isn't installed, doesn't use `net`, or isn't allowed in the background while the phone's apps are stopped,

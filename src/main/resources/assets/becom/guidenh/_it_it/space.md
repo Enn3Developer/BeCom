@@ -76,9 +76,9 @@ Una <ItemLink id="becom:machine:25011" showIcon="left">Parabola satellitare</Ite
 ogni altra parabola della sua dimensione, attraverso i satelliti, e nell'Overworld a ogni pianeta con un Ricevitore
 radio per razzi. È una stazione di terra a 512 EU/t: una parabola di Clean Stainless Steel Machine Casing rivolta dritta in
 alto, larga 7 al bordo, con un illuminatore tenuto sopra di lei da quattro sostegni di Stainless Steel Frame Box, su un
-piedistallo. Il controller sta in un basamento ai suoi piedi, con accanto l'energy hatch e il maintenance hatch. Vuole
-cielo aperto sopra tutta la parabola. Porta un cavo dal suo controller a una Centrale: è la sua dorsale, e il
-livello del cavo ne decide la velocità. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
+piedistallo. Il controller sta in un basamento ai suoi piedi, con accanto l'energy hatch, il maintenance hatch e una Line
+Hatch. Vuole cielo aperto sopra tutta la parabola. Collega con un cavo la sua Line Hatch a un Router o a una Centrale:
+quel bus è la sua dorsale, e il livello del suo cavo ne decide la velocità. La pioggia sulla parabola toglie 3 dB al suo salto, un temporale 6, e
 ogni problema di manutenzione 2 dB.
 
 Una parabola porta al massimo 32 chiamate, e mai più di quante ne stiano nel livello del suo salto: un salto al Basso
@@ -100,15 +100,15 @@ piattaforma e mettici dentro il ricevitore.
 Il collegamento vuole almeno 5 satelliti sopra l'Overworld, e una chiamata che ci passa non va meglio del salto ai
 satelliti dal lato dell'Overworld: i telefoni sotto il cielo aperto dell'Overworld, e le reti con una parabola,
 raggiungono il pianeta. I pianeti si raggiungono tra loro allo stesso modo, attraverso l'Overworld, con un ricevitore su
-ciascuno. Il ricevitore non si collega con la chiave: per portare dentro le linee cablate di un pianeta, agganciale a
+ciascuno. Il razzo non prende cavi: per portare dentro la rete cablata di un pianeta, collegala con il cavo alla Line Hatch di
 un'antenna a portata del razzo.
 
 ## Ripetitore di portale
 
 Un <ItemLink id="becom:machine:25012" showIcon="left">Ripetitore di portale</ItemLink> funziona entro 4
 blocchi da un portale del Nether, un portale dell'End, un portale del Twilight Forest o un portale di Personal Space,
-Collegalo con il cavo a una Centrale della tua rete. Poi attraversa il portale e metti un ripetitore dall'altra parte,
-collegato a una Centrale di là: i due si accoppiano da soli, e la coppia unisce le due reti al livello Alto. Il suo
+Collegalo con il cavo, su qualsiasi faccia, a un Router o a una Centrale della tua rete. Poi attraversa il portale e
+metti un ripetitore dall'altra parte, collegato a uno di là: i due si accoppiano da soli, e la coppia unisce le due reti al livello Alto. Il suo
 schermo dice **Non accoppiato** finché non succede.
 
 Ne esistono tre livelli, e una coppia lavora al livello del ripetitore più basso:

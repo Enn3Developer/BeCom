@@ -7,8 +7,8 @@ stands, and the weather.
 
 ## What it adds
 
-- **LV:** Telephones on lines of pylons, with Line Terminals, Repeaters to carry a line further and Routers to join
-  lines into a network. Then the first antenna, which bridges a line over the air.
+- **LV:** Telephones on cable, with Routers to join buses of it into a network and the Exchange, a hall of switching
+  racks, for a whole town's calls. Then the first antenna, which carries a network's calls over the air.
 - **MV:** walkie-talkies and the Transceiver, on 16 open radio channels, with taller antennas that repeat them. The
   Signal Analyzer shows your signal and what costs it most. The Videophone brings video calls to wired networks, and
   the Portal Relay joins networks through Nether, End, Twilight Forest and Personal Space portals.
@@ -33,8 +33,8 @@ Used when they're installed:
 - **BetterQuesting:** BeCom adds its own tab to the quest book.
 - **GuideNH:** the in-game guide, in English and Italian.
 - **WAILA:** what each BeCom machine and Telephone is doing.
-- **ServerUtilities:** its teams are BeCom's teams. A team's owner, moderators and members can unlink each other's
-  nodes, lock each other's antennas and change each other's phone settings, and an antenna locked to the team serves
+- **ServerUtilities:** its teams are BeCom's teams. A team's owner, moderators and members can lock each other's
+  antennas and change each other's phone settings, and an antenna locked to the team serves
   all of them; its allies can't. Without ServerUtilities, only a machine's owner and server operators manage it, and
   a locked antenna serves its owner alone. On a dedicated server, the "singleplayer" team a world first played alone
   keeps isn't one for BeCom, since anyone there may join it.

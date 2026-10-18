@@ -75,8 +75,8 @@ A <ItemLink id="becom:machine:25011" showIcon="left">Satellite Dish</ItemLink> j
 other dish in its dimension, through the satellites, and in the Overworld to every planet with a Rocket Radio Receiver.
 It's a ground station on 512 EU/t: a bowl of Clean Stainless Steel Machine Casings facing straight up, 7 across at the
 rim, with a feed horn held over it by four struts of Stainless Steel Frame Boxes, on a pedestal. The controller stands
-in a plinth at its foot, with the energy hatch and maintenance hatch beside it. It needs open sky over the whole dish. Run cable from its controller to an
-Exchange: that is its backhaul, and the cable's tier sets its rate. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
+in a plinth at its foot, with the energy hatch, the maintenance hatch and one Line Hatch beside it. It needs open sky over the whole dish. Cable its Line
+Hatch to a Router or an Exchange: that bus is its backhaul, and its cable's tier sets its rate. Rain at the dish costs its hop 3 dB, a storm 6, and each maintenance problem 2 dB.
 
 A dish carries 32 calls at most, and never more than its hop's level has room for: a hop at Low carries 4 KB/s, room
 for 2 calls, Medium 16 KB/s, High 64 and Max 256, at 2 KB/s a call.
@@ -96,14 +96,14 @@ its Parachest: place it on a pad and put the receiver in.
 
 The link needs at least 5 satellites over the Overworld, and a call through it is no better than the Overworld end's
 own hop: phones under the Overworld's open sky, and networks with a dish, reach the planet. Planets reach each other
-the same way, through the Overworld, with a receiver on each. The receiver can't be wrench-linked: to bring a planet's
-wired lines in, bridge them onto an antenna within reach of the rocket.
+the same way, through the Overworld, with a receiver on each. The rocket takes no cable: to bring a planet's
+wired network in, cable it to an antenna's Line Hatch within reach of the rocket.
 
 ## Portal Relay
 
 A <ItemLink id="becom:machine:25012" showIcon="left">Portal Relay</ItemLink> works within 4 blocks of a
-Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal. Cable it to an Exchange of your
-network. Then go through the portal and place a relay by the other side, cabled to an Exchange there: the two pair by
+Nether portal, an End portal, a Twilight Forest portal or a Personal Space portal. Cable it, on any face, to a Router or an
+Exchange of your network. Then go through the portal and place a relay by the other side, cabled to one there: the two pair by
 themselves, and the pair joins the two networks at High. Its screen says **Unpaired** until they do.
 
 It comes in three tiers, and a pair works at its lower relay's:

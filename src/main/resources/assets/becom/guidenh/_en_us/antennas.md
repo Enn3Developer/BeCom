@@ -17,7 +17,7 @@ quest_ids:
 # Antennas
 
 An antenna serves every radio and phone in its reach, ME Phones in their ME network's range aside, repeats all 16 radio channels, links to other
-antennas, and carries the lines bridged onto it.
+antennas, and routes the buses cabled to its Line Hatches.
 
 ## Building one
 
@@ -41,8 +41,8 @@ An antenna works only while it's loaded and powered.
 - **Links to other antennas** wherever their signal reaches at least Low, separately for each band: radio channels
   travel between antennas on the radio band, calls on the phone band.
 - **Routes buses:** through the Line Hatches in its shelter, it's the router of every bus they join. A Telephone
-  cabled to one gets its calls through the antenna, and a Router cabled to one bridges its line: that line's calls go
-  over the air, to every phone the antennas reach.
+  cabled to one gets its calls through the antenna, and a Router cabled to one joins its buses to the antenna: their
+  calls go over the air, to every phone the antennas reach.
 
 ## Its screen
 

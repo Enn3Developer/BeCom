@@ -67,7 +67,7 @@ works only with a working router on it, and only up to its cable's longest bus; 
 on a bus shares its rate. A call between two phones on one bus crosses it twice, in and out of the router.
 
 A router ends a bus: cable on another of its faces is another bus, counted from zero again. A bus between two routers
-joins them, so calls cross from one to the other; that's how a line reaches the next building. Past what a bus of
+joins them, so calls cross from one to the other; that's how a network reaches the next building. Past what a bus of
 Fibre reaches, calls go by radio, through antennas, or through an ME network.
 
 ## Router
