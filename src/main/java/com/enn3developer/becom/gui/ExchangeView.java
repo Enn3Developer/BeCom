@@ -6,7 +6,7 @@ import java.util.List;
 import net.minecraft.network.PacketBuffer;
 
 /**
- * What the Exchange's screen shows, from the Router board: whether it works and whose it is; its tier; its calls, its
+ * What the Exchange's screen shows, from the Router board: whether it works; its tier; its calls, its
  * data and how many numbers it reaches through how many exchanges; its racks, slice by slice; and a row for each of
  * its Line Hatches, with the bus of cable at its front. Built on the server.
  *
@@ -17,9 +17,8 @@ import net.minecraft.network.PacketBuffer;
  *              wall's, seen from the front; a rack's tier ordinal, or -1 for a free slot
  * @param why   why it isn't formed, as a lang key and its arguments; empty when it is
  */
-public record ExchangeView(boolean online, boolean formed, String owner, int x, int y, int z, int tier, int calls,
-    int slots, int data, int routes, int reaches, int exchanges, List<Integer> racks, List<Line> lines,
-    List<String> why) {
+public record ExchangeView(boolean online, boolean formed, int tier, int calls, int slots, int data, int routes,
+    int reaches, int exchanges, List<Integer> racks, List<Line> lines, List<String> why) {
 
     /**
      * One of its Line Hatches.
@@ -32,10 +31,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
     public static final ExchangeView EMPTY = new ExchangeView(
         false,
         false,
-        "",
-        0,
-        0,
-        0,
         0,
         0,
         0,
@@ -55,10 +50,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
     public void write(PacketBuffer buf) {
         buf.writeBoolean(online);
         buf.writeBoolean(formed);
-        AntennaView.writeString(buf, owner);
-        buf.writeInt(x);
-        buf.writeInt(y);
-        buf.writeInt(z);
         buf.writeByte(tier);
         buf.writeInt(calls);
         buf.writeInt(slots);
@@ -85,10 +76,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
     public static ExchangeView read(PacketBuffer buf) {
         boolean online = buf.readBoolean();
         boolean formed = buf.readBoolean();
-        String owner = AntennaView.readString(buf);
-        int x = buf.readInt();
-        int y = buf.readInt();
-        int z = buf.readInt();
         int tier = buf.readByte();
         int calls = buf.readInt();
         int slots = buf.readInt();
@@ -111,10 +98,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         return new ExchangeView(
             online,
             formed,
-            owner,
-            x,
-            y,
-            z,
             tier,
             calls,
             slots,

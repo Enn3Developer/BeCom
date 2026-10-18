@@ -5,18 +5,15 @@ import java.util.List;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.gui.radio.RadioUi;
 import com.enn3developer.becom.item.ItemWalkieTalkie;
-import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.server.BeComServer;
 
 /**
@@ -29,17 +26,16 @@ public final class WalkieScreen {
     private static final String CHANNEL = "channel";
     private static final String POWER = "power";
 
-    /** What the screen shows: its reach in blocks, and whether it transmits and receives now. */
-    public record View(int channel, boolean on, long charge, long max, int reach, boolean tx, boolean rx) {
+    /** What the screen shows: its channel, power and charge, and whether it transmits and receives now. */
+    public record View(int channel, boolean on, long charge, long max, boolean tx, boolean rx) {
 
-        static final View EMPTY = new View(1, false, 0, 0, 0, false, false);
+        static final View EMPTY = new View(1, false, 0, 0, false, false);
 
         void write(PacketBuffer buf) {
             buf.writeByte(channel);
             buf.writeBoolean(on);
             buf.writeLong(charge);
             buf.writeLong(max);
-            buf.writeShort(reach);
             buf.writeBoolean(tx);
             buf.writeBoolean(rx);
         }
@@ -50,7 +46,6 @@ public final class WalkieScreen {
                 buf.readBoolean(),
                 buf.readLong(),
                 buf.readLong(),
-                buf.readShort(),
                 buf.readBoolean(),
                 buf.readBoolean());
         }
@@ -69,15 +64,7 @@ public final class WalkieScreen {
         sync.registerSyncedAction(POWER, false, true, buf -> setOn(data, buf.readBoolean()));
         RadioUi ui = new RadioUi(true, () -> {
             View v = viewSync.view();
-            return new RadioUi.State(
-                v.channel(),
-                v.on(),
-                v.on(),
-                v.tx(),
-                v.rx(),
-                v.percent(),
-                List.of(),
-                StatCollector.translateToLocalFormatted("becom.ui.radio.walkie_note", v.reach()));
+            return new RadioUi.State(v.channel(), v.on(), v.on(), v.tx(), v.rx(), v.percent(), List.of());
         },
             delta -> sync.callSyncedAction(CHANNEL, buf -> buf.writeByte(delta)),
             on -> sync.callSyncedAction(POWER, buf -> buf.writeBoolean(on)));
@@ -91,7 +78,6 @@ public final class WalkieScreen {
         ItemStack stack = data.getUsedItemStack();
         if (!ItemWalkieTalkie.is(stack)) return View.EMPTY;
         ItemWalkieTalkie item = (ItemWalkieTalkie) stack.getItem();
-        Tunables t = BeComConfig.get();
         BeComServer becom = BeComServer.get();
         java.util.UUID id = data.getPlayer()
             .getUniqueID();
@@ -100,7 +86,6 @@ public final class WalkieScreen {
             ItemWalkieTalkie.on(stack),
             (long) ItemWalkieTalkie.charge(stack),
             (long) item.getMaxCharge(stack),
-            (int) Math.round(t.rangeToLow(t.walkieBudget())),
             becom != null && becom.radio.walkieTransmits(id),
             becom != null && becom.radio.walkieReceives(id));
     }

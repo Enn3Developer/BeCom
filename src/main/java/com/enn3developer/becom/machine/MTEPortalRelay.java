@@ -423,7 +423,6 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
                 info.add(
                     "becom.relay.far_side",
                     GTValues.VN[becom.network.pairTier(partner, partner)],
-                    BlockPos.toString(partner.pos()),
                     becom.space.dimensionName(partner.dimension()))
                     .row("becom.info.row.far_side");
                 SignalLevel hop = BeComConfig.get()
@@ -468,7 +467,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
                 }
             } else if (kept != null && becom.network.model(kept.dimension()) == null) {
                 // The far side's dimension isn't loaded, so the pair can't be checked, nor carry calls, until it is.
-                info.problem("becom.relay.paired_unloaded", BlockPos.toString(kept.pos()), kept.dimension());
+                info.problem("becom.relay.paired_unloaded", kept.dimension());
             } else {
                 info.problem("becom.relay.unpaired");
             }

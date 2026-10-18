@@ -11,7 +11,6 @@ import org.lwjgl.input.Keyboard;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.enn3developer.becom.BeCom;
-import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.gui.paint.Canvas;
 import com.enn3developer.becom.gui.paint.CanvasScreen;
@@ -77,7 +76,7 @@ public final class DeskPhoneUi extends CanvasScreen {
 
     @Override
     public float height() {
-        return videophone ? 624 : 504;
+        return videophone ? 584 : 478;
     }
 
     private static String t(String key, Object... args) {
@@ -109,16 +108,7 @@ public final class DeskPhoneUi extends CanvasScreen {
         float lcdHeight = videophone ? 60 : 72;
         paintDisplay(c, v, y, lcdHeight);
         y += lcdHeight + (videophone ? 10 : 12);
-        // The Videophone's board explains its speakerphone where the Telephone's explains its speed dial.
-        String hint = videophone ? t(
-            "becom.ui.desk.hint_video",
-            (int) BeComConfig.get()
-                .videophoneRoom())
-            : t("becom.ui.desk.hint");
-        List<String> hints = Paint.wrap(c, hint, 12, INNER);
-        float footY = h - X0 - c.lineHeight(12) - (hints.size() - 1) * 16;
-        for (int i = 0; i < hints.size(); i++) c.text(hints.get(i), X0, footY + i * 16, 12, NOTE);
-        float bottom = footY - (videophone ? 10 : 12);
+        float bottom = h - X0;
         paintKeypad(c, v, y);
         paintRight(c, v, y, bottom);
     }

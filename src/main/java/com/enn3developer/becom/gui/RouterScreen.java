@@ -2,9 +2,6 @@ package com.enn3developer.becom.gui;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
-import net.minecraftforge.common.UsernameCache;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.factory.PosGuiData;
@@ -28,7 +25,7 @@ import com.enn3developer.becom.server.NetworkService;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The Router's screen: its state and owner, the calls it carries, a row per bus of cable joining it, and what's on
+ * The Router's screen: its state, the calls it carries, a row per bus of cable joining it, and what's on
  * those buses, with what each phone is doing.
  */
 public final class RouterScreen {
@@ -92,13 +89,10 @@ public final class RouterScreen {
         devices.sort(
             java.util.Comparator.comparing((RouterView.Device d) -> d.node() >= 0)
                 .thenComparingInt(RouterView.Device::number));
-        UUID owner = tile.getOwnerUuid();
-        String ownerName = owner == null ? null : UsernameCache.getLastKnownUsername(owner);
         return new RouterView(
             router.tier()
                 .ordinal(),
             router.isWorking(),
-            ownerName == null ? "" : ownerName,
             becom.calls.callsAt(self.dimension(), self.pos()),
             t.routerCalls(router.tier()),
             buses,

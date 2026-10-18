@@ -418,9 +418,7 @@ public final class InfoLines {
 
     /** How a gateway's board writes its backhaul. */
     public enum Backhaul {
-        /** "Coaxial, 4 of 64 KB/s", then "to the router at 100, 70, 200" under it: the ME Bridge. */
-        RATE_AND_EXCHANGE,
-        /** "Fibre, 10 of 256 KB/s": the Portal Relay, for its own side and for the far side. */
+        /** "Fibre, 10 of 256 KB/s": the ME Bridge, and the Portal Relay for its own side and for the far side. */
         RATE,
         /** "Fibre to a router": the Satellite Dish. */
         CABLE
@@ -464,8 +462,6 @@ public final class InfoLines {
             becom.calls.usedOn(link) + becom.apps.dataOn(link),
             t.cableRate(bus.tier()))
             .row(label);
-        if (style == Backhaul.RATE_AND_EXCHANGE) info.add("becom.info.to_router", BlockPos.toString(routers.get(0)))
-            .sub();
     }
 
     /**

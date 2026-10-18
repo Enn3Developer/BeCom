@@ -15,7 +15,7 @@ import com.enn3developer.becom.gui.paint.Paint;
 import com.enn3developer.becom.logic.net.CableTier;
 
 /**
- * The Exchange's screen, from the Router board: its name, tier, whether it works and whose it is; its calls, data and
+ * The Exchange's screen, from the Router board: its name, tier and whether it works; its calls, data and
  * reach; its racks as the hall holds them, a column a slice, lit while calls use them, with a free slot for each it
  * could still take; and a row for each Line Hatch, with the bus at its front and what it carries. Or, while it isn't
  * formed, why.
@@ -74,16 +74,6 @@ public final class ExchangeUi extends CanvasScreen {
             !v.formed() ? "becom.ui.machine.unformed"
                 : v.online() ? "becom.ui.radio.online" : "becom.ui.radio.offline");
         Grey.chip(c, x, y + 1, state, v.online() ? Grey.GOOD : Grey.BAD);
-        if (!v.owner()
-            .isEmpty()) {
-            Paint.right(
-                c,
-                t("becom.ui.machine.whose", v.owner()),
-                X0 + INNER,
-                y + (20 - c.lineHeight(13)) / 2,
-                13,
-                Grey.NOTE);
-        }
         y += 20 + 10;
         paintCells(c, v, y);
         y += 66 + 14;
@@ -159,11 +149,6 @@ public final class ExchangeUi extends CanvasScreen {
         for (String line : Paint.wrap(c, reason, 14, INNER)) {
             c.text(line, X0, y, 14, Grey.BAD);
             y += 18;
-        }
-        y += 6;
-        for (String line : Paint.wrap(c, t("becom.ui.exchange.unformed_note"), 12, INNER)) {
-            c.text(line, X0, y, 12, Grey.NOTE);
-            y += 16;
         }
     }
 
@@ -241,27 +226,33 @@ public final class ExchangeUi extends CanvasScreen {
         Paint.centered(c, "+", x + w / 2, y + (h - c.lineHeight(11)) / 2, 11, 0x7a7a7a);
     }
 
-    /** A row a Line Hatch, as the Router board's bus rows, its first column the hatch's tier; paged. */
+    /** A row a Line Hatch in a display, as the Router board's bus rows, its first column the hatch's tier; paged. */
     private void paintLines(Canvas c, ExchangeView v, float y) {
-        float[] col = { X0, X0 + 44, X0 + 182, X0 + 274, X0 + INNER - 150 };
-        String[] heads = { t("becom.ui.exchange.hatch"), t("becom.ui.router.bus"), t("becom.ui.router.length"),
-            t("becom.ui.router.cable"), t("becom.ui.router.carries") };
-        for (int i = 0; i < heads.length; i++) c.text(heads[i], col[i], y, 12, Grey.NOTE);
-        y += c.lineHeight(12) + 4;
-        c.rect(X0, y, INNER, 2, 0x8b8b8b);
-        y += 2;
-        float bottom = HEIGHT - 16;
-        List<String> note = Paint.wrap(c, t("becom.ui.exchange.note"), 12, INNER - 110);
-        int fit = Math.max(1, (int) ((bottom - note.size() * 16 - 8 - y) / ROW));
         int count = v.lines()
             .size();
+        if (count == 0) {
+            c.text(t("becom.ui.exchange.nothing"), X0, y + 4, 14, Grey.BAD);
+            return;
+        }
+        float[] col = { X0 + 10, X0 + 54, X0 + 192, X0 + 284, X0 + INNER - 150 };
+        String[] heads = { t("becom.ui.exchange.hatch"), t("becom.ui.router.bus"), t("becom.ui.router.length"),
+            t("becom.ui.router.cable"), t("becom.ui.router.carries") };
+        float bottom = HEIGHT - X0;
+        int fit = fit(bottom - y);
+        if (count > fit) {
+            bottom -= 24 + 8;
+            fit = fit(bottom - y);
+        }
         int pages = Math.max(1, (count + fit - 1) / fit);
         page = Math.min(page, pages - 1);
-        if (count == 0) c.text(t("becom.ui.exchange.nothing"), X0, y + 8, 13, Grey.NOTE);
+        Grey.display(c, X0, y, INNER, bottom - y);
+        RouterUi.heads(c, heads, col, X0, y, INNER);
+        y += RouterUi.HEAD;
         for (int i = page * fit; i < Math.min(count, (page + 1) * fit); i++) {
             ExchangeView.Line line = v.lines()
                 .get(i);
             float ty = y + (ROW - c.lineHeight(14)) / 2;
+            RouterUi.stripe(c, i, X0, y, INNER);
             int hatch = line.hatch();
             c.text(
                 CableTier.byOrdinal(hatch)
@@ -269,18 +260,17 @@ public final class ExchangeUi extends CanvasScreen {
                 col[0],
                 ty,
                 14,
-                RouterUi.voltageColour(hatch));
-            if (line.bus() == null) c.text(t("becom.ui.exchange.no_cable"), col[1], ty, 14, Grey.FAINT);
+                RouterUi.voltageText(hatch));
+            if (line.bus() == null) c.text(t("becom.ui.exchange.no_cable"), col[1], ty, 14, Paint.GREY);
             else RouterUi.paintBusColumns(c, line.bus(), col, ty);
             y += ROW;
-            c.rect(X0, y - 1, INNER, 1, 0xa8a8a8);
         }
-        float ny = bottom - note.size() * 16;
-        for (String text : note) {
-            c.text(text, X0, ny, 12, Grey.NOTE);
-            ny += 16;
-        }
-        if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom - 28, page, pages, () -> page--, () -> page++);
+        if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom + 8, page, pages, () -> page--, () -> page++);
+    }
+
+    /** How many rows a display {@code h} tall holds under its heading. */
+    private static int fit(float h) {
+        return Math.max(1, (int) ((h - RouterUi.HEAD - 4) / ROW));
     }
 
     @Override

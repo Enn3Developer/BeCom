@@ -125,8 +125,9 @@ public final class Readout {
                     c.text(value, valueX, ty, 14, colour);
                     float after = lines.size() > 1 ? x + w : valueX + c.width(value, 14) + 8;
                     y += ROW + (lines.size() - 1) * (ROW - 6);
-                    // Grey words after the value, wrapping in the room left on its right, or on a row of their own
-                    // under it when there's little room.
+                    // Grey words after the value, on its baseline, wrapping in the room left on its right, or on a
+                    // row of their own under it when there's little room.
+                    float drop = c.lineHeight(14) - c.lineHeight(12);
                     for (String sub : subs) {
                         float room = x + w - after;
                         if (room < 120) {
@@ -137,7 +138,7 @@ public final class Readout {
                         }
                         List<String> parts = Paint.wrap(c, sub, 12, room);
                         for (int l = 0; l < parts.size(); l++) {
-                            c.text(parts.get(l), after, ty + 2 + l * (ROW - 8), 12, Paint.GREY);
+                            c.text(parts.get(l), after, ty + drop + l * (ROW - 8), 12, Paint.GREY);
                         }
                         if (parts.size() > 1) y += (parts.size() - 1) * (ROW - 8);
                         after = parts.size() > 1 ? x + w : after + c.width(sub, 12) + 8;

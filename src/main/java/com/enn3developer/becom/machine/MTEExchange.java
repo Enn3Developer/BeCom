@@ -536,14 +536,9 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
                     bus(becom, t, dimension, hatch)));
         }
         int[] data = becom.apps.dataAt(new CallGraph.NodeVertex(dimension, pos()));
-        String owner = tile.getOwnerName();
         return new ExchangeView(
             working,
             mMachine,
-            owner == null ? "" : owner,
-            tile.getXCoord(),
-            tile.getYCoord(),
-            tile.getZCoord(),
             Math.max(0, tier()),
             becom.calls.callsAt(dimension, pos()),
             calls,

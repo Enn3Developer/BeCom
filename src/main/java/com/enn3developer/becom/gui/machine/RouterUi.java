@@ -17,9 +17,9 @@ import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
- * The Router's screen, from the Router board: the calls it carries, then a row a bus of cable joining it: its
- * cable, length and what it carries; and what's on those buses: each phone, its number and what it's doing, then the
- * routers and gateways they join.
+ * The Router's screen, from the Router board: the calls it carries, then a table with a row a bus of cable joining it:
+ * its cable, length and what it carries; and what's on those buses: each phone, its number and what it's doing, then
+ * the routers and gateways they join.
  */
 public final class RouterUi extends CanvasScreen {
 
@@ -30,6 +30,9 @@ public final class RouterUi extends CanvasScreen {
     private static final float ROW = 26;
     static final int CALLS = 0x55ff55;
     static final int FREE = 0x2a3038;
+    static final float HEAD = 24;
+    static final int HEAD_STRIP = 0x252c35;
+    static final int STRIPE = 0x181d23;
 
     private final Supplier<RouterView> view;
     private int page;
@@ -70,6 +73,15 @@ public final class RouterUi extends CanvasScreen {
         };
     }
 
+    /** A voltage's colour as text on a display: LV light grey, MV orange, HV yellow, as the Exchange's racks. */
+    static int voltageText(int tier) {
+        return switch (CableTier.byOrdinal(tier)) {
+            case PHONE -> Paint.LIGHT;
+            case COAXIAL -> 0xff8a3a;
+            case FIBRE -> 0xf0d040;
+        };
+    }
+
     /**
      * A node kind's name on its own, as a label starts with it: "Antenna T3", where a sentence says "the" before it.
      */
@@ -105,23 +117,9 @@ public final class RouterUi extends CanvasScreen {
             y + 3,
             t(v.working() ? "becom.ui.radio.online" : "becom.ui.radio.offline"),
             v.working() ? Grey.GOOD : Grey.BAD);
-        if (!v.owner()
-            .isEmpty())
-            Paint.right(
-                c,
-                t("becom.ui.machine.whose", v.owner()),
-                X0 + INNER,
-                y + (22 - c.lineHeight(15)) / 2,
-                15,
-                Grey.FAINT);
         y += 22 + 10;
         y = paintCalls(c, v, y) + 10;
-        paintTable(c, v, y, HEIGHT - X0 - 40);
-        float footY = HEIGHT - X0 - 34;
-        for (String line : Paint.wrap(c, t("becom.ui.router.note"), 13, INNER)) {
-            c.text(line, X0, footY, 13, Grey.NOTE);
-            footY += 17;
-        }
+        paintTable(c, v, y, HEIGHT - X0);
     }
 
     /** Its display: the calls it carries now, of the most it carries at once; or why it carries none. */
@@ -145,58 +143,82 @@ public final class RouterUi extends CanvasScreen {
         return y + h;
     }
 
-    /** The table: a row a bus, then what's on the buses, paged when it doesn't fit. */
+    /**
+     * The table, in a display: a row a bus, then what's on the buses under their own heading, paged when it doesn't
+     * fit. Each page heads its first section.
+     */
     private void paintTable(Canvas c, RouterView v, float y, float bottom) {
-        float[] col = { X0, X0 + 32, X0 + 170, X0 + 262, X0 + INNER - 150 };
         if (v.buses()
             .isEmpty()) {
-            c.text(t("becom.ui.router.no_bus"), X0, y + 4, 14, 0xa02818);
+            c.text(t("becom.ui.router.no_bus"), X0, y + 4, 14, Grey.BAD);
             return;
         }
-        // Each bus by index, then the devices under their own heading.
+        float[] col = { X0 + 10, X0 + 40, X0 + 178, X0 + 270, X0 + INNER - 150 };
+        String[] buses = { "#", t("becom.ui.router.bus"), t("becom.ui.router.length"), t("becom.ui.router.cable"),
+            t("becom.ui.router.carries") };
+        String[] devices = { "#", t("becom.ui.router.device"), t("becom.ui.router.number"), t("becom.ui.router.cable"),
+            t("becom.ui.router.now") };
         List<Object> rows = new ArrayList<>();
         for (int i = 0; i < v.buses()
             .size(); i++) rows.add(i);
         if (!v.devices()
-            .isEmpty()) rows.add(Boolean.TRUE);
+            .isEmpty()) rows.add(devices);
         rows.addAll(v.devices());
-        int fit = Math.max(1, (int) ((bottom - y - 20) / ROW));
+        int fit = fit(bottom - y);
+        if (rows.size() > fit) {
+            bottom -= 24 + 8;
+            fit = fit(bottom - y);
+        }
         int pages = Math.max(1, (rows.size() + fit - 1) / fit);
         page = Math.min(page, pages - 1);
-        String[] heads = { "", t("becom.ui.router.bus"), t("becom.ui.router.length"), t("becom.ui.router.cable"),
-            t("becom.ui.router.carries") };
-        for (int i = 1; i < heads.length; i++) c.text(heads[i], col[i], y + 4, 12, Grey.NOTE);
-        c.rect(X0, y + 18, INNER, 2, 0x9a9a9a);
-        y += 20;
+        Grey.display(c, X0, y, INNER, bottom - y);
+        int first = page * fit;
+        String[] head = buses;
+        for (int i = 0; i <= first; i++) if (rows.get(i) instanceof String[]h) head = h;
+        if (rows.get(first) instanceof String[]) first++;
+        heads(c, head, col, X0, y, INNER);
+        y += HEAD;
         int last = Math.min(rows.size(), (page + 1) * fit);
-        for (int i = page * fit; i < last; i++) {
+        for (int i = first; i < last; i++) {
             Object row = rows.get(i);
             float ty = y + (ROW - c.lineHeight(14)) / 2;
+            if (row instanceof String[]h) {
+                heads(c, h, col, X0, y, INNER);
+                y += HEAD;
+                continue;
+            }
+            stripe(c, i, X0, y, INNER);
             if (row instanceof Integer index) {
-                paintBus(
+                c.text(String.valueOf(index + 1), col[0], ty, 14, Paint.GREY);
+                paintBusColumns(
                     c,
                     v.buses()
                         .get(index),
-                    index,
                     col,
                     ty);
             } else if (row instanceof RouterView.Device d) {
                 paintDevice(c, d, col, ty);
-            } else {
-                // The devices' own heading, under the buses.
-                String[] under = { "", t("becom.ui.router.device"), t("becom.ui.router.number"),
-                    t("becom.ui.router.cable"), t("becom.ui.router.now") };
-                for (int h = 1; h < under.length; h++) c.text(under[h], col[h], ty + 2, 12, Grey.NOTE);
             }
-            if (i < last - 1) c.rect(X0, y + ROW - 1, INNER, 1, 0xb0b0b0);
             y += ROW;
         }
-        if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom - 26, page, pages, () -> page--, () -> page++);
+        if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom + 8, page, pages, () -> page--, () -> page++);
     }
 
-    private static void paintBus(Canvas c, RouterView.Bus bus, int index, float[] col, float ty) {
-        c.text(String.valueOf(index + 1), col[0], ty, 14, Grey.NOTE);
-        paintBusColumns(c, bus, col, ty);
+    /** How many rows a display {@code h} tall holds under its heading. */
+    private static int fit(float h) {
+        return Math.max(1, (int) ((h - HEAD - 4) / ROW));
+    }
+
+    /** A table's heading: a lighter strip across the display, grey column names on it. */
+    static void heads(Canvas c, String[] heads, float[] col, float x, float y, float w) {
+        c.rect(x + 2, y + 2, w - 4, HEAD - 2, HEAD_STRIP);
+        for (int i = 0; i < heads.length; i++)
+            c.text(heads[i], col[i], y + 2 + (HEAD - 2 - c.lineHeight(12)) / 2, 12, Paint.GREY);
+    }
+
+    /** Every other row a shade lighter, so a row reads across. */
+    static void stripe(Canvas c, int i, float x, float y, float w) {
+        if (i % 2 == 1) c.rect(x + 2, y, w - 4, ROW, STRIPE);
     }
 
     /** A bus's row past its first column: what it joins, its length, its cable and what it carries. */
@@ -209,27 +231,32 @@ public final class RouterUi extends CanvasScreen {
         if (bus.gateways() > 0)
             joins.add(t(bus.gateways() == 1 ? "becom.ui.router.gateway" : "becom.ui.router.gateways", bus.gateways()));
         String joined = joins.isEmpty() ? t("becom.ui.router.joins_nothing") : String.join(", ", joins);
-        c.text(Paint.fit(c, joined, 14, col[2] - col[1] - 8), col[1], ty, 14, Grey.TEXT);
+        c.text(
+            Paint.fit(c, joined, 14, col[2] - col[1] - 8),
+            col[1],
+            ty,
+            14,
+            joins.isEmpty() ? Paint.GREY : Paint.TEXT);
         c.text(
             (bus.tooLong() ? ">" + blocks(bus.limit()) : String.valueOf(bus.cables())) + "/" + blocks(bus.limit()),
             col[2],
             ty,
             14,
-            bus.tooLong() ? 0xa02818 : Grey.TEXT);
+            bus.tooLong() ? Paint.RED : Paint.TEXT);
         cable(c, bus.cable(), col[3], ty);
         String carries;
         int colour;
         if (bus.tooLong()) {
             carries = t("becom.ui.router.bus_too_long");
-            colour = 0xa02818;
+            colour = Paint.RED;
         } else if (bus.rate() <= 0) {
             carries = t("becom.ui.router.bus_down");
-            colour = 0xa02818;
+            colour = Paint.RED;
         } else {
             carries = t("becom.ui.router.of", bus.used() + bus.data(), bus.rate());
-            colour = bus.used() + bus.data() >= bus.rate() ? 0xa02818 : Grey.TEXT;
+            colour = bus.used() + bus.data() >= bus.rate() ? Paint.ORANGE : Paint.TEXT;
         }
-        c.text(Paint.fit(c, carries, 14, 150), col[4], ty, 14, colour);
+        c.text(Paint.fit(c, carries, 14, 140), col[4], ty, 14, colour);
     }
 
     /** A cable's swatch and short name. */
@@ -243,19 +270,19 @@ public final class RouterUi extends CanvasScreen {
             x + 20,
             ty,
             14,
-            Grey.TEXT);
+            Paint.TEXT);
     }
 
     private void paintDevice(Canvas c, RouterView.Device d, float[] col, float ty) {
         RouterView v = view.get();
-        c.text(String.valueOf(d.bus() + 1), col[0], ty, 14, Grey.NOTE);
+        c.text(String.valueOf(d.bus() + 1), col[0], ty, 14, Paint.GREY);
         String kind = d.node() >= 0 ? kindLabel(d.node())
             : d.kind() < 0 ? "?"
                 : t(
                     "becom.phone.kind." + PhoneKind.values()[d.kind()].name()
                         .toLowerCase(Locale.ROOT));
-        c.text(Paint.fit(c, kind, 14, col[2] - col[1] - 8), col[1], ty, 14, Grey.TEXT);
-        c.text(d.number() < 0 ? "-" : String.valueOf(d.number()), col[2], ty, 14, Grey.TEXT);
+        c.text(Paint.fit(c, kind, 14, col[2] - col[1] - 8), col[1], ty, 14, Paint.TEXT);
+        c.text(d.number() < 0 ? "-" : String.valueOf(d.number()), col[2], ty, 14, Paint.TEXT);
         if (d.bus() >= 0 && d.bus() < v.buses()
             .size()) cable(
                 c,
@@ -269,26 +296,26 @@ public final class RouterUi extends CanvasScreen {
         switch (d.now()) {
             case CALL -> {
                 now = t("becom.ui.router.now_call", d.with());
-                colour = 0x2f7f2f;
+                colour = Paint.GREEN;
             }
             case RINGING -> {
                 now = t("becom.ui.router.now_ringing");
-                colour = 0x8a6a10;
+                colour = Paint.YELLOW;
             }
             case TOO_LONG -> {
                 now = t("becom.ui.router.now_too_long");
-                colour = 0xa02818;
+                colour = Paint.RED;
             }
             case JOINED -> {
                 now = t("becom.ui.router.now_joined");
-                colour = Grey.FAINT;
+                colour = Paint.GREY;
             }
             default -> {
                 now = t("becom.ui.router.now_idle");
-                colour = Grey.FAINT;
+                colour = Paint.GREY;
             }
         }
-        c.text(Paint.fit(c, now, 14, 150), col[4], ty, 14, colour);
+        c.text(Paint.fit(c, now, 14, 140), col[4], ty, 14, colour);
     }
 
     @Override

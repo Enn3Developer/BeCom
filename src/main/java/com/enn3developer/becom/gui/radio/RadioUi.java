@@ -22,7 +22,6 @@ public final class RadioUi extends CanvasScreen {
     private static final float INNER = 292;
     private static final int INK = 0x404040;
     private static final int LABEL = 0x303030;
-    private static final int NOTE = 0x5a5a5a;
     private static final int DISPLAY = 0x101418;
     private static final float SCALE = 0.75f;
 
@@ -31,7 +30,7 @@ public final class RadioUi extends CanvasScreen {
      * within, speaker) and no battery.
      */
     public record State(int channel, boolean on, boolean toggle, boolean tx, boolean rx, int battery,
-        List<String> ranges, String note) {}
+        List<String> ranges) {}
 
     private final boolean walkie;
     private final Supplier<State> state;
@@ -61,7 +60,7 @@ public final class RadioUi extends CanvasScreen {
 
     @Override
     public float height() {
-        return walkie ? 288 : 282;
+        return walkie ? 222 : 236;
     }
 
     private static String t(String key, Object... args) {
@@ -121,7 +120,6 @@ public final class RadioUi extends CanvasScreen {
                 (INNER - 6) * Math.max(0, Math.min(100, s.battery())) / 100f,
                 6,
                 s.battery() <= 5 ? Paint.RED : Paint.GREEN);
-            y += 12 + 10;
         } else {
             String[] names = { t("becom.ui.radio.reach"), t("becom.ui.radio.talk_within"),
                 t("becom.ui.radio.speaker") };
@@ -135,11 +133,6 @@ public final class RadioUi extends CanvasScreen {
                         .get(i) : "";
                 c.text(value, x + 8, y + 6 + c.lineHeight(11) + 4, 15, Paint.TEXT);
             }
-            y += 42 + 10;
-        }
-        for (String line : Paint.wrap(c, s.note(), 13, INNER)) {
-            c.text(line, X0, y, 13, NOTE);
-            y += 17;
         }
     }
 

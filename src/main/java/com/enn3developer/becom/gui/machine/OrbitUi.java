@@ -88,13 +88,6 @@ public final class OrbitUi extends CanvasScreen {
         y += 26 + 18;
         y = paintTable(c, v, y);
         paintForecast(c, v, X0, 176, INNER, 160);
-        String note = t("becom.ui.orbit.note", v.satelliteCalls(), v.satelliteCalls(), v.lifetimeDays());
-        List<String> lines = Paint.wrap(c, note, 11, INNER);
-        float ny = HEIGHT - 16 - lines.size() * 16;
-        for (String line : lines) {
-            c.text(line, X0, ny, 11, Grey.NOTE);
-            ny += 16;
-        }
     }
 
     private float paintTable(Canvas c, OrbitView v, float y) {

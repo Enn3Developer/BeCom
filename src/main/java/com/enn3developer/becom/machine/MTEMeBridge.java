@@ -383,7 +383,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()),
             "becom.info.row.backhaul",
-            InfoLines.Backhaul.RATE_AND_EXCHANGE);
+            InfoLines.Backhaul.RATE);
         return info;
     }
 

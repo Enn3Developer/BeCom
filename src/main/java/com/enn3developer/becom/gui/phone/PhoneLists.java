@@ -1,7 +1,6 @@
 package com.enn3developer.becom.gui.phone;
 
 import static com.enn3developer.becom.gui.phone.PhoneUi.SH;
-import static com.enn3developer.becom.gui.phone.PhoneUi.STATUS;
 import static com.enn3developer.becom.gui.phone.PhoneUi.SW;
 import static com.enn3developer.becom.gui.phone.PhoneUi.SX;
 import static com.enn3developer.becom.gui.phone.PhoneUi.SY;
@@ -96,8 +95,6 @@ final class PhoneLists {
         ui.paintStatus(c, v);
         float y = ui.paintBar(c, t(ui.adding ? "becom.ui.phone.add_who" : "becom.ui.app.contacts"), 0x2f5f9f, 0x1a3050);
         List<PhoneView.Contact> contacts = v.contacts();
-        // How many there are, at the bar's right: the board's 12-pixel text, its capitals where the title's are.
-        Paint.right(c, t("becom.ui.contacts.count", contacts.size()), SX + SW - 8, SY + STATUS + 12, 12, 0xc8dcff);
         if (contacts.isEmpty()) {
             Paint.centered(c, t("becom.ui.contacts.none"), SX + SW / 2, y + 30, 13, Paint.GREY);
         }
@@ -109,33 +106,43 @@ final class PhoneLists {
             String sub = PhoneNumbers.format(contact.number())
                 + (telephone ? ", " + t("becom.ui.contacts.telephone") : "");
             float rowY = y;
-            paintRow(c, y, contact.name(), sub, Paint.GREY, telephone, () -> ui.dial(contact.number(), false), () -> {
-                List<Item> items = new ArrayList<>();
-                items.add(
-                    new Item(
-                        t("becom.ui.contacts.call", contact.name()),
-                        Paint.WHITE,
-                        () -> ui.dial(contact.number(), false)));
-                if (!telephone && v.video()
-                    .capable()) {
+            paintRow(
+                c,
+                y,
+                contact.name(),
+                null,
+                sub,
+                Paint.GREY,
+                telephone,
+                () -> ui.dial(contact.number(), false),
+                () -> {
+                    List<Item> items = new ArrayList<>();
                     items.add(
                         new Item(
-                            t("becom.ui.contacts.video_call"),
+                            t("becom.ui.contacts.call", contact.name()),
                             Paint.WHITE,
-                            () -> ui.dial(contact.number(), true)));
-                }
-                if (v.mayManage()) {
-                    items.add(
-                        new Item(
-                            t("becom.ui.contacts.block"),
-                            0xff6b55,
-                            () -> ui.sender.send(PhoneActions.BLOCK_CONTACT, buf -> buf.writeInt(contact.number()))));
-                }
-                openMenu(items, rowY);
-            });
+                            () -> ui.dial(contact.number(), false)));
+                    if (!telephone && v.video()
+                        .capable()) {
+                        items.add(
+                            new Item(
+                                t("becom.ui.contacts.video_call"),
+                                Paint.WHITE,
+                                () -> ui.dial(contact.number(), true)));
+                    }
+                    if (v.mayManage()) {
+                        items.add(
+                            new Item(
+                                t("becom.ui.contacts.block"),
+                                0xff6b55,
+                                () -> ui.sender
+                                    .send(PhoneActions.BLOCK_CONTACT, buf -> buf.writeInt(contact.number()))));
+                    }
+                    openMenu(items, rowY);
+                });
             y += ROW;
         }
-        paintFoot(c, t("becom.ui.contacts.more"), pages);
+        paintFoot(c, pages);
         paintMenu(c);
     }
 
@@ -160,15 +167,17 @@ final class PhoneLists {
                 "becom.ui.recent." + call.direction()
                     .name()
                     .toLowerCase(java.util.Locale.ROOT),
-                ago(now - call.time())) + ", " + PhoneNumbers.format(call.number());
-            String name = call.name()
-                .isEmpty() ? PhoneNumbers.format(call.number()) : call.name();
+                ago(now - call.time()));
+            boolean named = !call.name()
+                .isEmpty();
+            String name = named ? call.name() : PhoneNumbers.format(call.number());
             float rowY = y;
             // A missed call in the boards' red, as the home screen's card has it.
             paintRow(
                 c,
                 y,
                 name,
+                named ? PhoneNumbers.format(call.number()) : null,
                 sub,
                 missed ? Paint.RED : Paint.GREY,
                 false,
@@ -199,7 +208,7 @@ final class PhoneLists {
                 });
             y += ROW;
         }
-        paintFoot(c, t("becom.ui.contacts.more"), pages);
+        paintFoot(c, pages);
         paintMenu(c);
     }
 
@@ -248,7 +257,7 @@ final class PhoneLists {
             c.rect(SX, y + ROW - 1, SW, 1, Paint.LINE);
             y += ROW;
         }
-        paintFoot(c, "", pages);
+        paintFoot(c, pages);
     }
 
     // endregion
@@ -258,8 +267,8 @@ final class PhoneLists {
      * button; a left click on the button calls, a right click anywhere opens the menu, and the row stays lit while
      * its menu is open.
      */
-    private void paintRow(Canvas c, float y, String name, String sub, int subColor, boolean telephone, Runnable call,
-        Runnable menu) {
+    private void paintRow(Canvas c, float y, String name, String number, String sub, int subColor, boolean telephone,
+        Runnable call, Runnable menu) {
         if (menuOpen() ? menuRow == y : ui.hover(SX, y, SW, ROW)) {
             c.rect(SX, y, SW, ROW - 1, menuOpen() ? 0x161b21 : 0x141a20);
         }
@@ -269,11 +278,19 @@ final class PhoneLists {
         } else {
             c.face(name, SX + 10, y + 8, 24);
         }
-        // The board's name and number, 15 and 12 pixels, their lines together in the middle of the row and their
-        // capitals where its font puts them; then the 30-pixel button, 10 from the edge.
+        // The name in 15, its number after it in 12 when there is one, the line under in 12; then the 30-pixel
+        // button, 10 from the edge.
         float textX = SX + 44;
         float max = SW - 44 - 10 - 30 - 10;
-        c.text(Paint.fit(c, name, 15, max), textX, y + 8, 15, Paint.WHITE);
+        float numberW = number == null ? 0 : c.width(number, 12) + 8;
+        String shown = Paint.fit(c, name, 15, max - numberW);
+        c.text(shown, textX, y + 8, 15, Paint.WHITE);
+        if (number != null) c.text(
+            number,
+            textX + c.width(shown, 15) + 8,
+            y + 8 + c.lineHeight(15) - c.lineHeight(12) - 1,
+            12,
+            Paint.GREY);
         c.text(Paint.fit(c, sub, 12, max), textX, y + 25, 12, subColor);
         float bx = SX + SW - 10 - 30;
         float by = y + 5;
@@ -287,14 +304,14 @@ final class PhoneLists {
     }
 
     /**
-     * The foot of a list: a hint on the left and the page count on the right, a single page too, in the board's
-     * 12-pixel line 6 above the edge; the wheel turns the page.
+     * The foot of a list: the page count on the right, in the board's 12-pixel line 6 above the edge, while there's
+     * more than one page; the wheel turns the page.
      */
-    private void paintFoot(Canvas c, String hint, int pages) {
+    private void paintFoot(Canvas c, int pages) {
+        if (pages <= 1) return;
         float y = SY + SH - FOOT + 6 + 3;
         String label = (page + 1) + " / " + pages;
         float w = c.width(label, 12);
-        c.text(Paint.fit(c, hint, 12, SW - 20 - w - 10), SX + 10, y, 12, Paint.DARK);
         Paint.right(c, label, SX + SW - 10, y, 12, Paint.LIGHT);
         // A click on the page count turns to the next page, and back to the first after the last.
         ui.hit(SX + SW - 10 - w - 6, y - 6, w + 12, c.lineHeight(12) + 12, () -> page = (page + 1) % pages);

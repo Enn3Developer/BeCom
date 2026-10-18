@@ -235,7 +235,7 @@ public class MTEHatchLine extends MTEHatch implements CableEnd {
         long at = controller();
         if (at < 0) info.problem("becom.info.not_part")
             .status();
-        else info.add("becom.info.part_of", BlockPos.toString(at))
+        else info.add("becom.info.part_of")
             .status();
         ForgeDirection front = tile.getFrontFacing();
         InfoLines.cableBus(

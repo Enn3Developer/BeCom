@@ -15,13 +15,12 @@ import net.minecraft.network.PacketBuffer;
  * @param buses   the buses joining it, by id
  * @param devices what's on those buses: phones by number, then routers and gateways
  */
-public record RouterView(int tier, boolean working, String owner, int calls, int slots, List<Bus> buses,
-    List<Device> devices) {
+public record RouterView(int tier, boolean working, int calls, int slots, List<Bus> buses, List<Device> devices) {
 
     public static final int MAX_BUSES = 6;
     public static final int MAX_DEVICES = 64;
 
-    public static final RouterView EMPTY = new RouterView(0, false, "", 0, 0, List.of(), List.of());
+    public static final RouterView EMPTY = new RouterView(0, false, 0, 0, List.of(), List.of());
 
     /**
      * A bus joining it: its cable's tier ordinal, its cable blocks and the most its tier carries over, its KB/s
@@ -64,7 +63,6 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
         buf.writeBoolean(working);
-        AntennaView.writeString(buf, owner);
         buf.writeInt(calls);
         buf.writeInt(slots);
         int count = Math.min(buses.size(), MAX_BUSES);
@@ -88,7 +86,6 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
     public static RouterView read(PacketBuffer buf) {
         int tier = buf.readByte();
         boolean working = buf.readBoolean();
-        String owner = AntennaView.readString(buf);
         int calls = buf.readInt();
         int slots = buf.readInt();
         int count = Math.min(buf.readUnsignedByte(), MAX_BUSES);
@@ -106,7 +103,7 @@ public record RouterView(int tier, boolean working, String owner, int calls, int
                     Now.byOrdinal(buf.readByte()),
                     AntennaView.readString(buf)));
         }
-        return new RouterView(tier, working, owner, calls, slots, buses, devices);
+        return new RouterView(tier, working, calls, slots, buses, devices);
     }
 
     /** A bus's row, as the Exchange's screen sends one too. */

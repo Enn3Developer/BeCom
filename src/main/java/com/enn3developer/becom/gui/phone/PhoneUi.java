@@ -761,11 +761,8 @@ public final class PhoneUi extends CanvasScreen {
             }
             y += 22 + 2;
         }
-        // At the foot, 8 above its edge, the hint's 13-pixel line; 10 above that the controls, each square with its
-        // name's line 4 under it.
-        float hintY = SY + SH - 8 - 13;
-        Paint.centered(c, t("becom.ui.phone.home_keeps"), SX + SW / 2, hintY + 3, 11, Paint.DARK);
-        float controlsY = hintY - 10 - 13 - 4 - 44;
+        // At the foot, 8 above its edge, the controls, each square with its name's line 4 under it.
+        float controlsY = SY + SH - 8 - 13 - 4 - 44;
         float column = (SW - 20) / 4f;
         PhoneView.Video cameras = v.video();
         int slot = 0;

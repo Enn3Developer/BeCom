@@ -164,11 +164,10 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         return waila;
     }
 
-    /** Its lines for WAILA, as on the Scanner board: ringing or not, its number and its owner. */
+    /** Its lines for WAILA, as on the Scanner board: ringing or not, and its number. */
     private InfoLines info() {
         InfoLines info = new InfoLines();
         BeComServer becom = BeComServer.get();
-        PhoneRecord record = number < 0 || becom == null ? null : becom.phones.record(number);
         if (ringing()) info.add("becom.info.ringing")
             .statusBusy();
         else if (offHook()) info.add("becom.info.off_hook")
@@ -177,8 +176,6 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
             .status();
         if (number >= 0) info.add("becom.info.value", number)
             .row("becom.info.row.number");
-        if (record != null && record.ownerName() != null) info.add("becom.info.value", record.ownerName())
-            .row("becom.info.row.owner");
         if (becom != null && worldObj != null)
             InfoLines.buses(info, becom, worldObj.provider.dimensionId, BlockPos.pack(xCoord, yCoord, zCoord));
         return info;

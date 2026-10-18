@@ -4,7 +4,6 @@ import java.util.List;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.factory.PosGuiData;
@@ -83,8 +82,7 @@ public final class TransceiverScreen {
                 v.tx(),
                 v.rx(),
                 0,
-                List.of("~" + v.reach(), String.valueOf(v.talk()), String.valueOf(v.speaker())),
-                StatCollector.translateToLocalFormatted("becom.ui.radio.transceiver_note", REACH));
+                List.of("~" + v.reach(), String.valueOf(v.talk()), String.valueOf(v.speaker())));
         },
             delta -> sync.callSyncedAction(CHANNEL, buf -> buf.writeByte(delta)),
             on -> sync.callSyncedAction(LOUDSPEAKER, buf -> buf.writeBoolean(on)));

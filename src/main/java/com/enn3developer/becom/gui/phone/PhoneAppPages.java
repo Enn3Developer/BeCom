@@ -16,7 +16,6 @@ import net.minecraft.network.PacketBuffer;
 
 import org.lwjgl.input.Keyboard;
 
-import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.gui.AppsView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.gui.paint.Canvas;
@@ -168,7 +167,7 @@ final class PhoneAppPages {
 
     // region The open app
 
-    /** A Lua app: its bar in its accent with a Lua chip, its widgets, and a foot saying whose and how old its data. */
+    /** A Lua app: its bar in its accent with a Lua chip, and its widgets. */
     void paintApp(Canvas c, PhoneView v) {
         ui.paintStatus(c, v);
         AppsView.App app = PhoneUi.installed(v, ui.app);
@@ -183,8 +182,7 @@ final class PhoneAppPages {
         float cy = SY + STATUS + (PhoneUi.BAR - ch) / 2;
         Paint.border(c, cx, cy, cw, ch, 1, PhoneUi.LUA_CHIP);
         Paint.centered(c, chip, cx + cw / 2, capitals(cy + 1, lineOf(11), 11), 11, PhoneUi.LUA_CHIP);
-        // The foot: a line over 6 of padding round an 11-pixel line.
-        float footY = SY + SH - 6 - lineOf(11) - 6 - 1;
+        float footY = SY + SH;
         AppsView.Screen screen = v.apps()
             .screen();
         AppsView.State state = screen.id()
@@ -202,19 +200,6 @@ final class PhoneAppPages {
             case CRASHED -> paintFailed(c, y, footY, t("becom.ui.app_state.crashed"), Paint.RED, screen.error(), false);
             default -> paintLoading(c, y, footY);
         }
-        c.rect(SX, footY, SW, 1, Paint.LINE);
-        String foot = app == null ? "" : t("becom.ui.app.by", app.name() + " " + app.version(), app.author());
-        String age = dataAge(screen);
-        if (!age.isEmpty()) foot += " · " + age;
-        c.text(Paint.fit(c, foot, 11, SW - 20), SX + 10, capitals(footY + 1 + 6, lineOf(11), 11), 11, Paint.DARK);
-    }
-
-    /** "data 2 s old", in minutes from two of them; nothing for an app that hasn't had any. */
-    private static String dataAge(AppsView.Screen screen) {
-        long now = BeCom.proxy.worldTime();
-        if (screen.data() <= 0 || now <= 0) return "";
-        long seconds = Math.max(0, (now - screen.data()) / 20);
-        return seconds < 120 ? t("becom.ui.app.data_age", seconds) : t("becom.ui.app.data_age_min", seconds / 60);
     }
 
     /** Loading, as the kit board draws it: three dots, the lit one going round, over a grey word, 6 apart. */
@@ -423,10 +408,6 @@ final class PhoneAppPages {
             .installed();
         if (apps.isEmpty()) {
             Paint.centered(c, t("becom.ui.settings.apps.none"), SX + SW / 2, y + 30, 13, Paint.GREY);
-            for (String line : Paint.wrap(c, t("becom.ui.installed.how"), 12, SW - 40)) {
-                y += c.lineHeight(12) + 3;
-                Paint.centered(c, line, SX + SW / 2, y + 40, 12, Paint.DARK);
-            }
             return;
         }
         for (AppsView.App app : apps) {
@@ -617,10 +598,9 @@ final class PhoneAppPages {
         }
         c.rect(SX, y + 26, SW, 1, Paint.LINE);
         y += 27;
-        // The foot: a line over 6 of padding round the note's 14-pixel lines, and the page on the right.
+        // The foot, while there's more than one page: a line over the page count, 6 of padding round it.
         int pages = Math.max(1, (apps.total() + AppsView.STORE_ROWS - 1) / AppsView.STORE_ROWS);
-        List<String> foot = Paint.wrap(c, t("becom.ui.store.foot"), 11, w - (pages > 1 ? 50 : 0));
-        float footY = SY + SH - 6 - foot.size() * 14 - 6 - 1;
+        float footY = pages > 1 ? SY + SH - 6 - 14 - 6 - 1 : SY + SH;
         if (apps.store()
             .isEmpty()) {
             Paint.centered(
@@ -663,13 +643,8 @@ final class PhoneAppPages {
             c.rect(SX, y + h - 1, SW, 1, Paint.LINE);
             y += h;
         }
-        c.rect(SX, footY, SW, 1, Paint.LINE);
-        float fy = footY + 1 + 6;
-        for (String line : foot) {
-            c.text(line, x, capitals(fy, 14, 11), 11, Paint.DARK);
-            fy += 14;
-        }
         if (pages > 1) {
+            c.rect(SX, footY, SW, 1, Paint.LINE);
             String label = (page + 1) + " / " + pages;
             Paint.right(c, label, x + w, capitals(footY + 1 + 6, 14, 12), 12, Paint.LIGHT);
             ui.hit(x + w - 50, footY, 50, SY + SH - footY, () -> {

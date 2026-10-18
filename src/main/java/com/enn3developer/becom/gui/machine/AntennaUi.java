@@ -31,7 +31,6 @@ public final class AntennaUi extends CanvasScreen {
     private static final float LEFT = 444;
     private static final float MAP = 232;
     private static final float ROW = 26;
-    private static final int ROWS = 6;
     private static final int[] LEGEND = { 0xb03020, 0xd0a020, 0x40b040, 0x30c0d0 };
 
     private final Supplier<AntennaView> view;
@@ -70,7 +69,7 @@ public final class AntennaUi extends CanvasScreen {
         AntennaView v = view.get();
         Grey.panel(c, WIDTH, HEIGHT);
         float y = X0;
-        // Antenna T2, whether it works, its survey, and whose.
+        // Antenna T2, whether it works, and its survey.
         String title = t("becom.ui.antenna.title", v.tier());
         c.text(title, X0, y + (22 - c.lineHeight(18)) / 2, 18, Grey.TITLE);
         float x = X0 + c.width(title, 18) + 10;
@@ -83,13 +82,6 @@ public final class AntennaUi extends CanvasScreen {
             y + (22 - c.lineHeight(13)) / 2,
             13,
             Grey.NOTE);
-        Paint.right(
-            c,
-            t("becom.ui.machine.whose", v.owner()),
-            X0 + 692,
-            y + (22 - c.lineHeight(15)) / 2,
-            15,
-            Grey.FAINT);
         y += 22 + 10;
         paintLeft(c, v, y);
         paintMap(c, v, X0 + LEFT + 16, y);
@@ -138,23 +130,29 @@ public final class AntennaUi extends CanvasScreen {
         c.text(t("becom.ui.antenna.lock", v.owner()), X0, y + (20 - c.lineHeight(15)) / 2, 15, Grey.TEXT);
         Grey.toggle(this, c, X0 + LEFT - 44, y, v.locked(), v.mayManage() ? lock : null);
         y += 20 + 10;
-        // The table: its heading, then a row a link.
+        // The table, in a display: its heading, then a row a link, paged when it doesn't fit.
         float[] col = columns();
-        c.text(t("becom.ui.antenna.linked_to"), col[1], y + 2, 12, Grey.NOTE);
-        c.text(t("becom.ui.antenna.blocks"), col[2], y + 2, 12, Grey.NOTE);
-        c.text(t("becom.ui.antenna.radio"), col[3], y + 2, 12, Grey.NOTE);
-        c.text(t("becom.ui.antenna.calls"), col[4], y + 2, 12, Grey.NOTE);
-        c.rect(X0, y + 16, LEFT, 2, 0x9a9a9a);
-        y += 18;
+        String[] heads = { "", t("becom.ui.antenna.linked_to"), t("becom.ui.antenna.blocks"),
+            t("becom.ui.antenna.radio"), t("becom.ui.antenna.calls") };
         int size = v.links()
             .size()
             + v.buses()
                 .size();
-        int pages = Math.max(1, (size + ROWS - 1) / ROWS);
+        float bottom = HEIGHT - X0;
+        int fit = fit(bottom - y);
+        if (size > fit) {
+            bottom -= 24 + 8;
+            fit = fit(bottom - y);
+        }
+        int pages = Math.max(1, (size + fit - 1) / fit);
         page = Math.min(page, pages - 1);
-        if (size == 0) c.text(t("becom.ui.antenna.no_links"), col[1], y + (ROW - c.lineHeight(14)) / 2, 14, Grey.NOTE);
-        for (int i = page * ROWS; i < Math.min(size, (page + 1) * ROWS); i++) {
+        Grey.display(c, X0, y, LEFT, bottom - y);
+        RouterUi.heads(c, heads, col, X0, y, LEFT);
+        y += RouterUi.HEAD;
+        if (size == 0) c.text(t("becom.ui.antenna.no_links"), col[1], y + (ROW - c.lineHeight(14)) / 2, 14, Paint.GREY);
+        for (int i = page * fit; i < Math.min(size, (page + 1) * fit); i++) {
             float ty = y + (ROW - c.lineHeight(14)) / 2;
+            RouterUi.stripe(c, i, X0, y, LEFT);
             if (i < v.links()
                 .size()) {
                 paintLink(
@@ -177,37 +175,26 @@ public final class AntennaUi extends CanvasScreen {
             }
             y += ROW;
         }
-        // The foot: what it serves without backhaul, and the pages.
-        float footY = HEIGHT - X0 - 34;
-        SignalLevel radio = SignalLevel.values()[v.radioLevel()];
-        String without = radio == SignalLevel.NONE ? t("becom.ui.antenna.without_any")
-            : t(
-                "becom.ui.antenna.without_backhaul",
-                v.radioRate(),
-                t(
-                    "becom.level." + radio.name()
-                        .toLowerCase(Locale.ROOT)));
-        List<String> lines = Paint.wrap(c, without, 13, LEFT - 110);
-        float ly = footY;
-        for (String line : lines) {
-            c.text(line, X0, ly, 13, Grey.NOTE);
-            ly += 17;
-        }
-        Grey.pager(this, c, X0 + LEFT, footY + 4, page, pages, () -> page--, () -> page++);
+        if (pages > 1) Grey.pager(this, c, X0 + LEFT, bottom + 8, page, pages, () -> page--, () -> page++);
+    }
+
+    /** How many rows a display {@code h} tall holds under its heading. */
+    private static int fit(float h) {
+        return Math.max(1, (int) ((h - RouterUi.HEAD - 4) / ROW));
     }
 
     private static float[] columns() {
-        // Icon 20, name, blocks 52, radio 92, calls 92, six apart.
-        float calls = X0 + LEFT - 92;
+        // Icon 20, name, blocks 52, radio 92, calls 92, six apart, inside the display.
+        float calls = X0 + LEFT - 8 - 92;
         float radio = calls - 6 - 92;
         float blocks = radio - 6 - 52;
-        return new float[] { X0, X0 + 26, blocks, radio, calls };
+        return new float[] { X0 + 8, X0 + 34, blocks, radio, calls };
     }
 
     private static void paintLink(Canvas c, AntennaView.Link link, float[] col, float y, float ty) {
         icon(c, col[0] + 3, y + 6, false);
-        c.text(t("becom.ui.antenna.antenna_at", link.x(), link.y(), link.z()), col[1], ty, 14, Grey.TEXT);
-        c.text(String.valueOf(link.distance()), col[2], ty, 14, Grey.TEXT);
+        c.text(t("becom.ui.antenna.link"), col[1], ty, 14, Paint.TEXT);
+        c.text(String.valueOf(link.distance()), col[2], ty, 14, Paint.TEXT);
         band(c, col[3], y, ty, link.vhf(), SignalLevel.MEDIUM);
         band(c, col[4], y, ty, link.uhf(), SignalLevel.MAX);
     }
@@ -223,24 +210,24 @@ public final class AntennaUi extends CanvasScreen {
         if (bus.gateways() > 0)
             joins.add(t(bus.gateways() == 1 ? "becom.ui.router.gateway" : "becom.ui.router.gateways", bus.gateways()));
         String joined = joins.isEmpty() ? t("becom.ui.router.joins_nothing") : String.join(", ", joins);
-        c.text(Paint.fit(c, joined, 14, col[2] - col[1] - 6), col[1], ty, 14, Grey.TEXT);
-        c.text(String.valueOf(bus.cables()), col[2], ty, 14, Grey.TEXT);
+        c.text(Paint.fit(c, joined, 14, col[2] - col[1] - 6), col[1], ty, 14, Paint.TEXT);
+        c.text(String.valueOf(bus.cables()), col[2], ty, 14, Paint.TEXT);
         String carried = bus.rate() > 0 ? t("becom.ui.antenna.bus", cable(bus.cable()), bus.used(), bus.rate())
             : bus.cables() > BeComConfig.get()
                 .cableReach(CableTier.values()[bus.cable()]) ? t("becom.ui.router.bus_too_long")
                     : t("becom.ui.router.bus_down");
         // It spans Radio and Calls, wrapping onto a second line as on the board.
-        List<String> lines = Paint.wrap(c, carried, 12, X0 + LEFT - col[3]);
+        List<String> lines = Paint.wrap(c, carried, 12, X0 + LEFT - 8 - col[3]);
         float ly = lines.size() > 1 ? y + (ROW - 2 * c.lineHeight(12) - 2) / 2 : ty + 1;
         for (int i = 0; i < Math.min(2, lines.size()); i++) {
-            c.text(lines.get(i), col[3], ly, 12, bus.rate() > 0 ? 0x2f6f2f : 0xa02818);
+            c.text(lines.get(i), col[3], ly, 12, bus.rate() > 0 ? Paint.GREEN : Paint.RED);
             ly += c.lineHeight(12) + 2;
         }
     }
 
     /** An antenna, a mast with two crossbars; or a bus, a run of cable between two posts. */
     private static void icon(Canvas c, float x, float y, boolean backhaul) {
-        int ink = Grey.TITLE;
+        int ink = Paint.LIGHT;
         if (backhaul) {
             c.rect(x, y + 6, 14, 2, ink);
             c.rect(x + 2, y + 2, 2, 10, ink);
@@ -260,11 +247,11 @@ public final class AntennaUi extends CanvasScreen {
                 .levelOf(snr),
             cap);
         if (!level.atLeast(SignalLevel.LOW)) {
-            c.text(t("becom.ui.antenna.out_of_reach"), x, ty, 13, 0x8a8a8a);
+            c.text(t("becom.ui.antenna.out_of_reach"), x, ty, 13, Paint.GREY);
             return;
         }
-        Grey.bars(c, x, y + 7, level);
-        c.text(Math.round(snr) + " dB", x + 24, ty, 13, Grey.text(level));
+        Paint.bars(c, x, y + 7, level);
+        c.text(Math.round(snr) + " dB", x + 24, ty, 13, Paint.level(level));
     }
 
     /** Its best working backhaul: the bus to another router that carries the most, or null. */
@@ -318,12 +305,6 @@ public final class AntennaUi extends CanvasScreen {
             c.rect(lx, y + 2, 10, 10, none ? 0x303030 : LEGEND[i]);
             c.text(name, lx + 14, y, 13, Grey.TITLE);
             lx += 14 + c.width(name, 13) + 10;
-        }
-        y += 22;
-        String note = t(calls ? "becom.ui.antenna.map_calls" : "becom.ui.antenna.map_radio", v.mapRange());
-        for (String line : Paint.wrap(c, note, 13, MAP)) {
-            c.text(line, x, y, 13, Grey.NOTE);
-            y += 17;
         }
     }
 

@@ -1,9 +1,7 @@
 package com.enn3developer.becom.gui.phone;
 
-import static com.enn3developer.becom.gui.phone.PhoneUi.SH;
 import static com.enn3developer.becom.gui.phone.PhoneUi.SW;
 import static com.enn3developer.becom.gui.phone.PhoneUi.SX;
-import static com.enn3developer.becom.gui.phone.PhoneUi.SY;
 import static com.enn3developer.becom.gui.phone.PhoneUi.t;
 
 import java.util.ArrayList;
@@ -15,7 +13,6 @@ import com.enn3developer.becom.client.SignalTerms;
 import com.enn3developer.becom.gui.AppsView;
 import com.enn3developer.becom.gui.PhoneView;
 import com.enn3developer.becom.gui.paint.Canvas;
-import com.enn3developer.becom.gui.paint.Glyphs;
 import com.enn3developer.becom.gui.paint.Paint;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.phone.BatteryUse;
@@ -42,7 +39,6 @@ final class PhoneSettingsPages {
         float y = ui.paintBar(c, t("becom.ui.app.settings"), SETTINGS, SETTINGS_SHADOW);
         boolean manage = v.mayManage();
         y = ui.section(c, y, t("becom.ui.settings.this_phone"));
-        y = pillRow(c, y, t("becom.ui.settings.power"), null, v.on(), manage, on -> send(PhoneActions.POWER, on));
         y = pillRow(c, y, t("becom.ui.settings.silent"), null, v.silent(), manage, on -> send(PhoneActions.SILENT, on));
         y = pillRow(c, y, t("becom.ui.settings.dnd"), null, v.doNotDisturb(), manage, on -> send(PhoneActions.DND, on));
         y = pillRow(
@@ -85,15 +81,6 @@ final class PhoneSettingsPages {
         String sub = names.isEmpty() ? t("becom.ui.settings.apps.none")
             : t("becom.ui.settings.apps.sub", names.size(), String.join(", ", names));
         linkRow(c, y, t("becom.ui.settings.installed"), sub, null, () -> ui.open(PhoneUi.Page.INSTALLED));
-        // Who may change these, at the foot: the board's 10-pixel padlock and its line, 6 above the edge.
-        float footY = SY + SH - 6 - 13;
-        Paint.glyph(c, SX + 10, footY + 2, 10 / 6f, Glyphs.LOCK, Paint.DARK, Paint.SCREEN);
-        c.text(
-            Paint.fit(c, t("becom.ui.settings.owner_only", v.owner()), 11, SW - 36),
-            SX + 10 + 10 + 6,
-            footY + 3,
-            11,
-            Paint.DARK);
     }
 
     private void send(String action, boolean on) {
@@ -197,11 +184,8 @@ final class PhoneSettingsPages {
             y += 16;
         }
         y += 6;
-        // The board's 12 pixels, drawn at 11: at 12 Minecraft's wider letters take three lines where the board's
-        // take two, and push everything under them down a line.
-        String charging = t(b.charging() ? "becom.ui.battery.charging" : "becom.ui.battery.not_charging");
-        for (String line : Paint.wrap(c, charging, 11, w)) {
-            c.text(line, x, y + 3, 11, b.charging() ? Paint.GREEN : Paint.GREY);
+        if (b.charging()) {
+            c.text(t("becom.ui.battery.charging"), x, y + 3, 11, Paint.GREEN);
             y += 14;
         }
         // The board's sections here keep 3 under their heading, a pixel more than Settings'.
@@ -272,12 +256,7 @@ final class PhoneSettingsPages {
     void paintVideoWindow(Canvas c, PhoneView v) {
         ui.paintStatus(c, v);
         float y = ui.paintBar(c, t("becom.ui.settings.video_window_title"), SETTINGS, SETTINGS_SHADOW);
-        y += 14;
-        for (String line : Paint.wrap(c, t("becom.ui.video_window.about"), 13, SW - 20)) {
-            c.text(line, SX + 10, y, 13, Paint.TEXT);
-            y += c.lineHeight(13) + 3;
-        }
-        y += 14;
+        y += 24;
         float w = 200;
         float h = 120;
         float x = SX + (SW - w) / 2;
@@ -309,14 +288,11 @@ final class PhoneSettingsPages {
 
     // region Signal
 
-    /** The Signal app: the level big in its colour, what it comes through, and this phone's number. */
     /**
      * The Signal app, the Signal Analyzer's readout for the phone's band: its level in big bars, how many dB that is
-     * and
-     * what serves it; then, as the analyzer spells it out sneaking, where that is and a bar a term: what the link
-     * starts
-     * with, each loss it suffers, the biggest first, what's left, and how far off the next level is. An ME Phone in its
-     * network's range gets Max whatever the weather or walls, so it has no terms to show.
+     * and what serves it, then a bar a term: what the link starts with, each loss it suffers, the biggest first, and
+     * what's left. An ME Phone in its network's range gets Max whatever the weather or walls, so it has no terms to
+     * show.
      */
     void paintSignal(Canvas c, PhoneView v) {
         ui.paintStatus(c, v);
@@ -367,32 +343,18 @@ final class PhoneSettingsPages {
             y += 16;
         }
         if (!viaMe) {
-            // Where it comes from, in grey: the satellites overhead, or the antenna, how far and which way.
-            if (terms) {
-                String from = r.sky() ? t("becom.analyzer.overhead", r.satellites())
-                    : SignalTerms.source(r) + " · " + SignalTerms.away(r);
-                c.text(SignalTerms.capitalised(from), x, y + 4, 12, Paint.GREY);
-                y += 16;
-            }
             y = ui.section(c, y + 4, t("becom.analyzer.phones")) + 1;
             if (!terms) {
                 c.text(SignalTerms.capitalised(t("becom.analyzer.no_service")), x, y + 6, 13, Paint.RED);
             } else {
-                y = paintTerms(c, r, x, y, w);
+                paintTerms(c, r, x, y, w);
             }
-        }
-        // The hint at the foot, wrapped and centred in 13-pixel lines, the last 8 above the edge as the call's is.
-        List<String> hint = Paint.wrap(c, t("becom.ui.signal.hint"), 11, SW - 20);
-        float hy = SY + SH - 8 - hint.size() * 13;
-        for (String line : hint) {
-            Paint.centered(c, line, SX + SW / 2, hy + 3, 11, Paint.DARK);
-            hy += 13;
         }
     }
 
     /**
      * A reading's terms, a row each as the Battery page's uses: what the link starts with, each loss it suffers,
-     * biggest first, and what's left at its level; then that nothing's in the way, and how far off the next level is.
+     * biggest first, and what's left at its level.
      */
     private static float paintTerms(Canvas c, AnalyzerPacket.Reading r, float x, float y, float w) {
         RadioModel.Losses losses = r.losses();
@@ -408,11 +370,9 @@ final class PhoneSettingsPages {
             1,
             Paint.DARK,
             Math.round(budget));
-        boolean lost = false;
         for (RadioModel.Loss loss : SignalTerms.byBiggest(losses)) {
             long dB = Math.round(losses.of(loss));
             if (dB <= 0) continue;
-            lost = true;
             int i = loss.ordinal();
             y = termRow(
                 c,
@@ -438,15 +398,6 @@ final class PhoneSettingsPages {
             Math.max(0, losses.snr()) / budget,
             colour,
             Math.round(losses.snr()));
-        if (!lost) {
-            c.text(t("becom.analyzer.biggest_none"), x, y + 4, 12, Paint.GREY);
-            y += 16;
-        }
-        String shortOf = SignalTerms.shortOf(r);
-        if (shortOf != null) {
-            c.text(shortOf, x, y + 4, 12, Paint.GREY);
-            y += 16;
-        }
         return y;
     }
 
