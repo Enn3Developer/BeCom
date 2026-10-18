@@ -11,6 +11,8 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.common.util.Constants;
 
+import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -28,8 +30,6 @@ public final class NetworkSavedData extends WorldSavedData {
     private final NetworkModel model = new NetworkModel();
     private long savedVersion;
     private NBTTagCompound tooNewData;
-    // What this BeCom found it doesn't understand, which means a newer BeCom saved the file.
-    private String notUnderstood;
     private boolean read;
 
     public NetworkSavedData(String name) {
@@ -57,7 +57,6 @@ public final class NetworkSavedData extends WorldSavedData {
             data.tooNewData = new NBTTagCompound();
             throw SavedDataFormat.couldNotRead(what, file);
         }
-        if (data.notUnderstood != null) throw SavedDataFormat.notUnderstood(what, data.notUnderstood);
         if (data.tooNewData != null) {
             throw SavedDataFormat.newerThanUnderstood(what, SavedDataFormat.versionOf(data.tooNewData), FORMAT);
         }
@@ -100,19 +99,18 @@ public final class NetworkSavedData extends WorldSavedData {
         }
         // Format 1 is the first; later formats upgrade from here.
         NBTTagList nodes = nbt.getTagList("nodes", Constants.NBT.TAG_COMPOUND);
-        // Kinds are added without a format bump (NodeKind), so a kind this BeCom doesn't know means a newer one saved
-        // the file: keep it all, untouched, rather than drop those nodes and save over it.
-        for (int i = 0; i < nodes.tagCount(); i++) {
-            String name = nodes.getCompoundTagAt(i)
-                .getString("kind");
-            if (kindOf(name) == null) {
-                notUnderstood(nbt, "a node kind it doesn't know, \"" + name + "\"");
-                return;
-            }
-        }
         for (int i = 0; i < nodes.tagCount(); i++) {
             NBTTagCompound tag = nodes.getCompoundTagAt(i);
             NodeKind kind = kindOf(tag.getString("kind"));
+            // A kind this BeCom doesn't have, from an older one or a newer one, is dropped: its machine, if it's still
+            // there, joins again when its chunk loads.
+            if (kind == null) {
+                BeCom.LOG.warn(
+                    "Dropping a network node of a kind this BeCom doesn't have, \"{}\", at {}",
+                    tag.getString("kind"),
+                    BlockPos.toString(tag.getLong("pos")));
+                continue;
+            }
             UUID owner = tag.hasKey("ownerMost") ? new UUID(tag.getLong("ownerMost"), tag.getLong("ownerLeast")) : null;
             NetNode node = new NetNode(tag.getLong("pos"), kind, owner);
             if (tag.hasKey("partnerPos")) {
@@ -122,12 +120,6 @@ public final class NetworkSavedData extends WorldSavedData {
         }
         savedVersion = model.version();
         // Last: anything thrown above leaves the data unread, and so never saved over the file.
-        read = true;
-    }
-
-    private void notUnderstood(NBTTagCompound nbt, String detail) {
-        notUnderstood = detail;
-        tooNewData = (NBTTagCompound) nbt.copy();
         read = true;
     }
 

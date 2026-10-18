@@ -1,8 +1,8 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * Every kind of node a BeCom network holds. Saved by name, so constants can be added but never
- * renamed.
+ * Every kind of node a BeCom network holds. Saved by name: a node of a name this BeCom doesn't have is dropped on load,
+ * and its machine joins again as itself when its chunk loads.
  */
 public enum NodeKind {
 

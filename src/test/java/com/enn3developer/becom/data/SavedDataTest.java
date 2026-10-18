@@ -123,22 +123,31 @@ class SavedDataTest {
     }
 
     @Test
-    void anUnknownNodeKindMeansANewerBeComSavedIt() {
-        // Data a newer BeCom wrote is kept untouched and never saved over, not partly dropped.
+    void aNodeOfAnUnknownKindIsDropped() {
+        // An older BeCom's TERMINAL, say: the rest of the network loads, and the file is saved without it.
         NBTTagCompound nbt = new NBTTagCompound();
         NBTTagList nodes = new NBTTagList();
         nodes.appendTag(node(BlockPos.pack(0, 64, 0), NodeKind.ROUTER));
-        NBTTagCompound future = node(BlockPos.pack(10, 64, 0), NodeKind.ROUTER);
-        future.setString("kind", "SATELLITE_DISH_MK2");
-        nodes.appendTag(future);
+        NBTTagCompound old = node(BlockPos.pack(10, 64, 0), NodeKind.ROUTER);
+        old.setString("kind", "TERMINAL");
+        nodes.appendTag(old);
         nbt.setTag("nodes", nodes);
         NetworkSavedData read = new NetworkSavedData(NetworkSavedData.NAME);
         read.readFromNBT(nbt);
-        assertTrue(read.isTooNew());
-        assertFalse(read.isDirty());
-        NBTTagCompound written = new NBTTagCompound();
-        read.writeToNBT(written);
-        assertEquals(nbt, written);
+        assertFalse(read.isTooNew());
+        assertTrue(read.wasRead());
+        assertEquals(
+            1,
+            read.model()
+                .nodes()
+                .size());
+        assertEquals(
+            BlockPos.pack(0, 64, 0),
+            read.model()
+                .nodes()
+                .iterator()
+                .next()
+                .pos());
     }
 
     @Test
