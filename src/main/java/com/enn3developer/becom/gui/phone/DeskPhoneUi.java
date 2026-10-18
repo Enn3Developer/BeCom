@@ -64,7 +64,7 @@ public final class DeskPhoneUi extends CanvasScreen {
 
     /** The scale a desk phone is drawn at on a screen {@code guiHeight} GUI pixels tall. */
     public static float scaleFor(boolean videophone, int guiHeight) {
-        float height = videophone ? 624 : 504;
+        float height = videophone ? 584 : 478;
         if (guiHeight <= 0) return SCALE;
         return Math.min(SCALE, (guiHeight - 8) / height);
     }
