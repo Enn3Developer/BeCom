@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and connects to a Line Terminal with Phone Cable, just like a Telephone.%n%nRight-click it to dial, answer or hang up. Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
+      "desc:8": "A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and takes cable on any face, just like a Telephone.%n%nRight-click it to dial, answer or hang up. Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It hangs up by itself 30 seconds after the last person walks away.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

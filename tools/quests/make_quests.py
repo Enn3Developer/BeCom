@@ -41,11 +41,12 @@ TIER = {
 
 MACHINE = "becom:machine"
 
-# Some big steps offer their coins as a choice, against something for the next step: Pylon Heads
-# to carry the first line further, a walkie for whoever answered on the radio, a rocket to keep the satellites up.
+# Some big steps offer their coins as a choice, against something for the next step: a Router to take
+# the first network to the next building, a walkie for whoever answered on the radio, a rocket to keep the satellites
+# up.
 # GTNH's own quests never put coins in a choice, so these are BeCom's own picks.
 COIN_CHOICE = {
-    "first_call": (MACHINE, 25000, 2),
+    "first_call": (MACHINE, 25003, 1),
     "radio_contact": ("becom:walkie_talkie", 0, 1),
     "five_satellites": ("becom:satellite_rocket", 0, 1),
 }
@@ -65,8 +66,8 @@ GUIDE_LINK = ("More in the guide: [guide page=becom:{page}]{title}[/guide].",
 GUIDE_PAGE = {
     "phone_cable": "wired.md",
     "telephone": "wired.md",
-    "line_terminal": "wired.md",
-    "pylon": "wired.md",
+    "router": "wired.md",
+    "line_hatch": "wired.md",
     "first_call": "wired.md",
     "coaxial": "wired.md",
     "exchange": "wired.md",
@@ -102,7 +103,7 @@ def with_guide(key, desc, language):
 LINE = {
     "key": "line",
     "name": "Better Communications",
-    "desc": "Telephones on pylon lines, radios, mobile phones and satellites, carried by voice chat.",
+    "desc": "Telephones on cable, radios, mobile phones and satellites, carried by voice chat.",
     "icon": ("becom:telephone", 0),
 }
 
@@ -114,8 +115,9 @@ QUESTS = [
         "tier": "LV",
         "name": "Wired for Sound",
         "desc": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you "
-        "make it in the Assembler.%n%nIt runs from a Telephone to its Line Terminal, up to 128 blocks of it. Wire is "
-        "digital: it loses nothing on the way, rain or shine. Make a couple to get started.",
+        "make it in the Assembler.%n%nPlaced against a block, it joins that block, and GT wire cutters open and close "
+        "its sides. It runs from a Telephone to a Router, up to 128 blocks of it. Wire is digital: it loses nothing on "
+        "the way, rain or shine. Make a couple to get started.",
         "icon": ("becom:phone_cable", 0),
         "pre": [],
         "tasks": [("item", "becom:phone_cable", 0, 2)],
@@ -136,13 +138,15 @@ QUESTS = [
         "pos": (48, 24),
     },
     {
-        "key": "line_terminal",
+        "key": "router",
         "tier": "LV",
         "name": "End of the Line",
-        "desc": "Every building's line starts at a Line Terminal. Give it LV power, just 4 EU/t, and run cable from "
-        "it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for "
-        "the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a "
-        "Pylon Head, with cable in your hotbar.",
+        "desc": "Every building's network starts at a Router. Give it LV power, just 4 EU/t, and cable your "
+        "Telephones to it, on any face. The LV Router takes Phone Cable and switches 8 calls at once; the MV one "
+        "takes Coaxial too and switches 32, the HV one Fibre and 128.%n%nThe cable on each of its faces is a bus, and "
+        "everything on a bus shares its rate. A bus works only with a working router on it, and up to 128 blocks of "
+        "Phone Cable. A router starts the count again, so cable between two routers joins them, building to "
+        "building.",
         "icon": (MACHINE, 25003),
         "pre": ["phone_cable"],
         "tasks": [("item", MACHINE, 25003, 1)],
@@ -150,31 +154,29 @@ QUESTS = [
         "pos": (48, 72),
     },
     {
-        "key": "pylon",
+        "key": "line_hatch",
         "tier": "LV",
-        "name": "Up on the Pole",
-        "desc": "To carry a line between buildings, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood "
-        "Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to "
-        "four times the shorter one's height apart, if nothing solid is in between. Put cable in your hotbar, then "
-        "wrench one head and the other: that strings the span, one cable for every 4 blocks of it.%n%nPylons need "
-        "no power and keep working in unloaded chunks. A run of Phone Cable reaches 128 blocks, terminal to "
-        "terminal; past that it carries nothing.",
-        "icon": (MACHINE, 25000),
-        "pre": ["line_terminal"],
-        "tasks": [("item", MACHINE, 25000, 2)],
+        "name": "Plug and Play",
+        "desc": "A multiblock takes cable through its Line Hatches. Each takes one cable, on its front face, and "
+        "joins that bus to its machine: an Exchange or an antenna routes its calls, and a Satellite Dish makes it "
+        "its backhaul.%n%nAn LV hatch takes Phone Cable, an MV one Coaxial too and an HV one Fibre. Its lamp is lit "
+        "while its machine works.",
+        "icon": (MACHINE, 25016),
+        "pre": ["router"],
+        "tasks": [("item", MACHINE, 25016, 1)],
         "big": False,
-        "pos": (96, 72),
+        "pos": (96, 96),
     },
     {
         "key": "first_call",
         "tier": "LV",
         "name": "Hello? Can You Hear Me?",
-        "desc": "Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons "
-        "between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right "
-        "away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and "
-        "gritty. But it carries your voice as far as the line goes.",
+        "desc": "Time for your first call! Cable two Telephones to a powered Router, or each to a Router of its "
+        "own with cable between the two.%n%nPick up the handset. If there's only one other phone in reach, it rings "
+        "right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow "
+        "and gritty. But it carries your voice as far as the cable goes.",
         "icon": ("becom:telephone", 0),
-        "pre": ["telephone", "pylon"],
+        "pre": ["telephone", "router"],
         "tasks": [("becom", "FIRST_CALL")],
         "big": True,
         "pos": (144, 48),
@@ -183,27 +185,29 @@ QUESTS = [
         "key": "coaxial",
         "tier": "MV",
         "name": "Bigger Pipes",
-        "desc": "Phone Cable carries 16 KB/s, enough for 8 calls. Coaxial carries 64 KB/s over runs up to 512 "
-        "blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene.%n%nA span "
-        "holds up to 4 cables, and their rates add up. Wrench a strung span again with cable in your hotbar to add "
-        "it; once the span is full, a better cable swaps out the poorest one, and you get that one back.",
+        "desc": "Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 "
+        "KB/s on buses up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and "
+        "polyethylene. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own "
+        "tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, "
+        "at least.",
         "icon": ("becom:phone_cable", 1),
-        "pre": ["pylon"],
+        "pre": ["router"],
         "tasks": [("item", "becom:phone_cable", 1, 4)],
         "big": False,
-        "pos": (96, 120),
+        "pos": (96, 144),
     },
     {
         "key": "exchange",
         "tier": "LV",
         "name": "Switchboard",
-        "desc": "A pylon line joins two terminals. To join more, wire them all to an Exchange: a 3x3x3 building of "
-        "LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to "
-        "15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack "
-        "switches 8 calls at once, MV 32, HV 128.",
+        "desc": "One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 "
+        "wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its "
+        "ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel "
+        "frames.%n%nIt draws 64 EU/t through an Energy Hatch and joins a bus at each Line Hatch, on its caps, roof or "
+        "floor. Each LV rack switches 8 calls at once, MV 32, HV 128; racks and hatches go up to the hall's tier.",
         "icon": (MACHINE, 25001),
-        "pre": ["first_call"],
-        "tasks": [("item", MACHINE, 25001, 1)],
+        "pre": ["first_call", "line_hatch"],
+        "tasks": [("item", MACHINE, 25001, 1), ("item", MACHINE, 25019, 1)],
         "big": True,
         "pos": (144, 120),
     },
@@ -215,8 +219,8 @@ QUESTS = [
         "under the head and three guys down to LV Machine Casing anchors; its Energy Hatch goes in the equipment "
         "shelter in front. It uses 32 EU/t.%n%nIt reaches about 64 blocks on open "
         "ground. Height helps; hills and roofs cost you signal. Antennas find each other on their own, but radio links "
-        "carry little. Wire it to a pylon, a terminal or an Exchange within 16 blocks, with cable in your hotbar, "
-        "and it carries all 4 of its calls over the wire.",
+        "carry little. Put a Line Hatch in its shelter and cable your Router to it: the antenna then carries your "
+        "network's calls over the air, 4 at once.",
         "icon": (MACHINE, 25004),
         "pre": ["first_call"],
         "tasks": [("item", MACHINE, 25004, 1)],
@@ -285,7 +289,7 @@ QUESTS = [
         "desc": "Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame "
         "Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget "
         "doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls "
-        "between the lines bridged onto them.",
+        "between the buses cabled to them.",
         "icon": (MACHINE, 25005),
         "pre": ["antenna_t1"],
         "tasks": [("item", MACHINE, 25005, 1)],
@@ -309,8 +313,8 @@ QUESTS = [
         "key": "videophone",
         "tier": "MV",
         "name": "Face to Face",
-        "desc": "A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and connects "
-        "to a Line Terminal with Phone Cable, just like a Telephone.%n%nRight-click it to dial, answer or hang up. "
+        "desc": "A speakerphone with a screen, for the whole team. The Videophone runs on MV, 32 EU/t, and takes "
+        "cable on any face, just like a Telephone.%n%nRight-click it to dial, answer or hang up. "
         "Everyone within 4 blocks is in the call and on screen, and its loudspeaker carries the call 16 blocks. It "
         "hangs up by itself 30 seconds after the last person walks away.",
         "icon": (MACHINE, 25009),
@@ -379,8 +383,8 @@ QUESTS = [
         "tier": "EV",
         "name": "Bridging the Networks",
         "desc": "An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it "
-        "on ME cable, where it takes one channel, and run cable from it to an Exchange: that cable carries its "
-        "calls. It uses 512 EU/t and carries 8 calls at once.",
+        "on ME cable, where it takes one channel, and cable it, on any face, to a Router or an Exchange: that "
+        "cable carries its calls. It uses 512 EU/t and carries 8 calls at once.",
         "icon": (MACHINE, 25008),
         "pre": ["me_phone"],
         "tasks": [("item", MACHINE, 25008, 1)],
@@ -391,7 +395,7 @@ QUESTS = [
         "key": "me_bridge_call",
         "tier": "EV",
         "name": "Long Distance",
-        "desc": "Your ME Phone can reach past your ME network. From an ME Phone, call a Telephone on a line, a "
+        "desc": "Your ME Phone can reach past your ME network. From an ME Phone, call a Telephone, a "
         "Mobile Phone or a Videophone, through an ME Bridge.",
         "icon": ("becom:me_phone", 0),
         "pre": ["me_bridge"],
@@ -405,8 +409,8 @@ QUESTS = [
         "name": "Through the Portal",
         "desc": "Radio doesn't cross dimensions on its own. A Portal Relay works within 4 blocks of a Nether "
         "portal, an End portal, a Twilight Forest portal or a Personal Space portal, on 32 EU/t of MV "
-        "power.%n%nCable it to an Exchange of your network. Then go through the portal and place a relay by the "
-        "other side, cabled to an Exchange there: the two pair by themselves. The pair joins the two networks at "
+        "power.%n%nCable it, on any face, to a Router or an Exchange of your network. Then go through the "
+        "portal and place a relay by the other side, cabled to one there: the two pair by themselves. The pair joins the two networks at "
         "High, and carries 16 calls.%n%nHV and EV relays carry 48 and 128; a pair works at "
         "its lower relay's tier.",
         "icon": (MACHINE, 25012),
@@ -460,11 +464,12 @@ QUESTS = [
         "key": "satellite_dish",
         "tier": "HV",
         "name": "Dish Network",
-        "desc": "Why run lines when you can bounce off a satellite? A Satellite Dish joins its network to every "
+        "desc": "Why run cable when you can bounce off a satellite? A Satellite Dish joins its network to every "
         "other dish in the same dimension, through the satellites overhead.%n%nIt's a bowl of Clean Stainless Steel "
         "Machine Casings facing the sky, a feed horn on four struts over it, on a pedestal of Stainless Steel Frame "
-        "Boxes; the Energy Hatch and Maintenance Hatch go in the plinth at its foot, by the controller. It uses 512 "
-        "EU/t.%n%nRun cable from its controller to an Exchange. Keep up its maintenance: each problem costs it 2 dB.",
+        "Boxes; the Energy Hatch, the Maintenance Hatch and one Line Hatch go in the plinth at its foot, by the "
+        "controller. It uses 512 EU/t.%n%nCable its Line Hatch to a Router or an Exchange: that bus is its backhaul. "
+        "Keep up its maintenance: each problem costs it 2 dB.",
         "icon": (MACHINE, 25011),
         "pre": ["five_satellites"],
         "tasks": [("item", MACHINE, 25011, 1)],

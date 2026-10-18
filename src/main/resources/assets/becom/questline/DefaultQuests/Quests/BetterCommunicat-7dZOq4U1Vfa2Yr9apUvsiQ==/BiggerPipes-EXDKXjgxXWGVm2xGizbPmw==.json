@@ -1,14 +1,14 @@
 {
   "preRequisites:9": {
     "0:10": {
-      "questIDHigh:4": -222294113885793163,
-      "questIDLow:4": -4860476363550805366
+      "questIDHigh:4": 79365213721482471,
+      "questIDLow:4": -5444110621092156459
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Phone Cable carries 16 KB/s, enough for 8 calls. Coaxial carries 64 KB/s over runs up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene.%n%nA span holds up to 4 cables, and their rates add up. Wrench a strung span again with cable in your hotbar to add it; once the span is full, a better cable swaps out the poorest one, and you get that one back.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 KB/s on buses up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, at least.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

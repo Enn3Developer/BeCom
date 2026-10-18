@@ -1930,7 +1930,7 @@ public final class SelfTest {
             "bq_standard:choice " + (Item.itemRegistry.getObject(LV_COIN) != null ? LV_COIN + " " : "")
                 + "becom:machine");
         check(
-            "...and the first-call quest offers its coins as a choice against two Pylon Heads, without what isn't"
+            "...and the first-call quest offers its coins as a choice against a Router, without what isn't"
                 + " installed",
             expected.equals(rewards),
             String.valueOf(rewards));

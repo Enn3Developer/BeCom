@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the lines bridged onto them.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
+      "desc:8": "Same idea, more reach. An Antenna T2 Head tops a taller guyed mast of Aluminium Frame Boxes, 8 to 32 of them, with two crossed dipoles and MV Machine Casings, and uses 128 EU/t.%n%nIt reaches about 128 blocks, twice a T1: every 6 dB of link budget doubles the range on open ground. Antennas repeat all 16 radio channels between them, and carry calls between the buses cabled to them.%n%nMore in the guide: [guide page=becom:antennas.md]Antennas[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -20,8 +20,8 @@ item_ids:
 quest_ids:
   - "IHTr1EMRVx6vQQ7722eirw"
   - "b14IecXxXxuWU8oeGOPcNw"
-  - "mXRjCMiFWsyGTG0Id2bbig"
-  - "_OpArmItVHW8jB5_z18yig"
+  - "ARn2PctkVOe0cqI7997r1Q"
+  - "we4VyYt3UnGXhG2OVdCzHQ"
   - "_xekW5q3V6-D2yESxW4Bqw"
   - "EXDKXjgxXWGVm2xGizbPmw"
   - "Dd10sdc7U-eNKPKXD7E0Ig"

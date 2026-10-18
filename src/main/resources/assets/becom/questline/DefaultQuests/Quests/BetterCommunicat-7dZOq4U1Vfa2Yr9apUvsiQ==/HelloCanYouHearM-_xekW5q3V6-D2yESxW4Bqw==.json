@@ -5,14 +5,14 @@
       "questIDLow:4": -7614520314337960905
     },
     "1:10": {
-      "questIDHigh:4": -222294113885793163,
-      "questIDLow:4": -4860476363550805366
+      "questIDHigh:4": 79365213721482471,
+      "questIDLow:4": -5444110621092156459
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Time for your first call! You need two Telephones, each on its own Line Terminal, with pylons between the terminals.%n%nPick up the handset. If there's only one other phone on the line, it rings right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and gritty. But it carries your voice as far as the line goes.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Time for your first call! Cable two Telephones to a powered Router, or each to a Router of its own with cable between the two.%n%nPick up the handset. If there's only one other phone in reach, it rings right away. Otherwise, dial its number or pick a contact.%n%nDon't expect hi-fi: a Telephone sounds narrow and gritty. But it carries your voice as far as the cable goes.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -61,8 +61,8 @@
           "id:8": "dreamcraft:CoinTechnician"
         },
         "1:10": {
-          "Count:3": 2,
-          "Damage:2": 25000,
+          "Count:3": 1,
+          "Damage:2": 25003,
           "OreDict:8": "",
           "id:8": "becom:machine"
         }

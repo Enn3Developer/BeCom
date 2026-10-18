@@ -3,12 +3,16 @@
     "0:10": {
       "questIDHigh:4": -65402956228896849,
       "questIDLow:4": -8945519870335909461
+    },
+    "1:10": {
+      "questIDHigh:4": -4472613424559861135,
+      "questIDLow:4": -7528772218964102371
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A pylon line joins two terminals. To join more, wire them all to an Exchange: a 3x3x3 building of LV Machine Casings with an Energy Hatch and an Input Bus, drawing 64 EU/t. It switches calls between up to 15 lines.%n%nWith no Switching Racks it switches nothing. Put up to 8 in its Input Bus: each LV rack switches 8 calls at once, MV 32, HV 128.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "One Router switches 8 calls. For a whole town, build an Exchange: a hall of Switching Racks, 3 wide and 5 tall, with up to 8 slices of 4 racks between its two caps and a ladder of frame boxes along its ridge. Build it all of one tier: LV, MV or HV Machine Casings, with Steel, Aluminium or Stainless Steel frames.%n%nIt draws 64 EU/t through an Energy Hatch and joins a bus at each Line Hatch, on its caps, roof or floor. Each LV rack switches 8 calls at once, MV 32, HV 128; racks and hatches go up to the hall's tier.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -75,6 +79,24 @@
         "0:10": {
           "Count:3": 1,
           "Damage:2": 25001,
+          "OreDict:8": "",
+          "id:8": "becom:machine"
+        }
+      },
+      "taskID:8": "bq_standard:retrieval"
+    },
+    "1:10": {
+      "autoConsume:1": 0,
+      "consume:1": 0,
+      "groupDetect:1": 0,
+      "ignoreNBT:1": 1,
+      "index:3": 1,
+      "partialMatch:1": 1,
+      "requireOnlyOneItem:1": 0,
+      "requiredItems:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 25019,
           "OreDict:8": "",
           "id:8": "becom:machine"
         }

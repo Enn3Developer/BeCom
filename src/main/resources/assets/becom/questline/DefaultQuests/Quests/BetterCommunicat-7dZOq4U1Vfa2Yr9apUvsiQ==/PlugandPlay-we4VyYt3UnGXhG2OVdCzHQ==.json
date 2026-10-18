@@ -1,18 +1,18 @@
 {
   "preRequisites:9": {
     "0:10": {
-      "questIDHigh:4": -7389172199233070388,
-      "questIDLow:4": -8769514491266802806
+      "questIDHigh:4": 79365213721482471,
+      "questIDLow:4": -5444110621092156459
     }
   },
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "To carry a line between buildings, put up pylons: a Pylon Head on top of a pole of 6 to 16 Wood Frame Boxes, with a crossarm of 4 more right under the head.%n%nTaller is better. Two pylons link up to four times the shorter one's height apart, if nothing solid is in between. Put cable in your hotbar, then wrench one head and the other: that strings the span, one cable for every 4 blocks of it.%n%nPylons need no power and keep working in unloaded chunks. A run of Phone Cable reaches 128 blocks, terminal to terminal; past that it carries nothing.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "A multiblock takes cable through its Line Hatches. Each takes one cable, on its front face, and joins that bus to its machine: an Exchange or an antenna routes its calls, and a Satellite Dish makes it its backhaul.%n%nAn LV hatch takes Phone Cable, an MV one Coaxial too and an HV one Fibre. Its lamp is lit while its machine works.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
-        "Damage:2": 25000,
+        "Damage:2": 25016,
         "OreDict:8": "",
         "id:8": "becom:machine"
       },
@@ -20,7 +20,7 @@
       "isMain:1": 0,
       "isSilent:1": 0,
       "lockedProgress:1": 0,
-      "name:8": "\u00a72\u00a7lUp on the Pole",
+      "name:8": "\u00a72\u00a7lPlug and Play",
       "partySingleReward:1": 0,
       "questLogic:8": "AND",
       "repeatTime:3": -1,
@@ -32,8 +32,8 @@
       "visibility:8": "NORMAL"
     }
   },
-  "questIDHigh:4": -222294113885793163,
-  "questIDLow:4": -4860476363550805366,
+  "questIDHigh:4": -4472613424559861135,
+  "questIDLow:4": -7528772218964102371,
   "rewards:9": {
     "0:10": {
       "ignoreDisabled:1": 0,
@@ -60,8 +60,8 @@
       "requireOnlyOneItem:1": 0,
       "requiredItems:9": {
         "0:10": {
-          "Count:3": 2,
-          "Damage:2": 25000,
+          "Count:3": 1,
+          "Damage:2": 25016,
           "OreDict:8": "",
           "id:8": "becom:machine"
         }

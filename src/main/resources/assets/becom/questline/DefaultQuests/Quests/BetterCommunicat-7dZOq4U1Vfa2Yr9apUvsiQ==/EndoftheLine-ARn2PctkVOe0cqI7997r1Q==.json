@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Every building's line starts at a Line Terminal. Give it LV power, just 4 EU/t, and run cable from it to your Telephones. It serves every phone on its cable, the nearest first: 4 for the LV terminal, 8 for the MV one, 16 for the HV one. They all share its line.%n%nTo put it on a line, wrench the terminal, then a Pylon Head, with cable in your hotbar.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every building's network starts at a Router. Give it LV power, just 4 EU/t, and cable your Telephones to it, on any face. The LV Router takes Phone Cable and switches 8 calls at once; the MV one takes Coaxial too and switches 32, the HV one Fibre and 128.%n%nThe cable on each of its faces is a bus, and everything on a bus shares its rate. A bus works only with a working router on it, and up to 128 blocks of Phone Cable. A router starts the count again, so cable between two routers joins them, building to building.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,
@@ -32,8 +32,8 @@
       "visibility:8": "NORMAL"
     }
   },
-  "questIDHigh:4": -7389172199233070388,
-  "questIDLow:4": -8769514491266802806,
+  "questIDHigh:4": 79365213721482471,
+  "questIDLow:4": -5444110621092156459,
   "rewards:9": {
     "0:10": {
       "ignoreDisabled:1": 0,
