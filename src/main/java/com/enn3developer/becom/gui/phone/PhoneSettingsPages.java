@@ -62,7 +62,7 @@ final class PhoneSettingsPages {
             c,
             y,
             t("becom.ui.settings.video_window"),
-            t("becom.ui.settings.video_window.sub", t("becom.ui.corner." + CORNERS[corner()])),
+            t("becom.ui.corner." + CORNERS[corner()]),
             null,
             () -> ui.open(PhoneUi.Page.VIDEO_WINDOW));
         y = linkRow(
