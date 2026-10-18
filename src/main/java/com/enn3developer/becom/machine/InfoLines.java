@@ -569,13 +569,17 @@ public final class InfoLines {
      * energy hatches can't run it.
      */
     static void overclock(InfoLines info, EnergyHatches.Fit fit, int factor) {
+        overclock(info, fit, factor, "becom.info.overclocked");
+    }
+
+    /** As above, its overclocks said with {@code key}: what they multiply, and its power. */
+    static void overclock(InfoLines info, EnergyHatches.Fit fit, int factor, String key) {
         switch (fit.problem()) {
             case POWER -> info.problem("becom.info.hatch_power", fit.needs(), fit.gives());
             case VOLTAGE -> info.problem("becom.info.hatch_voltage", gregtech.api.enums.GTValues.VN[(int) fit.needs()]);
             case NONE -> {
-                if (fit.overclocks() > 0)
-                    info.add("becom.info.overclocked", (long) Math.pow(factor, fit.overclocks()), fit.power(1))
-                        .row("becom.info.row.overclock");
+                if (fit.overclocks() > 0) info.add(key, (long) Math.pow(factor, fit.overclocks()), fit.power(1))
+                    .row("becom.info.row.overclock");
             }
         }
     }

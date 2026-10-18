@@ -21,6 +21,7 @@ gt.blockmachines.becom.transceiver.name=Ricetrasmettitore
 gt.blockmachines.becom.me_bridge.name=Ponte ME
 gt.blockmachines.becom.videophone.name=Videotelefono
 gt.blockmachines.becom.app_mirror.name=Mirror dell'App Store
+gt.blockmachines.becom.me_mirror.name=Mirror dell'App Store ME
 gt.blockmachines.becom.launch_pad.name=Rampa di lancio per satelliti
 gt.blockmachines.becom.satellite_dish.name=Parabola satellitare
 gt.blockmachines.becom.portal_relay.name=Ripetitore di portale
@@ -116,6 +117,12 @@ becom.machine.me_bridge.power=Usa %s dalla sua rete ME, %s in più a chiamata
 becom.machine.videophone.info=Un vivavoce video cablato
 becom.machine.videophone.room=Sente entro %s blocchi, altoparlante %s, riaggancia dopo %s s da solo
 becom.machine.app_mirror.info=I telefoni scaricano le app dello store attraverso di lui
+becom.machine.me_mirror.type=Mirror dell'App Store
+becom.machine.me_mirror.info=Telefoni ME e schede ME della sua rete ME scaricano e pubblicano app dello store attraverso di lui; prende un canale
+becom.machine.me_mirror.rate=Serve a %s
+becom.machine.me_mirror.overclock=Va in overclock come le strutture di GT: velocità ×2 per energia ×4
+becom.machine.me_mirror.controller=Davanti, in basso al centro, sotto il vetro
+becom.machine.me_mirror.hatch=Qualsiasi casing
 becom.videophone.step_closer=Avvicinati al Videotelefono entro %s blocchi per usarlo: le sue chiamate sono per chi gli sta intorno.
 
 # Scanner info
@@ -177,8 +184,10 @@ becom.phone.recent.missed=Persa
 becom.phone.battery.low=La batteria del telefono è scesa al %s%%.
 item.becom.becom_card_radio.name=Scheda BeCom (radio)
 item.becom.becom_card_wired.name=Scheda BeCom (cablata)
+item.becom.becom_card_me.name=Scheda BeCom (ME)
 becom.card.radio=Radio: segnale da telefono
 becom.card.wired=Cablata: il cavo del computer
+becom.card.me=ME: la portata wireless della sua rete ME
 becom.call.computer=Quel numero è un computer: riceve dati, non chiamate.
 becom.call.mirror=Quel numero è un Mirror dell'App Store: non riceve chiamate.
 becom.apps.background.info=Si sveglia per i messaggi, al massimo una volta al minuto
@@ -297,6 +306,10 @@ betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=§8§lSenza fili dappertutto
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Hai una rete ME con i punti d'accesso wireless? Allora la copertura ce l'hai già. Un Telefono ME è un Telefono cellulare collegato a una rete ME.%n%nCollegalo a un Terminale di sicurezza ME, come un Terminale wireless. Ovunque arrivino i Punti d'accesso wireless ME di quella rete, amplificatori compresi, ha servizio al livello Massimo. Altrove è un Telefono cellulare, con il segnale di un Telefono cellulare. Si carica in un Caricatore di AE2.%n%nI Telefoni ME della stessa rete ME si chiamano senza nessuna antenna.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=§8§lUnire le reti
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=Un Ponte ME unisce una rete ME alla tua rete telefonica, così i Telefoni ME possono chiamare qualsiasi telefono.%n%nMettilo su un cavo ME, dove prende un canale, e collegalo con il cavo, su qualsiasi faccia, a un Router o a una Centrale: quel cavo porta le sue chiamate. Va con l'energia della sua rete ME e porta 8 chiamate insieme.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
+betterquesting.quest.Ed7TlqNoXOadd-3GRGTobw.name=§8§lSpecchio di fluix
+betterquesting.quest.Ed7TlqNoXOadd-3GRGTobw.desc=Una rete ME può avere l'App Store tutto per sé. Il Mirror dell'App Store ME è una struttura EV: due armadi server di EV Machine Casing ai lati di due Fluix Block dietro un Quartz Glass, sotto una Titanium Frame Box.%n%nIl suo controller è il suo collegamento a ME: formata, si unisce al cavo ME su qualsiasi faccia e prende un canale. I Telefoni ME collegati a quella rete, in ogni dimensione che raggiunge, ci navigano e scaricano, senza cavi né router. Consuma 1536 EU/t, e più Energy Hatch ne mandano in overclock la velocità.%n%nAltro nella guida: [guide page=becom:apps.md]App del telefono[/guide].
+betterquesting.quest.183gZQtdWIyw-FukK6qBAA.name=§8§lCollegato alla rete
+betterquesting.quest.183gZQtdWIyw-FukK6qBAA.desc=Anche un computer si unisce a una rete ME. La Scheda BeCom (ME) è la scheda radio rivolta a ME: collegala in una Security Station, come un Telefono ME, e finché il computer sta nella portata dei Punti d'accesso wireless di quella rete ha servizio a Massimo.%n%nAttraverso di lei becom publish arriva al Mirror dell'App Store ME, e app e computer si scambiano dati sulla rete ME.%n%nAltro nella guida: [guide page=becom:apps.md]App del telefono[/guide].
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.name=§8§lInterurbana
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Il tuo Telefono ME può arrivare oltre la tua rete ME. Da un Telefono ME, chiama un Telefono, un Telefono cellulare o un Videotelefono, attraverso un Ponte ME.%n%nAltro nella guida: [guide page=becom:phones.md]Telefoni[/guide].
 betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.name=§6§lAttraverso il portale
@@ -623,6 +636,7 @@ becom.ui.router.now_too_long=bus troppo lungo
 becom.info.eu_t=%s EU/t
 becom.info.ae_t=%s AE/t
 becom.info.overclocked=chiamate ×%s, energia ×%s
+becom.info.overclocked_rate=velocità ×%s, energia ×%s
 becom.info.hatch_power=Vuole %s EU/t; le sue Energy Hatch ne danno %s
 becom.info.hatch_voltage=Tensione troppo bassa: le sue Energy Hatch devono essere almeno %s
 becom.info.row.calls=Chiamate
@@ -768,7 +782,9 @@ becom.mirror.not_yours=Solo il proprietario, la sua squadra o un operatore posso
 becom.mirror.unlocked=Ora serve tutti.
 becom.mirror.locked=Ora serve solo la squadra del proprietario.
 becom.info.row.downloads=Download
+becom.info.row.rate=Velocità
 becom.mirror.downloads=%s ora, %s oggi
+becom.mirror.rate=%s KB/s
 becom.tip.on=Acceso
 becom.tip.off=Spento
 becom.tip.channel=Canale %s

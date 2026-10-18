@@ -667,7 +667,7 @@ public final class NetworkService {
             if (!working(bridge.dimension(), bridge.pos())) continue;
             CallGraph.NodeVertex vertex = new CallGraph.NodeVertex(bridge.dimension(), bridge.pos());
             builder.twoWay(
-                new CallGraph.MeVertex(entry.getValue(), bridge.dimension()),
+                new CallGraph.MeVertex(entry.getValue()),
                 vertex,
                 Double.POSITIVE_INFINITY,
                 CallGraph.HopKind.ME_BRIDGE);

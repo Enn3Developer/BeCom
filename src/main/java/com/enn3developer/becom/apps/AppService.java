@@ -40,6 +40,8 @@ import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.CallService;
 import com.enn3developer.becom.server.CarriedPhones;
+import com.enn3developer.becom.server.MeAccess;
+import com.enn3developer.becom.server.MeGrids;
 import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.Ownership;
 import com.enn3developer.becom.server.PhoneHandle;
@@ -116,10 +118,14 @@ public final class AppService {
         }
     }
 
-    /** A working mirror as it last said so: when, whose it is, and whether it serves its owner's team alone. */
-    private record Mirror(long heard, UUID owner, boolean locked) {}
+    /**
+     * A working mirror as it last said so: when, whose it is, whether it serves its owner's team alone, and the rate
+     * it serves at, or 0 for its cable's.
+     */
+    private record Mirror(long heard, UUID owner, boolean locked, int rate) {}
 
     private final MinecraftServer server;
+    private final MeGrids meGrids;
     private final Tunables t;
     private final LevelScale levels;
     private final PhoneService phones;
@@ -166,8 +172,9 @@ public final class AppService {
     private long version;
 
     public AppService(MinecraftServer server, Tunables t, PhoneService phones, CarriedPhones carried, CallService calls,
-        NetworkService network) {
+        NetworkService network, MeGrids meGrids) {
         this.server = server;
+        this.meGrids = meGrids;
         this.t = t;
         this.levels = t.levelScale();
         this.phones = phones;
@@ -671,6 +678,8 @@ public final class AppService {
             if (card.wired()) return network.cableRate(number);
             return t.radioRate(carried.levelOf(computerEntries.getOrDefault(number, List.of())));
         }
+        Mirror mirror = mirrors.get(number);
+        if (mirror != null && mirror.rate() > 0) return mirror.rate();
         return network.cableRate(number);
     }
 
@@ -688,6 +697,8 @@ public final class AppService {
             if (card.wired()) return network.cableRate(number) > 0 ? SignalLevel.MAX : SignalLevel.NONE;
             return carried.levelOf(computerEntries.getOrDefault(number, List.of()));
         }
+        Mirror mirror = mirrors.get(number);
+        if (mirror != null && mirror.rate() > 0) return SignalLevel.MAX;
         return network.cableRate(number) > 0 ? SignalLevel.MAX : SignalLevel.NONE;
     }
 
@@ -710,9 +721,14 @@ public final class AppService {
 
     // region The App Store's mirrors
 
-    /** A working mirror says so each tick, with whose it is and whether it serves its owner's team alone. */
+    /** A working mirror on cable says so each tick, with whose it is and whether it serves its owner's team alone. */
     public void mirrorHeard(int number, UUID owner, boolean locked) {
-        mirrors.put(number, new Mirror(ticks, owner, locked));
+        mirrorHeard(number, owner, locked, 0);
+    }
+
+    /** A working mirror says so each tick, as above, and serves at {@code rate} KB/s, or its cable's at 0. */
+    public void mirrorHeard(int number, UUID owner, boolean locked, int rate) {
+        mirrors.put(number, new Mirror(ticks, owner, locked, rate));
     }
 
     /** A mirror was broken: what it was serving stops. */
@@ -858,6 +874,15 @@ public final class AppService {
                 network.busChanged(dimension, pos);
             }
             computerEntries.put(number, CallGraph.Entry.of(number));
+        } else if (card.me()) {
+            // The ME card: its ME network, at Max, while the computer stands in that network's wireless range.
+            unwire(number);
+            appeng.api.networking.IGrid grid = MeAccess.gridInRange(card.meKey(), world, card.x(), card.y(), card.z());
+            computerEntries.put(
+                number,
+                grid == null ? List.of()
+                    : List
+                        .of(new CallGraph.Entry(new CallGraph.MeVertex(meGrids.idOf(grid)), Double.POSITIVE_INFINITY)));
         } else {
             unwire(number);
             computerEntries.put(

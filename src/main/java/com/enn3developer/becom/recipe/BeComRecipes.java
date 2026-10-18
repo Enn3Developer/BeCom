@@ -378,6 +378,32 @@ public final class BeComRecipes {
                     .parts()
                     .cableGlass()
                     .stack(AEColor.Transparent, 1) });
+
+        // BeCom Card (ME): the radio card turned to an ME network, with AE2's Wireless Receiver and an EV circuit.
+        GTModHandler.addCraftingRecipe(
+            com.enn3developer.becom.item.ItemBecomCard.stack(com.enn3developer.becom.item.ItemBecomCard.ME, 1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { " W ", "CBC", 'W', AEApi.instance()
+                .definitions()
+                .materials()
+                .wireless()
+                .maybeStack(1)
+                .get(), 'C', OrePrefixes.circuit.get(Materials.EV), 'B',
+                com.enn3developer.becom.item.ItemBecomCard
+                    .stack(com.enn3developer.becom.item.ItemBecomCard.RADIO, 1) });
+
+        // ME App Store Mirror: the App Store Mirror moved into an EV hull, with its circuits and fluix for ME.
+        ItemStack fluix = AEApi.instance()
+            .definitions()
+            .materials()
+            .fluixCrystal()
+            .maybeStack(1)
+            .get();
+        GTModHandler.addCraftingRecipe(
+            BeComMachines.meMirror.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "FMF", "CHC", "F F", 'F', fluix, 'M', BeComMachines.appMirror.getStackForm(1), 'C',
+                OrePrefixes.circuit.get(Materials.EV), 'H', ItemList.Hull_EV });
     }
 
     private static final ItemList[] HULLS = { null, ItemList.Hull_LV, ItemList.Hull_MV, ItemList.Hull_HV };

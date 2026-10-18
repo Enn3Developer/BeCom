@@ -7,8 +7,11 @@ navigation:
 item_ids:
   - becom:becom_card:*
   - becom:machine:25022
+  - becom:machine:25023
 quest_ids:
   - "n3P0tSabXDS4eCuzXQVCYQ"
+  - "Ed7TlqNoXOadd-3GRGTobw"
+  - "183gZQtdWIyw-FukK6qBAA"
 ---
 
 # App del telefono
@@ -53,12 +56,30 @@ Anche un computer pubblica attraverso un mirror: `becom publish` ne vuole uno al
 riserva un mirror alla squadra del suo proprietario, e di nuovo lo apre a tutti. Il suo schermo e WAILA mostrano i
 download che serve ora e oggi.
 
+## Il Mirror dell'App Store ME
+
+Una rete ME arriva allo store attraverso un
+<ItemLink id="becom:machine:25023" showIcon="left">Mirror dell'App Store ME</ItemLink>, senza cavi, router né ponti: i
+Telefoni ME e le schede ME collegati a quella rete, in ogni dimensione che raggiunge, ci navigano, scaricano e
+pubblicano. È una struttura EV, larga 5, alta 3 e profonda 3: due armadi server di EV Machine Casing ai lati di una
+colonna di due Fluix Block, dietro un Quartz Glass sotto una Titanium Frame Box, con il controller in fondo alla colonna.
+Le Energy Hatch vanno su qualsiasi casing.
+
+Il suo controller è il suo collegamento a ME: finché è formata si unisce al cavo ME su qualsiasi faccia e prende un
+canale; non formata, non si unisce a niente. Consuma 1536 EU/t e serve a 64 KB/s, e le sue Energy Hatch la mandano in
+overclock come le strutture di GT con una ricetta: ogni overclock è il doppio della velocità per quattro volte
+l'energia. Attraverso un Ponte ME sulla stessa rete ci arriva anche il resto di BeCom. Un cacciavite la riserva alla
+squadra del suo proprietario, come l'altro mirror.
+
 ## La Scheda BeCom
 
-<ItemLink id="becom:becom_card:0" showIcon="left">Scheda BeCom (radio)</ItemLink> e
-<ItemLink id="becom:becom_card:1" showIcon="left">Scheda BeCom (cablata)</ItemLink> sono schede di OpenComputers. Danno
-al computer un numero e il componente `becom`. La scheda radio ha il segnale di un Telefono cellulare tenuto dove sta il
+<ItemLink id="becom:becom_card:0" showIcon="left">Scheda BeCom (radio)</ItemLink>,
+<ItemLink id="becom:becom_card:1" showIcon="left">Scheda BeCom (cablata)</ItemLink> e
+<ItemLink id="becom:becom_card:2" showIcon="left">Scheda BeCom (ME)</ItemLink> sono schede di OpenComputers. Danno al
+computer un numero e il componente `becom`. La scheda radio ha il segnale di un Telefono cellulare tenuto dove sta il
 computer. Quella cablata si unisce al bus il cui cavo è collegato al computer, a Massimo e alla velocità del suo cavo.
+La scheda ME, collegata a una rete ME nella sua Security Station come un Telefono ME, si unisce a quella rete a Massimo
+finché il computer sta nella portata dei suoi Punti d'accesso wireless.
 
 Il disco degli strumenti, **becom**, è un disco loot di OpenComputers: combina un qualsiasi disco loot, come OpenOS,
 con una chiave inglese, più volte, finché non diventa questo. Il suo programma `becom` fa i lavori comuni:

@@ -20,7 +20,7 @@ final class BecomCardDriver implements Item {
     @Override
     public ManagedEnvironment createEnvironment(ItemStack stack, EnvironmentHost host) {
         if (host == null || host.world() == null || host.world().isRemote) return null;
-        return new BecomCard(host, ItemBecomCard.wired(stack));
+        return new BecomCard(host, ItemBecomCard.kind(stack), ItemBecomCard.meKeyOf(stack));
     }
 
     @Override

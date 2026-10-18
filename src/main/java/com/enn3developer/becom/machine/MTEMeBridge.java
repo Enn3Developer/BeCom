@@ -335,8 +335,7 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
             int[] phones = server.calls.mePhones(
                 server.meGrids.idOf(
                     getProxy().getNode()
-                        .getGrid()),
-                tile.getWorld().provider.dimensionId);
+                        .getGrid()));
             info.add("becom.bridge.linked", phones[0])
                 .row("becom.info.row.me_phones")
                 .brief();

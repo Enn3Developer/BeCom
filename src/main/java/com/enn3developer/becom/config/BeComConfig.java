@@ -290,6 +290,8 @@ public final class BeComConfig {
         integer(config, v, ME, "meBridgeCallPower", "AE/t more an ME Bridge draws for each call it carries.");
         integer(config, v, ME, "meBridgeChannels", 0, 1, "ME channels an ME Bridge uses.");
         integer(config, v, ME, "meBridgeCalls", "Calls an ME Bridge carries at once.");
+        integer(config, v, ME, "meMirrorPower", "EU/t an ME App Store Mirror draws before overclocks.");
+        integer(config, v, ME, "meMirrorRate", "KB/s an ME App Store Mirror serves at before overclocks.");
         integer(config, v, SPACE, "satellitesLow", "Satellites over a dimension for its sky hops to reach Low.");
         integer(config, v, SPACE, "satellitesMax", "Satellites over a dimension for its sky hops to reach Max.");
         dbl(config, v, SPACE, "satelliteLifetimeDays", "Minecraft days a satellite stays in orbit.");

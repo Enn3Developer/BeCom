@@ -7,8 +7,11 @@ navigation:
 item_ids:
   - becom:becom_card:*
   - becom:machine:25022
+  - becom:machine:25023
 quest_ids:
   - "n3P0tSabXDS4eCuzXQVCYQ"
+  - "Ed7TlqNoXOadd-3GRGTobw"
+  - "183gZQtdWIyw-FukK6qBAA"
 ---
 
 # Phone apps
@@ -51,12 +54,29 @@ A computer publishes through a mirror too: `becom publish` needs one in the comp
 mirror for its owner's team, and again opens it to everyone. Its screen and WAILA show the downloads it serves now and
 today.
 
+## The ME App Store Mirror
+
+An ME network gets the store through an
+<ItemLink id="becom:machine:25023" showIcon="left">ME App Store Mirror</ItemLink>, with no cable, router or bridge: ME
+Phones and ME cards online in that network, in any dimension it reaches, browse, download and publish through it. It's
+an EV multiblock, 5 wide, 3 tall and 3 deep: two server cabinets of EV Machine Casings either side of a column of two
+Fluix Blocks, behind Quartz Glass under a Titanium Frame Box, with the controller at the bottom of the column. Energy
+Hatches go on any casing.
+
+Its controller is its link to ME: while formed, it joins ME cable on any side and takes one channel; unformed, it
+joins nothing. It draws 1536 EU/t and serves at 64 KB/s, and its Energy Hatches overclock it the way GT's multiblocks
+overclock a recipe: each overclock is twice the rate for four times the power. Through an ME Bridge on the same
+network, the rest of BeCom reaches it too. A screwdriver locks it to its owner's team, as on the other mirror.
+
 ## The BeCom Card
 
-<ItemLink id="becom:becom_card:0" showIcon="left">BeCom Card (Radio)</ItemLink> and
-<ItemLink id="becom:becom_card:1" showIcon="left">BeCom Card (Wired)</ItemLink> are OpenComputers cards. They give the
+<ItemLink id="becom:becom_card:0" showIcon="left">BeCom Card (Radio)</ItemLink>,
+<ItemLink id="becom:becom_card:1" showIcon="left">BeCom Card (Wired)</ItemLink> and
+<ItemLink id="becom:becom_card:2" showIcon="left">BeCom Card (ME)</ItemLink> are OpenComputers cards. They give the
 computer a number and the `becom` component. The radio card has signal like a Mobile Phone held where the computer
-stands. The wired card joins the bus whose cable is joined to the computer, at Max and at its cable's rate.
+stands. The wired card joins the bus whose cable is joined to the computer, at Max and at its cable's rate. The ME card,
+linked to an ME network in its Security Station like an ME Phone, joins that network at Max while the computer stands
+in its Wireless Access Points' reach.
 
 The tools disk, **becom**, is an OpenComputers loot disk: craft any loot disk, such as OpenOS, with a wrench, and
 again, until it turns into this one. Its `becom` program does the common jobs:

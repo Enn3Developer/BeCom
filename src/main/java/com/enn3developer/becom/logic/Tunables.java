@@ -46,7 +46,8 @@ public record Tunables(
     int rearHeightMax, int rearFpsMax, int rearMaxBytes, int rearMaxFps, int videophonePower, double videophoneRoom,
     double videophoneLoudspeaker, int videophoneEmptySeconds,
     // ME
-    int meBridgePower, int meBridgeCallPower, int meBridgeChannels, int meBridgeCalls,
+    int meBridgePower, int meBridgeCallPower, int meBridgeChannels, int meBridgeCalls, int meMirrorPower,
+    int meMirrorRate,
     // Space: levels by number, 1 Low to 4 Max
     int satellitesLow, int satellitesMax, double satelliteLifetimeDays, double satelliteLifetimeSpread,
     int launchSeconds, int launchPower, int launchFuel, int dishPower, double dishMaintenanceLoss,
@@ -214,6 +215,8 @@ public record Tunables(
         d.put("meBridgeCallPower", 16);
         d.put("meBridgeChannels", 1);
         d.put("meBridgeCalls", 8);
+        d.put("meMirrorPower", 1536);
+        d.put("meMirrorRate", 64);
         d.put("satellitesLow", 5);
         d.put("satellitesMax", 100);
         d.put("satelliteLifetimeDays", 100.0);
@@ -404,6 +407,8 @@ public record Tunables(
         if (videophoneEmptySeconds < 1) throw invalid("videophoneEmptySeconds", videophoneEmptySeconds, "at least 1");
         if (meBridgePower < 0) throw invalid("meBridgePower", meBridgePower, "0 or more");
         if (meBridgeCallPower < 0) throw invalid("meBridgeCallPower", meBridgeCallPower, "0 or more");
+        if (meMirrorPower < 0) throw invalid("meMirrorPower", meMirrorPower, "0 or more");
+        if (meMirrorRate < 1) throw invalid("meMirrorRate", meMirrorRate, "at least 1");
         if (meBridgeChannels < 0 || meBridgeChannels > 1) throw invalid("meBridgeChannels", meBridgeChannels, "0 or 1");
         if (satellitesLow < 1) throw invalid("satellitesLow", satellitesLow, "at least 1");
         if (satellitesMax <= satellitesLow) throw invalid("satellitesMax", satellitesMax, "more than satellitesLow");

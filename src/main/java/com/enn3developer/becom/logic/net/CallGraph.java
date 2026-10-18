@@ -32,11 +32,10 @@ public final class CallGraph {
     public record PhoneVertex(int number) {}
 
     /**
-     * An ME network in one dimension, by the id the server gives its grid while it lives. An ME
-     * network spanning dimensions is a vertex in each, so calls cross dimensions only through satellites, dishes,
-     * receivers and relay pairs.
+     * An ME network, by the id the server gives its grid while it lives: one vertex wherever it reaches, so a network
+     * spanning dimensions carries calls across them.
      */
-    public record MeVertex(int grid, int dimension) {}
+    public record MeVertex(int grid) {}
 
     /**
      * The satellites over a dimension: devices under its open sky and its Satellite Dishes join them,

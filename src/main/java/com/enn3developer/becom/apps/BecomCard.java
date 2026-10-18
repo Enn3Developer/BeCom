@@ -4,6 +4,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
+import com.enn3developer.becom.item.ItemBecomCard;
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.server.BeComServer;
 
@@ -27,13 +28,16 @@ public final class BecomCard extends ManagedEnvironment {
     private static final int TICKS_PER_SECOND = 20;
 
     private final EnvironmentHost host;
-    private final boolean wired;
+    // Which card it is, ItemBecomCard's RADIO, WIRED or ME, and the ME card's link to its ME network.
+    private final int kind;
+    private final String meKey;
     private int number = -1;
     private int ticks;
 
-    BecomCard(EnvironmentHost host, boolean wired) {
+    BecomCard(EnvironmentHost host, int kind, String meKey) {
         this.host = host;
-        this.wired = wired;
+        this.kind = kind;
+        this.meKey = meKey == null ? "" : meKey;
         setNode(
             Network.newNode(this, Visibility.Neighbors)
                 .withComponent("becom")
@@ -41,7 +45,17 @@ public final class BecomCard extends ManagedEnvironment {
     }
 
     public boolean wired() {
-        return wired;
+        return kind == ItemBecomCard.WIRED;
+    }
+
+    /** The ME card, which joins the ME network it's linked to while the computer is in that network's range. */
+    public boolean me() {
+        return kind == ItemBecomCard.ME;
+    }
+
+    /** The ME card's link, as its Security Station set it; empty for none. */
+    public String meKey() {
+        return meKey;
     }
 
     public int number() {
@@ -139,7 +153,7 @@ public final class BecomCard extends ManagedEnvironment {
 
     @Callback(doc = "function():boolean -- Whether this is the wired card.")
     public Object[] isWired(Context context, Arguments args) {
-        return new Object[] { wired };
+        return new Object[] { wired() };
     }
 
     @Callback(

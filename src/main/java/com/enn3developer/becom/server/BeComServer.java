@@ -99,21 +99,24 @@ public final class BeComServer {
         this.radio = new RadioService(server, tunables, antennas, heights, space);
         this.carried = new CarriedPhones(server, tunables, phones, antennas, space, RadioService::endOf);
         // An ME Phone's service: its ME network, at Max, while it stands in that network's wireless range;
-        // ME phones on one network reach each other there, and the rest of the world through an ME Bridge. AE2
-        // checks the range in the holder's dimension, so that's the part of the network it joins. Out of range it is
-        // a Mobile Phone, with a Mobile Phone's signal.
+        // ME phones on one network reach each other there, in any dimension it spans, and the rest of the world
+        // through an ME Bridge. Out of range it is a Mobile Phone, with a Mobile Phone's signal.
         CarriedPhones.Access mobile = carried.accessOf(PhoneKind.MOBILE);
         carried.setAccess(PhoneKind.ME_PHONE, (holder, stack) -> {
             IGrid grid = MeAccess.gridInRange(((ItemMePhone) stack.getItem()).getEncryptionKey(stack), holder);
             if (grid == null) return mobile.entries(holder, stack);
-            return List.of(
-                new CallGraph.Entry(
-                    new CallGraph.MeVertex(meGrids.idOf(grid), holder.dimension),
-                    Double.POSITIVE_INFINITY));
+            return List.of(new CallGraph.Entry(new CallGraph.MeVertex(meGrids.idOf(grid)), Double.POSITIVE_INFINITY));
         });
         this.calls = new CallService(server, network, phones, carried, callGroup, tunables);
         this.video = new VideoService(calls, tunables);
-        this.apps = new com.enn3developer.becom.apps.AppService(server, tunables, phones, carried, calls, network);
+        this.apps = new com.enn3developer.becom.apps.AppService(
+            server,
+            tunables,
+            phones,
+            carried,
+            calls,
+            network,
+            meGrids);
         carried.setWatching(
             id -> video.plan()
                 .sees(id));

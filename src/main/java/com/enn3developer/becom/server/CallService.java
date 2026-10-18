@@ -257,6 +257,8 @@ public final class CallService implements CallBook.Listener {
      * when it has no service; a phone on a line at its own vertex.
      */
     public List<CallGraph.Entry> entriesOf(int phone) {
+        Integer grid = meEnds.get(phone);
+        if (grid != null) return List.of(new CallGraph.Entry(new CallGraph.MeVertex(grid), Double.POSITIVE_INFINITY));
         PhoneRecord record = phones.record(phone);
         if (record != null && record.kind() == PhoneKind.COMPUTER) return computerEntries.apply(phone);
         if (record != null && record.kind()
@@ -268,6 +270,19 @@ public final class CallService implements CallBook.Listener {
     }
 
     private java.util.function.IntFunction<List<CallGraph.Entry>> computerEntries = n -> List.of();
+
+    // Machines that join the call graph at an ME network rather than at their own vertex, by number: its grid's id.
+    private final Map<Integer, Integer> meEnds = new HashMap<>();
+
+    /** A machine with {@code number} is online in ME network {@code grid} this tick: it joins the calls there. */
+    public void meEnd(int number, int grid) {
+        meEnds.put(number, grid);
+    }
+
+    /** A machine left its ME network, or was broken. */
+    public void meEndGone(int number) {
+        meEnds.remove(number);
+    }
 
     /** Where computers' BeCom Cards come into the network, by number. */
     public void setComputerEntries(java.util.function.IntFunction<List<CallGraph.Entry>> entries) {
@@ -387,9 +402,9 @@ public final class CallService implements CallBook.Listener {
         return found;
     }
 
-    /** The ME Phones in service through ME network {@code grid}'s part in {@code dimension}: [in service, in calls]. */
-    public int[] mePhones(int grid, int dimension) {
-        CallGraph.MeVertex me = new CallGraph.MeVertex(grid, dimension);
+    /** The ME Phones in service through ME network {@code grid}, in any dimension: [in service, in calls]. */
+    public int[] mePhones(int grid) {
+        CallGraph.MeVertex me = new CallGraph.MeVertex(grid);
         int phones = 0, inCalls = 0;
         for (int number : carried.working()) {
             boolean on = false;

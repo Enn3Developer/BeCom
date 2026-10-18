@@ -1,0 +1,72 @@
+{
+  "preRequisites:9": {
+    "0:10": {
+      "questIDHigh:4": 1287699187414621414,
+      "questIDLow:4": -7099944851719526289
+    }
+  },
+  "properties:10": {
+    "betterquesting:10": {
+      "autoClaim:1": 0,
+      "desc:8": "A computer joins an ME network too. The BeCom Card (ME) is the radio card turned to ME: link it in a Security Station, like an ME Phone, and while the computer stands in that network's Wireless Access Points' reach, it has service at Max.%n%nThrough it, becom publish reaches the ME App Store Mirror, and apps and computers trade data over the ME network.%n%nMore in the guide: [guide page=becom:apps.md]Phone apps[/guide].",
+      "globalShare:1": 1,
+      "icon:10": {
+        "Count:3": 1,
+        "Damage:2": 2,
+        "OreDict:8": "",
+        "id:8": "becom:becom_card"
+      },
+      "isGlobal:1": 0,
+      "isMain:1": 0,
+      "isSilent:1": 0,
+      "lockedProgress:1": 0,
+      "name:8": "\u00a78\u00a7lPlugged into the Network",
+      "partySingleReward:1": 0,
+      "questLogic:8": "AND",
+      "repeatTime:3": -1,
+      "repeat_relative:1": 1,
+      "simultaneous:1": 0,
+      "snd_complete:8": "random.levelup",
+      "snd_update:8": "random.levelup",
+      "taskLogic:8": "AND",
+      "visibility:8": "NORMAL"
+    }
+  },
+  "questIDHigh:4": -2896412260742375284,
+  "questIDLow:4": -5694700968144633600,
+  "rewards:9": {
+    "0:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 0,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 7,
+          "OreDict:8": "",
+          "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    }
+  },
+  "tasks:9": {
+    "0:10": {
+      "autoConsume:1": 0,
+      "consume:1": 0,
+      "groupDetect:1": 0,
+      "ignoreNBT:1": 1,
+      "index:3": 0,
+      "partialMatch:1": 1,
+      "requireOnlyOneItem:1": 0,
+      "requiredItems:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 2,
+          "OreDict:8": "",
+          "id:8": "becom:becom_card"
+        }
+      },
+      "taskID:8": "bq_standard:retrieval"
+    }
+  }
+}

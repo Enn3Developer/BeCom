@@ -84,4 +84,5 @@ to High. ME Phones on one ME network call each other with no antenna. It charges
 To call any other phone, the ME network needs an
 <ItemLink id="becom:machine:25008" showIcon="left">ME Bridge</ItemLink>: put it on ME cable, where it takes
 one channel, and cable it, on any face, to a Router or an Exchange: the cable's tier sets its rate. It runs on
-its ME network's power, 64 AE/t and 16 more for each call, joins the two networks at Max, and carries 8 calls at once. An ME network carries calls only within each dimension.
+its ME network's power, 64 AE/t and 16 more for each call, joins the two networks at Max, and carries 8 calls at once. An ME network carries calls across every dimension it reaches, through a Quantum Network
+Bridge, and one ME Bridge serves all of it.

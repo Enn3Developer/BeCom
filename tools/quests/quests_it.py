@@ -81,6 +81,17 @@ QUESTS_IT = {
         "Frame Box su HV Machine Casing, con antenne a pannello in cima, usa 384 EU/t e "
         "arriva a circa 256 blocchi.%n%nCostruiscila in alto. Rileva il terreno intorno ogni cinque minuti, e una "
         "collina in mezzo può costarti più della distanza."),
+    "me_mirror": ("Specchio di fluix",
+        "Una rete ME può avere l'App Store tutto per sé. Il Mirror dell'App Store ME è una struttura EV: due armadi "
+        "server di EV Machine Casing ai lati di due Fluix Block dietro un Quartz Glass, sotto una Titanium Frame "
+        "Box.%n%nIl suo controller è il suo collegamento a ME: formata, si unisce al cavo ME su qualsiasi faccia e "
+        "prende un canale. I Telefoni ME collegati a quella rete, in ogni dimensione che raggiunge, ci navigano e "
+        "scaricano, senza cavi né router. Consuma 1536 EU/t, e più Energy Hatch ne mandano in overclock la velocità."),
+    "me_card": ("Collegato alla rete",
+        "Anche un computer si unisce a una rete ME. La Scheda BeCom (ME) è la scheda radio rivolta a ME: collegala in "
+        "una Security Station, come un Telefono ME, e finché il computer sta nella portata dei Punti d'accesso "
+        "wireless di quella rete ha servizio a Massimo.%n%nAttraverso di lei becom publish arriva al Mirror dell'App "
+        "Store ME, e app e computer si scambiano dati sulla rete ME."),
     "app_mirror": ("Specchio, specchio",
         "L'App Store è di tutto il server, ma un telefono ci arriva solo attraverso un Mirror dell'App Store: una "
         "macchina MV, 64 EU/t, collegata con il cavo su qualsiasi faccia a un bus che i tuoi telefoni raggiungono."

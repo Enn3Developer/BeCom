@@ -21,6 +21,7 @@ gt.blockmachines.becom.transceiver.name=Transceiver
 gt.blockmachines.becom.me_bridge.name=ME Bridge
 gt.blockmachines.becom.videophone.name=Videophone
 gt.blockmachines.becom.app_mirror.name=App Store Mirror
+gt.blockmachines.becom.me_mirror.name=ME App Store Mirror
 gt.blockmachines.becom.launch_pad.name=Satellite Launch Pad
 gt.blockmachines.becom.satellite_dish.name=Satellite Dish
 gt.blockmachines.becom.portal_relay.name=Portal Relay
@@ -116,6 +117,12 @@ becom.machine.me_bridge.power=Uses %s from its ME network, %s more a call
 becom.machine.videophone.info=A wired video speakerphone
 becom.machine.videophone.room=Hears within %s blocks, loudspeaker %s, hangs up after %s s alone
 becom.machine.app_mirror.info=Phones download store apps through it
+becom.machine.me_mirror.type=App Store Mirror
+becom.machine.me_mirror.info=ME Phones and ME cards on its ME network download and publish store apps through it; takes one channel
+becom.machine.me_mirror.rate=Serves at %s
+becom.machine.me_mirror.overclock=Overclocks as GT's multiblocks do: 2× rate for 4× power
+becom.machine.me_mirror.controller=Front, bottom centre, under the glass
+becom.machine.me_mirror.hatch=Any casing
 becom.videophone.step_closer=Stand within %s blocks of the Videophone to use it: its calls are for the people around it.
 
 # Scanner info
@@ -177,8 +184,10 @@ becom.phone.recent.missed=Missed
 becom.phone.battery.low=Your phone's battery is down to %s%%.
 item.becom.becom_card_radio.name=BeCom Card (Radio)
 item.becom.becom_card_wired.name=BeCom Card (Wired)
+item.becom.becom_card_me.name=BeCom Card (ME)
 becom.card.radio=Radio: a phone's signal
 becom.card.wired=Wired: its computer's cable
+becom.card.me=ME: its ME network's wireless range
 becom.call.computer=That number is a computer: it takes data, not calls.
 becom.call.mirror=That number is an App Store Mirror: it takes no calls.
 becom.apps.background.info=Wakes for messages, at most once a minute
@@ -297,6 +306,10 @@ betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.name=§8§lWireless Everywhere
 betterquesting.quest.SSBYl-CuVHeaS00Zgy5NWA.desc=Got an ME network with wireless access points? Then you already have coverage. An ME Phone is a Mobile Phone linked to an ME network.%n%nLink it at a Security Terminal, like a Wireless Terminal. Wherever that network's access points reach, boosters included, it has service at Max. Anywhere else it's a Mobile Phone, with a Mobile Phone's signal. It charges in an AE2 Charger.%n%nME Phones on the same ME network call each other with no antenna at all.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.name=§8§lBridging the Networks
 betterquesting.quest.6JNs0PJ2W_2dWPcb8B5q0A.desc=An ME Bridge joins an ME network to your phone network, so ME Phones can call any phone.%n%nPut it on ME cable, where it takes one channel, and cable it, on any face, to a Router or an Exchange: that cable carries its calls. It runs on its ME network's power and carries 8 calls at once.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
+betterquesting.quest.Ed7TlqNoXOadd-3GRGTobw.name=§8§lFluix Mirror
+betterquesting.quest.Ed7TlqNoXOadd-3GRGTobw.desc=An ME network can have the App Store to itself. The ME App Store Mirror is an EV multiblock: two server cabinets of EV Machine Casings either side of two Fluix Blocks behind Quartz Glass, under a Titanium Frame Box.%n%nIts controller is its link to ME: formed, it joins ME cable on any side and takes one channel. ME Phones online in that network, in any dimension it reaches, browse and download through it, with no cable or router. It draws 1536 EU/t, and more Energy Hatches overclock its rate.%n%nMore in the guide: [guide page=becom:apps.md]Phone apps[/guide].
+betterquesting.quest.183gZQtdWIyw-FukK6qBAA.name=§8§lPlugged into the Network
+betterquesting.quest.183gZQtdWIyw-FukK6qBAA.desc=A computer joins an ME network too. The BeCom Card (ME) is the radio card turned to ME: link it in a Security Station, like an ME Phone, and while the computer stands in that network's Wireless Access Points' reach, it has service at Max.%n%nThrough it, becom publish reaches the ME App Store Mirror, and apps and computers trade data over the ME network.%n%nMore in the guide: [guide page=becom:apps.md]Phone apps[/guide].
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.name=§8§lLong Distance
 betterquesting.quest.1FYiW9xFV5eNdWDcFL6cbw.desc=Your ME Phone can reach past your ME network. From an ME Phone, call a Telephone, a Mobile Phone or a Videophone, through an ME Bridge.%n%nMore in the guide: [guide page=becom:phones.md]Phones[/guide].
 betterquesting.quest.oNm-cIc3Xoy6hejGu6UM7Q.name=§6§lThrough the Portal
@@ -623,6 +636,7 @@ becom.ui.router.now_too_long=bus too long
 becom.info.eu_t=%s EU/t
 becom.info.ae_t=%s AE/t
 becom.info.overclocked=%s× calls, %s× power
+becom.info.overclocked_rate=%s× rate, %s× power
 becom.info.hatch_power=Needs %s EU/t; its Energy Hatches give %s
 becom.info.hatch_voltage=Voltage too low: its Energy Hatches need %s or more
 becom.info.row.calls=Calls
@@ -768,7 +782,9 @@ becom.mirror.not_yours=Only its owner, their team or an operator may lock it.
 becom.mirror.unlocked=It serves everyone now.
 becom.mirror.locked=It serves its owner's team alone now.
 becom.info.row.downloads=Downloads
+becom.info.row.rate=Rate
 becom.mirror.downloads=%s now, %s today
+becom.mirror.rate=%s KB/s
 becom.tip.on=On
 becom.tip.off=Off
 becom.tip.channel=Channel %s

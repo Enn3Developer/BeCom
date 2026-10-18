@@ -1,0 +1,76 @@
+{
+  "preRequisites:9": {
+    "0:10": {
+      "questIDHigh:4": -6956947940483310540,
+      "questIDLow:4": -5154321724165766559
+    },
+    "1:10": {
+      "questIDHigh:4": 5269308973356307575,
+      "questIDLow:4": -7328679196644979368
+    }
+  },
+  "properties:10": {
+    "betterquesting:10": {
+      "autoClaim:1": 0,
+      "desc:8": "An ME network can have the App Store to itself. The ME App Store Mirror is an EV multiblock: two server cabinets of EV Machine Casings either side of two Fluix Blocks behind Quartz Glass, under a Titanium Frame Box.%n%nIts controller is its link to ME: formed, it joins ME cable on any side and takes one channel. ME Phones online in that network, in any dimension it reaches, browse and download through it, with no cable or router. It draws 1536 EU/t, and more Energy Hatches overclock its rate.%n%nMore in the guide: [guide page=becom:apps.md]Phone apps[/guide].",
+      "globalShare:1": 1,
+      "icon:10": {
+        "Count:3": 1,
+        "Damage:2": 25023,
+        "OreDict:8": "",
+        "id:8": "becom:machine"
+      },
+      "isGlobal:1": 0,
+      "isMain:1": 0,
+      "isSilent:1": 0,
+      "lockedProgress:1": 0,
+      "name:8": "\u00a78\u00a7lFluix Mirror",
+      "partySingleReward:1": 0,
+      "questLogic:8": "AND",
+      "repeatTime:3": -1,
+      "repeat_relative:1": 1,
+      "simultaneous:1": 0,
+      "snd_complete:8": "random.levelup",
+      "snd_update:8": "random.levelup",
+      "taskLogic:8": "AND",
+      "visibility:8": "NORMAL"
+    }
+  },
+  "questIDHigh:4": 1287699187414621414,
+  "questIDLow:4": -7099944851719526289,
+  "rewards:9": {
+    "0:10": {
+      "ignoreDisabled:1": 0,
+      "index:3": 0,
+      "rewardID:8": "bq_standard:item",
+      "rewards:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 7,
+          "OreDict:8": "",
+          "id:8": "enhancedlootbags:lootbag"
+        }
+      }
+    }
+  },
+  "tasks:9": {
+    "0:10": {
+      "autoConsume:1": 0,
+      "consume:1": 0,
+      "groupDetect:1": 0,
+      "ignoreNBT:1": 1,
+      "index:3": 0,
+      "partialMatch:1": 1,
+      "requireOnlyOneItem:1": 0,
+      "requiredItems:9": {
+        "0:10": {
+          "Count:3": 1,
+          "Damage:2": 25023,
+          "OreDict:8": "",
+          "id:8": "becom:machine"
+        }
+      },
+      "taskID:8": "bq_standard:retrieval"
+    }
+  }
+}

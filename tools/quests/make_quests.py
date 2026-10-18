@@ -94,6 +94,8 @@ GUIDE_PAGE = {
     "rocket_receiver": "space.md",
     "call_between_dimensions": "space.md",
     "app_mirror": "apps.md",
+    "me_mirror": "apps.md",
+    "me_card": "apps.md",
 }
 
 
@@ -407,6 +409,35 @@ QUESTS = [
         "tasks": [("item", MACHINE, 25008, 1)],
         "big": False,
         "pos": (432, 144),
+    },
+    {
+        "key": "me_mirror",
+        "tier": "EV",
+        "name": "Fluix Mirror",
+        "desc": "An ME network can have the App Store to itself. The ME App Store Mirror is an EV multiblock: two "
+        "server cabinets of EV Machine Casings either side of two Fluix Blocks behind Quartz Glass, under a Titanium "
+        "Frame Box.%n%nIts controller is its link to ME: formed, it joins ME cable on any side and takes one channel. "
+        "ME Phones online in that network, in any dimension it reaches, browse and download through it, with no "
+        "cable or router. It draws 1536 EU/t, and more Energy Hatches overclock its rate.",
+        "icon": (MACHINE, 25023),
+        "pre": ["app_mirror", "me_phone"],
+        "tasks": [("item", MACHINE, 25023, 1)],
+        "big": False,
+        "pos": (480, 48),
+    },
+    {
+        "key": "me_card",
+        "tier": "EV",
+        "name": "Plugged into the Network",
+        "desc": "A computer joins an ME network too. The BeCom Card (ME) is the radio card turned to ME: link it in a "
+        "Security Station, like an ME Phone, and while the computer stands in that network's Wireless Access Points' "
+        "reach, it has service at Max.%n%nThrough it, becom publish reaches the ME App Store Mirror, and apps and "
+        "computers trade data over the ME network.",
+        "icon": ("becom:becom_card", 2),
+        "pre": ["me_mirror"],
+        "tasks": [("item", "becom:becom_card", 2, 1)],
+        "big": False,
+        "pos": (528, 48),
     },
     {
         "key": "me_bridge_call",

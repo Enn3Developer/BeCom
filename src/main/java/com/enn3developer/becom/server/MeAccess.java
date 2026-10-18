@@ -1,6 +1,7 @@
 package com.enn3developer.becom.server;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import appeng.api.AEApi;
@@ -23,6 +24,11 @@ public final class MeAccess {
 
     /** The ME network {@code key} links to, if {@code player} stands in its wireless range; else null. */
     public static IGrid gridInRange(String key, EntityPlayer player) {
+        return gridInRange(key, player.worldObj, player.posX, player.posY, player.posZ);
+    }
+
+    /** The ME network {@code key} links to, if a spot in {@code world} is in its wireless range; else null. */
+    public static IGrid gridInRange(String key, World world, double x, double y, double z) {
         if (key == null || key.isEmpty()) return null;
         long serial;
         try {
@@ -40,7 +46,8 @@ public final class MeAccess {
         IGrid grid = node.getGrid();
         if (grid == null) return null;
         for (IGridNode machine : grid.getMachines(TileWireless.class)) {
-            if (machine.getMachine() instanceof IWirelessAccessPoint wap && wap.isActive() && reaches(wap, player)) {
+            if (machine.getMachine() instanceof IWirelessAccessPoint wap && wap.isActive()
+                && reaches(wap, world, x, y, z)) {
                 return grid;
             }
         }
@@ -48,13 +55,13 @@ public final class MeAccess {
     }
 
     /** AE2's test: same world, and closer to the access point than its range, boosters counted. */
-    private static boolean reaches(IWirelessAccessPoint wap, EntityPlayer player) {
+    private static boolean reaches(IWirelessAccessPoint wap, World world, double x, double y, double z) {
         DimensionalCoord at = wap.getLocation();
-        if (at.getWorld() != player.worldObj) return false;
+        if (at.getWorld() != world) return false;
         double range = wap.getRange();
-        double dx = at.x - player.posX;
-        double dy = at.y - player.posY;
-        double dz = at.z - player.posZ;
+        double dx = at.x - x;
+        double dy = at.y - y;
+        double dz = at.z - z;
         return dx * dx + dy * dy + dz * dz < range * range;
     }
 }
