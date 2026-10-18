@@ -31,6 +31,7 @@ import com.enn3developer.becom.gui.AntennaScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
@@ -70,14 +71,15 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  * tower. Dipoles or panel antennas hang under the head, and an equipment shelter in front of the mast's pad holds the
  * Energy Hatch. None of it changes what the antenna reaches, which goes by the top of the head. While formed and
  * powered it reports to the antenna network every tick, which surveys it and links it to other antennas; it also
- * bridges wired lines it's wrench-linked to.
+ * bridges wired lines it's wrench-linked to, and routes the calls of the buses its Line Hatches join.
  * <p>
  * Like the Pylon Head, it isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick,
  * and tells the network. A missing tick of power means offline, never a shutdown to restart by hand.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements ISurvivalConstructable, NodeHost {
+public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
+    implements ISurvivalConstructable, NodeHost, LineHatchHost {
 
     private static final String PIECE_MAST = "mast";
     private static final String PIECE_TOP = "top";
@@ -86,7 +88,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     // Each tier's top and foot, by tier (index 0 unused). Layers run top to bottom and rows from the head's front
     // backwards. The top hangs right under the head; the foot stands on the ground, its top layer on the mast, so a
     // taller mast only adds frames between the two. F is a frame box, C a casing, S a shelter casing an Energy Hatch
-    // may take the place of, and a space anything.
+    // or a Line Hatch may take the place of, and a space anything.
     private static final String[][][] TOPS = { null,
         // A dipole.
         { { "FFF" } },
@@ -128,6 +130,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     public static final int FORMAT = 1;
 
     private final int tier;
+    private final LineHatches lineHatches = new LineHatches();
     // BeCom's keys from a newer BeCom: kept as they were, and the antenna left alone.
     private NBTTagCompound tooNew;
     private int mast;
@@ -184,7 +187,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
             .addElement('C', casing.asElement())
             .addElement(
                 'S',
-                buildHatchAdder(MTEAntenna.class).atLeast(Energy)
+                buildHatchAdder(MTEAntenna.class).atLeast(Energy, LineHatches.Element.LINE_HATCH)
                     .casingIndex(casing.textureId)
                     .hint(1)
                     .buildAndChain(onElementPass(x -> {}, casing.asElement())))
@@ -205,6 +208,22 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
     @Override
     public NodeKind nodeKind() {
         return NodeKind.antenna(tier);
+    }
+
+    /** A router to the buses its Line Hatches join, carrying their calls on by radio. */
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.ROUTER;
+    }
+
+    @Override
+    public boolean formed() {
+        return mMachine;
+    }
+
+    @Override
+    public LineHatches lineHatches() {
+        return lineHatches;
     }
 
     public int tier() {
@@ -281,6 +300,18 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
         if (!checkPiece(PIECE_TOP, TOP_MAST[tier][0], -1, TOP_MAST[tier][1], errors)) return;
         if (!checkPiece(PIECE_FOOT, FOOT_MAST[tier][0], footOffset(found), FOOT_MAST[tier][1], errors)) return;
         checkHasEnergyHatch(errors);
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        lineHatches.clear();
+    }
+
+    @Override
+    protected void onStructureCheckFinished(IGregTechTileEntity tile) {
+        super.onStructureCheckFinished(tile);
+        lineHatches.finished(tile, mMachine);
     }
 
     /** How many blocks in front of the mast the shelter's back row is, at the ground. */
@@ -425,6 +456,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
             becom.network
                 .removeNode(tile.getWorld(), BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
             becom.antennas.gone(ref());
+            lineHatches.dropped(tile);
         }
         super.onBlockDestroyed();
     }
@@ -557,6 +589,10 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
                 count(FEET[tier], 'S') - 1,
                 false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.antenna.hatch"), 1)
+            .addOtherStructurePart(
+                StatCollector.translateToLocal("becom.hatch.line"),
+                StatCollector.translateToLocal("becom.machine.antenna.line_hatch"),
+                1)
             .toolTipFinisher();
         return tt;
     }
@@ -621,6 +657,9 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna> implements
             .row("becom.info.row.serves");
         else info.add("becom.info.serves_all")
             .row("becom.info.row.serves");
+        // Radio alone needs no cable: the buses only once a Line Hatch is part of it.
+        if (!lineHatches.hatches()
+            .isEmpty()) InfoLines.buses(info, becom, ref.dimension(), ref.pos());
         return info;
     }
 

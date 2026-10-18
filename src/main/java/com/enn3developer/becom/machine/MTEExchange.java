@@ -25,7 +25,6 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.ExchangeScreen;
 import com.enn3developer.becom.gui.ExchangeView;
@@ -59,7 +58,10 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
 import gregtech.api.render.TextureFactory;
+import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
+import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.structure.error.TranslatableText;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 import mcp.mobius.waila.api.IWailaConfigHandler;
@@ -68,8 +70,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 /**
  * The Exchange: a ground-level building of LV machine casings, three blocks each way, that switches
  * calls between every line wired to it, up to fifteen. Switching Racks in its input buses set how many calls it
- * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Pylons, routers, antennas and
- * gateways are wired to it like to any ground node.
+ * switches at once, up to {@link #RACK_SLOTS} racks; with none it switches nothing. Buses of cable join it through its
+ * Line Hatches, at least one, as a router; pylons and antennas are wired to it like to any ground node.
  * <p>
  * It isn't a recipe machine: it checks its structure on GT's schedule, drains its power each tick and tells the
  * network. A missing tick of power means offline, never a shutdown to restart by hand.
@@ -77,7 +79,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
-    implements ISurvivalConstructable, NodeHost, CableEnd {
+    implements ISurvivalConstructable, NodeHost, LineHatchHost {
 
     /** The most racks an Exchange counts, across all its input buses. */
     public static final int RACK_SLOTS = 8;
@@ -87,8 +89,8 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     private static final int SIDE = 3;
     private static final Casings CASING = Casings.LVMachineCasing;
 
-    // Layers run top to bottom and rows from the controller's front backwards. H is a casing an energy hatch or an
-    // input bus may take the place of.
+    // Layers run top to bottom and rows from the controller's front backwards. H is a casing an energy hatch, an
+    // input bus or a Line Hatch may take the place of.
     private static final String[][] SHAPE = { { "HHH", "HHH", "HHH" }, { "H~H", "HHH", "HHH" },
         { "HHH", "HHH", "HHH" } };
 
@@ -96,12 +98,13 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         .addShape(PIECE_BUILDING, transpose(SHAPE))
         .addElement(
             'H',
-            buildHatchAdder(MTEExchange.class).atLeast(Energy, InputBus)
+            buildHatchAdder(MTEExchange.class).atLeast(Energy, InputBus, LineHatches.Element.LINE_HATCH)
                 .casingIndex(CASING.getTextureId())
                 .hint(1)
                 .buildAndChain(onElementPass(x -> {}, CASING.asElement())))
         .build();
 
+    private final LineHatches lineHatches = new LineHatches();
     private boolean registered;
     private boolean working;
     private int calls;
@@ -125,9 +128,20 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         return BeComMachines.stack(this, amount);
     }
 
+    /** A router to the buses its Line Hatches join. */
     @Override
     public Buses.Kind busKind() {
         return Buses.Kind.ROUTER;
+    }
+
+    @Override
+    public boolean formed() {
+        return mMachine;
+    }
+
+    @Override
+    public LineHatches lineHatches() {
+        return lineHatches;
     }
 
     @Override
@@ -172,6 +186,24 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         if (!checkPiece(PIECE_BUILDING, SIDE / 2, 1, 0, errors)) return;
         checkHasEnergyHatch(errors);
+        if (lineHatches.count() == 0) errors.add(
+            StructureErrors.hatchCount(
+                ErrorType.TOO_FEW,
+                TranslatableText.lang(LineHatches.Element.LINE_HATCH.getDescriptionLangKey()),
+                0,
+                1));
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        lineHatches.clear();
+    }
+
+    @Override
+    protected void onStructureCheckFinished(IGregTechTileEntity tile) {
+        super.onStructureCheckFinished(tile);
+        lineHatches.finished(tile, mMachine);
     }
 
     @Override
@@ -256,6 +288,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         if (becom != null && tile != null && tile.isServerSide()) {
             becom.links.dropCables(tile.getWorld(), pos());
             becom.network.removeNode(tile.getWorld(), pos());
+            lineHatches.dropped(tile);
         }
         super.onBlockDestroyed();
     }
@@ -424,6 +457,10 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             .addCasingInfoMin(CASING.getLocalizedName(), SIDE * SIDE * SIDE - 3, false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.exchange.hatch"), 1)
             .addInputBus(StatCollector.translateToLocal("becom.machine.exchange.hatch"), 1)
+            .addOtherStructurePart(
+                StatCollector.translateToLocal("becom.hatch.line"),
+                StatCollector.translateToLocal("becom.machine.exchange.line_hatch"),
+                1)
             .toolTipFinisher();
         return tt;
     }
@@ -482,6 +519,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             .row("becom.info.row.data");
         if (working) info.add("becom.exchange.numbers", becom.calls.reachFrom(dimension, pos()))
             .row("becom.info.row.reaches");
+        InfoLines.buses(info, becom, dimension, pos());
         NetworkModel model = becom.network.model(dimension);
         NetNode node = model == null ? null : model.node(pos());
         if (node != null) {

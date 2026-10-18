@@ -76,6 +76,7 @@ import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.InfoLines;
 import com.enn3developer.becom.machine.MTEAntenna;
 import com.enn3developer.becom.machine.MTEExchange;
+import com.enn3developer.becom.machine.MTEHatchLine;
 import com.enn3developer.becom.machine.MTEMeBridge;
 import com.enn3developer.becom.machine.MTEPylonHead;
 import com.enn3developer.becom.machine.MTERouter;
@@ -181,6 +182,11 @@ public final class SelfTest {
     private static final int DEVICE_CABLE = 12;
     private MTERouter busRouter;
     private TileTelephone busPhone;
+    private MTEExchange hatchExchange;
+    private MTEHatchLine lineHatch;
+    private TileTelephone hatchPhone;
+    private TileTelephone antennaPhoneA;
+    private TileTelephone antennaPhoneB;
     private MTEPylonHead shortPylon;
     private MTEPylonHead minPylon;
     private MTEPylonHead clearA;
@@ -278,6 +284,8 @@ public final class SelfTest {
         steps.add(this::buildBus);
         steps.add(this::checkBus);
         steps.add(this::checkBusWithoutRouter);
+        steps.add(this::buildLineHatch);
+        steps.add(this::checkLineHatch);
         steps.add(this::formAndLink);
         steps.add(this::checkStructuresAndLines);
         steps.add(this::checkLineReach);
@@ -294,6 +302,7 @@ public final class SelfTest {
         steps.add(this::buildRadio);
         steps.add(this::formRadio);
         steps.add(this::checkAntennas);
+        steps.add(this::checkAntennaBuses);
         steps.add(this::keyDirect);
         steps.add(this::checkDirect);
         steps.add(this::checkTransceiver);
@@ -585,6 +594,9 @@ public final class SelfTest {
             BeComMachines.router,
             BeComMachines.routerMV,
             BeComMachines.routerHV,
+            BeComMachines.lineHatch,
+            BeComMachines.lineHatchMV,
+            BeComMachines.lineHatchHV,
             BeComMachines.exchange)) {
             check("crafting recipe for " + machine.getMetaName(), hasCraftingRecipe(machine.getStackForm(1)), "");
         }
@@ -775,10 +787,11 @@ public final class SelfTest {
     }
 
     /**
-     * An Exchange's energy hatch and input bus, on either side of its controller in place of casings; the test power
-     * supply keeps the hatch full.
+     * An Exchange's energy hatch and input bus, on either side of its controller in place of casings, and an HV Line
+     * Hatch, taking any cable, right above it facing out the same way; the test power supply keeps the energy hatch
+     * full.
      */
-    private void exchangeHatches(MTEExchange machine) {
+    private MTEHatchLine exchangeHatches(MTEExchange machine) {
         IGregTechTileEntity tile = machine.getBaseMetaTileEntity();
         ForgeDirection side = tile.getFrontFacing()
             .getRotation(ForgeDirection.UP);
@@ -792,6 +805,16 @@ public final class SelfTest {
         powered.add(place(hatch, x + side.offsetX, y, z + side.offsetZ).getBaseMetaTileEntity());
         place(bus, x - side.offsetX, y, z - side.offsetZ);
         powered.add(tile);
+        return lineHatchAt(BeComMachines.lineHatchHV, x, y + 1, z, tile.getFrontFacing());
+    }
+
+    /** A Line Hatch in place of what stands at x, y, z, facing {@code front}. */
+    private MTEHatchLine lineHatchAt(MTEHatchLine machine, int x, int y, int z, ForgeDirection front) {
+        world.setBlockToAir(x, y, z);
+        MTEHatchLine hatch = place(machine, x, y, z);
+        hatch.getBaseMetaTileEntity()
+            .setFrontFacing(front);
+        return hatch;
     }
 
     /**
@@ -1067,6 +1090,70 @@ public final class SelfTest {
         busRouter.getBaseMetaTileEntity()
             .disableWorking();
         return SETTLE_TICKS;
+    }
+
+    // Between the cable checks and the bus: an Exchange joined by its Line Hatch.
+    private static final int LINE_Z = Z0 + 9;
+
+    /**
+     * An Exchange forms only with a Line Hatch; the hatch takes cable on its front face only, and a Telephone cabled
+     * to it is on a bus the Exchange routes.
+     */
+    private int buildLineHatch() {
+        int x = CABLE_X + 4, z = LINE_Z;
+        for (int cx = x - 3; cx <= x + 3; cx++) {
+            for (int cz = z - 3; cz <= z + 3; cz++) {
+                for (int cy = Y - 1; cy <= Y + 3; cy++) world.setBlockToAir(cx, cy, cz);
+            }
+        }
+        hatchExchange = place(BeComMachines.exchange, x, Y, z);
+        IGregTechTileEntity tile = hatchExchange.getBaseMetaTileEntity();
+        tile.setFrontFacing(ForgeDirection.NORTH);
+        ((IConstructable) hatchExchange).construct(BeComMachines.exchange.getStackForm(1), false);
+        IMetaTileEntity energy = GregTechAPI.METATILEENTITIES[gregtech.api.enums.ItemList.Hatch_Energy_LV.get(1)
+            .getItemDamage()];
+        world.setBlockToAir(x + 1, Y, z);
+        powered.add(place(energy, x + 1, Y, z).getBaseMetaTileEntity());
+        powered.add(tile);
+        check("an Exchange with no Line Hatch doesn't form", !hatchExchange.refreshStructure(), "");
+        lineHatch = lineHatchAt(BeComMachines.lineHatch, x, Y + 1, z, ForgeDirection.NORTH);
+        check("...and with one it does", hatchExchange.refreshStructure(), "");
+        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x, Y + 1, z, ForgeDirection.UP);
+        check("a Line Hatch takes cable on its front face only", mask(x, Y + 2, z) == 0, "mask " + mask(x, Y + 2, z));
+        hatchPhone = telephone(x, Y + 1, z - 2);
+        lay(world, x, Y + 1, z - 1, CableTier.PHONE);
+        return SETTLE_TICKS;
+    }
+
+    private int checkLineHatch() {
+        int dimension = world.provider.dimensionId;
+        NetworkService.BusRef bus = becom.network.busOf(hatchPhone.number());
+        List<Buses.End> routers = bus == null ? List.of()
+            : bus.bus()
+                .ends(Buses.Kind.ROUTER);
+        check(
+            "a Telephone cabled to the Exchange's Line Hatch is on a bus the Exchange routes",
+            routers.size() == 1 && routers.get(0)
+                .pos() == pos(hatchExchange) && lineHatch.controller() == pos(hatchExchange),
+            String.valueOf(bus));
+        check(
+            "...which the Exchange's screen lists",
+            hatchExchange.view()
+                .joined()
+                .stream()
+                .anyMatch(j -> j.number() == hatchPhone.number()),
+            "");
+        // A casing at its back gone: it's no longer formed, and its Line Hatch joins nothing.
+        IGregTechTileEntity tile = hatchExchange.getBaseMetaTileEntity();
+        world.setBlockToAir(tile.getXCoord(), Y, tile.getZCoord() + 2);
+        hatchExchange.refreshStructure();
+        check(
+            "an Exchange that falls apart leaves the bus at its Line Hatch with no router",
+            lineHatch.controller() < 0 && becom.network.busOf(hatchPhone.number()) == null
+                && becom.network.busesAt(dimension, pos(hatchExchange))
+                    .isEmpty(),
+            String.valueOf(becom.network.busOf(hatchPhone.number())));
+        return 1;
     }
 
     private int checkBusWithoutRouter() {
@@ -2061,6 +2148,8 @@ public final class SelfTest {
         lay(world, X0, Y, RADIO_Z + 6, CableTier.PHONE);
         bridgePhoneB = telephone(X0 + ANTENNA_GAP, Y, RADIO_Z + 7);
         lay(world, X0 + ANTENNA_GAP, Y, RADIO_Z + 6, CableTier.PHONE);
+        antennaPhoneA = shelterPhone(antennaA);
+        antennaPhoneB = shelterPhone(antennaB);
         transceiver = place(BeComMachines.transceiver, X0 + 100, Y, DIRECT_Z);
         powered.add(transceiver.getBaseMetaTileEntity());
         transceiver.setChannel(5);
@@ -2113,6 +2202,45 @@ public final class SelfTest {
         IMetaTileEntity hatchMte = GregTechAPI.METATILEENTITIES[hatch.get(1)
             .getItemDamage()];
         powered.add(place(hatchMte, x, ground, z).getBaseMetaTileEntity());
+    }
+
+    /**
+     * A Line Hatch in the front row of an antenna's shelter, up a block, then a Phone Cable out of it to a Telephone:
+     * the antenna is that bus's router.
+     */
+    private TileTelephone shelterPhone(MTEAntenna head) {
+        IGregTechTileEntity tile = head.getBaseMetaTileEntity();
+        ForgeDirection front = tile.getFrontFacing();
+        int y = Y - BeComConfig.get()
+            .antennaMastMin(head.tier());
+        int ahead = head.shelterAhead() + 1;
+        int x = tile.getXCoord(), z = tile.getZCoord();
+        lineHatchAt(BeComMachines.lineHatch, x + front.offsetX * ahead, y, z + front.offsetZ * ahead, front);
+        TileTelephone phone = telephone(x + front.offsetX * (ahead + 2), y, z + front.offsetZ * (ahead + 2));
+        lay(world, x + front.offsetX * (ahead + 1), y, z + front.offsetZ * (ahead + 1), CableTier.PHONE);
+        return phone;
+    }
+
+    /** Each Telephone on an antenna's Line Hatch is on a bus that antenna routes, and reaches the other by radio. */
+    private int checkAntennaBuses() {
+        boolean routed = true;
+        for (TileTelephone phone : List.of(antennaPhoneA, antennaPhoneB)) {
+            NetworkService.BusRef bus = becom.network.busOf(phone.number());
+            List<Buses.End> routers = bus == null ? List.of()
+                : bus.bus()
+                    .ends(Buses.Kind.ROUTER);
+            long antenna = phone == antennaPhoneA ? pos(antennaA) : pos(antennaB);
+            routed &= routers.size() == 1 && routers.get(0)
+                .pos() == antenna;
+        }
+        check("a Telephone cabled to an antenna's Line Hatch is on a bus the antenna routes", routed, "");
+        double width = becom.network.graph()
+            .width(antennaPhoneA.number(), antennaPhoneB.number());
+        check(
+            "...and reaches a Telephone on the other antenna's bus, over the radio link between them",
+            width > Double.NEGATIVE_INFINITY,
+            "width " + width);
+        return 1;
     }
 
     private int formRadio() {
@@ -3824,6 +3952,8 @@ public final class SelfTest {
         exchangeHatches(meExchange);
         lay(world, X0 + 7, Y, z + 1, CableTier.PHONE);
         lay(world, X0 + 7, Y, z + 2, CableTier.PHONE);
+        // Up into its Line Hatch, over the controller.
+        lay(world, X0 + 7, Y + 1, z + 2, CableTier.PHONE);
         return SETTLE_TICKS;
     }
 

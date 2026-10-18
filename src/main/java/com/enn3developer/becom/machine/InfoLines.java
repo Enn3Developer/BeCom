@@ -543,6 +543,14 @@ public final class InfoLines {
         }
     }
 
+    /** The row of the bus a cable block is on, as {@link #buses} gives each of a machine's; a problem for none. */
+    public static void cableBus(InfoLines info, BeComServer becom, int dimension, long cable) {
+        Buses.Bus bus = becom.network.busOfCable(dimension, cable);
+        if (bus == null) info.problem("becom.info.no_bus")
+            .row("becom.info.row.bus");
+        else bus(info, becom, dimension, bus);
+    }
+
     /**
      * A cable block's lines, as WAILA shows them: whether its bus carries, and why not; the bus's row; and what's on
      * it.

@@ -24,7 +24,6 @@ import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ListWidget;
-import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
@@ -54,8 +53,10 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.render.TextureFactory;
+import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.structure.error.TranslatableText;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 import mcp.mobius.waila.api.IWailaConfigHandler;
@@ -64,8 +65,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 /**
  * The Satellite Dish: a late-HV ground station under open sky. A stepped bowl of clean
  * stainless steel casings faces straight up, with a feed horn held over it by four struts of stainless steel frame
- * boxes, on a pedestal; the controller stands in a plinth at the foot with its energy hatch and maintenance hatch.
- * Cabled to an Exchange from its controller, it joins that Exchange's network to the satellites over its dimension: to
+ * boxes, on a pedestal; the controller stands in a plinth at the foot with its energy, maintenance and Line Hatches.
+ * Cabled from its Line Hatch to a router, it joins that router's network to the satellites over its dimension: to
  * every other dish there and, in the Overworld, to every planet's uplink. Rain at the dish weakens that
  * hop, and so does each maintenance problem, since it has no process to slow down.
  * <p>
@@ -75,7 +76,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish>
-    implements ISurvivalConstructable, NodeHost, CableEnd {
+    implements ISurvivalConstructable, NodeHost, LineHatchHost {
 
     private static final String PIECE_DISH = "dish";
     private static final int TICKS_PER_SECOND = 20;
@@ -90,7 +91,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     public static final int FORMAT = 1;
 
     // Layers run top to bottom and rows from the controller's front backwards. C is a casing, F a frame box, H a plinth
-    // casing an energy or maintenance hatch may take the place of, and a space anything.
+    // casing an energy, maintenance or Line Hatch may take the place of, and a space anything.
     private static final String[][] SHAPE = {
         { "       ", "       ", "       ", "   C   ", "       ", "       ", "       " },
         { "       ", "       ", "   F   ", "  F F  ", "   F   ", "       ", "       " },
@@ -108,7 +109,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         .addElement('C', CASING.asElement())
         .addElement(
             'H',
-            buildHatchAdder(MTESatelliteDish.class).atLeast(Energy, Maintenance)
+            buildHatchAdder(MTESatelliteDish.class).atLeast(Energy, Maintenance, LineHatches.Element.LINE_HATCH)
                 .casingIndex(CASING.getTextureId())
                 .hint(1)
                 .buildAndChain(onElementPass(x -> {}, CASING.asElement())))
@@ -128,6 +129,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
 
     // BeCom's keys from a newer BeCom: kept as they were, and the dish left alone.
     private NBTTagCompound tooNew;
+    private final LineHatches lineHatches = new LineHatches();
     private boolean registered;
     private boolean working;
     private boolean sky;
@@ -152,15 +154,20 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         return BeComMachines.stack(this, amount);
     }
 
-    /** A gateway on two buses would carry calls between them like a router: it takes a single cable. */
-    @Override
-    public boolean oneCable() {
-        return true;
-    }
-
+    /** A gateway to the bus its Line Hatch joins. */
     @Override
     public Buses.Kind busKind() {
         return Buses.Kind.GATEWAY;
+    }
+
+    @Override
+    public boolean formed() {
+        return mMachine;
+    }
+
+    @Override
+    public LineHatches lineHatches() {
+        return lineHatches;
     }
 
     @Override
@@ -201,6 +208,26 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         if (!checkPiece(PIECE_DISH, SIDE / 2, HEIGHT - 1, CONTROLLER_ROW, errors)) return;
         if (mMaintenanceHatches.size() != 1) errors.add(StructureErrors.missingHatch(Maintenance));
         checkHasEnergyHatch(errors);
+        // A gateway on two buses would carry calls between them like a router: it takes a single Line Hatch.
+        int lines = lineHatches.count();
+        if (lines != 1) errors.add(
+            StructureErrors.hatchCount(
+                lines == 0 ? ErrorType.TOO_FEW : ErrorType.TOO_MANY,
+                TranslatableText.lang(LineHatches.Element.LINE_HATCH.getDescriptionLangKey()),
+                lines,
+                1));
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        lineHatches.clear();
+    }
+
+    @Override
+    protected void onStructureCheckFinished(IGregTechTileEntity tile) {
+        super.onStructureCheckFinished(tile);
+        lineHatches.finished(tile, mMachine);
     }
 
     @Override
@@ -322,6 +349,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         BeComServer becom = BeComServer.get();
         if (becom != null && tile != null && tile.isServerSide()) {
             becom.network.removeNode(tile.getWorld(), pos());
+            lineHatches.dropped(tile);
         }
         super.onBlockDestroyed();
     }
@@ -502,6 +530,10 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
                 false)
             .addEnergyHatch(StatCollector.translateToLocal("becom.machine.satellite_dish.hatch"), 1)
             .addMaintenanceHatch(StatCollector.translateToLocal("becom.machine.satellite_dish.hatch"), 1)
+            .addOtherStructurePart(
+                StatCollector.translateToLocal("becom.hatch.line"),
+                StatCollector.translateToLocal("becom.machine.satellite_dish.line_hatch"),
+                1)
             .toolTipFinisher();
         return tt;
     }

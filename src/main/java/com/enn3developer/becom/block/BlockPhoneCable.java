@@ -147,6 +147,8 @@ public class BlockPhoneCable extends BlockContainer {
         OVER_TIER,
         /** A machine taking a single cable, which another already joins. */
         TAKEN,
+        /** A machine taking cable on another of its faces. */
+        FACE,
         /** Nothing that takes cable there. */
         NO;
 
@@ -172,7 +174,8 @@ public class BlockPhoneCable extends BlockContainer {
             // A machine block GT has yet to fill in, as it is while being placed.
             if (machine == null) return Join.UNKNOWN;
             ForgeDirection face = side.getOpposite();
-            if (!(machine instanceof CableEnd end) || !end.takesCableOn(face)) return Join.NO;
+            if (!(machine instanceof CableEnd end)) return Join.NO;
+            if (!end.takesCableOn(face)) return Join.FACE;
             if (tier.compareTo(end.bestCable()) > 0) return Join.OVER_TIER;
             if (end.oneCable() && joinedElsewhere(world, nx, ny, nz, face)) return Join.TAKEN;
             return Join.TAKES;
@@ -199,7 +202,7 @@ public class BlockPhoneCable extends BlockContainer {
         if (tile instanceof IGregTechTileEntity gt) {
             if (!(gt.getMetaTileEntity() instanceof CableEnd end) || !end.takesCableOn(face)
                 || tier.compareTo(end.bestCable()) > 0) return null;
-            return new Buses.End(pos, end.busKind(), end.busNumber());
+            return end.busEnd(pos);
         }
         if (tile instanceof Case || tile instanceof Rack || tile instanceof Microcontroller) {
             BeComServer becom = BeComServer.get();
@@ -266,6 +269,7 @@ public class BlockPhoneCable extends BlockContainer {
                 chatName(
                     ((CableEnd) ((IGregTechTileEntity) world.getTileEntity(x, y, z)).getMetaTileEntity()).bestCable()));
             case TAKEN -> GTUtility.sendChatTrans(player, "becom.cable.join.taken");
+            case FACE -> GTUtility.sendChatTrans(player, "becom.cable.join.face");
             case UNKNOWN -> {}
             default -> GTUtility.sendChatTrans(player, "becom.cable.join.nothing");
         }

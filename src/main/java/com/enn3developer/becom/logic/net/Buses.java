@@ -28,13 +28,16 @@ public final class Buses {
     public enum Kind {
         /** A Telephone, a Videophone or a wired computer. */
         PHONE,
-        /** A Router or an Exchange: what makes a bus carry. */
+        /** A Router, an Exchange or an antenna: what makes a bus carry. */
         ROUTER,
         /** A Satellite Dish, a Portal Relay or an ME Bridge. */
         GATEWAY
     }
 
-    /** One thing a bus reaches: where it stands, what it is, and a phone's number (-1 for none, and for the rest). */
+    /**
+     * One thing a bus reaches: where it stands (a multiblock joined through a Line Hatch, by its controller), what it
+     * is, and a phone's number (-1 for none, and for the rest).
+     */
     public record End(long pos, Kind kind, int number) {}
 
     /**

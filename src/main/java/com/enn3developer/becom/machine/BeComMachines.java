@@ -36,6 +36,9 @@ public final class BeComMachines {
     public static final int ROUTER_HV_ID = 25013;
     public static final int PORTAL_RELAY_HV_ID = 25014;
     public static final int PORTAL_RELAY_EV_ID = 25015;
+    public static final int LINE_HATCH_ID = 25016;
+    public static final int LINE_HATCH_MV_ID = 25017;
+    public static final int LINE_HATCH_HV_ID = 25018;
 
     public static BlockBeComMachines block;
     public static MTEPylonHead pylonHead;
@@ -54,6 +57,9 @@ public final class BeComMachines {
     public static MTEPortalRelay portalRelay;
     public static MTEPortalRelay portalRelayHV;
     public static MTEPortalRelay portalRelayEV;
+    public static MTEHatchLine lineHatch;
+    public static MTEHatchLine lineHatchMV;
+    public static MTEHatchLine lineHatchHV;
 
     private BeComMachines() {}
 
@@ -76,6 +82,9 @@ public final class BeComMachines {
         ids.put(ROUTER_HV_ID, "becom.router_hv");
         ids.put(PORTAL_RELAY_HV_ID, "becom.portal_relay_hv");
         ids.put(PORTAL_RELAY_EV_ID, "becom.portal_relay_ev");
+        ids.put(LINE_HATCH_ID, "becom.line_hatch");
+        ids.put(LINE_HATCH_MV_ID, "becom.line_hatch_mv");
+        ids.put(LINE_HATCH_HV_ID, "becom.line_hatch_hv");
         return ids;
     }
 
@@ -141,5 +150,8 @@ public final class BeComMachines {
         portalRelay = new MTEPortalRelay(PORTAL_RELAY_ID, "becom.portal_relay", "Portal Relay", 2);
         portalRelayHV = new MTEPortalRelay(PORTAL_RELAY_HV_ID, "becom.portal_relay_hv", "Portal Relay (HV)", 3);
         portalRelayEV = new MTEPortalRelay(PORTAL_RELAY_EV_ID, "becom.portal_relay_ev", "Portal Relay (EV)", 4);
+        lineHatch = new MTEHatchLine(LINE_HATCH_ID, "becom.line_hatch", "Line Hatch (LV)", CableTier.PHONE);
+        lineHatchMV = new MTEHatchLine(LINE_HATCH_MV_ID, "becom.line_hatch_mv", "Line Hatch (MV)", CableTier.COAXIAL);
+        lineHatchHV = new MTEHatchLine(LINE_HATCH_HV_ID, "becom.line_hatch_hv", "Line Hatch (HV)", CableTier.FIBRE);
     }
 }

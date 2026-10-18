@@ -52,6 +52,7 @@ import com.enn3developer.becom.logic.space.Portals;
 import com.enn3developer.becom.logic.space.Satellites;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.machine.MTEExchange;
+import com.enn3developer.becom.machine.MTEHatchLine;
 import com.enn3developer.becom.machine.MTELaunchPad;
 import com.enn3developer.becom.machine.MTEPortalRelay;
 import com.enn3developer.becom.machine.MTESatelliteDish;
@@ -272,11 +273,15 @@ final class SpaceSelfTest {
         return overworld.isAirBlock(x, tile.getYCoord() + 2, z) ? -PAD_TANK : PAD_TANK;
     }
 
-    /** A dish, its energy and maintenance hatches in the plinth beside the controller. */
+    /**
+     * A dish, its energy and maintenance hatches in the plinth behind the controller, and its Line Hatch beside it, on
+     * the west.
+     */
     private MTESatelliteDish dish(int x) {
         MTESatelliteDish dish = multiblock(overworld, BeComMachines.satelliteDish, x, Y, SZ);
         t.power(hatch(overworld, dish, 1, -1, ItemList.Hatch_Energy_HV).getBaseMetaTileEntity());
         hatch(overworld, dish, 1, 1, ItemList.Hatch_Maintenance);
+        lineHatch(overworld, dish, 0, 1, 0);
         return dish;
     }
 
@@ -1248,33 +1253,58 @@ final class SpaceSelfTest {
         return place(world, mte, x, tile.getYCoord(), z);
     }
 
-    /** An Exchange facing north, powered, with its input bus for racks: what the gateways here cable to. */
+    /**
+     * A Line Hatch, taking any cable, in place of the casing {@code depth} behind, {@code across} beside and {@code up}
+     * above a flat multiblock's controller, facing out the same way.
+     */
+    private MTEHatchLine lineHatch(WorldServer world, MTEEnhancedMultiBlockBase<?> controller, int depth, int across,
+        int up) {
+        IGregTechTileEntity tile = controller.getBaseMetaTileEntity();
+        ForgeDirection back = controller.getExtendedFacing()
+            .getDirection()
+            .getOpposite();
+        ForgeDirection left = back.getRotation(ForgeDirection.UP);
+        int x = tile.getXCoord() + back.offsetX * depth + left.offsetX * across;
+        int z = tile.getZCoord() + back.offsetZ * depth + left.offsetZ * across;
+        world.setBlockToAir(x, tile.getYCoord() + up, z);
+        MTEHatchLine hatch = place(world, BeComMachines.lineHatchHV, x, tile.getYCoord() + up, z);
+        hatch.getBaseMetaTileEntity()
+            .setFrontFacing(back.getOpposite());
+        return hatch;
+    }
+
+    /**
+     * An Exchange facing north, powered, with its input bus for racks and its Line Hatch over the controller: what
+     * the gateways here cable to.
+     */
     private MTEExchange exchange(WorldServer world, int x, int y, int z) {
         MTEExchange exchange = multiblock(world, BeComMachines.exchange, x, y, z);
         t.power(hatch(world, exchange, 0, 1, ItemList.Hatch_Energy_LV).getBaseMetaTileEntity());
         hatch(world, exchange, 0, -1, ItemList.Hatch_Input_Bus_LV);
+        lineHatch(world, exchange, 0, 0, 1);
         return exchange;
     }
 
     /**
-     * The Exchange in front of the dish at {@code x}: Fibre runs from its front round its west side to the front of
-     * the dish's controller, past the spot a Telephone takes.
+     * The Exchange in front of the dish at {@code x}: Fibre runs down from its Line Hatch and round its west side to
+     * the front of the dish's Line Hatch, past the spot a Telephone takes.
      */
     private MTEExchange dishExchange(int x) {
         MTEExchange exchange = exchange(overworld, x, Y, SZ - 8);
+        fibre(overworld, x, Y + 1, SZ - 9);
         for (int cx = x; cx >= x - 2; cx--) fibre(overworld, cx, Y, SZ - 9);
         for (int z = SZ - 8; z <= SZ - 1; z++) fibre(overworld, x - 2, Y, z);
         fibre(overworld, x - 1, Y, SZ - 1);
-        fibre(overworld, x, Y, SZ - 1);
         return exchange;
     }
 
     /**
-     * The Exchange {@link #ROUTER_GAP} blocks south of the relay at x, y + {@code up}, z: Fibre runs from its front
-     * north to beside the relay, past the spot a Telephone takes.
+     * The Exchange {@link #ROUTER_GAP} blocks south of the relay at x, y + {@code up}, z: Fibre runs down from its
+     * Line Hatch and north to beside the relay, past the spot a Telephone takes.
      */
     private MTEExchange relayExchange(WorldServer world, int x, int y, int z, int up) {
         MTEExchange exchange = exchange(world, x, y, z + ROUTER_GAP);
+        fibre(world, x, y + 1, z + ROUTER_GAP - 1);
         for (int cz = z + ROUTER_GAP - 1; cz >= z + 1; cz--) fibre(world, x, y, cz);
         for (int dy = 1; dy <= up; dy++) fibre(world, x, y + dy, z + 1);
         return exchange;

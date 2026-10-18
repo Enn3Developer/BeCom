@@ -63,6 +63,13 @@ public final class BeComRecipes {
                 OrePrefixes.circuit.get(circuit), 'P', BlockPhoneCable.stack(tier, 1), 'H', hull });
     }
 
+    private static void lineHatch(gregtech.api.metatileentity.MetaTileEntity machine, CableTier tier, ItemList hull) {
+        GTModHandler.addCraftingRecipe(
+            machine.getStackForm(1),
+            GTModHandler.RecipeBits.BUFFERED,
+            new Object[] { "P", "H", 'P', BlockPhoneCable.stack(tier, 1), 'H', hull });
+    }
+
     private static void relay(gregtech.api.metatileentity.MetaTileEntity machine, ItemList emitter, Materials circuit,
         ItemList hull, Materials cable, ItemList sensor) {
         GTModHandler.addCraftingRecipe(
@@ -168,6 +175,11 @@ public final class BeComRecipes {
         router(BeComMachines.router, CableTier.PHONE, Materials.LV, ItemList.Hull_LV);
         router(BeComMachines.routerMV, CableTier.COAXIAL, Materials.MV, ItemList.Hull_MV);
         router(BeComMachines.routerHV, CableTier.FIBRE, Materials.HV, ItemList.Hull_HV);
+
+        // Line Hatches: a hull of the tier with a socket for its cable.
+        lineHatch(BeComMachines.lineHatch, CableTier.PHONE, ItemList.Hull_LV);
+        lineHatch(BeComMachines.lineHatchMV, CableTier.COAXIAL, ItemList.Hull_MV);
+        lineHatch(BeComMachines.lineHatchHV, CableTier.FIBRE, ItemList.Hull_HV);
 
         // Exchange: an LV hull among circuits and the lines it switches.
         GTModHandler.addCraftingRecipe(

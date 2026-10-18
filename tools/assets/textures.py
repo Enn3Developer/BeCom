@@ -171,6 +171,20 @@ def router():
     return c
 
 
+def line_hatch():
+    """A cable socket: a rimmed port the line plugs into, its pins round the conductor, and a lamp."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    c.rect(4, 3, 11, 10, "r")
+    c.rect(5, 4, 10, 9, "k")
+    for x, y in ((6, 5), (9, 5), (6, 8), (9, 8)):
+        c.set(x, y, "s")
+    c.rect(7, 6, 8, 7, "h")
+    c.rect(4, 11, 11, 11, "d")
+    c.lamp(7, 12, 2, 1)
+    return c
+
+
 def antenna_head(tier):
     """On a plate like the other heads: a dipole on its mast, waves going out on both sides, a pip per tier."""
 
@@ -312,6 +326,7 @@ OVERLAYS = {
     "OVERLAY_REPEATER_HEAD": repeater_head,
     "OVERLAY_ROUTER_HEAD": router_head,
     "OVERLAY_ROUTER": router,
+    "OVERLAY_LINE_HATCH": line_hatch,
     "OVERLAY_ANTENNA_T1": antenna_head(1),
     "OVERLAY_ANTENNA_T2": antenna_head(2),
     "OVERLAY_ANTENNA_T3": antenna_head(3),
