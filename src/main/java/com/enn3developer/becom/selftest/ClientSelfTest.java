@@ -136,8 +136,6 @@ public final class ClientSelfTest {
     /** At the main menu, once the client has finished starting: a flat creative world. */
     private void launch(Minecraft mc) {
         launched = true;
-        // A window without focus would pause the world under the Game menu, and with it the server's packets.
-        mc.gameSettings.pauseOnLostFocus = false;
         log("opening a flat world");
         String name = "becom-clienttest-" + System.currentTimeMillis();
         WorldSettings settings = new WorldSettings(1L, WorldSettings.GameType.CREATIVE, false, false, WorldType.FLAT);
@@ -148,6 +146,9 @@ public final class ClientSelfTest {
     public void onTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
         if (event.phase != TickEvent.Phase.END) return;
+        // A window without focus would pause the world under the Game menu, and with it the server's packets. Set every
+        // tick: set once at launch, it was back on by the time the world opened.
+        mc.gameSettings.pauseOnLostFocus = false;
         if (!launched && mc.currentScreen instanceof GuiMainMenu) launch(mc);
         if (mc.thePlayer == null || mc.theWorld == null) return;
         ticks++;
