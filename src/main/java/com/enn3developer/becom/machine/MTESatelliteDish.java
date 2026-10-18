@@ -34,6 +34,7 @@ import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NodeHost;
@@ -155,6 +156,11 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     @Override
     public boolean oneCable() {
         return true;
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.GATEWAY;
     }
 
     @Override

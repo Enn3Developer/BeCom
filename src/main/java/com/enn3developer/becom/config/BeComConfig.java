@@ -109,23 +109,29 @@ public final class BeComConfig {
         integer(config, v, WIRED, "cableRatePhone", "KB/s a Phone Cable carries.");
         integer(config, v, WIRED, "cableRateCoaxial", "KB/s a Coaxial cable carries.");
         integer(config, v, WIRED, "cableRateFibre", "KB/s a Fibre cable carries.");
-        integer(config, v, WIRED, "cableReachPhone", 1, Tunables.MAX_CABLE, "Longest run of Phone Cable, in blocks.");
-        integer(config, v, WIRED, "cableReachCoaxial", 1, Tunables.MAX_CABLE, "Longest run of Coaxial, in blocks.");
-        integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Longest run of Fibre, in blocks.");
-        integer(config, v, WIRED, "bundleSize", 1, Tunables.MAX_BUNDLE, "Most cables a pylon span holds.");
-        integer(config, v, WIRED, "cableBlocksPerItem", "Blocks of span one cable item strings.");
-        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
-        integer(config, v, WIRED, "terminalPortsLV", "Devices an LV Line Terminal serves.");
-        integer(config, v, WIRED, "terminalPortsMV", "Devices an MV Line Terminal serves.");
-        integer(config, v, WIRED, "terminalPortsHV", "Devices an HV Line Terminal serves.");
         integer(
             config,
             v,
             WIRED,
-            "terminalCableBudget",
+            "cableReachPhone",
             1,
             Tunables.MAX_CABLE,
-            "Most blocks of cable a Line Terminal or an Exchange walks to find its devices.");
+            "Most Phone Cable blocks a bus carries over.");
+        integer(
+            config,
+            v,
+            WIRED,
+            "cableReachCoaxial",
+            1,
+            Tunables.MAX_CABLE,
+            "Most Coaxial blocks a bus carries over.");
+        integer(config, v, WIRED, "cableReachFibre", 1, Tunables.MAX_CABLE, "Most Fibre blocks a bus carries over.");
+        integer(config, v, WIRED, "bundleSize", 1, Tunables.MAX_BUNDLE, "Most cables a pylon span holds.");
+        integer(config, v, WIRED, "cableBlocksPerItem", "Blocks of span one cable item strings.");
+        integer(config, v, WIRED, "terminalPower", "EU/t a Line Terminal draws.");
+        integer(config, v, WIRED, "routerCallsLV", "Calls an LV Line Terminal carries at once.");
+        integer(config, v, WIRED, "routerCallsMV", "Calls an MV Line Terminal carries at once.");
+        integer(config, v, WIRED, "routerCallsHV", "Calls an HV Line Terminal carries at once.");
         integer(config, v, WIRED, "exchangePower", "EU/t an Exchange draws.");
         integer(config, v, WIRED, "rackCallsLV", "Calls an LV Switching Rack switches at once.");
         integer(config, v, WIRED, "rackCallsMV", "Calls an MV Switching Rack switches at once.");

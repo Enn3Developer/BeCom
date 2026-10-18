@@ -211,8 +211,7 @@ class PacketRoundTripTest {
             List.of(1, 1, 0),
             List.of(
                 new ExchangeView.Joined(5, -1, -1, 900, 64, -120, List.of(0, 0, 2), 600, 512, 120),
-                new ExchangeView.Joined(-1, 4, 5551234, 12, 64, -20, List.of(1, 0, 0), 30, 16, 0)),
-            false);
+                new ExchangeView.Joined(-1, 4, 5551234, 12, 64, -20, List.of(1, 0, 0), 30, 16, 0)));
         PacketBuffer buf = new PacketBuffer(Unpooled.buffer());
         view.write(buf);
         assertEquals(view, ExchangeView.read(buf));

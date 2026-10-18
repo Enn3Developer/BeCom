@@ -55,6 +55,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         if (number != this.number) setRinging(false);
         this.number = number;
         markDirty();
+        // Its bus lists it by number.
+        TileCable.busChanged(worldObj, xCoord, yCoord, zCoord);
     }
 
     public boolean ringing() {
@@ -207,6 +209,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
             .row("becom.info.row.number");
         if (record != null && record.ownerName() != null) info.add("becom.info.value", record.ownerName())
             .row("becom.info.row.owner");
+        if (becom != null && worldObj != null)
+            InfoLines.buses(info, becom, worldObj.provider.dimensionId, BlockPos.pack(xCoord, yCoord, zCoord));
         return info;
     }
 

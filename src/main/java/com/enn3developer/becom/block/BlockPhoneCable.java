@@ -21,7 +21,10 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
+import com.enn3developer.becom.server.BeComServer;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -179,6 +182,33 @@ public class BlockPhoneCable extends BlockContainer {
         return Join.NO;
     }
 
+    /**
+     * What a cable of {@code tier} reaches in the block at x, y, z through that block's {@code face}, for its bus: a
+     * phone, a router or a gateway, or null when nothing there takes it. Unlike {@link #joinAt} this never refuses a
+     * gateway a second cable, so a transient one doesn't cut it off its bus.
+     */
+    public static Buses.End endAt(World world, int x, int y, int z, ForgeDirection face, CableTier tier) {
+        if (y < 0 || y >= world.getHeight()) return null;
+        long pos = BlockPos.pack(x, y, z);
+        Block block = world.getBlock(x, y, z);
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (block instanceof BlockTelephone) {
+            int number = tile instanceof TileTelephone phone && !phone.isTooNew() ? phone.number() : -1;
+            return new Buses.End(pos, Buses.Kind.PHONE, number);
+        }
+        if (tile instanceof IGregTechTileEntity gt) {
+            if (!(gt.getMetaTileEntity() instanceof CableEnd end) || !end.takesCableOn(face)
+                || tier.compareTo(end.bestCable()) > 0) return null;
+            return new Buses.End(pos, end.busKind(), end.busNumber());
+        }
+        if (tile instanceof Case || tile instanceof Rack || tile instanceof Microcontroller) {
+            BeComServer becom = BeComServer.get();
+            int number = becom == null ? -1 : becom.apps.wiredComputerAt(world.provider.dimensionId, pos);
+            return new Buses.End(pos, Buses.Kind.PHONE, number);
+        }
+        return null;
+    }
+
     /** Whether a cable joins the block at x, y, z on a face other than {@code face}. */
     private static boolean joinedElsewhere(World world, int x, int y, int z, ForgeDirection face) {
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
@@ -243,7 +273,10 @@ public class BlockPhoneCable extends BlockContainer {
 
     @Override
     public void onNeighborBlockChange(World world, int x, int y, int z, Block neighbour) {
-        if (!world.isRemote && world.getTileEntity(x, y, z) instanceof TileCable cable) cable.check();
+        if (world.isRemote) return;
+        if (world.getTileEntity(x, y, z) instanceof TileCable cable) cable.check();
+        // What's beside it changed: a device placed or taken away, so its bus may reach something else.
+        TileCable.busChanged(world, x, y, z);
     }
 
     @Override

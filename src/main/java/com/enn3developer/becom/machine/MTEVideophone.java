@@ -22,6 +22,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.CableEnd;
+import com.enn3developer.becom.block.TileCable;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
@@ -29,6 +30,7 @@ import com.enn3developer.becom.gui.PhoneScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.BeComServer;
@@ -162,6 +164,18 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
                 .number();
         }
         markDirty();
+        // Its bus lists it by number.
+        TileCable.busChanged(world, tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.PHONE;
+    }
+
+    @Override
+    public int busNumber() {
+        return tooNew != null ? -1 : number;
     }
 
     @Override
@@ -333,6 +347,12 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
         InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
         if (number >= 0) info.add("becom.info.value", number)
             .row("becom.info.row.number");
+        BeComServer becom = BeComServer.get();
+        if (becom != null && tile != null) InfoLines.buses(
+            info,
+            becom,
+            tile.getWorld().provider.dimensionId,
+            BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         return info;
     }
 

@@ -8,24 +8,23 @@ import net.minecraft.network.PacketBuffer;
 /**
  * What the Exchange's screen shows, from the Router board: whether it works and whose it is; its calls, its data and
  * how many numbers it reaches through how many exchanges; its switching racks; and a row for each thing joined to it,
- * by a run of wire over pylons or by its own cable, with the cables that join it and what they carry. Built on the
- * server.
+ * by a run of wire over pylons or on a bus of its own cable, with the cables that join it and what they carry. Built
+ * on the server.
  *
  * @param racks each rack's tier, best first
- * @param cable whether its cable leads to more than it walks
  */
 public record ExchangeView(boolean online, boolean formed, String owner, int x, int y, int z, int calls, int slots,
-    int data, int routes, int reaches, int exchanges, List<Integer> racks, List<Joined> joined, boolean cable) {
+    int data, int routes, int reaches, int exchanges, List<Integer> racks, List<Joined> joined) {
 
     /**
      * One thing joined to the Exchange.
      *
-     * @param node      its node kind's ordinal, or -1 for a device with a number on the Exchange's cable
-     * @param phoneKind that device's phone kind's ordinal, or -1
+     * @param node      its node kind's ordinal, or -1 for a phone on one of the Exchange's buses
+     * @param phoneKind that phone's kind's ordinal, or -1
      * @param cables    how many cables of each tier join it, by tier
-     * @param length    the blocks of wire to it
-     * @param rate      the KB/s the wire carries; 0 when none of it reaches that far
-     * @param used      the KB/s calls and data take of it now
+     * @param length    the blocks of wire to it: a run's length, or the cable blocks of the bus it's on
+     * @param rate      the KB/s the wire carries; 0 when it carries nothing
+     * @param used      the KB/s calls and data take of it now, on a bus shared by everything on it
      */
     public record Joined(int node, int phoneKind, int number, int x, int y, int z, List<Integer> cables, int length,
         int rate, int used) {}
@@ -44,8 +43,7 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
         0,
         0,
         List.of(),
-        List.of(),
-        false);
+        List.of());
 
     // More than a screen pages through; it also bounds what a client reads.
     public static final int MAX_JOINED = 64;
@@ -90,7 +88,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
             buf.writeInt(j.rate());
             buf.writeInt(j.used());
         }
-        buf.writeBoolean(cable);
     }
 
     public static ExchangeView read(PacketBuffer buf) {
@@ -138,7 +135,6 @@ public record ExchangeView(boolean online, boolean formed, String owner, int x, 
             reaches,
             exchanges,
             racks,
-            joined,
-            buf.readBoolean());
+            joined);
     }
 }

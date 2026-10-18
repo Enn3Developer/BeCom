@@ -6,20 +6,32 @@ import java.util.List;
 import net.minecraft.network.PacketBuffer;
 
 /**
- * What the Line Terminal's screen shows: its state, its uplink and how much of it calls take, and each device on its
- * cable, with what it's doing now or why it has no line. Built on the server, formatted on the client.
+ * What the Line Terminal's screen shows: its state, its uplink and how much of it calls take, the calls it carries,
+ * each bus of cable joining it, and what's on those buses, with what each device is doing now. Built on the server,
+ * formatted on the client.
  *
  * @param tier    the terminal's cable tier ordinal, which names its voltage
- * @param ports   how many devices it gives a line
- * @param devices the served ones first, nearest first, then the ones it can't serve
+ * @param calls   the calls through it now
+ * @param slots   the calls it carries at once
+ * @param buses   the buses joining it, by id
+ * @param devices what's on those buses: phones by number, then routers and gateways
  */
-public record LineTerminalView(int tier, boolean working, String owner, List<Uplink> uplinks, int ports,
-    List<Device> devices) {
+public record LineTerminalView(int tier, boolean working, String owner, List<Uplink> uplinks, int calls, int slots,
+    List<Bus> buses, List<Device> devices) {
 
     public static final int MAX_UPLINKS = 4;
+    public static final int MAX_BUSES = 6;
     public static final int MAX_DEVICES = 64;
 
-    public static final LineTerminalView EMPTY = new LineTerminalView(0, false, "", List.of(), 0, List.of());
+    public static final LineTerminalView EMPTY = new LineTerminalView(
+        0,
+        false,
+        "",
+        List.of(),
+        0,
+        0,
+        List.of(),
+        List.of());
 
     /**
      * Where its link goes and what the run carries: the node at the far end ({@code kind} a NodeKind ordinal, -1 for an
@@ -28,34 +40,43 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
      */
     public record Uplink(int kind, int x, int y, int z, int distance, int[] cables, int rate, int used, int data) {}
 
+    /**
+     * A bus joining it: its cable's tier ordinal, its cable blocks and the most its tier carries over, its KB/s
+     * (0 when it carries nothing), what calls and data take of it, and how many phones, other routers and gateways it
+     * reaches.
+     */
+    public record Bus(int cable, int cables, int limit, int rate, int used, int data, int phones, int routers,
+        int gateways) {
+
+        public boolean tooLong() {
+            return cables > limit;
+        }
+    }
+
     /** Ordinals go on the wire, so constants are only ever appended. */
     public enum Now {
 
         IDLE,
         CALL,
         RINGING,
-        NO_PORT,
-        TOO_FAR,
-        NEARER;
+        /** On a bus too long to carry. */
+        TOO_LONG,
+        /** A router or a gateway on its bus: no call of its own. */
+        JOINED;
 
         private static final Now[] VALUES = values();
 
         static Now byOrdinal(int ordinal) {
             return ordinal >= 0 && ordinal < VALUES.length ? VALUES[ordinal] : IDLE;
         }
-
-        /** Whether this terminal gives the device a line. */
-        public boolean served() {
-            return this == IDLE || this == CALL || this == RINGING;
-        }
     }
 
     /**
-     * A device on its cable: {@code kind} a PhoneKind ordinal or -1, its number (-1 without one), its cable's tier
-     * ordinal, its run and that cable's reach in blocks, and what it's doing: {@code with} who's on the other side of a
-     * call, {@code data} the KB/s of data its cable carries now.
+     * Something on its buses: a phone ({@code kind} a PhoneKind ordinal, -1 for an unknown one) by number (-1 without
+     * one), or a router or gateway ({@code node} a NodeKind ordinal, -1 for a phone); which of its buses it's on, by
+     * index; and what it's doing: {@code with} who's on the other side of a call.
      */
-    public record Device(int kind, int number, int cable, int run, int reach, Now now, String with, int data) {}
+    public record Device(int kind, int node, int number, int bus, Now now, String with) {}
 
     public void write(PacketBuffer buf) {
         buf.writeByte(tier);
@@ -76,21 +97,34 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
             buf.writeInt(u.used());
             buf.writeInt(u.data());
         }
-        buf.writeShort(ports);
+        buf.writeInt(calls);
+        buf.writeInt(slots);
+        count = Math.min(buses.size(), MAX_BUSES);
+        buf.writeByte(count);
+        for (int i = 0; i < count; i++) {
+            Bus b = buses.get(i);
+            buf.writeByte(b.cable());
+            buf.writeInt(b.cables());
+            buf.writeInt(b.limit());
+            buf.writeInt(b.rate());
+            buf.writeInt(b.used());
+            buf.writeInt(b.data());
+            buf.writeShort(b.phones());
+            buf.writeShort(b.routers());
+            buf.writeShort(b.gateways());
+        }
         count = Math.min(devices.size(), MAX_DEVICES);
         buf.writeShort(count);
         for (int i = 0; i < count; i++) {
             Device d = devices.get(i);
             buf.writeByte(d.kind());
+            buf.writeByte(d.node());
             buf.writeInt(d.number());
-            buf.writeByte(d.cable());
-            buf.writeInt(d.run());
-            buf.writeInt(d.reach());
+            buf.writeByte(d.bus());
             buf.writeByte(
                 d.now()
                     .ordinal());
             AntennaView.writeString(buf, d.with());
-            buf.writeInt(d.data());
         }
     }
 
@@ -110,21 +144,35 @@ public record LineTerminalView(int tier, boolean working, String owner, List<Upl
             for (int c = 0; c < cables.length; c++) cables[c] = buf.readByte();
             uplinks.add(new Uplink(kind, x, y, z, distance, cables, buf.readInt(), buf.readInt(), buf.readInt()));
         }
-        int ports = buf.readShort();
+        int calls = buf.readInt();
+        int slots = buf.readInt();
+        count = Math.min(buf.readUnsignedByte(), MAX_BUSES);
+        List<Bus> buses = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            buses.add(
+                new Bus(
+                    buf.readByte(),
+                    buf.readInt(),
+                    buf.readInt(),
+                    buf.readInt(),
+                    buf.readInt(),
+                    buf.readInt(),
+                    buf.readShort(),
+                    buf.readShort(),
+                    buf.readShort()));
+        }
         count = Math.min(buf.readShort(), MAX_DEVICES);
         List<Device> devices = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             devices.add(
                 new Device(
                     buf.readByte(),
-                    buf.readInt(),
                     buf.readByte(),
                     buf.readInt(),
-                    buf.readInt(),
+                    buf.readByte(),
                     Now.byOrdinal(buf.readByte()),
-                    AntennaView.readString(buf),
-                    buf.readInt()));
+                    AntennaView.readString(buf)));
         }
-        return new LineTerminalView(tier, working, owner, uplinks, ports, devices);
+        return new LineTerminalView(tier, working, owner, uplinks, calls, slots, buses, devices);
     }
 }

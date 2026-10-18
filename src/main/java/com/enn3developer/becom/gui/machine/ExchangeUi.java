@@ -225,17 +225,6 @@ public final class ExchangeUi extends CanvasScreen {
         String note = t("becom.ui.exchange.note");
         java.util.List<String> lines = Paint.wrap(c, note, 12, pages > 1 ? INNER - 110 : INNER);
         float ny = bottom - lines.size() * 16;
-        if (v.cable()) {
-            c.text(
-                t(
-                    "becom.info.too_much_cable",
-                    BeComConfig.get()
-                        .terminalCableBudget()),
-                X0,
-                ny - 22,
-                13,
-                Grey.BAD);
-        }
         for (String line : lines) {
             c.text(line, X0, ny, 12, Grey.NOTE);
             ny += 16;
@@ -278,15 +267,20 @@ public final class ExchangeUi extends CanvasScreen {
         float cx = X0 + COLUMNS[2];
         float cw = INNER - COLUMNS[2];
         if (j.rate() <= 0) {
-            String why = best < 0 ? t("becom.ui.exchange.bare")
-                : t(
-                    "becom.ui.exchange.too_long",
-                    j.length(),
-                    t(
-                        "tile.becom." + com.enn3developer.becom.block.BlockPhoneCable.nameOf(CableTier.byOrdinal(best))
-                            + ".name"),
-                    BeComConfig.get()
-                        .cableReach(CableTier.byOrdinal(best)));
+            CableTier tier = best < 0 ? null : CableTier.byOrdinal(best);
+            String why = tier == null ? t("becom.ui.exchange.bare")
+                : j.length() <= BeComConfig.get()
+                    .cableReach(tier)
+                        ? t("becom.ui.exchange.dead")
+                        : t(
+                            "becom.ui.exchange.too_long",
+                            j.length(),
+                            t(
+                                "tile.becom."
+                                    + com.enn3developer.becom.block.BlockPhoneCable.nameOf(CableTier.byOrdinal(best))
+                                    + ".name"),
+                            BeComConfig.get()
+                                .cableReach(CableTier.byOrdinal(best)));
             c.text(Paint.fit(c, why, 11, cw), cx, ty + 2, 11, Grey.BAD);
             return;
         }

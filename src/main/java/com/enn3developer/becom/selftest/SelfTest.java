@@ -40,7 +40,7 @@ import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.TileCable;
 import com.enn3developer.becom.block.TileTelephone;
-import com.enn3developer.becom.block.WailaTelephone;
+import com.enn3developer.becom.block.WailaBlocks;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.data.NetworkSavedData;
@@ -59,11 +59,11 @@ import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.call.CallBook;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
-import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.logic.phone.PhoneKind;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.logic.phone.PhoneRegistry;
@@ -179,6 +179,8 @@ public final class SelfTest {
     private final List<TileTelephone> devicePhones = new ArrayList<>();
     // How far along the device group's cable its second terminal stands.
     private static final int DEVICE_CABLE = 12;
+    private MTELineTerminal busRouter;
+    private TileTelephone busPhone;
     private MTEPylonHead shortPylon;
     private MTEPylonHead minPylon;
     private MTEPylonHead clearA;
@@ -273,6 +275,9 @@ public final class SelfTest {
         steps.add(this::checkMachineBlock);
         steps.add(this::checkCables);
         steps.add(this::checkCablesDry);
+        steps.add(this::buildBus);
+        steps.add(this::checkBus);
+        steps.add(this::checkBusWithoutRouter);
         steps.add(this::formAndLink);
         steps.add(this::checkStructuresAndLines);
         steps.add(this::checkLineReach);
@@ -998,6 +1003,87 @@ public final class SelfTest {
         return 1;
     }
 
+    // South of the cable checks: a router, all the Phone Cable an LV bus carries over, and a Telephone at its end.
+    private static final int BUS_Z = Z0 + 16;
+
+    private int buildBus() {
+        int x = CABLE_X, z = BUS_Z;
+        int reach = BeComConfig.get()
+            .cableReach(CableTier.PHONE);
+        for (int cx = (x - 8) >> 4; cx <= (x + reach + 8) >> 4; cx++) {
+            for (int cz = (z - 8) >> 4; cz <= (z + 8) >> 4; cz++) keepLoaded(cx, cz);
+        }
+        for (int cx = x - 1; cx <= x + reach + 2; cx++) {
+            for (int cz = z - 1; cz <= z + 2; cz++) world.setBlockToAir(cx, Y, cz);
+        }
+        busRouter = place(BeComMachines.lineTerminal, x, Y, z);
+        powered.add(busRouter.getBaseMetaTileEntity());
+        busPhone = telephone(x + reach + 1, Y, z);
+        for (int i = 1; i <= reach; i++) lay(world, x + i, Y, z, CableTier.PHONE);
+        return SETTLE_TICKS;
+    }
+
+    /**
+     * A bus carries over its tier's length in cable blocks, and nothing one block past it, which WAILA on its cable
+     * says; breaking that block it carries again.
+     */
+    private int checkBus() {
+        Tunables t = BeComConfig.get();
+        int x = CABLE_X, z = BUS_Z;
+        int reach = t.cableReach(CableTier.PHONE);
+        int phone = busPhone.number();
+        NetworkService.BusRef bus = becom.network.busOf(phone);
+        check(
+            "a bus of " + reach + " Phone Cable, all an LV bus carries over, carries the Telephone to its terminal",
+            bus != null && bus.bus()
+                .cables() == reach && becom.network.cableRate(phone) == t.cableRate(CableTier.PHONE),
+            String.valueOf(bus));
+        List<String> carrying = wailaLines(x + 1, Y, z);
+        check(
+            "WAILA on its cable: it carries, the bus's row, and what's on it",
+            !carrying.isEmpty() && carrying.get(0)
+                .equals("\u00a7a\u25a0 " + StatCollector.translateToLocal("becom.info.state_carries"))
+                && carrying.contains(busRow(CableTier.PHONE, reach, 0))
+                && carrying.contains(
+                    "\u00a77" + StatCollector.translateToLocal("becom.info.row.on_bus")
+                        + " \u00a7f"
+                        + StatCollector.translateToLocalFormatted("becom.info.on_bus", 1, 1, 0)),
+            carrying.toString());
+        // One block more, on a branch off its middle.
+        lay(world, x + reach / 2, Y, z + 1, CableTier.PHONE);
+        Buses.Bus over = becom.network.busOfCable(world.provider.dimensionId, BlockPos.pack(x + 1, Y, z));
+        List<String> tooLong = wailaLines(x + 1, Y, z);
+        check(
+            "one block more and the bus is too long: it carries nothing, and WAILA on its cable says so",
+            over != null && over.tooLong()
+                && becom.network.busOf(phone) == null
+                && becom.network.cableRate(phone) == 0
+                && !tooLong.isEmpty()
+                && tooLong.get(0)
+                    .equals("\u00a7c\u25a0 " + StatCollector.translateToLocal("becom.info.state_too_long")),
+            over + " " + tooLong);
+        world.setBlockToAir(x + reach / 2, Y, z + 1);
+        check("breaking that block, it carries again", becom.network.busOf(phone) != null, "");
+        busRouter.getBaseMetaTileEntity()
+            .disableWorking();
+        return SETTLE_TICKS;
+    }
+
+    private int checkBusWithoutRouter() {
+        int phone = busPhone.number();
+        List<String> waila = wailaLines(CABLE_X + 1, Y, BUS_Z);
+        check(
+            "with its only router switched off, a bus carries nothing, and WAILA on its cable says why",
+            becom.network.busOf(phone) == null && becom.network.cableRate(phone) == 0
+                && !waila.isEmpty()
+                && waila.get(0)
+                    .equals("\u00a7c\u25a0 " + StatCollector.translateToLocal("becom.info.state_no_router")),
+            waila.toString());
+        busRouter.getBaseMetaTileEntity()
+            .enableWorking();
+        return 1;
+    }
+
     /** The open sides of the cable at x, y, z, or -1 when there's no cable there. */
     private int mask(int x, int y, int z) {
         return world.getTileEntity(x, y, z) instanceof TileCable cable ? cable.mask() : -1;
@@ -1047,10 +1133,6 @@ public final class SelfTest {
         for (MTEPylonHead head : List.of(minPylon, shortPylon, clearA, clearB, bundleA, bundleB))
             head.refreshStructure();
         exchange.refreshStructure();
-        for (Line line : List.of(phoneLine, exchangeLine)) {
-            line.start.scanCable();
-            line.end.scanCable();
-        }
         hold(owner, CableTier.PHONE, 1);
         stringLine(phoneLine.start, phoneLine.heads, phoneLine.end);
         hold(owner, CableTier.COAXIAL, 1);
@@ -1217,52 +1299,58 @@ public final class SelfTest {
     }
 
     /**
-     * One LV terminal's cable reaches six Telephones: five near it, and one by a second terminal at the cable's far
-     * end, which takes that one.
+     * One run of Phone Cable joins two LV terminals and six Telephones: one bus, carrying each Telephone to both
+     * terminals at Phone Cable's rate, which the terminal's screen lists.
      */
     private void checkDevices(Tunables t) {
-        deviceTerminal.scanCable();
-        nearTerminal.scanCable();
-        int ports = t.terminalPorts(CableTier.PHONE);
         int dimension = world.provider.dimensionId;
-        NodeRef self = new NodeRef(dimension, pos(deviceTerminal));
-        List<NetworkService.Device> found = becom.network.devicesOf(dimension, pos(deviceTerminal));
-        List<NetworkService.Device> served = becom.network.served(self, found);
+        List<Buses.Bus> on = becom.network.busesAt(dimension, pos(deviceTerminal));
+        Buses.Bus bus = on.size() == 1 ? on.get(0) : null;
+        Set<Integer> numbers = new HashSet<>();
+        for (TileTelephone phone : devicePhones) numbers.add(phone.number());
+        Set<Integer> found = new HashSet<>();
+        if (bus != null) for (Buses.End end : bus.ends(Buses.Kind.PHONE)) found.add(end.number());
         check(
-            "an LV terminal finds all six Telephones on its cable and serves the " + ports + " nearest of its own",
-            found.size() == 6 && served.size() == ports
-                && served.get(0)
-                    .phone()
-                    == devicePhones.get(0)
-                        .number(),
-            found + " / " + served);
-        NodeRef near = new NodeRef(dimension, pos(nearTerminal));
-        int first = devicePhones.get(0)
-            .number();
-        int last = devicePhones.get(5)
-            .number();
-        check(
-            "a Telephone on two terminals' cable takes the nearer one",
-            self.equals(becom.network.terminalOf(first)) && near.equals(becom.network.terminalOf(last)),
-            becom.network.terminalOf(first) + " / " + becom.network.terminalOf(last));
+            "a run of " + (DEVICE_CABLE + 1)
+                + " Phone Cable is one bus, reaching both terminals and all six Telephones",
+            bus != null && bus.tier() == CableTier.PHONE
+                && bus.cables() == DEVICE_CABLE + 1
+                && !bus.tooLong()
+                && found.equals(numbers)
+                && bus.ends(Buses.Kind.ROUTER)
+                    .size() == 2
+                && on.equals(becom.network.busesAt(dimension, pos(nearTerminal))),
+            on.toString());
+        int rate = t.cableRate(CableTier.PHONE);
+        boolean carried = true;
+        for (int number : numbers) carried &= becom.network.cableRate(number) == rate;
+        check("...and carries each of them at Phone Cable's " + rate + " KB/s", carried, "");
         com.enn3developer.becom.gui.LineTerminalView view = com.enn3developer.becom.gui.LineTerminalScreen
             .view(deviceTerminal);
         List<com.enn3developer.becom.gui.LineTerminalView.Device> rows = view.devices();
+        int first = java.util.Collections.min(numbers);
         check(
-            "the terminal's screen lists all six, the nearest first with a line; the fifth has no port, and the one by "
-                + "the other terminal is that one's",
-            view.ports() == ports && rows.size() == 6
+            "the terminal's screen shows the " + t.routerCalls(CableTier.PHONE)
+                + " calls it carries and its bus, then the six Telephones by number, idle, and the other terminal",
+            view.slots() == t.routerCalls(CableTier.PHONE) && view.buses()
+                .size() == 1
+                && view.buses()
+                    .get(0)
+                    .phones() == 6
+                && view.buses()
+                    .get(0)
+                    .routers() == 1
+                && rows.size() == 7
                 && rows.get(0)
                     .number() == first
                 && rows.get(0)
-                    .kind() == com.enn3developer.becom.logic.phone.PhoneKind.TELEPHONE.ordinal()
+                    .kind() == PhoneKind.TELEPHONE.ordinal()
                 && rows.get(0)
-                    .now()
-                    .served()
-                && rows.get(4)
-                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.NO_PORT
-                && rows.get(5)
-                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.NEARER,
+                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.IDLE
+                && rows.get(6)
+                    .node() == com.enn3developer.becom.logic.net.NodeKind.TERMINAL.ordinal()
+                && rows.get(6)
+                    .now() == com.enn3developer.becom.gui.LineTerminalView.Now.JOINED,
             rows.toString());
     }
 
@@ -1320,26 +1408,21 @@ public final class SelfTest {
     /** WAILA asks for a machine's lines on the server thread, so they come with the first look. */
     private int checkWaila() {
         List<String> terminal = wailaLines(phoneLine.start);
+        String bus = busRow(CableTier.PHONE, 1, 0);
         check(
             "WAILA's first look at a Line Terminal gets its lines: its state first, then its rows, as on the Scanner board",
             !terminal.isEmpty() && terminal.get(0)
                 .equals("\u00a7a\u25a0 " + StatCollector.translateToLocal("becom.info.online"))
-                && terminal.contains(
-                    "\u00a77" + StatCollector.translateToLocal("becom.info.row.devices")
-                        + " \u00a7f"
-                        + StatCollector.translateToLocalFormatted(
-                            "becom.info.of",
-                            1,
-                            BeComConfig.get()
-                                .terminalPorts(CableTier.PHONE))),
+                && terminal.contains(bus),
             terminal.toString());
         List<String> phone = wailaLines(phoneLine.phoneStart);
         check(
-            "and the Telephone's number",
+            "and the Telephone's number and bus",
             phone.contains(
                 "\u00a77" + StatCollector.translateToLocal("becom.info.row.number")
                     + " \u00a7f"
-                    + phoneLine.phoneStart.number()),
+                    + phoneLine.phoneStart.number())
+                && phone.contains(bus),
             phone.toString());
         int dimension = world.provider.dimensionId;
         List<String> far = wailaLines(phoneLine.start, 14, dimension);
@@ -1349,11 +1432,13 @@ public final class SelfTest {
             far.isEmpty() && elsewhere.isEmpty(),
             far + " " + elsewhere);
         check(
-            "WAILA took BeCom's Telephone provider through IMC",
+            "WAILA took BeCom's provider for the Telephone and cable through IMC",
             cpw.mods.fml.common.Loader.isModLoaded("Waila") && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
                 .hasBodyProviders(BeComBlocks.telephone)
                 && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
-                    .hasNBTProviders(BeComBlocks.telephone),
+                    .hasNBTProviders(BeComBlocks.telephone)
+                && mcp.mobius.waila.api.impl.ModuleRegistrar.instance()
+                    .hasNBTProviders(BeComBlocks.phoneCable),
             "WAILA loaded: " + cpw.mods.fml.common.Loader.isModLoaded("Waila"));
         return 1;
     }
@@ -1385,12 +1470,39 @@ public final class SelfTest {
         return tip;
     }
 
+    /** A bus's row as WAILA shows it: its cable, its blocks out of what that carries over, and what calls take. */
+    private static String busRow(CableTier tier, int cables, int used) {
+        Tunables t = BeComConfig.get();
+        return "\u00a77" + StatCollector.translateToLocal("becom.info.row.bus")
+            + " \u00a7f"
+            + StatCollector.translateToLocalFormatted(
+                "becom.info.bus",
+                StatCollector.translateToLocal("tile.becom." + BlockPhoneCable.nameOf(tier) + ".name"),
+                cables,
+                t.cableReach(tier),
+                used,
+                t.cableRate(tier));
+    }
+
+    /** What WAILA gets for the cable at x, y, z, asked by a player two blocks east of it. */
+    private List<String> wailaLines(int x, int y, int z) {
+        List<String> tip = new ArrayList<>();
+        if (!(world.getTileEntity(x, y, z) instanceof TileCable cable)) return tip;
+        looker.setPosition(x + 2.5, y, z + 0.5);
+        looker.dimension = world.provider.dimensionId;
+        NBTTagCompound tag = new NBTTagCompound();
+        if (cpw.mods.fml.common.Loader.isModLoaded("Waila"))
+            new WailaBlocks().getNBTData(looker, cable, tag, world, x, y, z);
+        InfoLines.read(tag, tip);
+        return tip;
+    }
+
     private List<String> wailaLines(TileTelephone phone) {
         looker.setPosition(phone.xCoord + 2.5, phone.yCoord, phone.zCoord + 0.5);
         looker.dimension = phone.getWorldObj().provider.dimensionId;
         NBTTagCompound tag = new NBTTagCompound();
         // Through the provider WAILA took by IMC, as WAILA asks it; the IMC row checks WAILA is there.
-        if (cpw.mods.fml.common.Loader.isModLoaded("Waila")) new WailaTelephone()
+        if (cpw.mods.fml.common.Loader.isModLoaded("Waila")) new WailaBlocks()
             .getNBTData(looker, phone, tag, phone.getWorldObj(), phone.xCoord, phone.yCoord, phone.zCoord);
         List<String> tip = new ArrayList<>();
         InfoLines.read(tag, tip);
@@ -2010,8 +2122,6 @@ public final class SelfTest {
         for (MTEAntenna antenna : List.of(antennaA, antennaB, antennaT2, antennaT3, antennaShort)) {
             antenna.refreshStructure();
         }
-        bridgeTerminalA.scanCable();
-        bridgeTerminalB.scanCable();
         link(bridgeTerminalA, antennaA);
         link(bridgeTerminalB, antennaB);
         // The height cache follows chunks as they load and save; these were changed after loading.
@@ -2935,7 +3045,6 @@ public final class SelfTest {
     private int formPhones() {
         phoneAntenna.refreshStructure();
         phonePylon.refreshStructure();
-        phoneTerminal.scanCable();
         link(phoneAntenna, phonePylon);
         link(phonePylon, phoneTerminal);
         for (int cx = (X0 - 48) >> 4; cx <= (X0 + 64) >> 4; cx++) {
@@ -3742,7 +3851,6 @@ public final class SelfTest {
     private int linkMe() {
         meExchange.refreshStructure();
         meExchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.PHONE, 1);
-        meExchange.scanCable();
         link(meExchange, phoneAntenna);
         return 2 * TICKS_PER_SECOND;
     }
@@ -4010,7 +4118,6 @@ public final class SelfTest {
         PhoneRecord record = becom.phones.record(videophone.number());
         videophoneOwnerless = record != null && record.owner() == null;
         if (videophoneOwnerless) record.setOwner(owner.getUniqueID(), owner.getCommandSenderName());
-        videophoneTerminal.scanCable();
         link(videophoneTerminal, phoneAntenna);
         return SETTLE_TICKS;
     }

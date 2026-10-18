@@ -1,8 +1,8 @@
 package com.enn3developer.becom.logic.net;
 
 /**
- * The three cables: Phone Cable, Coaxial and Fibre, one per voltage tier from LV. Wire is digital: a
- * cable carries its data rate the whole of its reach and nothing past it, whatever the weather. The ordinal is the
+ * The three cables: Phone Cable, Coaxial and Fibre, one per voltage tier from LV. Wire is digital: a bus of cable
+ * carries its tier's data rate over up to its length and nothing past it, whatever the weather. The ordinal is the
  * cable block's metadata and the saved and wire format, so constants can be added but never reordered.
  */
 public enum CableTier {
@@ -28,7 +28,7 @@ public enum CableTier {
         return configName;
     }
 
-    /** Its GT voltage's short name, which config keys of tiered machines use: terminalPortsMV. */
+    /** Its GT voltage's short name, which config keys of tiered machines use: routerCallsMV. */
     public String voltage() {
         return voltage;
     }

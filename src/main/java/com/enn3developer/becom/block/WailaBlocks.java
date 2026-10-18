@@ -16,15 +16,17 @@ import mcp.mobius.waila.api.IWailaDataProvider;
 import mcp.mobius.waila.api.IWailaRegistrar;
 
 /**
- * WAILA's box for the Telephone, which isn't a GT machine, so GT's own WAILA support doesn't reach it. WAILA is
- * optional: BeCom names this class to WAILA through IMC, and nothing else loads it.
+ * WAILA's box for the Telephone and cable, which aren't GT machines, so GT's own WAILA support doesn't reach them.
+ * WAILA is optional: BeCom names this class to WAILA through IMC, and nothing else loads it.
  */
-public final class WailaTelephone implements IWailaDataProvider {
+public final class WailaBlocks implements IWailaDataProvider {
 
     public static void register(IWailaRegistrar registrar) {
-        WailaTelephone provider = new WailaTelephone();
-        registrar.registerBodyProvider(provider, BlockTelephone.class);
-        registrar.registerNBTProvider(provider, BlockTelephone.class);
+        WailaBlocks provider = new WailaBlocks();
+        for (Class<?> block : new Class<?>[] { BlockTelephone.class, BlockPhoneCable.class }) {
+            registrar.registerBodyProvider(provider, block);
+            registrar.registerNBTProvider(provider, block);
+        }
     }
 
     @Override
@@ -55,6 +57,8 @@ public final class WailaTelephone implements IWailaDataProvider {
     public NBTTagCompound getNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x,
         int y, int z) {
         if (tile instanceof TileTelephone phone) phone.waila()
+            .write(tag, player, world, x, y, z);
+        else if (tile instanceof TileCable cable) cable.waila()
             .write(tag, player, world, x, y, z);
         return tag;
     }

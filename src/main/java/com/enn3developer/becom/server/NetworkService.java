@@ -17,11 +17,13 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.block.CableBuses;
 import com.enn3developer.becom.data.NetworkSavedData;
 import com.enn3developer.becom.logic.LevelScale;
 import com.enn3developer.becom.logic.Sweep;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.Clearance;
@@ -42,9 +44,9 @@ import com.enn3developer.becom.quest.QuestTask;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The live side of every loaded dimension's network: which powered nodes are working, which devices hang
- * off which terminal, how many calls each Exchange switches, the clearance re-checks, the graph calls are routed
- * over, and the wires clients draw. Server thread only.
+ * The live side of every loaded dimension's network: which powered nodes are working, the cable buses and what each
+ * reaches, how many calls each Exchange switches, the clearance re-checks, the graph calls are routed over, and the
+ * wires clients draw. Server thread only.
  */
 public final class NetworkService {
 
@@ -59,8 +61,10 @@ public final class NetworkService {
     private final LevelScale levels;
     private final Map<Integer, NetworkModel> models = new HashMap<>();
     private final Map<NodeRef, Long> lastHeard = new HashMap<>();
-    // What each terminal's last cable scan found: every device it reaches, nearest first.
-    private final Map<NodeRef, List<Device>> attachments = new HashMap<>();
+    // Each loaded dimension's cable buses, worked out again where something changed.
+    private final Map<Integer, Buses> buses = new HashMap<>();
+    // Each wired phone's buses, by number, indexed again whenever a bus changes.
+    private Map<Integer, List<BusRef>> phoneBuses = Map.of();
     // How many calls each working Exchange's racks switch at once.
     private final Map<NodeRef, Integer> exchanges = new HashMap<>();
     // Each working ME Bridge's ME network, by grid id.
@@ -130,8 +134,7 @@ public final class NetworkService {
         models.remove(dimension);
         lastHeard.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
-        attachments.keySet()
-            .removeIf(ref -> ref.dimension() == dimension);
+        if (buses.remove(dimension) != null) indexPhones();
         exchanges.keySet()
             .removeIf(ref -> ref.dimension() == dimension);
         terminalTiers.keySet()
@@ -194,7 +197,6 @@ public final class NetworkService {
         if (node != null && node.partner() != null) forgetPartner(node.partner(), ref);
         model.remove(pos);
         lastHeard.remove(ref);
-        attachments.remove(ref);
         exchanges.remove(ref);
         terminalTiers.remove(ref);
         meBridges.remove(ref);
@@ -455,152 +457,140 @@ public final class NetworkService {
         return heard != null && tick - heard <= OFFLINE_AFTER_TICKS;
     }
 
-    /**
-     * A device a terminal's or an Exchange's cable reaches: its number, -1 for a gateway or one without a number yet;
-     * where it stands; whether it's a gateway, which only an Exchange's cable finds; how many blocks of cable lead to
-     * it; and the poorest cable on the way, which sets its rate and reach.
-     */
-    public record Device(int phone, long pos, boolean gateway, int length, CableTier cable) {}
+    // region Buses
 
-    /** What a terminal's or an Exchange's last cable scan found: every device its cable reaches, nearest first. */
-    public void attach(World world, long terminalPos, List<Device> devices) {
-        NodeRef ref = new NodeRef(world.provider.dimensionId, terminalPos);
-        List<Device> before = devices.isEmpty() ? attachments.remove(ref) : attachments.put(ref, List.copyOf(devices));
-        if (!devices.equals(before == null ? List.of() : before)) version++;
+    /** A bus of some dimension. */
+    public record BusRef(int dimension, Buses.Bus bus) {}
+
+    /** The link a bus shares its rate on, across every hop over it. */
+    public record BusLink(int dimension, long bus) {}
+
+    /** Something at a position changed that a bus may reach: a cable, or a block beside one. */
+    public void busChanged(World world, long pos) {
+        if (!world.isRemote) busChanged(world.provider.dimensionId, pos);
     }
 
-    /** What a terminal's last scan found on its cable, nearest first. */
-    public List<Device> devicesOf(int dimension, long terminalPos) {
-        return attachments.getOrDefault(new NodeRef(dimension, terminalPos), List.of());
+    public void busChanged(int dimension, long pos) {
+        buses.computeIfAbsent(dimension, d -> new Buses())
+            .changed(pos);
     }
 
-    /** The KB/s a wired device's own cable carries, or 0 when no working terminal serves it. */
+    /** A chunk loaded or unloaded: the buses touching it are worked out again. */
+    public void chunkChanged(World world, int chunkX, int chunkZ) {
+        if (world.isRemote) return;
+        Buses of = buses.get(world.provider.dimensionId);
+        if (of != null) of.chunkChanged(chunkX, chunkZ);
+    }
+
+    /** Works the buses out again wherever something changed; any that came out different moves paths. */
+    private void updateBuses() {
+        boolean changed = false;
+        for (Map.Entry<Integer, Buses> entry : buses.entrySet()) {
+            if (!entry.getValue()
+                .pending()) continue;
+            WorldServer world = DimensionManager.getWorld(entry.getKey());
+            if (world != null && entry.getValue()
+                .update(new CableBuses(world), tunables::cableReach)) changed = true;
+        }
+        if (!changed) return;
+        indexPhones();
+        version++;
+    }
+
+    private void indexPhones() {
+        Map<Integer, List<BusRef>> index = new HashMap<>();
+        for (Map.Entry<Integer, Buses> entry : buses.entrySet()) {
+            for (Buses.Bus bus : entry.getValue()
+                .all()) {
+                for (Buses.End end : bus.ends(Buses.Kind.PHONE)) {
+                    if (end.number() >= 0) index.computeIfAbsent(end.number(), k -> new ArrayList<>())
+                        .add(new BusRef(entry.getKey(), bus));
+                }
+            }
+        }
+        phoneBuses = index;
+    }
+
+    /** The buses reaching the machine or device at a position. */
+    public List<Buses.Bus> busesAt(int dimension, long pos) {
+        updateBuses();
+        Buses of = buses.get(dimension);
+        return of == null ? List.of() : of.busesOf(pos);
+    }
+
+    /** The bus a cable block is on, or null. */
+    public Buses.Bus busOfCable(int dimension, long pos) {
+        updateBuses();
+        Buses of = buses.get(dimension);
+        return of == null ? null : of.busAt(pos);
+    }
+
+    /** The working routers on a bus, by position. */
+    public List<Long> routersOn(int dimension, Buses.Bus bus) {
+        List<Long> routers = new ArrayList<>();
+        for (Buses.End end : bus.ends(Buses.Kind.ROUTER)) if (working(dimension, end.pos())) routers.add(end.pos());
+        return routers;
+    }
+
+    /** Whether a bus carries: it's within its length, with a working router on it. */
+    public boolean carries(int dimension, Buses.Bus bus) {
+        return !bus.tooLong() && !routersOn(dimension, bus).isEmpty();
+    }
+
+    /** The bus carrying a wired phone's calls: the best of those that carry, or null when none does. */
+    public BusRef busOf(int phone) {
+        updateBuses();
+        BusRef best = null;
+        for (BusRef ref : phoneBuses.getOrDefault(phone, List.of())) {
+            if (!carries(ref.dimension(), ref.bus())) continue;
+            if (best == null || ref.bus()
+                .tier()
+                .compareTo(
+                    best.bus()
+                        .tier())
+                > 0) best = ref;
+        }
+        return best;
+    }
+
+    /** The KB/s a wired device's bus carries, or 0 when no bus it's on carries. */
     public int cableRate(int phone) {
-        NodeRef terminal = terminalOf(phone);
-        if (terminal == null || !working(terminal.dimension(), terminal.pos())) return 0;
-        for (Device device : devicesOf(terminal.dimension(), terminal.pos())) {
-            if (device.phone() == phone) return tunables.cableRate(device.cable());
-        }
-        return 0;
+        BusRef bus = busOf(phone);
+        return bus == null ? 0
+            : tunables.cableRate(
+                bus.bus()
+                    .tier());
+    }
+
+    /** The link of a wired phone's bus, to ask the calls and data how much of it they take; null for none. */
+    public Object phoneLink(int phone) {
+        BusRef bus = busOf(phone);
+        return bus == null ? null : busLink(bus.dimension(), bus.bus());
+    }
+
+    public static BusLink busLink(int dimension, Buses.Bus bus) {
+        return new BusLink(dimension, bus.id());
     }
 
     /**
-     * The terminal serving {@code phone}, or null: of the terminals whose cable reaches it within their ports, the
-     * nearest, then the one that sorts first.
+     * The bus a gateway's calls leave by, or null when it's on none: the one that carries, else the first. A gateway
+     * takes a single cable, so it's on two buses only for the moment a second joins it.
      */
-    public NodeRef terminalOf(int phone) {
-        NodeRef best = null;
-        int bestLength = Integer.MAX_VALUE;
-        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
-            for (Device device : served(entry.getKey(), entry.getValue())) {
-                if (device.phone() != phone) continue;
-                if (device.length() < bestLength
-                    || device.length() == bestLength && best != null && compare(entry.getKey(), best) < 0) {
-                    best = entry.getKey();
-                    bestLength = device.length();
-                }
-            }
+    public Buses.Bus backhaulOf(int dimension, long gateway) {
+        Buses.Bus first = null;
+        for (Buses.Bus bus : busesAt(dimension, gateway)) {
+            if (carries(dimension, bus)) return bus;
+            if (first == null) first = bus;
         }
-        return best;
+        return first;
     }
 
-    /**
-     * The devices a terminal gives a line: of those that take it, the nearest ones, as many as its ports. An Exchange
-     * has no ports to run out of: its racks limit its calls instead.
-     */
-    public List<Device> served(NodeRef terminal, List<Device> devices) {
-        int ports = isExchange(terminal) ? Integer.MAX_VALUE : tunables.terminalPorts(terminalTier(terminal));
-        List<Device> served = new ArrayList<>();
-        for (Device device : devices) {
-            if (served.size() >= ports) break;
-            if (takes(terminal, device)) served.add(device);
-        }
-        return served;
-    }
-
-    /**
-     * Whether a device on a terminal's or an Exchange's cable takes that one: it's within its cable's reach, and no
-     * other's cable reaches it sooner. A device on two terminals' cable takes the nearer one, then the one that sorts
-     * first, whether or not that one has a port free.
-     */
-    public boolean takes(NodeRef hub, Device device) {
-        return hub.equals(hubs().get(new NodeRef(hub.dimension(), device.pos())));
-    }
-
-    // Which terminal or Exchange each device on cable takes, by where it stands; worked out again on a change.
-    private Map<NodeRef, NodeRef> hubs = Map.of();
-    private long hubsVersion = -1;
-
-    private Map<NodeRef, NodeRef> hubs() {
-        if (hubsVersion == version) return hubs;
-        Map<NodeRef, NodeRef> best = new HashMap<>();
-        Map<NodeRef, Integer> lengths = new HashMap<>();
-        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
-            NodeRef hub = entry.getKey();
-            for (Device device : entry.getValue()) {
-                if (device.length() > tunables.cableReach(device.cable())) continue;
-                NodeRef at = new NodeRef(hub.dimension(), device.pos());
-                Integer length = lengths.get(at);
-                if (length == null || device.length() < length
-                    || device.length() == length && compare(hub, best.get(at)) < 0) {
-                    best.put(at, hub);
-                    lengths.put(at, device.length());
-                }
-            }
-        }
-        hubs = best;
-        hubsVersion = version;
-        return hubs;
-    }
-
-    private boolean isExchange(NodeRef ref) {
-        NetworkModel model = models.get(ref.dimension());
-        NetNode node = model == null ? null : model.node(ref.pos());
-        return node != null && node.kind() == NodeKind.EXCHANGE;
-    }
-
-    /** A gateway's backhaul: the Exchange whose cable reaches it, and the run of cable it takes. */
-    public record Backhaul(NodeRef exchange, Device device) {}
-
-    /**
-     * The backhaul of the gateway at {@code gateway}, or null when no Exchange's cable reaches it within its reach: of
-     * those that do, the nearest, then the one that sorts first.
-     */
-    public Backhaul backhaulOf(NodeRef gateway) {
-        return backhaulOf(gateway, true);
-    }
-
-    /** The nearest Exchange whose cable reaches the gateway at {@code gateway} at all, too long a run or not. */
-    public Backhaul cableOf(NodeRef gateway) {
-        return backhaulOf(gateway, false);
-    }
-
-    private Backhaul backhaulOf(NodeRef gateway, boolean inReach) {
-        Backhaul best = null;
-        for (Map.Entry<NodeRef, List<Device>> entry : attachments.entrySet()) {
-            NodeRef hub = entry.getKey();
-            if (hub.dimension() != gateway.dimension()) continue;
-            for (Device device : inReach ? served(hub, entry.getValue()) : entry.getValue()) {
-                if (!device.gateway() || device.pos() != gateway.pos()) continue;
-                if (best == null || device.length() < best.device()
-                    .length()
-                    || device.length() == best.device()
-                        .length() && compare(hub, best.exchange()) < 0)
-                    best = new Backhaul(hub, device);
-            }
-        }
-        return best;
-    }
-
-    /** The link a gateway's backhaul cable is, to ask the calls how much of it they take. */
-    public Object gatewayLink(NodeRef gateway) {
-        return new GatewayLink(gateway);
-    }
+    // endregion
 
     // Each terminal's tier, as its machine says when it's placed or loaded.
     private final Map<NodeRef, CableTier> terminalTiers = new HashMap<>();
 
-    /** A terminal's tier, which sets its ports. */
+    /** A terminal's tier, which sets how many calls it carries at once. */
     public void terminalTier(World world, long pos, CableTier tier) {
         CableTier before = terminalTiers.put(new NodeRef(world.provider.dimensionId, pos), tier);
         if (before != tier) version++;
@@ -624,8 +614,9 @@ public final class NetworkService {
         return graph;
     }
 
-    /** Goes up on every change that can move a path: nodes, links, clearance, power, attachments. */
+    /** Goes up on every change that can move a path: nodes, links, clearance, power, buses. */
     public long version() {
+        updateBuses();
         boolean changed = seenModelVersions.size() != models.size() || antennas.version() != antennasVersion
             || space.version() != spaceVersion;
         antennasVersion = antennas.version();
@@ -679,22 +670,11 @@ public final class NetworkService {
         return runs;
     }
 
-    /** The link a wired device's own cable is, to ask the calls how much of it they take. */
-    public Object deviceLink(int phone) {
-        return new DeviceLink(phone);
-    }
-
     /** The link a run of wire shares its rate on: the same from either end. */
     private record RunLink(int dimension, NetworkModel.LinkKey key) {}
 
     /** The link a UHF hop between two antennas shares its rate on. */
     private record RadioLink(int dimension, NetworkModel.LinkKey key) {}
-
-    /** The link a device's own cable to its terminal is. */
-    private record DeviceLink(int phone) {}
-
-    /** The link a gateway's cable to its Exchange is. */
-    private record GatewayLink(NodeRef gateway) {}
 
     private CallGraph build() {
         CallGraph.Builder builder = CallGraph.builder();
@@ -736,6 +716,8 @@ public final class NetworkService {
                             node.kind()
                                 .antennaTier()));
                 if (node.kind() == NodeKind.EXCHANGE) builder.slots(vertex, exchangeCalls(dimension, node.pos()));
+                if (node.kind() == NodeKind.TERMINAL)
+                    builder.slots(vertex, tunables.routerCalls(terminalTier(new NodeRef(dimension, node.pos()))));
             }
         }
         // An ME Bridge joins its ME network to the line it bridges, losing nothing, and
@@ -759,50 +741,45 @@ public final class NetworkService {
             builder.slots(new CallGraph.SkyVertex(dimension), gateways.skyCalls(satellitesOver(dimension)));
         }
         gateways.addTo(builder, this::satellitesOver, workingDishes(), workingReceivers(), workingRelayPairs());
-        Set<Integer> phones = new HashSet<>();
-        for (List<Device> devices : attachments.values()) for (Device device : devices) phones.add(device.phone());
-        for (int phone : phones) {
-            if (phone < 0) continue;
-            NodeRef terminal = terminalOf(phone);
-            if (terminal == null || !working(terminal.dimension(), terminal.pos())) continue;
-            Device device = null;
-            for (Device d : devicesOf(terminal.dimension(), terminal.pos())) if (d.phone() == phone) device = d;
-            // Each device's own cable is lossless, and carries its poorest cable's rate.
-            builder.twoWay(
-                new CallGraph.PhoneVertex(phone),
-                new CallGraph.NodeVertex(terminal.dimension(), terminal.pos()),
-                Double.POSITIVE_INFINITY,
-                CallGraph.HopKind.CABLE,
-                new DeviceLink(phone),
-                tunables.cableRate(device.cable()));
-        }
-        // Each gateway's cable to its Exchange is lossless too, at its poorest cable's rate.
-        for (Map.Entry<Integer, NetworkModel> entry : models.entrySet()) {
+        // Each bus within its length joins the working routers on it at its tier's rate, shared by every call
+        // crossing it: router to router, and each phone and working gateway on it to each router. A call between two
+        // phones on one bus crosses it twice, in and out of the router.
+        for (Map.Entry<Integer, Buses> entry : buses.entrySet()) {
             int dimension = entry.getKey();
-            for (NetNode node : entry.getValue()
-                .nodes()) {
-                if (!node.kind()
-                    .cabled() || !working(dimension, node.pos())) continue;
-                NodeRef gateway = new NodeRef(dimension, node.pos());
-                Backhaul backhaul = backhaulOf(gateway);
-                if (backhaul == null || !working(
-                    backhaul.exchange()
-                        .dimension(),
-                    backhaul.exchange()
-                        .pos()))
-                    continue;
-                builder.twoWay(
-                    new CallGraph.NodeVertex(dimension, node.pos()),
-                    new CallGraph.NodeVertex(
-                        dimension,
-                        backhaul.exchange()
-                            .pos()),
-                    Double.POSITIVE_INFINITY,
-                    CallGraph.HopKind.CABLE,
-                    new GatewayLink(gateway),
-                    tunables.cableRate(
-                        backhaul.device()
-                            .cable()));
+            for (Buses.Bus bus : entry.getValue()
+                .all()) {
+                if (bus.tooLong()) continue;
+                List<Long> routers = routersOn(dimension, bus);
+                if (routers.isEmpty()) continue;
+                BusLink link = busLink(dimension, bus);
+                int rate = tunables.cableRate(bus.tier());
+                for (int i = 0; i < routers.size(); i++) {
+                    for (int j = i + 1; j < routers.size(); j++) builder.twoWay(
+                        new CallGraph.NodeVertex(dimension, routers.get(i)),
+                        new CallGraph.NodeVertex(dimension, routers.get(j)),
+                        Double.POSITIVE_INFINITY,
+                        CallGraph.HopKind.LINE,
+                        link,
+                        rate);
+                }
+                for (Buses.End end : bus.ends()) {
+                    Object vertex = switch (end.kind()) {
+                        case PHONE -> end.number() < 0 ? null : new CallGraph.PhoneVertex(end.number());
+                        // A gateway on two buses for a moment would join them: only the one it leaves by counts.
+                        case GATEWAY -> working(dimension, end.pos()) && bus.equals(backhaulOf(dimension, end.pos()))
+                            ? new CallGraph.NodeVertex(dimension, end.pos())
+                            : null;
+                        case ROUTER -> null;
+                    };
+                    if (vertex == null) continue;
+                    for (long router : routers) builder.twoWay(
+                        vertex,
+                        new CallGraph.NodeVertex(dimension, router),
+                        Double.POSITIVE_INFINITY,
+                        CallGraph.HopKind.CABLE,
+                        link,
+                        rate);
+                }
             }
         }
         return builder.build();
@@ -973,6 +950,7 @@ public final class NetworkService {
     /** One server tick; line re-checks get at most {@code recheckBudgetNanos} of it. */
     public void tick(long recheckBudgetNanos) {
         tick++;
+        updateBuses();
         if (tick % TICKS_PER_SECOND == 0) {
             expireOffline();
             pairRelays();

@@ -76,7 +76,7 @@ public class CommonProxy {
         Ownership.init();
         com.enn3developer.becom.apps.PhoneOs.init();
         // By name, so the class and WAILA's API load only if WAILA is there to call it. GT covers BeCom's machines.
-        FMLInterModComms.sendMessage("Waila", "register", "com.enn3developer.becom.block.WailaTelephone.register");
+        FMLInterModComms.sendMessage("Waila", "register", "com.enn3developer.becom.block.WailaBlocks.register");
     }
 
     public void postInit(FMLPostInitializationEvent event) {

@@ -315,7 +315,7 @@ final class PhoneGallery {
         info.add("becom.info.of_slots", 2, 8)
             .bar("becom.info.row.calls", 0.25);
         backhaul(info, "becom.info.row.backhaul", "coaxial", 4, 64);
-        info.add("becom.info.to_exchange", "100, 70, 200")
+        info.add("becom.info.to_router", "100, 70, 200")
             .sub();
         info.problem("becom.bridge.no_channel");
         info.problem("becom.info.no_backhaul");
@@ -517,13 +517,16 @@ final class PhoneGallery {
                     List.of(0, 0, 1),
                     12,
                     256,
-                    24)),
-            false);
+                    24)));
     }
 
-    /** An MV Line Terminal as on its board: four devices on its eight ports, one in a call, one sending data. */
+    /**
+     * An MV Line Terminal as on its board: a bus of Phone Cable with two Telephones, one in a call, and a bus of
+     * Coaxial with a Videophone, a computer, an Exchange and an ME Bridge.
+     */
     private static com.enn3developer.becom.gui.LineTerminalView terminal() {
         com.enn3developer.becom.gui.LineTerminalView.Now idle = com.enn3developer.becom.gui.LineTerminalView.Now.IDLE;
+        com.enn3developer.becom.gui.LineTerminalView.Now joined = com.enn3developer.becom.gui.LineTerminalView.Now.JOINED;
         return new com.enn3developer.becom.gui.LineTerminalView(
             1,
             true,
@@ -539,20 +542,36 @@ final class PhoneGallery {
                     32,
                     2,
                     10)),
-            8,
+            1,
+            32,
             List.of(
+                new com.enn3developer.becom.gui.LineTerminalView.Bus(0, 14, 128, 16, 8, 0, 2, 0, 0),
+                new com.enn3developer.becom.gui.LineTerminalView.Bus(1, 40, 512, 64, 0, 10, 2, 1, 1)),
+            List.of(
+                new com.enn3developer.becom.gui.LineTerminalView.Device(4, -1, 300210, 1, idle, ""),
+                new com.enn3developer.becom.gui.LineTerminalView.Device(3, -1, 300417, 1, idle, ""),
                 new com.enn3developer.becom.gui.LineTerminalView.Device(
                     0,
+                    -1,
                     482913,
                     0,
-                    8,
-                    128,
                     com.enn3developer.becom.gui.LineTerminalView.Now.CALL,
-                    "Alex",
-                    0),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(3, 300417, 1, 20, 512, idle, "", 0),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(4, 300210, 2, 40, 4096, idle, "", 10),
-                new com.enn3developer.becom.gui.LineTerminalView.Device(0, 482914, 0, 30, 128, idle, "", 0)));
+                    "Alex"),
+                new com.enn3developer.becom.gui.LineTerminalView.Device(0, -1, 482914, 0, idle, ""),
+                new com.enn3developer.becom.gui.LineTerminalView.Device(
+                    -1,
+                    com.enn3developer.becom.logic.net.NodeKind.EXCHANGE.ordinal(),
+                    -1,
+                    1,
+                    joined,
+                    ""),
+                new com.enn3developer.becom.gui.LineTerminalView.Device(
+                    -1,
+                    com.enn3developer.becom.logic.net.NodeKind.ME_BRIDGE.ordinal(),
+                    -1,
+                    1,
+                    joined,
+                    "")));
     }
 
     /** An Antenna T2 as on its board: two antennas in reach, one out of reach for radios, and a Fibre backhaul. */

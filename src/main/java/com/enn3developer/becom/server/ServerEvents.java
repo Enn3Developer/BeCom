@@ -66,11 +66,20 @@ public final class ServerEvents {
         if (becom != null) becom.heights.worldSaved(event.world);
     }
 
-    /** The height cache follows chunks as they load and as they save. */
+    /** The height cache follows chunks as they load and as they save; buses stop at unloaded chunks. */
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
         BeComServer becom = BeComServer.get();
-        if (becom != null) becom.heights.chunkChanged(event.world, event.getChunk());
+        if (becom == null) return;
+        becom.heights.chunkChanged(event.world, event.getChunk());
+        becom.network.chunkChanged(event.world, event.getChunk().xPosition, event.getChunk().zPosition);
+    }
+
+    @SubscribeEvent
+    public void onChunkUnload(ChunkEvent.Unload event) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null)
+            becom.network.chunkChanged(event.world, event.getChunk().xPosition, event.getChunk().zPosition);
     }
 
     @SubscribeEvent

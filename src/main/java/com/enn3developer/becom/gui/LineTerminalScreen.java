@@ -16,6 +16,7 @@ import com.enn3developer.becom.gui.paint.CanvasWidget;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.call.Call;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
@@ -28,8 +29,8 @@ import com.enn3developer.becom.server.NetworkService;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The Line Terminal's screen: its state and owner, its uplink and what calls take of it, and a row per port, with each
- * device on its cable, its run, and what it's doing. Devices it can't serve follow, with why.
+ * The Line Terminal's screen: its state and owner, its uplink and what calls take of it, the calls it carries, a row
+ * per bus of cable joining it, and what's on those buses, with what each phone is doing.
  */
 public final class LineTerminalScreen {
 
@@ -87,53 +88,40 @@ public final class LineTerminalScreen {
                         run == null ? 0 : becom.apps.dataOn(run.link())));
             }
         }
-        List<NetworkService.Device> all = becom.network.devicesOf(self.dimension(), self.pos());
-        List<NetworkService.Device> served = becom.network.served(self, all);
+        List<LineTerminalView.Bus> buses = new ArrayList<>();
         List<LineTerminalView.Device> devices = new ArrayList<>();
-        for (NetworkService.Device device : all) {
-            PhoneRecord record = device.phone() < 0 ? null : becom.phones.record(device.phone());
-            int reach = t.cableReach(device.cable());
-            LineTerminalView.Now now;
-            String with = "";
-            if (device.length() > reach) {
-                now = LineTerminalView.Now.TOO_FAR;
-            } else if (!becom.network.takes(self, device)) {
-                now = LineTerminalView.Now.NEARER;
-            } else if (!served.contains(device)) {
-                now = LineTerminalView.Now.NO_PORT;
-            } else {
-                Call call = device.phone() < 0 ? null
-                    : becom.calls.book()
-                        .callOfPhone(device.phone());
-                Call.Leg leg = call == null ? null : call.legOf(device.phone());
-                if (leg == null || leg.state() == Call.Leg.State.LEFT) {
-                    now = LineTerminalView.Now.IDLE;
-                } else if (leg.state() == Call.Leg.State.RINGING) {
-                    now = LineTerminalView.Now.RINGING;
-                } else {
-                    now = LineTerminalView.Now.CALL;
-                    with = others(becom, call, device.phone());
+        List<Buses.Bus> on = new ArrayList<>(becom.network.busesAt(self.dimension(), self.pos()));
+        on.sort(java.util.Comparator.comparingLong(Buses.Bus::id));
+        for (int i = 0; i < on.size(); i++) {
+            Buses.Bus bus = on.get(i);
+            Object link = NetworkService.busLink(self.dimension(), bus);
+            int phones = 0, routers = 0, gateways = 0;
+            for (Buses.End end : bus.ends()) {
+                if (end.pos() == self.pos()) continue;
+                switch (end.kind()) {
+                    case PHONE -> phones++;
+                    case ROUTER -> routers++;
+                    case GATEWAY -> gateways++;
                 }
+                devices.add(device(becom, model, end, i, bus.tooLong()));
             }
-            devices.add(
-                new LineTerminalView.Device(
-                    record == null ? -1
-                        : record.kind()
-                            .ordinal(),
-                    device.phone(),
-                    device.cable()
+            buses.add(
+                new LineTerminalView.Bus(
+                    bus.tier()
                         .ordinal(),
-                    device.length(),
-                    reach,
-                    now,
-                    with,
-                    device.phone() < 0 ? 0 : becom.apps.dataOn(becom.network.deviceLink(device.phone()))));
+                    bus.cables(),
+                    t.cableReach(bus.tier()),
+                    becom.network.carries(self.dimension(), bus) ? t.cableRate(bus.tier()) : 0,
+                    becom.calls.usedOn(link),
+                    becom.apps.dataOn(link),
+                    phones,
+                    routers,
+                    gateways));
         }
-        // Served ones first, keeping the scan's nearest-first order within each part.
+        // Phones first, by number; then the routers and gateways, as they come.
         devices.sort(
-            java.util.Comparator.comparing(
-                d -> !d.now()
-                    .served()));
+            java.util.Comparator.comparing((LineTerminalView.Device d) -> d.node() >= 0)
+                .thenComparingInt(LineTerminalView.Device::number));
         UUID owner = tile.getOwnerUuid();
         String ownerName = owner == null ? null : UsernameCache.getLastKnownUsername(owner);
         return new LineTerminalView(
@@ -142,8 +130,53 @@ public final class LineTerminalScreen {
             terminal.isWorking(),
             ownerName == null ? "" : ownerName,
             uplinks,
-            t.terminalPorts(terminal.tier()),
+            becom.calls.callsAt(self.dimension(), self.pos()),
+            t.routerCalls(terminal.tier()),
+            buses,
             devices);
+    }
+
+    /** One thing on a bus: a phone and what it's doing, or a router or gateway joined there. */
+    private static LineTerminalView.Device device(BeComServer becom, NetworkModel model, Buses.End end, int bus,
+        boolean tooLong) {
+        if (end.kind() != Buses.Kind.PHONE) {
+            NetNode node = model == null ? null : model.node(end.pos());
+            return new LineTerminalView.Device(
+                -1,
+                node == null ? -1
+                    : node.kind()
+                        .ordinal(),
+                -1,
+                bus,
+                LineTerminalView.Now.JOINED,
+                "");
+        }
+        int number = end.number();
+        PhoneRecord record = number < 0 ? null : becom.phones.record(number);
+        LineTerminalView.Now now = LineTerminalView.Now.IDLE;
+        String with = "";
+        if (tooLong) {
+            now = LineTerminalView.Now.TOO_LONG;
+        } else if (number >= 0) {
+            Call call = becom.calls.book()
+                .callOfPhone(number);
+            Call.Leg leg = call == null ? null : call.legOf(number);
+            if (leg != null && leg.state() == Call.Leg.State.RINGING) {
+                now = LineTerminalView.Now.RINGING;
+            } else if (leg != null && leg.state() != Call.Leg.State.LEFT) {
+                now = LineTerminalView.Now.CALL;
+                with = others(becom, call, number);
+            }
+        }
+        return new LineTerminalView.Device(
+            record == null ? -1
+                : record.kind()
+                    .ordinal(),
+            -1,
+            number,
+            bus,
+            now,
+            with);
     }
 
     /** Who else is in the call: the first one's name, and how many more. */

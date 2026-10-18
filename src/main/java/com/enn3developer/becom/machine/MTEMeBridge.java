@@ -25,6 +25,7 @@ import com.enn3developer.becom.gui.InfoScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.server.BeComServer;
@@ -92,6 +93,11 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public boolean oneCable() {
         return true;
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.GATEWAY;
     }
 
     @Override

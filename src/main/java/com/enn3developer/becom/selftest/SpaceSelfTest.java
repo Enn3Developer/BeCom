@@ -429,12 +429,11 @@ final class SpaceSelfTest {
         }
         dishA.refreshStructure();
         dishB.refreshStructure();
-        // Each Exchange switches calls with an HV rack, and finds what's on its cable.
+        // Each Exchange switches calls with an HV rack.
         for (MTEExchange exchange : new MTEExchange[] { dishExchangeA, dishExchangeB, relayExchangeOverworld,
             relayExchangeNether }) {
             if (exchange == null) continue;
             exchange.mInputBusses.get(0).mInventory[0] = ItemSwitchingRack.stack(CableTier.FIBRE, 1);
-            exchange.scanCable();
         }
         // Relays by the two sides of one portal pair by themselves, each second; once now.
         becom.network.pairRelaysForSelfTest();

@@ -688,12 +688,17 @@ public final class AppService {
         }
         computers.put(number, card);
         data.seen(number, totalDay());
-        wired.values()
-            .remove(number);
         if (card.wired()) {
-            wired.put(new NodeRef(dimension, pos), number);
+            NodeRef at = new NodeRef(dimension, pos);
+            if (!Integer.valueOf(number)
+                .equals(wired.get(at))) {
+                unwire(number);
+                wired.put(at, number);
+                network.busChanged(dimension, pos);
+            }
             computerEntries.put(number, CallGraph.Entry.of(number));
         } else {
+            unwire(number);
             computerEntries.put(
                 number,
                 carried.entriesAt(
@@ -707,8 +712,23 @@ public final class AppService {
         if (computers.get(card.number()) != card) return;
         computers.remove(card.number());
         computerEntries.remove(card.number());
-        wired.values()
-            .remove(card.number());
+        unwire(card.number());
+    }
+
+    /** Forgets where a computer's wired card was, and tells the bus that reached it there. */
+    private void unwire(int number) {
+        Iterator<Map.Entry<NodeRef, Integer>> it = wired.entrySet()
+            .iterator();
+        while (it.hasNext()) {
+            Map.Entry<NodeRef, Integer> entry = it.next();
+            if (entry.getValue() != number) continue;
+            it.remove();
+            network.busChanged(
+                entry.getKey()
+                    .dimension(),
+                entry.getKey()
+                    .pos());
+        }
     }
 
     /** The number of the computer with a wired BeCom Card at a spot, or -1: a device on the cable that touches it. */

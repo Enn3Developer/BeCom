@@ -125,10 +125,10 @@ class TunablesTest {
 
     @Test
     void cableLengthHasACeiling() throws Exception {
-        // Past it, a scan would walk hundreds of thousands of blocks, and the cable cap would overflow.
+        // Past it, working out a bus would flood hundreds of thousands of blocks.
         refused("cableReachFibre", 1 << 30);
         refused("cableReachPhone", 0);
-        refused("terminalCableBudget", Tunables.MAX_CABLE + 1);
+        refused("routerCallsLV", 0);
     }
 
     @Test

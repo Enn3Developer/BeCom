@@ -18,8 +18,8 @@ import com.enn3developer.becom.logic.phone.PhoneKind;
 
 /**
  * The Line Terminal's screen, from the Line Terminal board: its uplink and how much of the line calls and data take,
- * then a row a port: the device on it, its number, cable and run, and what it's doing; free ports; and the devices
- * on its cable it can't serve, and why.
+ * the calls it carries, then a row a bus of cable joining it: its cable, length and what it carries; and what's on
+ * those buses: each phone, its number and what it's doing, then the routers and gateways they join.
  */
 public final class LineTerminalUi extends CanvasScreen {
 
@@ -147,13 +147,14 @@ public final class LineTerminalUi extends CanvasScreen {
 
     /** The uplink's display: where the line goes, the bar of what calls and data take of it, and its key. */
     private float paintUplink(Canvas c, LineTerminalView v, float y) {
-        float h = 80;
+        float h = 104;
         Grey.display(c, X0, y, INNER, h);
         float x = X0 + 12;
         float w = INNER - 24;
         float ly = y + 10;
         c.text(t("becom.ui.terminal.uplink"), x, ly, 14, Paint.GREY);
         float vx = x + c.width(t("becom.ui.terminal.uplink"), 14) + 8;
+        paintCalls(c, v, x, vx, w, y + h - 24);
         if (v.uplinks()
             .isEmpty()) {
             c.text(t("becom.ui.terminal.no_uplink"), vx, ly, 14, Paint.RED);
@@ -184,8 +185,7 @@ public final class LineTerminalUi extends CanvasScreen {
         c.rect(bx + calls, ly + 1, data, 12, DATA);
         Paint.right(c, of, x + w, ly, 14, u.used() + u.data() >= u.rate() ? Paint.RED : Paint.TEXT);
         ly += 22;
-        int callCount = 0;
-        for (LineTerminalView.Device d : v.devices()) if (d.now() == LineTerminalView.Now.CALL) callCount++;
+        int callCount = v.calls();
         float kx = x;
         kx = key(
             c,
@@ -198,6 +198,16 @@ public final class LineTerminalUi extends CanvasScreen {
         return y + h;
     }
 
+    /** The calls it carries now, of the most it carries at once. */
+    private static void paintCalls(Canvas c, LineTerminalView v, float x, float bx, float w, float ly) {
+        c.text(t("becom.ui.terminal.calls"), x, ly, 14, Paint.GREY);
+        String of = t("becom.ui.terminal.calls_of", v.calls(), v.slots());
+        float bw = w - (bx - x) - c.width(of, 14) - 10;
+        c.rect(bx, ly + 1, bw, 12, FREE);
+        if (v.slots() > 0) c.rect(bx, ly + 1, bw * Math.min(1, v.calls() / (float) v.slots()), 12, CALLS);
+        Paint.right(c, of, x + w, ly, 14, v.slots() > 0 && v.calls() >= v.slots() ? Paint.RED : Paint.TEXT);
+    }
+
     static float key(Canvas c, float x, float y, int colour, String label) {
         c.rect(x, y + 4, 14, 5, colour);
         if (colour == FREE) Paint.border(c, x, y + 4, 14, 5, 1, 0x4a5560);
@@ -205,77 +215,120 @@ public final class LineTerminalUi extends CanvasScreen {
         return x + 20 + c.width(label, 12) + 14;
     }
 
-    /** The table: a row a port, free ports, then the devices it can't serve. */
+    /** The table: a row a bus, then what's on the buses, paged when it doesn't fit. */
     private void paintTable(Canvas c, LineTerminalView v, float y, float bottom) {
-        float[] col = { X0, X0 + 32, X0 + 150, X0 + 228, X0 + INNER - 112 - 8 - 54, X0 + INNER - 112 };
-        String[] heads = { "", t("becom.ui.terminal.device"), t("becom.ui.terminal.number"),
-            t("becom.ui.terminal.cable"), t("becom.ui.terminal.run"), t("becom.ui.terminal.now") };
+        float[] col = { X0, X0 + 32, X0 + 170, X0 + 262, X0 + INNER - 150 };
+        if (v.buses()
+            .isEmpty()) {
+            c.text(t("becom.ui.terminal.no_bus"), X0, y + 4, 14, 0xa02818);
+            return;
+        }
+        // Each bus by index, then the devices under their own heading.
+        List<Object> rows = new ArrayList<>();
+        for (int i = 0; i < v.buses()
+            .size(); i++) rows.add(i);
+        if (!v.devices()
+            .isEmpty()) rows.add(Boolean.TRUE);
+        rows.addAll(v.devices());
+        int fit = Math.max(1, (int) ((bottom - y - 20) / ROW));
+        int pages = Math.max(1, (rows.size() + fit - 1) / fit);
+        page = Math.min(page, pages - 1);
+        String[] heads = { "", t("becom.ui.terminal.bus"), t("becom.ui.terminal.length"), t("becom.ui.terminal.cable"),
+            t("becom.ui.terminal.carries") };
         for (int i = 1; i < heads.length; i++) c.text(heads[i], col[i], y + 4, 12, Grey.NOTE);
         c.rect(X0, y + 18, INNER, 2, 0x9a9a9a);
         y += 20;
-        List<LineTerminalView.Device> served = new ArrayList<>();
-        List<LineTerminalView.Device> unserved = new ArrayList<>();
-        for (LineTerminalView.Device d : v.devices()) (d.now()
-            .served() ? served : unserved).add(d);
-        int ports = Math.max(v.ports(), served.size());
-        int fit = Math.max(1, (int) ((bottom - y) / ROW));
-        // The rows: each served device, the first two free ports, the rest of them as one "7–8 free" row as on the
-        // board, then each device it can't serve.
-        List<Object> rows = new ArrayList<>();
-        for (int i = 0; i < served.size(); i++) rows.add(i);
-        int free = Math.min(ports - served.size(), 3);
-        for (int i = 0; i < free; i++) rows.add(new int[] { served.size() + i, served.size() + i });
-        if (free == 3) rows.set(rows.size() - 1, new int[] { served.size() + 2, ports - 1 });
-        rows.addAll(unserved);
-        // Free ports after what fits on a page merge into one "7-8 free" row.
-        while (rows.size() > fit && free > 1) {
-            int at = served.size() + free - 1;
-            int[] removed = (int[]) rows.remove(at);
-            int[] prev = (int[]) rows.get(at - 1);
-            rows.set(at - 1, new int[] { prev[0], removed[1] });
-            free--;
-        }
-        int pages = Math.max(1, (rows.size() + fit - 1) / fit);
-        page = Math.min(page, pages - 1);
-        for (int i = page * fit; i < Math.min(rows.size(), (page + 1) * fit); i++) {
+        int last = Math.min(rows.size(), (page + 1) * fit);
+        for (int i = page * fit; i < last; i++) {
             Object row = rows.get(i);
             float ty = y + (ROW - c.lineHeight(14)) / 2;
             if (row instanceof Integer index) {
-                paintDevice(c, served.get(index), String.valueOf(index + 1), col, ty);
-            } else if (row instanceof int[]range) {
-                String label = range[0] == range[1] ? String.valueOf(range[0] + 1)
-                    : (range[0] + 1) + "\u2013" + (range[1] + 1);
-                c.text(label, col[0], ty, 14, 0x8a8a8a);
-                c.text(t("becom.ui.terminal.free"), col[1], ty, 14, 0x8a8a8a);
+                paintBus(
+                    c,
+                    v.buses()
+                        .get(index),
+                    index,
+                    col,
+                    ty);
+            } else if (row instanceof LineTerminalView.Device d) {
+                paintDevice(c, d, col, ty);
             } else {
-                paintDevice(c, (LineTerminalView.Device) row, "-", col, ty);
+                // The devices' own heading, under the buses.
+                String[] under = { "", t("becom.ui.terminal.device"), t("becom.ui.terminal.number"),
+                    t("becom.ui.terminal.cable"), t("becom.ui.terminal.now") };
+                for (int h = 1; h < under.length; h++) c.text(under[h], col[h], ty + 2, 12, Grey.NOTE);
             }
-            // A rule between rows, none under the last.
-            if (i < Math.min(rows.size(), (page + 1) * fit) - 1) c.rect(X0, y + ROW - 1, INNER, 1, 0xb0b0b0);
+            if (i < last - 1) c.rect(X0, y + ROW - 1, INNER, 1, 0xb0b0b0);
             y += ROW;
         }
         if (pages > 1) Grey.pager(this, c, X0 + INNER, bottom - 26, page, pages, () -> page--, () -> page++);
     }
 
-    private static void paintDevice(Canvas c, LineTerminalView.Device d, String index, float[] col, float ty) {
-        c.text(index, col[0], ty, 14, Grey.NOTE);
-        String kind = d.kind() < 0 ? "?"
-            : t(
-                "becom.phone.kind." + PhoneKind.values()[d.kind()].name()
-                    .toLowerCase(Locale.ROOT));
-        c.text(kind, col[1], ty, 14, Grey.TEXT);
-        c.text(d.number() < 0 ? "-" : String.valueOf(d.number()), col[2], ty, 14, Grey.TEXT);
-        c.rect(col[3], ty + 4, 14, 5, cableColour(d.cable()));
+    private static void paintBus(Canvas c, LineTerminalView.Bus bus, int index, float[] col, float ty) {
+        c.text(String.valueOf(index + 1), col[0], ty, 14, Grey.NOTE);
+        List<String> joins = new ArrayList<>();
+        if (bus.phones() > 0)
+            joins.add(t(bus.phones() == 1 ? "becom.ui.terminal.phone" : "becom.ui.terminal.phones", bus.phones()));
+        if (bus.routers() > 0)
+            joins.add(t(bus.routers() == 1 ? "becom.ui.terminal.router" : "becom.ui.terminal.routers", bus.routers()));
+        if (bus.gateways() > 0) joins
+            .add(t(bus.gateways() == 1 ? "becom.ui.terminal.gateway" : "becom.ui.terminal.gateways", bus.gateways()));
+        String joined = joins.isEmpty() ? t("becom.ui.terminal.joins_nothing") : String.join(", ", joins);
+        c.text(Paint.fit(c, joined, 14, col[2] - col[1] - 8), col[1], ty, 14, Grey.TEXT);
+        c.text(
+            (bus.tooLong() ? ">" + blocks(bus.limit()) : String.valueOf(bus.cables())) + "/" + blocks(bus.limit()),
+            col[2],
+            ty,
+            14,
+            bus.tooLong() ? 0xa02818 : Grey.TEXT);
+        cable(c, bus.cable(), col[3], ty);
+        String carries;
+        int colour;
+        if (bus.tooLong()) {
+            carries = t("becom.ui.terminal.bus_too_long");
+            colour = 0xa02818;
+        } else if (bus.rate() <= 0) {
+            carries = t("becom.ui.terminal.bus_down");
+            colour = 0xa02818;
+        } else {
+            carries = t("becom.ui.terminal.of", bus.used() + bus.data(), bus.rate());
+            colour = bus.used() + bus.data() >= bus.rate() ? 0xa02818 : Grey.TEXT;
+        }
+        c.text(Paint.fit(c, carries, 14, 150), col[4], ty, 14, colour);
+    }
+
+    /** A cable's swatch and short name. */
+    private static void cable(Canvas c, int tier, float x, float ty) {
+        c.rect(x, ty + 4, 14, 5, cableColour(tier));
         c.text(
             t(
-                "becom.ui.cable." + CableTier.byOrdinal(d.cable())
+                "becom.ui.cable." + CableTier.byOrdinal(tier)
                     .name()
                     .toLowerCase(Locale.ROOT)),
-            col[3] + 20,
+            x + 20,
             ty,
             14,
             Grey.TEXT);
-        c.text(d.run() + "/" + blocks(d.reach()), col[4], ty, 14, d.run() > d.reach() ? 0xa02818 : Grey.TEXT);
+    }
+
+    private void paintDevice(Canvas c, LineTerminalView.Device d, float[] col, float ty) {
+        LineTerminalView v = view.get();
+        c.text(String.valueOf(d.bus() + 1), col[0], ty, 14, Grey.NOTE);
+        String kind = d.node() >= 0 ? kindLabel(d.node())
+            : d.kind() < 0 ? "?"
+                : t(
+                    "becom.phone.kind." + PhoneKind.values()[d.kind()].name()
+                        .toLowerCase(Locale.ROOT));
+        c.text(Paint.fit(c, kind, 14, col[2] - col[1] - 8), col[1], ty, 14, Grey.TEXT);
+        c.text(d.number() < 0 ? "-" : String.valueOf(d.number()), col[2], ty, 14, Grey.TEXT);
+        if (d.bus() >= 0 && d.bus() < v.buses()
+            .size()) cable(
+                c,
+                v.buses()
+                    .get(d.bus())
+                    .cable(),
+                col[3],
+                ty);
         String now;
         int colour;
         switch (d.now()) {
@@ -287,24 +340,20 @@ public final class LineTerminalUi extends CanvasScreen {
                 now = t("becom.ui.terminal.now_ringing");
                 colour = 0x8a6a10;
             }
-            case NO_PORT -> {
-                now = t("becom.ui.terminal.now_no_port");
+            case TOO_LONG -> {
+                now = t("becom.ui.terminal.now_too_long");
                 colour = 0xa02818;
             }
-            case TOO_FAR -> {
-                now = t("becom.ui.terminal.now_too_far");
-                colour = 0xa02818;
-            }
-            case NEARER -> {
-                now = t("becom.ui.terminal.now_nearer");
-                colour = 0x8a8a8a;
+            case JOINED -> {
+                now = t("becom.ui.terminal.now_joined");
+                colour = Grey.FAINT;
             }
             default -> {
-                now = d.data() > 0 ? t("becom.ui.terminal.now_data", d.data()) : t("becom.ui.terminal.now_idle");
-                colour = d.data() > 0 ? 0x1f6f5f : Grey.FAINT;
+                now = t("becom.ui.terminal.now_idle");
+                colour = Grey.FAINT;
             }
         }
-        c.text(Paint.fit(c, now, 14, 112 + 20), col[5], ty, 14, colour);
+        c.text(Paint.fit(c, now, 14, 150), col[4], ty, 14, colour);
     }
 
     @Override

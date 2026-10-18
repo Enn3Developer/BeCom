@@ -17,19 +17,19 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.CableEnd;
-import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.LineTerminalScreen;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
 import com.enn3developer.becom.logic.net.NodeRef;
-import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NetworkService;
 import com.enn3developer.becom.server.NodeHost;
@@ -44,9 +44,9 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The Line Terminal: where a building's line starts. An LV, MV or HV machine drawing a few EU/t
- * that links to one pylon and serves every device on its cable, Telephones and Videophones, as many as
- * its tier has ports: the nearest first. Its devices share its uplink's rate.
+ * The Line Terminal, a router: where a building's line starts. An LV, MV or HV machine drawing a few EU/t that links
+ * to one pylon and carries the calls of every bus of cable joining it, up to its tier's cable, as many at once as its
+ * tier carries. The phones on a bus share its rate.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -56,8 +56,6 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
 
     private boolean working;
     private boolean registered;
-    private List<NetworkService.Device> devices = List.of();
-    private boolean tooMuchCable;
 
     public MTELineTerminal(int id, String name, String regionalName, CableTier tier) {
         super(id, name, regionalName, tier.voltageTier(), 0, (String) null);
@@ -76,6 +74,11 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
     @Override
     public ItemStack getStackForm(long amount) {
         return BeComMachines.stack(this, amount);
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.ROUTER;
     }
 
     @Override
@@ -98,18 +101,29 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         return tier();
     }
 
-    /** The phones this terminal found on its cable at its last scan, nearest first, whether it serves them or not. */
+    /** The phones on the buses joining it, by number, each once. */
     public List<Integer> phones() {
         List<Integer> phones = new java.util.ArrayList<>();
-        for (NetworkService.Device device : devices) phones.add(device.phone());
+        BeComServer becom = BeComServer.get();
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (becom == null || tile == null) return phones;
+        for (Buses.Bus bus : becom.network.busesAt(tile.getWorld().provider.dimensionId, pos(tile))) {
+            for (Buses.End end : bus.ends(Buses.Kind.PHONE)) {
+                if (end.number() >= 0 && !phones.contains(end.number())) phones.add(end.number());
+            }
+        }
+        phones.sort(null);
         return phones;
     }
 
-    /** The first phone this terminal found on its cable at its last scan, or -1. */
+    /** The lowest-numbered phone on the buses joining it, or -1. */
     public int phone() {
-        return devices.isEmpty() ? -1
-            : devices.get(0)
-                .phone();
+        List<Integer> phones = phones();
+        return phones.isEmpty() ? -1 : phones.get(0);
+    }
+
+    private static long pos(IGregTechTileEntity tile) {
+        return BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
     }
 
     @Override
@@ -129,28 +143,6 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         working = tile.isAllowedToWork() && tile.getStoredEU() >= power && tile.decreaseStoredEnergyUnits(power, false);
         if (working) becom.network.heartbeat(world, pos);
         tile.setActive(working);
-        if (tick % TICKS_PER_SECOND == 0) scanCable();
-    }
-
-    /** Finds the devices on this terminal's cable and tells the network; the self-test calls this directly. */
-    public void scanCable() {
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || tile == null || !tile.isServerSide()) return;
-        Tunables t = BeComConfig.get();
-        CableWalk.Result walk = PhoneCables.walk(
-            tile.getWorld(),
-            tile.getXCoord(),
-            tile.getYCoord(),
-            tile.getZCoord(),
-            t.cableReach(CableTier.FIBRE),
-            t.terminalCableBudget(),
-            false);
-        tooMuchCable = walk.overflow();
-        devices = PhoneCables.devicesOf(tile.getWorld(), walk);
-        long pos = BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-        becom.network.terminalTier(tile.getWorld(), pos, tier());
-        becom.network.attach(tile.getWorld(), pos, devices);
     }
 
     @Override
@@ -283,7 +275,10 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
         return Tips.wrap(
             Tips.MACHINE,
             StatCollector.translateToLocal("becom.machine.terminal.info"),
-            StatCollector.translateToLocalFormatted("becom.machine.terminal.ports", t.terminalPorts(tier())),
+            StatCollector.translateToLocalFormatted("becom.machine.terminal.calls", t.routerCalls(tier())),
+            StatCollector.translateToLocalFormatted(
+                "becom.machine.terminal.cable",
+                StatCollector.translateToLocal("tile.becom." + BlockPhoneCable.nameOf(tier()) + ".name")),
             Tips.power(t.terminalPower(), tier().voltage()));
     }
 
@@ -309,42 +304,22 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
     }
 
     /**
-     * Its lines for WAILA and the scanner, as on the Scanner board: its state, or that more devices want a line than
-     * it has ports; its devices; its uplink. The scanner adds each device and span.
+     * Its lines for WAILA and the scanner, as on the Scanner board: its state, the calls it carries, each bus of cable
+     * joining it, and its uplink. The scanner adds each phone on its buses and each span.
      */
     private InfoLines info() {
         InfoLines info = new InfoLines();
         BeComServer becom = BeComServer.get();
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         Tunables t = BeComConfig.get();
-        int ports = t.terminalPorts(tier());
         if (becom == null || tile == null || !working) {
             InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
             if (becom == null || tile == null) return info;
-        }
-        NodeRef self = new NodeRef(
-            tile.getWorld().provider.dimensionId,
-            BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
-        List<NetworkService.Device> served = becom.network.served(self, devices);
-        int wanting = 0;
-        for (NetworkService.Device device : devices) {
-            if (device.length() <= t.cableReach(device.cable()) && becom.network.takes(self, device)) wanting++;
-        }
-        if (working && wanting > ports) {
-            info.problem("becom.info.too_many_devices", wanting, ports)
-                .status();
-            info.add(
-                wanting - ports == 1 ? "becom.info.farthest_no_line" : "becom.info.farthest_no_lines",
-                wanting - ports)
-                .sub();
-        } else if (working) info.add("becom.info.online")
+        } else info.add("becom.info.online")
             .status();
-        if (tooMuchCable) info.warn("becom.info.too_much_cable", t.terminalCableBudget());
-        // Over its ports, the status line already counts them, as on the Scanner board.
-        if (!working || wanting <= ports) info.add("becom.info.of", served.size(), ports)
-            .row("becom.info.row.devices");
-        if (devices.isEmpty()) info.add("becom.info.no_phone")
-            .sub();
+        NodeRef self = new NodeRef(tile.getWorld().provider.dimensionId, pos(tile));
+        InfoLines.calls(info, tile, t.routerCalls(tier()));
+        InfoLines.buses(info, becom, self.dimension(), self.pos());
         // Only a loaded dimension's model: asking by world would load one that isn't.
         NetworkModel model = becom.network.model(self.dimension());
         NetNode node = model == null ? null : model.node(self.pos());
@@ -369,29 +344,14 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, 
                     .row("becom.info.row.uplink");
             }
         }
-        for (NetworkService.Device device : devices) {
-            if (device.length() > t.cableReach(device.cable())) {
-                info.detail("becom.info.device_too_far", device.phone(), device.length(), t.cableReach(device.cable()));
-            } else if (!becom.network.takes(self, device)) {
-                info.detail("becom.info.device_nearer", device.phone());
-            } else if (!served.contains(device)) {
-                info.detail("becom.info.device_no_port", device.phone(), device.length(), t.cableReach(device.cable()));
-            } else {
-                info.detail(
-                    "becom.info.device",
-                    device.phone(),
-                    InfoLines.cableName(device.cable()),
-                    device.length(),
-                    t.cableReach(device.cable()));
-            }
-        }
+        for (int phone : phones()) info.detail("becom.info.device", phone);
         if (node != null) for (long other : node.links()) InfoLines.span(info, model, node.pos(), other);
         return info;
     }
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
-        // Nothing to keep: the devices are found again by the next cable scan, the links live in the network data.
+        // Nothing to keep: its buses are the world's cable, its links live in the network data.
     }
 
     @Override

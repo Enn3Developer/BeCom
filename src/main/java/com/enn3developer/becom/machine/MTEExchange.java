@@ -26,7 +26,6 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.block.CableEnd;
-import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.ExchangeScreen;
 import com.enn3developer.becom.gui.ExchangeView;
@@ -34,13 +33,12 @@ import com.enn3developer.becom.item.ItemSwitchingRack;
 import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.CallGraph;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
-import com.enn3developer.becom.logic.net.NodeRef;
-import com.enn3developer.becom.logic.phone.CableWalk;
 import com.enn3developer.becom.logic.phone.PhoneRecord;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NetworkService;
@@ -107,7 +105,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     private boolean registered;
     private boolean working;
     private int calls;
-    private boolean tooMuchCable;
 
     public MTEExchange(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -126,6 +123,11 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
     @Override
     public ItemStack getStackForm(long amount) {
         return BeComMachines.stack(this, amount);
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.ROUTER;
     }
 
     @Override
@@ -245,28 +247,6 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         calls = working ? callsOf(racks(), t) : 0;
         if (working) becom.network.exchange(world, pos(), calls);
         tile.setActive(working);
-        if (tick % TICKS_PER_SECOND == 0) scanCable();
-    }
-
-    /**
-     * Finds the devices and gateways on the cable at this Exchange's controller and tells the network; the self-test
-     * calls this directly.
-     */
-    public void scanCable() {
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        BeComServer becom = BeComServer.get();
-        if (becom == null || tile == null || !tile.isServerSide()) return;
-        Tunables t = BeComConfig.get();
-        CableWalk.Result walk = PhoneCables.walk(
-            tile.getWorld(),
-            tile.getXCoord(),
-            tile.getYCoord(),
-            tile.getZCoord(),
-            t.cableReach(CableTier.FIBRE),
-            t.terminalCableBudget(),
-            true);
-        tooMuchCable = walk.overflow();
-        becom.network.attach(tile.getWorld(), pos(), PhoneCables.devicesOf(tile.getWorld(), walk));
     }
 
     @Override
@@ -327,36 +307,39 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
                     run.rate(),
                     becom.calls.usedOn(run.link()) + becom.apps.dataOn(run.link())));
         }
-        for (NetworkService.Device device : becom.network.devicesOf(dimension, pos())) {
-            int rate = device.length() <= t.cableReach(device.cable()) ? t.cableRate(device.cable()) : 0;
-            Object link;
-            int node;
-            int phoneKind = -1;
-            if (device.gateway()) {
-                NetNode gateway = model == null ? null : model.node(device.pos());
-                if (gateway == null) continue;
-                node = gateway.kind()
-                    .ordinal();
-                link = becom.network.gatewayLink(new NodeRef(dimension, device.pos()));
-            } else {
-                node = -1;
-                PhoneRecord record = device.phone() < 0 ? null : becom.phones.record(device.phone());
-                if (record != null) phoneKind = record.kind()
-                    .ordinal();
-                link = becom.network.deviceLink(device.phone());
+        List<Buses.Bus> buses = new ArrayList<>(becom.network.busesAt(dimension, pos()));
+        buses.sort(java.util.Comparator.comparingLong(Buses.Bus::id));
+        for (Buses.Bus bus : buses) {
+            int rate = becom.network.carries(dimension, bus) ? t.cableRate(bus.tier()) : 0;
+            Object link = NetworkService.busLink(dimension, bus);
+            int used = becom.calls.usedOn(link) + becom.apps.dataOn(link);
+            for (Buses.End end : bus.ends()) {
+                if (end.pos() == pos()) continue;
+                int node = -1;
+                int phoneKind = -1;
+                if (end.kind() == Buses.Kind.PHONE) {
+                    PhoneRecord record = end.number() < 0 ? null : becom.phones.record(end.number());
+                    if (record != null) phoneKind = record.kind()
+                        .ordinal();
+                } else {
+                    NetNode far = model == null ? null : model.node(end.pos());
+                    if (far == null) continue;
+                    node = far.kind()
+                        .ordinal();
+                }
+                joined.add(
+                    new ExchangeView.Joined(
+                        node,
+                        phoneKind,
+                        end.number(),
+                        BlockPos.x(end.pos()),
+                        BlockPos.y(end.pos()),
+                        BlockPos.z(end.pos()),
+                        counts(List.of(bus.tier())),
+                        bus.cables(),
+                        rate,
+                        used));
             }
-            joined.add(
-                new ExchangeView.Joined(
-                    node,
-                    phoneKind,
-                    device.phone(),
-                    BlockPos.x(device.pos()),
-                    BlockPos.y(device.pos()),
-                    BlockPos.z(device.pos()),
-                    counts(List.of(device.cable())),
-                    device.length(),
-                    rate,
-                    becom.calls.usedOn(link) + becom.apps.dataOn(link)));
         }
         int[] data = becom.apps.dataAt(new CallGraph.NodeVertex(dimension, pos()));
         String owner = tile.getOwnerName();
@@ -374,8 +357,7 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
             working ? becom.calls.reachFrom(dimension, pos()) : 0,
             working ? becom.calls.exchangesFrom(dimension, pos()) : 0,
             racks,
-            joined,
-            tooMuchCable);
+            joined);
     }
 
     /** How many of each tier, by tier. */

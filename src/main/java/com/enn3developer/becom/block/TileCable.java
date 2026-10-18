@@ -5,10 +5,15 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.data.SavedDataFormat;
+import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
+import com.enn3developer.becom.machine.InfoLines;
+import com.enn3developer.becom.machine.WailaInfo;
+import com.enn3developer.becom.server.BeComServer;
 
 /**
  * A cable block's open sides, as GT's cables keep them: one bit per side, its {@link ForgeDirection#flag}. The tier is
@@ -25,6 +30,7 @@ public class TileCable extends TileEntity {
 
     private int mask;
     private NBTTagCompound tooNew;
+    private final WailaInfo waila = new WailaInfo(this::info);
 
     public int mask() {
         return mask;
@@ -94,6 +100,33 @@ public class TileCable extends TileEntity {
         this.mask = mask;
         markDirty();
         worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        busChanged(worldObj, xCoord, yCoord, zCoord);
+    }
+
+    /** Tells the server's buses that something at x, y, z changed: a cable, or what a cable reaches. */
+    public static void busChanged(World world, int x, int y, int z) {
+        BeComServer becom = BeComServer.get();
+        if (becom != null && world != null && !world.isRemote) becom.network.busChanged(world, BlockPos.pack(x, y, z));
+    }
+
+    // A cable joins its bus as it's placed or its chunk loads, and leaves it as it's broken or its chunk unloads.
+
+    @Override
+    public void validate() {
+        super.validate();
+        busChanged(worldObj, xCoord, yCoord, zCoord);
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        busChanged(worldObj, xCoord, yCoord, zCoord);
+    }
+
+    @Override
+    public void onChunkUnload() {
+        super.onChunkUnload();
+        busChanged(worldObj, xCoord, yCoord, zCoord);
     }
 
     @Override
@@ -148,5 +181,19 @@ public class TileCable extends TileEntity {
     /** Saved by a newer BeCom: this one leaves it alone. */
     public boolean isTooNew() {
         return tooNew != null;
+    }
+
+    public WailaInfo waila() {
+        return waila;
+    }
+
+    /** Its lines for WAILA: its bus, whether that carries, and what's on it. */
+    private InfoLines info() {
+        InfoLines info = new InfoLines();
+        BeComServer becom = BeComServer.get();
+        if (tooNew != null) info.problem("becom.info.too_new");
+        else if (becom != null)
+            InfoLines.cable(info, becom, worldObj.provider.dimensionId, BlockPos.pack(xCoord, yCoord, zCoord));
+        return info;
     }
 }

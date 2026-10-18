@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import io.netty.buffer.Unpooled;
 
-/** The Line Terminal's screen gets what the server built, and a terminal with a crowded cable sends a bounded view. */
+/** The Line Terminal's screen gets what the server built, and a terminal with crowded buses sends a bounded view. */
 class LineTerminalViewTest {
 
     private static LineTerminalView roundTrip(LineTerminalView view) {
@@ -28,16 +28,22 @@ class LineTerminalViewTest {
             true,
             "Steve",
             List.of(new LineTerminalView.Uplink(2, 100, 70, -200, 45, new int[] { 2, 0, 1 }, 32, 12, 5)),
+            3,
             8,
             List.of(
-                new LineTerminalView.Device(0, 482913, 0, 8, 128, LineTerminalView.Now.CALL, "Alex", 0),
-                new LineTerminalView.Device(4, 300210, 2, 40, 4096, LineTerminalView.Now.IDLE, "", 10),
-                new LineTerminalView.Device(-1, -1, 0, 200, 128, LineTerminalView.Now.TOO_FAR, "", 0)));
+                new LineTerminalView.Bus(0, 40, 128, 16, 4, 2, 3, 1, 0),
+                new LineTerminalView.Bus(2, 4097, 4096, 0, 0, 0, 1, 0, 1)),
+            List.of(
+                new LineTerminalView.Device(0, -1, 482913, 0, LineTerminalView.Now.CALL, "Alex"),
+                new LineTerminalView.Device(4, -1, 300210, 1, LineTerminalView.Now.TOO_LONG, ""),
+                new LineTerminalView.Device(-1, 2, -1, 0, LineTerminalView.Now.JOINED, "")));
         LineTerminalView back = roundTrip(view);
         assertEquals(view.tier(), back.tier());
         assertEquals(view.working(), back.working());
         assertEquals(view.owner(), back.owner());
-        assertEquals(view.ports(), back.ports());
+        assertEquals(view.calls(), back.calls());
+        assertEquals(view.slots(), back.slots());
+        assertEquals(view.buses(), back.buses());
         assertEquals(view.devices(), back.devices());
         LineTerminalView.Uplink u = view.uplinks()
             .get(0),
@@ -53,12 +59,19 @@ class LineTerminalViewTest {
     void capsTheDevicesItSends() {
         List<LineTerminalView.Device> many = new ArrayList<>();
         for (int i = 0; i < LineTerminalView.MAX_DEVICES + 10; i++) {
-            many.add(new LineTerminalView.Device(0, i, 0, i, 128, LineTerminalView.Now.NO_PORT, "", 0));
+            many.add(new LineTerminalView.Device(0, -1, i, 0, LineTerminalView.Now.IDLE, ""));
         }
-        LineTerminalView back = roundTrip(new LineTerminalView(0, false, "", List.of(), 4, many));
+        List<LineTerminalView.Bus> buses = new ArrayList<>();
+        for (int i = 0; i < LineTerminalView.MAX_BUSES + 2; i++)
+            buses.add(new LineTerminalView.Bus(0, i, 128, 16, 0, 0, 1, 0, 0));
+        LineTerminalView back = roundTrip(new LineTerminalView(0, false, "", List.of(), 0, 8, buses, many));
         assertEquals(
             LineTerminalView.MAX_DEVICES,
             back.devices()
+                .size());
+        assertEquals(
+            LineTerminalView.MAX_BUSES,
+            back.buses()
                 .size());
     }
 

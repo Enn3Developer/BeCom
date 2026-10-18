@@ -16,9 +16,8 @@ public record Tunables(
     // Wired network
     int pylonMinHeight, int pylonMaxHeight, double pylonSpanFactor, int pylonClearanceSeconds, int cableRatePhone,
     int cableRateCoaxial, int cableRateFibre, int cableReachPhone, int cableReachCoaxial, int cableReachFibre,
-    int bundleSize, int cableBlocksPerItem, int terminalPower, int terminalPortsLV, int terminalPortsMV,
-    int terminalPortsHV, int terminalCableBudget, int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV,
-    int voiceRate, int videoRate,
+    int bundleSize, int cableBlocksPerItem, int terminalPower, int routerCallsLV, int routerCallsMV, int routerCallsHV,
+    int exchangePower, int rackCallsLV, int rackCallsMV, int rackCallsHV, int voiceRate, int videoRate,
     // Calls
     double directHearingRange, int sessionGraceSeconds, int halfLinkSeconds, int ringSeconds, int callAttemptsPerMinute,
     // Radio simulation
@@ -58,7 +57,7 @@ public record Tunables(
     boolean questlineEnabled, int questlineRecheckSeconds) {
 
     // Ceilings no sensible config reaches, which keep a hostile server's values from hanging a client: no frame column
-    // is taller than the world, and a terminal's cable scan stays bounded.
+    // is taller than the world, and no bus is counted far past what it carries over.
     public static final int MAX_COLUMN = 255;
     public static final int MAX_CABLE = 16_384;
     // A span holds at most this many cables, so a hostile value can't make a wire packet huge.
@@ -121,10 +120,9 @@ public record Tunables(
         d.put("bundleSize", 4);
         d.put("cableBlocksPerItem", 4);
         d.put("terminalPower", 4);
-        d.put("terminalPortsLV", 4);
-        d.put("terminalPortsMV", 8);
-        d.put("terminalPortsHV", 16);
-        d.put("terminalCableBudget", 8192);
+        d.put("routerCallsLV", 8);
+        d.put("routerCallsMV", 32);
+        d.put("routerCallsHV", 128);
         d.put("exchangePower", 64);
         d.put("rackCallsLV", 8);
         d.put("rackCallsMV", 32);
@@ -302,15 +300,11 @@ public record Tunables(
             if (cableReach(tier) < 1 || cableReach(tier) > MAX_CABLE) {
                 throw invalid("cableReach" + name, cableReach(tier), "1 to " + MAX_CABLE);
             }
-            if (terminalPorts(tier) < 1)
-                throw invalid("terminalPorts" + tier.voltage(), terminalPorts(tier), "at least 1");
+            if (routerCalls(tier) < 1) throw invalid("routerCalls" + tier.voltage(), routerCalls(tier), "at least 1");
             if (rackCalls(tier) < 1) throw invalid("rackCalls" + tier.voltage(), rackCalls(tier), "at least 1");
         }
         if (bundleSize < 1 || bundleSize > MAX_BUNDLE) throw invalid("bundleSize", bundleSize, "1 to " + MAX_BUNDLE);
         if (cableBlocksPerItem < 1) throw invalid("cableBlocksPerItem", cableBlocksPerItem, "at least 1");
-        if (terminalCableBudget < 1 || terminalCableBudget > MAX_CABLE) {
-            throw invalid("terminalCableBudget", terminalCableBudget, "1 to " + MAX_CABLE);
-        }
         if (exchangePower < 0) throw invalid("exchangePower", exchangePower, "0 or more");
         if (voiceRate < 1) throw invalid("voiceRate", voiceRate, "at least 1");
         if (videoRate < voiceRate) throw invalid("videoRate", videoRate, "at least voiceRate");
@@ -570,7 +564,7 @@ public record Tunables(
         };
     }
 
-    /** The longest run a cable carries, in blocks. */
+    /** The most cable blocks a bus of a tier carries over; one longer carries nothing. */
     public int cableReach(CableTier tier) {
         return switch (tier) {
             case PHONE -> cableReachPhone;
@@ -579,12 +573,12 @@ public record Tunables(
         };
     }
 
-    /** How many devices a Line Terminal of a cable tier's voltage serves. */
-    public int terminalPorts(CableTier tier) {
+    /** How many calls a router of a cable tier's voltage carries at once. */
+    public int routerCalls(CableTier tier) {
         return switch (tier) {
-            case PHONE -> terminalPortsLV;
-            case COAXIAL -> terminalPortsMV;
-            case FIBRE -> terminalPortsHV;
+            case PHONE -> routerCallsLV;
+            case COAXIAL -> routerCallsMV;
+            case FIBRE -> routerCallsHV;
         };
     }
 

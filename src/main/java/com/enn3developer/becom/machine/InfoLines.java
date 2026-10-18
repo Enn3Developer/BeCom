@@ -10,10 +10,11 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.Constants;
 
 import com.enn3developer.becom.config.BeComConfig;
+import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.net.NetworkModel;
-import com.enn3developer.becom.logic.net.NodeRef;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.NetworkService;
 
@@ -455,48 +456,39 @@ public final class InfoLines {
 
     /** How a gateway's board writes its backhaul. */
     public enum Backhaul {
-        /** "Coaxial, 4 of 64 KB/s", then "to the Exchange at 100, 70, 200" under it: the ME Bridge. */
+        /** "Coaxial, 4 of 64 KB/s", then "to the router at 100, 70, 200" under it: the ME Bridge. */
         RATE_AND_EXCHANGE,
         /** "Fibre, 10 of 256 KB/s": the Portal Relay, for its own side and for the far side. */
         RATE,
-        /** "Fibre to the Exchange": the Satellite Dish. */
+        /** "Fibre to a router": the Satellite Dish. */
         CABLE
     }
 
     /**
-     * A gateway's backhaul: the cable from the node at {@code pos} to the Exchange it reaches, as a row labelled
-     * {@code label} written as {@code style} says; a problem when it has none.
+     * A gateway's backhaul: the bus of cable from the node at {@code pos} to a working router, as a row labelled
+     * {@code label} written as {@code style} says; a problem when it's on none, or its bus carries nothing.
      */
     public static void backhaul(InfoLines info, BeComServer becom, int dimension, long pos, String label,
         Backhaul style) {
-        NodeRef gateway = new NodeRef(dimension, pos);
-        NetworkService.Backhaul backhaul = becom.network.backhaulOf(gateway);
-        if (backhaul == null) {
-            NetworkService.Backhaul cable = becom.network.cableOf(gateway);
-            if (cable == null) info.problem("becom.info.no_backhaul");
-            else info.problem(
-                "becom.info.backhaul_too_long",
-                cable.device()
-                    .length(),
-                cableName(
-                    cable.device()
-                        .cable()),
-                BeComConfig.get()
-                    .cableReach(
-                        cable.device()
-                            .cable()));
+        Buses.Bus bus = becom.network.backhaulOf(dimension, pos);
+        if (bus == null) {
+            info.problem("becom.info.no_backhaul");
             return;
         }
-        NodeRef exchange = backhaul.exchange();
-        if (!becom.network.working(exchange.dimension(), exchange.pos())) {
-            info.problem("becom.info.backhaul_dead", BlockPos.toString(exchange.pos()));
+        Tunables t = BeComConfig.get();
+        if (bus.tooLong()) {
+            info.problem("becom.info.backhaul_too_long", cableName(bus.tier()), t.cableReach(bus.tier()));
             return;
         }
-        Object link = becom.network.gatewayLink(gateway);
-        CableTier cable = backhaul.device()
-            .cable();
+        List<Long> routers = becom.network.routersOn(dimension, bus);
+        if (routers.isEmpty()) {
+            info.problem("becom.info.backhaul_dead");
+            return;
+        }
+        Object link = NetworkService.busLink(dimension, bus);
         Key name = new Key(
-            "becom.ui.cable." + cable.name()
+            "becom.ui.cable." + bus.tier()
+                .name()
                 .toLowerCase(Locale.ROOT));
         if (style == Backhaul.CABLE) {
             info.add("becom.info.backhaul_cable", name)
@@ -507,11 +499,78 @@ public final class InfoLines {
             "becom.info.backhaul_value",
             name,
             becom.calls.usedOn(link) + becom.apps.dataOn(link),
-            BeComConfig.get()
-                .cableRate(cable))
+            t.cableRate(bus.tier()))
             .row(label);
-        if (style == Backhaul.RATE_AND_EXCHANGE) info.add("becom.info.to_exchange", BlockPos.toString(exchange.pos()))
+        if (style == Backhaul.RATE_AND_EXCHANGE) info.add("becom.info.to_router", BlockPos.toString(routers.get(0)))
             .sub();
+    }
+
+    /**
+     * The buses of cable joining the machine at {@code pos}: a row each with its cable, its length and what calls and
+     * data take of it, or why it carries nothing; a problem when no cable joins it.
+     */
+    public static void buses(InfoLines info, BeComServer becom, int dimension, long pos) {
+        List<Buses.Bus> buses = new ArrayList<>(becom.network.busesAt(dimension, pos));
+        if (buses.isEmpty()) {
+            info.problem("becom.info.no_bus")
+                .row("becom.info.row.bus");
+            return;
+        }
+        buses.sort(java.util.Comparator.comparingLong(Buses.Bus::id));
+        for (Buses.Bus bus : buses) bus(info, becom, dimension, bus);
+    }
+
+    /** One bus's row: its cable, its length out of what that carries over, and what calls take of it; or why not. */
+    private static void bus(InfoLines info, BeComServer becom, int dimension, Buses.Bus bus) {
+        Tunables t = BeComConfig.get();
+        int limit = t.cableReach(bus.tier());
+        if (bus.tooLong()) {
+            info.problem("becom.info.bus_too_long", cableName(bus.tier()), limit)
+                .row("becom.info.row.bus");
+        } else if (!becom.network.carries(dimension, bus)) {
+            info.problem("becom.info.bus_no_router", cableName(bus.tier()), bus.cables(), limit)
+                .row("becom.info.row.bus");
+        } else {
+            Object link = NetworkService.busLink(dimension, bus);
+            info.add(
+                "becom.info.bus",
+                cableName(bus.tier()),
+                bus.cables(),
+                limit,
+                becom.calls.usedOn(link) + becom.apps.dataOn(link),
+                t.cableRate(bus.tier()))
+                .row("becom.info.row.bus");
+        }
+    }
+
+    /**
+     * A cable block's lines, as WAILA shows them: whether its bus carries, and why not; the bus's row; and what's on
+     * it.
+     */
+    public static void cable(InfoLines info, BeComServer becom, int dimension, long pos) {
+        Buses.Bus bus = becom.network.busOfCable(dimension, pos);
+        if (bus == null) {
+            // Placed this tick: its bus is worked out on the next.
+            info.problem("becom.info.no_bus")
+                .status();
+            return;
+        }
+        if (bus.tooLong()) info.problem("becom.info.state_too_long")
+            .status();
+        else if (!becom.network.carries(dimension, bus)) info.problem("becom.info.state_no_router")
+            .status();
+        else info.add("becom.info.state_carries")
+            .status();
+        bus(info, becom, dimension, bus);
+        info.add(
+            "becom.info.on_bus",
+            bus.ends(Buses.Kind.PHONE)
+                .size(),
+            bus.ends(Buses.Kind.ROUTER)
+                .size(),
+            bus.ends(Buses.Kind.GATEWAY)
+                .size())
+            .row("becom.info.row.on_bus");
     }
 
     /**

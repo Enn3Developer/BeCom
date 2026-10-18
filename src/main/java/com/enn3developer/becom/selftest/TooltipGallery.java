@@ -86,21 +86,25 @@ final class TooltipGallery extends GuiScreen {
         return stack;
     }
 
-    /** A Line Terminal's WAILA lines as on the Scanner board: working, or with more devices than ports. */
+    /** A Line Terminal's WAILA lines as on the Scanner board: working, or with every call taken and a bus too long. */
     private static List<String> terminal(boolean full) {
         InfoLines info = new InfoLines();
+        info.add("becom.info.online")
+            .status();
         if (full) {
-            info.problem("becom.info.too_many_devices", 9, 8)
-                .status();
-            info.add("becom.info.farthest_no_line")
-                .sub();
+            info.add("becom.info.of_slots", 8, 8)
+                .bar("becom.info.row.calls", 1);
+            info.add("becom.info.bus", InfoLines.cableName(CableTier.PHONE), 40, 128, 16, 16)
+                .row("becom.info.row.bus");
+            info.problem("becom.info.bus_too_long", InfoLines.cableName(CableTier.PHONE), 128)
+                .row("becom.info.row.bus");
             info.bundle(List.of(CableTier.COAXIAL), "becom.info.uplink", 30, 64)
                 .row("becom.info.row.uplink");
         } else {
-            info.add("becom.info.online")
-                .status();
-            info.add("becom.info.of", 4, 8)
-                .row("becom.info.row.devices");
+            info.add("becom.info.of_slots", 3, 8)
+                .bar("becom.info.row.calls", 3 / 8.0);
+            info.add("becom.info.bus", InfoLines.cableName(CableTier.PHONE), 14, 128, 12, 16)
+                .row("becom.info.row.bus");
             info.bundle(List.of(CableTier.PHONE, CableTier.PHONE), "becom.info.uplink", 12, 32)
                 .row("becom.info.row.uplink");
         }
@@ -116,6 +120,8 @@ final class TooltipGallery extends GuiScreen {
             .row("becom.info.row.number");
         info.add("becom.info.value", "Steve")
             .row("becom.info.row.owner");
+        info.add("becom.info.bus", InfoLines.cableName(CableTier.PHONE), 14, 128, 12, 16)
+            .row("becom.info.row.bus");
         return box(new ItemStack(BeComBlocks.telephone), info);
     }
 

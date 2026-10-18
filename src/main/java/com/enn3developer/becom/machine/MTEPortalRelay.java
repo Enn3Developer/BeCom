@@ -34,6 +34,7 @@ import com.enn3developer.becom.item.Tips;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
 import com.enn3developer.becom.logic.net.BlockPos;
+import com.enn3developer.becom.logic.net.Buses;
 import com.enn3developer.becom.logic.net.NetNode;
 import com.enn3developer.becom.logic.net.NetworkModel;
 import com.enn3developer.becom.logic.net.NodeKind;
@@ -104,6 +105,11 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
     @Override
     public boolean oneCable() {
         return true;
+    }
+
+    @Override
+    public Buses.Kind busKind() {
+        return Buses.Kind.GATEWAY;
     }
 
     @Override
