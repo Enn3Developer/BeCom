@@ -6,6 +6,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -21,7 +22,7 @@ import com.enn3developer.becom.gui.paint.Canvas;
 
 /**
  * The client's {@link Canvas}: board pixels scaled to the screen with GL. Text uses Minecraft's font at the nearest
- * quarter size to the board's, so it stays as crisp as the GUI scale lets it.
+ * size that puts each of its pixels on whole screen pixels, so it stays crisp.
  */
 public final class GlCanvas implements Canvas {
 
@@ -33,6 +34,13 @@ public final class GlCanvas implements Canvas {
     private final float scale;
     private final ModularGuiContext context;
     private final FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+    // Screen pixels a GUI pixel: the font's sizes are steps of one over it, half size at least.
+    private final int steps = Math.max(
+        2,
+        new ScaledResolution(
+            Minecraft.getMinecraft(),
+            Minecraft.getMinecraft().displayWidth,
+            Minecraft.getMinecraft().displayHeight).getScaleFactor());
 
     /** @param scale GUI pixels a board pixel; the caller has its GL transform at the board's top left */
     public GlCanvas(float scale, ModularGuiContext context) {
@@ -40,10 +48,13 @@ public final class GlCanvas implements Canvas {
         this.context = context;
     }
 
-    /** The font's size in GUI pixels for board text of {@code size}: a quarter step, half size at least. */
+    /**
+     * The font's size in GUI pixels for board text of {@code size}: a whole number of screen pixels a font pixel, as a
+     * fraction one, such as 1.25 at GUI scale 2, draws its pixels uneven and grainy.
+     */
     private float fontScale(float size) {
         float wanted = size * scale / BOARD_TEXT_AT_FULL_SIZE;
-        return Math.max(0.5f, Math.round(wanted * 4) / 4f);
+        return Math.max(1, Math.round(wanted * steps)) / (float) steps;
     }
 
     @Override
