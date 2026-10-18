@@ -155,9 +155,4 @@ public final class CallGroup implements IGroup {
         chains.clear();
         snapshot = CallSnapshot.EMPTY;
     }
-
-    /** How many speaker-listener and speaker-loudspeaker loss chains are held; for tests and the self-test. */
-    public int chainCount() {
-        return chains.size();
-    }
 }

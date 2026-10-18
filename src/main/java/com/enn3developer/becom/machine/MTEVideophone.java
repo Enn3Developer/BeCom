@@ -140,7 +140,7 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
 
     /**
      * Claims its number again where it stands now, or takes a number of its own: on its first tick after being placed,
-     * when it lost its number, or as a copy of another Videophone. The self-test calls this directly.
+     * when it lost its number, or as a copy of another Videophone.
      */
     public void settle() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();

@@ -97,15 +97,6 @@ public final class ClientRadio {
         if (activation != null) activation.setKeyed(false);
     }
 
-    // The client self-test's gallery shows the TX lamp and the strip without a voice mod keying anything.
-    private static ItemStack txForTest;
-
-    /** For the client self-test: the HUD shows {@code walkie} transmitting, just turned to its channel; null stops. */
-    public static void showForTest(ItemStack walkie) {
-        txForTest = walkie;
-        if (walkie != null) turned = System.currentTimeMillis();
-    }
-
     // When the channel last turned by sneak + scroll, in ms: the strip shows for a while after.
     private static long turned = Long.MIN_VALUE / 2;
     private static final long STRIP_MS = 2000;
@@ -120,15 +111,14 @@ public final class ClientRadio {
         Minecraft mc = Minecraft.getMinecraft();
         EntityClientPlayerMP player = mc.thePlayer;
         if (player == null) return;
-        ItemStack walkie = txForTest != null ? txForTest
-            : ItemWalkieTalkie.is(player.getHeldItem()) ? player.getHeldItem() : talkingOn;
+        ItemStack walkie = ItemWalkieTalkie.is(player.getHeldItem()) ? player.getHeldItem() : talkingOn;
         if (walkie == null) return;
         FontRenderer font = mc.fontRenderer;
         int centre = event.resolution.getScaledWidth() / 2;
         // Over the armour and health rows.
         int bottom = event.resolution.getScaledHeight() - 51;
         int channel = ItemWalkieTalkie.channel(walkie);
-        boolean tx = transmittingOn(walkie) || txForTest != null;
+        boolean tx = transmittingOn(walkie);
         if (tx) {
             String label = StatCollector.translateToLocalFormatted("becom.hud.channel", channel);
             int w = 6 + 6 + font.getStringWidth("TX") + 5 + font.getStringWidth(label) + 6;
@@ -140,8 +130,7 @@ public final class ClientRadio {
             font.drawStringWithShadow(label, left + 13 + font.getStringWidth("TX") + 5, top + 3, 0xFFE0E0E0);
             bottom = top - 3;
         }
-        if (System.currentTimeMillis() - turned < STRIP_MS
-            && (txForTest != null || ItemWalkieTalkie.is(player.getHeldItem()))) {
+        if (System.currentTimeMillis() - turned < STRIP_MS && ItemWalkieTalkie.is(player.getHeldItem())) {
             int before = Math.floorMod(channel - 2, RadioGroup.CHANNELS) + 1;
             int after = Math.floorMod(channel, RadioGroup.CHANNELS) + 1;
             String now = "\u25c2 " + channel + " \u25b8";

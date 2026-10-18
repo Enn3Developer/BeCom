@@ -126,17 +126,6 @@ public final class VideoRenderer {
             .rearSend() == SignalLevel.NONE) lastCapture = 0;
     }
 
-    /** The client self-test keeps the rear pictures it captures instead of sending them. */
-    public static void uploadsForSelfTest(Consumer<byte[]> sink) {
-        uploads = sink;
-    }
-
-    /** The front picture last drawn of {@code source}, for the client self-test; null when none was drawn. */
-    public static Framebuffer frameForSelfTest(java.util.UUID source) {
-        ClientVideo.Feed feed = ClientVideo.existing(source);
-        return feed == null || !feed.drawn ? null : feed.frame;
-    }
-
     /** Whether this client can make the pictures at all: they need framebuffers. */
     public static boolean framebuffers() {
         return OpenGlHelper.isFramebufferEnabled();

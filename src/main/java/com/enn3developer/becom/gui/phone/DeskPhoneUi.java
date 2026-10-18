@@ -581,13 +581,4 @@ public final class DeskPhoneUi extends CanvasScreen {
     }
 
     // endregion
-
-    /** For the client self-test's gallery: the display in a mode, at an entry, with a number typed. */
-    public void showForTest(String mode, int index, String digits) {
-        this.mode = Mode.valueOf(mode);
-        this.index = index;
-        confirmBlock = false;
-        typed.setLength(0);
-        typed.append(digits);
-    }
 }

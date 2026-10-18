@@ -158,26 +158,6 @@ public final class RocketReceivers {
         return MathHelper.floor_double(rocket.posY + rocket.height);
     }
 
-    /** Whether BeCom follows {@code rocket}; for the self-test. */
-    public boolean followsForSelfTest(EntityAutoRocket rocket) {
-        return rockets.contains(rocket);
-    }
-
-    /** How many receivers count now; for the self-test. */
-    public int countingForSelfTest() {
-        return counting.size();
-    }
-
-    /** Whether a receiver counts at {@code ref}; for the self-test. */
-    public boolean countsForSelfTest(NodeRef ref) {
-        return counting.containsKey(ref);
-    }
-
-    /** Looks at every rocket now, rather than at the next whole second; for the self-test. */
-    public void lookForSelfTest() {
-        look();
-    }
-
     public void stop() {
         rockets.clear();
         counting.clear();

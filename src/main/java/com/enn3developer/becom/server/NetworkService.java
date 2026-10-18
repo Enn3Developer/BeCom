@@ -360,11 +360,6 @@ public final class NetworkService {
         }
     }
 
-    /** Pairs relays now, as the next second would. */
-    public void pairRelaysForSelfTest() {
-        pairRelays();
-    }
-
     /** A relay with no partner, or one whose partner, in a loaded dimension, isn't paired back with it. */
     private boolean unpaired(NodeRef ref) {
         NetNode node = relayAt(ref);

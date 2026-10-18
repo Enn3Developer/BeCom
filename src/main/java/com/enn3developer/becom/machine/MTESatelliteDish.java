@@ -270,7 +270,7 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         return true;
     }
 
-    /** Runs the structure check now and tells the network; the self-test calls this directly. */
+    /** Runs the structure check now and tells the network */
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         // Left alone: no node, no formed state, no bridges written for it here.

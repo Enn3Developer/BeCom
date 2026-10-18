@@ -97,11 +97,6 @@ public final class CallService implements CallBook.Listener {
     private final Map<UUID, SignalLevel> callBars = new HashMap<>();
     // Players hearing a tone that stops by itself, and the tick it stops.
     private final Map<UUID, Long> toneStops = new HashMap<>();
-    // The last tone each player was played, the last thing they were told and whether a ringing notice shows for them,
-    // kept only while the self-test asks.
-    private Map<UUID, TonePacket.Tone> toneLog;
-    private Map<UUID, String> messageLog;
-    private Map<UUID, Boolean> noticeLog;
     private long ticks;
     private long publishedVersion = -1;
 
@@ -358,11 +353,6 @@ public final class CallService implements CallBook.Listener {
             .routed();
     }
 
-    /** Whether a new call between two phones would find room now; for the self-test. */
-    public boolean hasRoomForSelfTest(int from, int to) {
-        return hasRoom(null, from, to);
-    }
-
     /**
      * How many phones a call from the node at {@code (dimension, pos)} could reach now, at Low or better: those on
      * lines, and carried ones in service.
@@ -455,11 +445,6 @@ public final class CallService implements CallBook.Listener {
         List<Integer> found = List.copyOf(searchReachable(phone));
         reachable.put(phone, new Reachable(ticks, found));
         return found;
-    }
-
-    /** How many times reachable phones were searched for; for the self-test. */
-    public int reachableSearchesForSelfTest() {
-        return reachableSearches;
     }
 
     private List<Integer> searchReachable(int phone) {
@@ -784,7 +769,6 @@ public final class CallService implements CallBook.Listener {
         if (wanted == null ? shown == null : shown != null && shown == wanted.phone()) return;
         if (wanted == null) shownNotices.remove(holder);
         else shownNotices.put(holder, wanted.phone());
-        if (noticeLog != null) noticeLog.put(holder, wanted != null);
         EntityPlayerMP mp = player(holder);
         if (mp != null) BeComPackets.send(wanted != null ? wanted.packet() : RingPacket.stop(), mp);
     }
@@ -960,24 +944,13 @@ public final class CallService implements CallBook.Listener {
         return ids;
     }
 
-    // The self-test's fake players are in no world's player list; it adds them here to stand at a Videophone.
-    private final List<EntityPlayer> selfTestPlayers = new ArrayList<>();
-
     private List<EntityPlayer> playersIn(int dimension) {
         List<EntityPlayer> players = new ArrayList<>();
         WorldServer world = DimensionManager.getWorld(dimension);
         if (world != null) {
             for (Object o : world.playerEntities) if (o instanceof EntityPlayer player) players.add(player);
         }
-        for (EntityPlayer player : selfTestPlayers) {
-            if (player.worldObj == world && !players.contains(player)) players.add(player);
-        }
         return players;
-    }
-
-    /** Lets a self-test fake player stand at a Videophone, as if it were in its world's player list. */
-    public void presentForSelfTest(EntityPlayer player) {
-        if (!selfTestPlayers.contains(player)) selfTestPlayers.add(player);
     }
 
     /**
@@ -1136,7 +1109,7 @@ public final class CallService implements CallBook.Listener {
 
     /** The dimension a player is in, or null when they aren't online. */
     private Integer dimensionOf(UUID id) {
-        EntityPlayer player = playerOrPresent(id);
+        EntityPlayer player = player(id);
         return player == null ? null : player.dimension;
     }
 
@@ -1299,14 +1272,9 @@ public final class CallService implements CallBook.Listener {
         }
     }
 
-    // Whether a player has a voice session. Only the self-test swaps it, for its fake players.
-    private Predicate<UUID> hasVoice = id -> GtnhVoiceApi.session(id)
+    // Whether a player has a voice session.
+    private final Predicate<UUID> hasVoice = id -> GtnhVoiceApi.session(id)
         .isPresent();
-
-    /** The self-test's fake players have no voice; this lets it dial and answer through the real checks. */
-    public void voiceForSelfTest(Predicate<UUID> hasVoice) {
-        this.hasVoice = hasVoice;
-    }
 
     /** A direction's SNR is its best path's weakest hop; its level is capped by both phones. */
     private final CallBook.Quality quality = new CallBook.Quality() {
@@ -1333,8 +1301,7 @@ public final class CallService implements CallBook.Listener {
 
     private void checkCords() {
         for (Map.Entry<Integer, UUID> entry : new ArrayList<>(handsets.entrySet())) {
-            // A self-test stand-in is checked where it stands, as an online player is.
-            EntityPlayer player = playerOrPresent(entry.getValue());
+            EntityPlayer player = player(entry.getValue());
             TileTelephone telephone = phones.telephone(entry.getKey());
             if (player == null || telephone == null || !telephone.withinCord(player)) {
                 hangUpHandset(entry.getValue());
@@ -1380,7 +1347,6 @@ public final class CallService implements CallBook.Listener {
         videophones.clear();
         loudspeakerLevels.clear();
         callBars.clear();
-        selfTestPlayers.clear();
         talked.clear();
         recorded.clear();
         group.clear();
@@ -1464,11 +1430,6 @@ public final class CallService implements CallBook.Listener {
         callBars.putAll(current);
     }
 
-    /** The bars {@code player} was last told their call shows, or null when they're in none; for the self-test. */
-    public SignalLevel callBarsForSelfTest(UUID player) {
-        return callBars.get(player);
-    }
-
     // endregion
 
     /** The kind of phone a number is, for the screens. */
@@ -1486,7 +1447,7 @@ public final class CallService implements CallBook.Listener {
     public String nameOf(UUID id, String fallback) {
         String held = names.get(id);
         if (held != null) return held;
-        EntityPlayer online = playerOrPresent(id);
+        EntityPlayer online = player(id);
         if (online != null) return online.getCommandSenderName();
         String cached = UsernameCache.getLastKnownUsername(id);
         return cached != null ? cached : fallback;
@@ -1505,19 +1466,9 @@ public final class CallService implements CallBook.Listener {
         return player(id);
     }
 
-    /** {@code id}'s player: online, or one of the self-test's fake players standing in for one. */
-    public EntityPlayer playerOrPresent(UUID id) {
-        EntityPlayerMP online = player(id);
-        if (online != null) return online;
-        for (EntityPlayer player : selfTestPlayers) if (player.getUniqueID()
-            .equals(id)) return player;
-        return null;
-    }
-
     /** Plays {@code tone} on {@code player}'s phone, in place of whatever it played. */
     private void tone(UUID player, TonePacket.Tone tone) {
         toneStops.remove(player);
-        if (toneLog != null) toneLog.put(player, tone);
         EntityPlayerMP mp = player(player);
         if (mp != null) BeComPackets.send(new TonePacket(tone), mp);
     }
@@ -1532,38 +1483,11 @@ public final class CallService implements CallBook.Listener {
         toneStops.put(player, ticks + BRIEF_TONE_TICKS);
     }
 
-    /**
-     * From now on, keeps the last tone each player was played, what they were told and whether a ringing notice shows
-     * for them, for the self-test.
-     */
-    public void logForSelfTest() {
-        if (toneLog == null) toneLog = new HashMap<>();
-        if (messageLog == null) messageLog = new HashMap<>();
-        if (noticeLog == null) noticeLog = new HashMap<>();
-    }
-
-    /** Whether a ringing notice shows for {@code player}, as far as the log since {@link #logForSelfTest} goes. */
-    public boolean noticeForSelfTest(UUID player) {
-        return noticeLog != null && noticeLog.getOrDefault(player, false);
-    }
-
-    /** The last tone {@code player} was played since {@link #logForSelfTest}, or null. */
-    public TonePacket.Tone lastToneForSelfTest(UUID player) {
-        return toneLog == null ? null : toneLog.get(player);
-    }
-
-    /** The language key of the last thing {@code player} was told since {@link #logForSelfTest}, or null. */
-    public String lastMessageForSelfTest(UUID player) {
-        return messageLog == null ? null : messageLog.get(player);
-    }
-
     private void tell(EntityPlayerMP player, String key, Object... args) {
-        if (messageLog != null) messageLog.put(player.getUniqueID(), key);
         player.addChatComponentMessage(new ChatComponentTranslation(key, args));
     }
 
     private void tell(UUID player, String key, Object... args) {
-        if (messageLog != null) messageLog.put(player, key);
         EntityPlayerMP mp = player(player);
         if (mp != null) mp.addChatComponentMessage(new ChatComponentTranslation(key, args));
     }

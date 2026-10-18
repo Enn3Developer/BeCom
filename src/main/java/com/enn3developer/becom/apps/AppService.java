@@ -883,24 +883,8 @@ public final class AppService {
 
     private EntityPlayerMP holderOf(int number) {
         UUID id = carried.holderOf(number);
-        // The self-test's fake players stand in for online ones.
-        return id != null && calls.playerOrPresent(id) instanceof EntityPlayerMP mp ? mp : null;
+        return id != null && calls.onlinePlayer(id) instanceof EntityPlayerMP mp ? mp : null;
     }
-
-    // region Self-test
-
-    public PhoneApps.Installed installForSelfTest(int number, String source) {
-        PhoneApps.Installed result = data.apps(number)
-            .install(source, "BeCom self-test", PhoneApps.Origin.STORE);
-        changed();
-        return result;
-    }
-
-    public boolean runningForSelfTest(int number) {
-        return machines.containsKey(number);
-    }
-
-    // endregion
 
     /** Hands the phone's OS a signal now, or once it's up. */
     private void push(int number, Object... signal) {

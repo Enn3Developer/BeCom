@@ -86,11 +86,7 @@ public final class VideoService {
 
         final DropoutModel.Chain poses = new DropoutModel.Chain();
         int equipmentSent = -1;
-        int posesDelivered;
     }
-
-    // How many times each person's profile went to each viewer, kept only while the self-test asks.
-    private Map<Pair, Integer> profilesSent;
 
     private record Pair(UUID source, UUID viewer) {}
 
@@ -237,8 +233,7 @@ public final class VideoService {
     }
 
     private void sendProfile(UUID viewer, UUID source) {
-        if (profilesSent != null) profilesSent.merge(new Pair(source, viewer), 1, Integer::sum);
-        EntityPlayer player = calls.playerOrPresent(source);
+        EntityPlayer player = calls.onlinePlayer(source);
         String name = calls.nameOf(source, "");
         String textures = "";
         String signature = "";
@@ -284,7 +279,6 @@ public final class VideoService {
                     send(viewer, new VideoEquipmentPacket(source, state.equipment.clone()));
                 }
                 out.add(pose);
-                link.posesDelivered++;
             }
             if (out.isEmpty()) continue;
             send(viewer, new VideoPosePacket(out));
@@ -311,7 +305,7 @@ public final class VideoService {
 
     /** {@code id}'s pose now, and whether their equipment changed; null when they aren't anywhere to be seen. */
     private VideoPosePacket.Pose takePose(UUID id) {
-        EntityPlayer player = calls.playerOrPresent(id);
+        EntityPlayer player = calls.onlinePlayer(id);
         if (player == null) return null;
         Source source = sources.computeIfAbsent(id, s -> new Source());
         source.seq++;
@@ -365,31 +359,9 @@ public final class VideoService {
         viewers.clear();
         sources.clear();
         links.clear();
-        profilesSent = null;
         rear.clear();
         videoReports.clear();
         plan = VideoPlan.EMPTY;
-    }
-
-    /** How many of {@code source}'s poses have gone to {@code viewer}; for the self-test. */
-    public int posesDelivered(UUID source, UUID viewer) {
-        Link link = links.get(new Pair(source, viewer));
-        return link == null ? 0 : link.posesDelivered;
-    }
-
-    /** From now on, counts each profile sent, for the self-test. */
-    public void logForSelfTest() {
-        if (profilesSent == null) profilesSent = new HashMap<>();
-    }
-
-    /** How many times {@code source}'s profile has gone to {@code viewer} since {@link #logForSelfTest}. */
-    public int profilesSent(UUID source, UUID viewer) {
-        return profilesSent == null ? 0 : profilesSent.getOrDefault(new Pair(source, viewer), 0);
-    }
-
-    /** How many of {@code source}'s rear pictures have gone to {@code viewer}; for the self-test. */
-    public int rearDelivered(UUID source, UUID viewer) {
-        return rear.delivered(source, viewer);
     }
 
     // endregion

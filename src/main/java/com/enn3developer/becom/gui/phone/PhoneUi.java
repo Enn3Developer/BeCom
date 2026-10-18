@@ -148,21 +148,6 @@ public final class PhoneUi extends CanvasScreen {
         lists.reset();
     }
 
-    /** For the client self-test's gallery: the screen on a page by its name, as if opened from home. */
-    public void showForTest(String name, String app) {
-        back.clear();
-        page = Page.valueOf(name);
-        this.app = app;
-        lists.reset();
-        callShown = inCall();
-    }
-
-    /** For the gallery: the dialer with a number half typed. */
-    public void typeForTest(String digits) {
-        typed.setLength(0);
-        typed.append(digits);
-    }
-
     boolean inCall() {
         PhoneView.State state = view.get()
             .state();

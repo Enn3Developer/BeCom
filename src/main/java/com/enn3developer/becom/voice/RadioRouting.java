@@ -121,7 +121,7 @@ public final class RadioRouting {
         return chain.drop(link.enterBad(), link.leaveBad(), random.getAsDouble());
     }
 
-    /** {@code route()} marks a speaker keyed with each frame that goes through; the self-test stands in for a frame. */
+    /** {@code route()} marks a speaker keyed with each frame that goes through. */
     public void keyed(UUID speaker, int channel, long nanos) {
         keyed.put(speaker, new Keyed(channel, nanos));
     }
@@ -267,11 +267,5 @@ public final class RadioRouting {
         contacts.clear();
         capture.clear();
         listeners.clear();
-    }
-
-    public int chainCount() {
-        int count = 0;
-        for (Map<Object, DropoutModel.Chain> heard : chains.values()) count += heard.size();
-        return count;
     }
 }

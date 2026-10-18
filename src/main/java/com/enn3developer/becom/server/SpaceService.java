@@ -162,9 +162,4 @@ public final class SpaceService {
     public void tick() {
         if (++ticks % TICKS_PER_SECOND == 0) satellites.decay(now());
     }
-
-    /** The registry itself, for the self-test to put satellites up or bring their fall forward. */
-    public Satellites satellitesForSelfTest() {
-        return satellites;
-    }
 }

@@ -17,7 +17,6 @@ import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.packet.BeComPackets;
 import com.enn3developer.becom.packet.ConfigSyncPacket;
 import com.enn3developer.becom.quest.BeComQuests;
-import com.enn3developer.becom.selftest.SelfTest;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -38,12 +37,9 @@ public final class ServerEvents {
         if (event.phase != TickEvent.Phase.END) return;
         BeComServer becom = BeComServer.get();
         if (becom == null) return;
-        long start = System.nanoTime();
         becom.tick();
-        SelfTest.becomTicked(System.nanoTime() - start);
         BeComQuests.backend()
             .tick();
-        SelfTest.tick();
     }
 
     @SubscribeEvent

@@ -10,7 +10,6 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.launchwrapper.Launch;
 import net.minecraft.util.ChatComponentTranslation;
 
 import com.enn3developer.becom.logic.call.Call;
@@ -20,18 +19,16 @@ import com.enn3developer.becom.logic.radio.AntennaNetwork;
 import com.enn3developer.becom.logic.radio.RadioHops;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.packet.AnalyzerPacket;
-import com.enn3developer.becom.selftest.SelfTest;
 import com.enn3developer.becom.server.BeComServer;
 import com.enn3developer.becom.server.RadioService;
 
 /**
  * {@code /becom}: the admin commands (list and hang up calls, set a dimension's satellites, moderate the App Store),
- * the Signal Analyzer's signal breakdown in chat, and in the development environment only, the self-test.
+ * the Signal Analyzer's signal breakdown in chat.
  */
 public final class CommandBeCom extends CommandBase {
 
     private static final int ADMIN_LEVEL = 2;
-    private static final int SELFTEST_LEVEL = 4;
     // The most satellites the test command puts over a dimension: far past Max, short of a list that slows a save.
     private static final int MAX_TEST_SATELLITES = 1000;
 
@@ -50,12 +47,6 @@ public final class CommandBeCom extends CommandBase {
         return ADMIN_LEVEL;
     }
 
-    /** The self-test builds in the world, so it only exists where nobody's world is at stake. */
-    public static boolean devEnvironment() {
-        Object deobf = Launch.blackboard == null ? null : Launch.blackboard.get("fml.deobfuscatedEnvironment");
-        return Boolean.TRUE.equals(deobf);
-    }
-
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         BeComServer becom = BeComServer.get();
@@ -66,12 +57,6 @@ public final class CommandBeCom extends CommandBase {
             case "signal" -> signal(sender, becom);
             case "satellites" -> satellites(sender, becom, args);
             case "store" -> store(sender, becom, args);
-            case "selftest" -> {
-                if (!devEnvironment() || !sender.canCommandSenderUseCommand(SELFTEST_LEVEL, "becom")) {
-                    throw new WrongUsageException("becom.command.usage");
-                }
-                SelfTest.run(becom, sender, args.length > 1 && args[1].equals("apps"));
-            }
             default -> throw new WrongUsageException("becom.command.usage");
         }
     }
@@ -347,8 +332,6 @@ public final class CommandBeCom extends CommandBase {
             return getListOfStringsMatchingLastWord(args, "list", "reports", "hide", "show", "remove", "source");
         }
         if (args.length != 1) return null;
-        return devEnvironment()
-            ? getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "store", "selftest")
-            : getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "store");
+        return getListOfStringsMatchingLastWord(args, "calls", "hangup", "signal", "satellites", "store");
     }
 }

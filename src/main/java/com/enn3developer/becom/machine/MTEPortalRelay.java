@@ -176,7 +176,7 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
         return (long) t.relayPower() << 2 * (mTier - Tunables.RELAY_MIN_TIER);
     }
 
-    /** Looks for portals within its reach, in loaded chunks only. The self-test calls this directly. */
+    /** Looks for portals within its reach, in loaded chunks only. */
     public Set<Portals.Kind> look() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         World world = tile.getWorld();

@@ -165,10 +165,8 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         .addElement('P', hatches(3, Energy, Maintenance))
         .build();
 
-    // The rocket standing in the pit while a launch counts down; null when there's none. The last one to lift off,
-    // for the self-test.
+    // The rocket standing in the pit while a launch counts down; null when there's none.
     private EntityLaunchRocket rocket;
-    private EntityLaunchRocket launched;
 
     public MTELaunchPad(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -364,16 +362,6 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         rocket = null;
     }
 
-    /** The rocket standing in the pit, for the self-test; null when there's none. */
-    public EntityLaunchRocket standingRocket() {
-        return rocket;
-    }
-
-    /** The last rocket to lift off, in flight or gone out of sight, for the self-test; null before the first. */
-    public EntityLaunchRocket launchedRocket() {
-        return launched;
-    }
-
     @Override
     public void onBlockDestroyed() {
         removeRocket();
@@ -396,7 +384,6 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         becom.space.launch(dimension);
         if (rocket != null) rocket.liftOff();
         // Gone up: the next launch stands a rocket of its own.
-        launched = rocket;
         rocket = null;
         tile.getWorld()
             .playSoundEffect(

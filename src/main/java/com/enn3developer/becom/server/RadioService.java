@@ -848,52 +848,6 @@ public final class RadioService {
 
     // endregion
 
-    // region Self-test
-
-    // The self-test's fake players aren't in the server's player list, which is where the ticks look; these let it
-    // put them through the same code.
-
-    public void refreshForSelfTest(EntityPlayerMP player) {
-        refresh(player);
-    }
-
-    public void drainForSelfTest(EntityPlayerMP player) {
-        drainWalkies(List.of(player));
-    }
-
-    /** The tick the service last ran, which a publish in it ran in too. */
-    public long tickForSelfTest() {
-        return tick;
-    }
-
-    /** Stands in for a radio frame from {@code speaker}: the next tick builds their transmission. */
-    public void keyForSelfTest(UUID speaker) {
-        routing.keyed(speaker, channelOf(speaker), System.nanoTime());
-    }
-
-    /**
-     * Evaluates every keyed speaker now. A speaker keyed already is otherwise worked out again in their own tick of the
-     * second, so a check right after a change could read the snapshot from before it.
-     */
-    public void publishForSelfTest() {
-        keys(System.nanoTime(), new HashSet<>());
-        publish(null);
-    }
-
-    /**
-     * Stands in for {@code speaker} pressing push-to-talk: the publish a press makes, which works out their radio and
-     * any other whose transmitter changed, and leaves the rest as they were.
-     */
-    public void pressForSelfTest(UUID speaker) {
-        routing.keyed(speaker, channelOf(speaker), System.nanoTime());
-        Set<UUID> pressed = new HashSet<>();
-        keys(System.nanoTime(), pressed);
-        pressed.add(speaker);
-        publish(pressed);
-    }
-
-    // endregion
-
     // region World
 
     /**

@@ -421,7 +421,6 @@ public final class CarriedPhones {
         carried.clear();
         service.clear();
         shown.clear();
-        selfTestPlayers.clear();
         lastCharge.clear();
         charging.clear();
         savers.clear();
@@ -444,25 +443,6 @@ public final class CarriedPhones {
             if (o instanceof EntityPlayerMP mp && mp.getUniqueID()
                 .equals(id)) return mp;
         }
-        for (EntityPlayerMP present : selfTestPlayers) if (present.getUniqueID()
-            .equals(id)) return present;
         return null;
-    }
-
-    // The self-test's fake players are in no player list; those it names count as online here, so a copy of one's
-    // phone is found as a copy.
-    private final List<EntityPlayerMP> selfTestPlayers = new ArrayList<>();
-
-    public void presentForSelfTest(EntityPlayerMP player) {
-        if (!selfTestPlayers.contains(player)) selfTestPlayers.add(player);
-    }
-
-    /** For the self-test: looks at a fake player's phones now, and drains a second's worth. */
-    public void refreshForSelfTest(EntityPlayerMP player) {
-        refresh(player);
-    }
-
-    public void drainForSelfTest(EntityPlayerMP player) {
-        drain(List.of(player));
     }
 }

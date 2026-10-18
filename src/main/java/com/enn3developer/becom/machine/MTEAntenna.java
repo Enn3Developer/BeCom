@@ -401,7 +401,7 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
         return new RadioHops.End(x + 0.5, eye, z + 0.5, surface - eye, y - mast);
     }
 
-    /** Runs the structure check now and tells the networks; the self-test calls this directly. */
+    /** Runs the structure check now and tells the networks */
     public boolean refreshStructure() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         // Left alone: no node written for it here.

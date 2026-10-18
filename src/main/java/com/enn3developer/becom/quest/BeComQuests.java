@@ -1,10 +1,6 @@
 package com.enn3developer.becom.quest;
 
 import java.util.Collection;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import com.enn3developer.becom.BeCom;
@@ -20,9 +16,6 @@ public final class BeComQuests {
     public static final String BQ_MODID = "betterquesting";
 
     private static QuestBackend backend = QuestBackend.NONE;
-    // What each task was reported for, kept only while the self-test runs: its players are fake, so no quest of
-    // theirs is ever unlocked to complete.
-    private static Map<QuestTask, Set<UUID>> reported;
 
     private BeComQuests() {}
 
@@ -50,24 +43,11 @@ public final class BeComQuests {
 
     /** {@code task} happened for {@code players}. */
     public static void complete(QuestTask task, Collection<UUID> players) {
-        if (reported != null) reported.computeIfAbsent(task, t -> new HashSet<>())
-            .addAll(players);
         try {
             backend.complete(task, players);
         } catch (Throwable t) {
             BeCom.LOG.error("Couldn't complete BeCom quest task {}", task, t);
         }
-    }
-
-    /** Starts keeping what each task is reported for, for the self-test. */
-    public static void recordForSelfTest() {
-        reported = new EnumMap<>(QuestTask.class);
-    }
-
-    /** Whether {@code task} was reported for {@code player} since the self-test started keeping them. */
-    public static boolean reportedForSelfTest(QuestTask task, UUID player) {
-        return reported != null && reported.getOrDefault(task, Set.of())
-            .contains(player);
     }
 
     /** The parts of the quest integration that need BetterQuesting, behind an interface so nothing loads BQ classes. */
@@ -84,16 +64,5 @@ public final class BeComQuests {
         default void serverStopped() {}
 
         default void complete(QuestTask task, Collection<UUID> players) {}
-
-        /** For the self-test: whether BeCom's questline is in the book right now. */
-        default boolean questlinePresent() {
-            return false;
-        }
-
-        /** For the self-test: removes BeCom's questline and quests, as a DefaultQuests reload would. */
-        default void removeQuestlineForTest() {}
-
-        /** For the self-test: runs the periodic check now. */
-        default void recheckNow() {}
     }
 }

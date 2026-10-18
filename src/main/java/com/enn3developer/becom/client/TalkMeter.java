@@ -66,9 +66,4 @@ public final class TalkMeter implements IPcmChain.Stage {
     public static void clear() {
         LEVELS.clear();
     }
-
-    /** For the client self-test: {@code source} talks out loud, for a moment, as if a frame of speech had played. */
-    public static void talkForTest(UUID source) {
-        LEVELS.put(source, new Level(1, System.currentTimeMillis()));
-    }
 }

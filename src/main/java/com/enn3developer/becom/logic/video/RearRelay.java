@@ -44,7 +44,6 @@ public final class RearRelay {
         long chainMillis;
         double allowance = ALLOWANCE;
         long allowanceMillis;
-        int delivered;
 
         Link(long nowMillis) {
             chainMillis = nowMillis;
@@ -94,7 +93,6 @@ public final class RearRelay {
                     continue;
                 }
                 if (fps > 0) link.allowance -= 1;
-                link.delivered++;
                 to.add(viewer);
             }
         }
@@ -113,12 +111,6 @@ public final class RearRelay {
                 .equals(sender) && tile.rear()) return true;
         }
         return false;
-    }
-
-    /** How many of {@code sender}'s pictures have gone to {@code viewer} since their rear camera reached them. */
-    public int delivered(UUID sender, UUID viewer) {
-        Link link = links.get(new Pair(sender, viewer));
-        return link == null ? 0 : link.delivered;
     }
 
     public void clear() {

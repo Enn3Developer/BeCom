@@ -81,8 +81,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
 
     /**
      * What a Telephone does on its first tick after loading: claims its number again if it was moved or lets go of it
-     * if it's a copy, puts back a handset nobody holds, and rings if a call is ringing it. The self-test calls this
-     * directly.
+     * if it's a copy, puts back a handset nobody holds, and rings if a call is ringing it.
      */
     public void settleAfterLoad() {
         BeComServer becom = BeComServer.get();
@@ -101,7 +100,7 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
     /**
      * Puts the handset back if nobody holds it. The off-hook bit is saved with the chunk, but who holds a handset
      * isn't, so after a restart or a crash a phone could otherwise show its handset missing with nobody holding it.
-     * Runs on the first tick after the phone loads; the self-test calls it directly.
+     * Runs on the first tick after the phone loads
      */
     public void releaseStaleHandset() {
         if (!offHook()) return;
