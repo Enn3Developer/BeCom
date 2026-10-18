@@ -1,5 +1,6 @@
 package com.enn3developer.becom.client;
 
+import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
@@ -22,7 +24,7 @@ import com.enn3developer.becom.gui.paint.Canvas;
 
 /**
  * The client's {@link Canvas}: board pixels scaled to the screen with GL. Text uses Minecraft's font at the nearest
- * size that puts each of its pixels on whole screen pixels, so it stays crisp.
+ * whole number of screen pixels a font pixel, starting on a whole screen pixel, so it stays crisp.
  */
 public final class GlCanvas implements Canvas {
 
@@ -34,27 +36,38 @@ public final class GlCanvas implements Canvas {
     private final float scale;
     private final ModularGuiContext context;
     private final FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-    // Screen pixels a GUI pixel: the font's sizes are steps of one over it, half size at least.
-    private final int steps = Math.max(
-        2,
-        new ScaledResolution(
-            Minecraft.getMinecraft(),
-            Minecraft.getMinecraft().displayWidth,
-            Minecraft.getMinecraft().displayHeight).getScaleFactor());
+    // Screen pixels a board pixel, and where the board's top left is on the screen, from the GL transform as it is:
+    // whatever the GUI, ModularUI and the caller scaled it by.
+    private final float pixels;
+    private final float originX;
+    private final float originY;
 
     /** @param scale GUI pixels a board pixel; the caller has its GL transform at the board's top left */
     public GlCanvas(float scale, ModularGuiContext context) {
         this.scale = scale;
         this.context = context;
+        Minecraft mc = Minecraft.getMinecraft();
+        int factor = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight).getScaleFactor();
+        FloatBuffer matrix = BufferUtils.createFloatBuffer(16);
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, matrix);
+        float m = matrix.get(0);
+        pixels = (m > 0 ? m : scale) * factor;
+        originX = matrix.get(12) * factor;
+        originY = matrix.get(13) * factor;
     }
 
     /**
-     * The font's size in GUI pixels for board text of {@code size}: a whole number of screen pixels a font pixel, as a
-     * fraction one, such as 1.25 at GUI scale 2, draws its pixels uneven and grainy.
+     * Board pixels a font pixel for board text of {@code size}: a whole number of screen pixels, as a fraction of one,
+     * such as 2.5, draws the font's pixels uneven and grainy.
      */
     private float fontScale(float size) {
-        float wanted = size * scale / BOARD_TEXT_AT_FULL_SIZE;
-        return Math.max(1, Math.round(wanted * steps)) / (float) steps;
+        float wanted = size * pixels / BOARD_TEXT_AT_FULL_SIZE;
+        return Math.max(1, Math.round(wanted)) / pixels;
+    }
+
+    /** A board position on the nearest whole screen pixel. */
+    private float snap(float at, float origin) {
+        return (Math.round(origin + at * pixels) - origin) / pixels;
     }
 
     @Override
@@ -67,9 +80,9 @@ public final class GlCanvas implements Canvas {
     @Override
     public void text(String text, float x, float y, float size, int rgb) {
         if (text.isEmpty()) return;
-        float s = fontScale(size) / scale;
+        float s = fontScale(size);
         GL11.glPushMatrix();
-        GL11.glTranslatef(x, y, 0);
+        GL11.glTranslatef(snap(x, originX), snap(y, originY), 0);
         GL11.glScalef(s, s, 1);
         font.drawString(text, 0, 0, 0xFF000000 | rgb, false);
         GL11.glPopMatrix();
@@ -78,12 +91,12 @@ public final class GlCanvas implements Canvas {
 
     @Override
     public float width(String text, float size) {
-        return font.getStringWidth(text) * fontScale(size) / scale;
+        return font.getStringWidth(text) * fontScale(size);
     }
 
     @Override
     public float lineHeight(float size) {
-        return GLYPH_HEIGHT * fontScale(size) / scale;
+        return GLYPH_HEIGHT * fontScale(size);
     }
 
     @Override
