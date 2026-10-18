@@ -17,6 +17,7 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
 import com.enn3developer.becom.client.AnalyzerOverlay;
 import com.enn3developer.becom.client.AppIcon;
+import com.enn3developer.becom.client.CableGrid;
 import com.enn3developer.becom.client.ClientAudio;
 import com.enn3developer.becom.client.ClientConfig;
 import com.enn3developer.becom.client.ClientLevels;
@@ -87,6 +88,7 @@ public class ClientProxy extends CommonProxy {
     public void init(FMLInitializationEvent event) {
         super.init(event);
         MinecraftForge.EVENT_BUS.register(new WireRenderer());
+        MinecraftForge.EVENT_BUS.register(new CableGrid());
         MinecraftForge.EVENT_BUS.register(new SignalBars());
         MinecraftForge.EVENT_BUS.register(new AnalyzerOverlay());
         MinecraftForge.EVENT_BUS.register(new ClientRadio());

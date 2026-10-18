@@ -1282,14 +1282,7 @@ final class SpaceSelfTest {
     }
 
     private static void fibre(WorldServer world, int x, int y, int z) {
-        world.setBlock(
-            x,
-            y,
-            z,
-            BeComBlocks.phoneCable,
-            BlockPhoneCable.stack(CableTier.FIBRE, 1)
-                .getItemDamage(),
-            3);
+        SelfTest.lay(world, x, y, z, CableTier.FIBRE);
     }
 
     private MTEPortalRelay relay(WorldServer world, int x, int y, int z) {
@@ -1302,6 +1295,8 @@ final class SpaceSelfTest {
         world.setBlock(x, y, z, BeComBlocks.telephone);
         BeComBlocks.telephone.onBlockPlacedBy(world, x, y, z, placer, new ItemStack(BeComBlocks.telephone));
         TileTelephone tile = (TileTelephone) world.getTileEntity(x, y, z);
+        // Placed against the cable beside it, which opens toward it.
+        SelfTest.plug(world, x, y, z);
         // A fake player never owns a phone; the self-test's owner stands in for the real player.
         PhoneRecord record = becom.phones.record(tile.number());
         if (record != null && record.owner() == null) {

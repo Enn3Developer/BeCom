@@ -17,6 +17,7 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.LineTerminalScreen;
@@ -49,7 +50,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
+public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost, CableEnd {
 
     private static final int TICKS_PER_SECOND = 20;
 
@@ -89,6 +90,12 @@ public class MTELineTerminal extends MTETieredMachineBlock implements NodeHost {
     /** Its tier, which sets its ports. */
     public CableTier tier() {
         return CableTier.ofVoltage(mTier);
+    }
+
+    /** Cable up to its own tier, on any face. */
+    @Override
+    public CableTier bestCable() {
+        return tier();
     }
 
     /** The phones this terminal found on its cable at its last scan, nearest first, whether it serves them or not. */

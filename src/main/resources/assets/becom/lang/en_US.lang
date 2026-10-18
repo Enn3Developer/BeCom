@@ -31,6 +31,11 @@ item.becom.switching_rack_lv.name=Switching Rack (LV)
 item.becom.switching_rack_mv.name=Switching Rack (MV)
 item.becom.switching_rack_hv.name=Switching Rack (HV)
 becom.cable.tooltip=%s cable: %s KB/s, on runs up to %s blocks
+becom.cable.tooltip_join=Joins cable of its own tier. GT wire cutters open and close its sides.
+becom.cable.join.other_tier=%s doesn't join %s: cable joins only cable of its own tier.
+becom.cable.join.over_tier=That takes cable up to %s.
+becom.cable.join.taken=That already has its one cable.
+becom.cable.join.nothing=Nothing there takes cable.
 becom.cable.tooltip_span=Strings pylon spans: hold it in your hotbar and wrench two nodes.
 becom.switching_rack.info=Switches %s calls at once, in an Exchange's input bus
 

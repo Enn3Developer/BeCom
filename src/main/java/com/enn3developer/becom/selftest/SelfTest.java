@@ -27,6 +27,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
@@ -37,6 +38,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.enn3developer.becom.BeCom;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.BlockPhoneCable;
+import com.enn3developer.becom.block.TileCable;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.block.WailaTelephone;
 import com.enn3developer.becom.config.BeComConfig;
@@ -118,6 +120,8 @@ import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
+import gregtech.common.items.IDMetaTool01;
+import gregtech.common.items.MetaGeneratedTool01;
 import ic2.api.item.ElectricItem;
 
 /**
@@ -267,6 +271,8 @@ public final class SelfTest {
         steps.add(this::checkRegistration);
         steps.add(this::build);
         steps.add(this::checkMachineBlock);
+        steps.add(this::checkCables);
+        steps.add(this::checkCablesDry);
         steps.add(this::formAndLink);
         steps.add(this::checkStructuresAndLines);
         steps.add(this::checkLineReach);
@@ -719,9 +725,9 @@ public final class SelfTest {
         powered.add(deviceTerminal.getBaseMetaTileEntity());
         powered.add(nearTerminal.getBaseMetaTileEntity());
         devicePhones.clear();
-        for (int i = 0; i <= DEVICE_CABLE; i++) world.setBlock(X0 + i, Y, z + 1, BeComBlocks.phoneCable);
         for (int i = 1; i <= 5; i++) devicePhones.add(telephone(X0 + i, Y, z + 2));
         devicePhones.add(telephone(X0 + DEVICE_CABLE - 1, Y, z + 2));
+        for (int i = 0; i <= DEVICE_CABLE; i++) lay(world, X0 + i, Y, z + 1, CableTier.PHONE);
         z += GROUP_GAP;
 
         minPylon = head(BeComMachines.pylonHead, X0, Y, z, 1);
@@ -820,9 +826,9 @@ public final class SelfTest {
         line.heads.clear();
         for (int head : heads) line.heads.add(head(BeComMachines.pylonHead, X0 + head, Y, z, TALLEST_STACK));
         line.phoneStart = telephone(X0, Y, z + 2);
-        world.setBlock(X0, Y, z + 1, BeComBlocks.phoneCable);
+        lay(world, X0, Y, z + 1, CableTier.PHONE);
         line.phoneEnd = telephone(X0 + length, Y, z + 2);
-        world.setBlock(X0 + length, Y, z + 1, BeComBlocks.phoneCable);
+        lay(world, X0 + length, Y, z + 1, CableTier.PHONE);
     }
 
     @SuppressWarnings("unchecked")
@@ -857,6 +863,165 @@ public final class SelfTest {
     private static int poleHeight(int stackSize) {
         Tunables t = BeComConfig.get();
         return Math.min(t.pylonMaxHeight(), t.pylonMinHeight() + stackSize - 1);
+    }
+
+    // A corner of its own for the cable checks, clear of every group.
+    private static final int CABLE_X = X0 - 200;
+
+    /**
+     * Cables join the way GT's do: a cable placed joins what it was placed against, cable joins cable of its own tier
+     * only and both ways, a Line Terminal takes cable up to its tier and a gateway one cable, a block placed against a
+     * cable joins it, and GT wire cutters close and open a side. Leaves a cable under water, checked a second later.
+     */
+    private int checkCables() {
+        int x = CABLE_X, y = Y, z = Z0;
+        for (int cx = (x - 8) >> 4; cx <= (x + 16) >> 4; cx++) {
+            for (int cz = (z - 8) >> 4; cz <= (z + 8) >> 4; cz++) keepLoaded(cx, cz);
+        }
+        for (int cx = x - 3; cx <= x + 10; cx++) {
+            for (int cz = z - 6; cz <= z + 3; cz++) {
+                for (int cy = y - 1; cy <= y + 4; cy++) world.setBlockToAir(cx, cy, cz);
+            }
+        }
+        owner.capabilities.isCreativeMode = true;
+        MTELineTerminal terminal = place(BeComMachines.lineTerminal, x, y, z);
+        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x, y, z, ForgeDirection.EAST);
+        check(
+            "a cable placed against a Line Terminal joins it",
+            mask(x + 1, y, z) == ForgeDirection.WEST.flag,
+            "mask " + mask(x + 1, y, z));
+        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x + 1, y, z, ForgeDirection.EAST);
+        check(
+            "cable placed against cable of its tier joins it both ways",
+            mask(x + 1, y, z) == (ForgeDirection.WEST.flag | ForgeDirection.EAST.flag)
+                && mask(x + 2, y, z) == ForgeDirection.WEST.flag,
+            "masks " + mask(x + 1, y, z) + ", " + mask(x + 2, y, z));
+        placeItem(BlockPhoneCable.stack(CableTier.COAXIAL, 1), x + 2, y, z, ForgeDirection.EAST);
+        check(
+            "cable doesn't join cable of another tier",
+            mask(x + 3, y, z) == 0 && mask(x + 2, y, z) == ForgeDirection.WEST.flag,
+            "masks " + mask(x + 2, y, z) + ", " + mask(x + 3, y, z));
+        placeItem(BlockPhoneCable.stack(CableTier.COAXIAL, 1), x, y, z, ForgeDirection.UP);
+        check(
+            "an LV Line Terminal doesn't take Coaxial",
+            world.getBlock(x, y + 1, z) instanceof BlockPhoneCable && mask(x, y + 1, z) == 0
+                && terminal.bestCable() == CableTier.PHONE,
+            "mask " + mask(x, y + 1, z));
+        // A Telephone placed against the cable's south face, through the whole right-click as a player's goes.
+        ItemStack phone = new ItemStack(BeComBlocks.telephone);
+        owner.inventory.mainInventory[owner.inventory.currentItem] = phone;
+        owner.theItemInWorldManager.activateBlockOrUseItem(owner, world, phone, x + 2, y, z, 3, 0.5f, 0.5f, 1);
+        check(
+            "a Telephone placed against a cable joins it",
+            world.getBlock(x + 2, y, z + 1) == BeComBlocks.telephone
+                && mask(x + 2, y, z) == (ForgeDirection.WEST.flag | ForgeDirection.SOUTH.flag),
+            "mask " + mask(x + 2, y, z));
+        // Wire cutters: the south face's middle cell toggles south; the top face's east edge toggles east.
+        ItemStack cutter = MetaGeneratedTool01.INSTANCE
+            .getToolWithStats(IDMetaTool01.WIRECUTTER.ID, 1, Materials.Steel, Materials.Steel, null);
+        owner.inventory.mainInventory[owner.inventory.currentItem] = cutter;
+        BeComBlocks.phoneCable.onBlockActivated(world, x + 2, y, z, owner, 3, 0.5f, 0.5f, 1);
+        int closed = mask(x + 2, y, z);
+        BeComBlocks.phoneCable.onBlockActivated(world, x + 2, y, z, owner, 3, 0.5f, 0.5f, 1);
+        int reopened = mask(x + 2, y, z);
+        check(
+            "wire cutters close a cable's side and open it again",
+            closed == ForgeDirection.WEST.flag && reopened == (ForgeDirection.WEST.flag | ForgeDirection.SOUTH.flag),
+            "masks " + closed + ", " + reopened);
+        BeComBlocks.phoneCable.onBlockActivated(world, x + 2, y, z, owner, 1, 0.9f, 1, 0.5f);
+        check(
+            "wire cutters can't open a side toward cable of another tier",
+            mask(x + 2, y, z) == reopened && mask(x + 3, y, z) == 0,
+            "masks " + mask(x + 2, y, z) + ", " + mask(x + 3, y, z));
+        BeComBlocks.phoneCable.onBlockActivated(world, x + 2, y, z, owner, 1, 0.5f, 1, 0.1f);
+        check(
+            "wire cutters open a side to air, for what is put there",
+            mask(x + 2, y, z) == (reopened | ForgeDirection.NORTH.flag),
+            "mask " + mask(x + 2, y, z));
+        // Cable set there with none of its sides open: the side left open for it opens it back.
+        world.setBlock(x + 2, y, z - 1, BeComBlocks.phoneCable, CableTier.PHONE.ordinal(), 3);
+        int joinedBack = mask(x + 2, y, z - 1);
+        world.setBlockToAir(x + 2, y, z - 1);
+        check(
+            "a side open to air joins cable put there, and stays open when it goes",
+            joinedBack == ForgeDirection.SOUTH.flag && mask(x + 2, y, z) == (reopened | ForgeDirection.NORTH.flag),
+            "masks " + joinedBack + ", " + mask(x + 2, y, z));
+        // A Portal Relay takes one cable: a second placed against it stays apart.
+        place(BeComMachines.portalRelay, x + 6, y, z);
+        lay(world, x + 5, y, z, CableTier.PHONE);
+        placeItem(BlockPhoneCable.stack(CableTier.PHONE, 1), x + 6, y, z, ForgeDirection.EAST);
+        check(
+            "a gateway takes a single cable",
+            mask(x + 5, y, z) == ForgeDirection.EAST.flag && mask(x + 7, y, z) == 0,
+            "masks " + mask(x + 5, y, z) + ", " + mask(x + 7, y, z));
+        TileCable saved = (TileCable) world.getTileEntity(x + 2, y, z);
+        NBTTagCompound nbt = new NBTTagCompound();
+        saved.writeToNBT(nbt);
+        TileCable loaded = new TileCable();
+        loaded.readFromNBT(nbt);
+        nbt.setInteger(SavedDataFormat.KEY, TileCable.FORMAT + 1);
+        TileCable newer = new TileCable();
+        newer.readFromNBT(nbt);
+        NBTTagCompound kept = new NBTTagCompound();
+        newer.writeToNBT(kept);
+        check(
+            "a cable keeps its open sides through a save, and one from a newer BeCom is left as it was",
+            loaded.mask() == saved.mask() && newer.isTooNew()
+                && newer.mask() == 0
+                && kept.getInteger(SavedDataFormat.KEY) == TileCable.FORMAT + 1
+                && kept.getByte("mask") == saved.mask(),
+            "masks " + saved.mask() + ", " + loaded.mask() + ", " + newer.mask());
+        // A cable in a stone pocket under a water source: water that washed cable away would flow down into it.
+        int wx = x + 1, wy = y + 2, wz = z - 4;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                world.setBlock(wx + dx, wy - 1, wz + dz, Blocks.stone);
+                if (dx != 0 || dz != 0) {
+                    world.setBlock(wx + dx, wy, wz + dz, Blocks.stone);
+                    world.setBlock(wx + dx, wy + 1, wz + dz, Blocks.stone);
+                }
+            }
+        }
+        lay(world, wx, wy, wz, CableTier.PHONE);
+        world.setBlock(wx, wy + 1, wz, Blocks.water);
+        return TICKS_PER_SECOND;
+    }
+
+    private int checkCablesDry() {
+        int wx = CABLE_X + 1, wy = Y + 2, wz = Z0 - 4;
+        check(
+            "water flows around cable instead of washing it away",
+            world.getBlock(wx, wy, wz) instanceof BlockPhoneCable,
+            "found " + world.getBlock(wx, wy, wz)
+                .getUnlocalizedName());
+        world.setBlockToAir(wx, wy + 1, wz);
+        return 1;
+    }
+
+    /** The open sides of the cable at x, y, z, or -1 when there's no cable there. */
+    private int mask(int x, int y, int z) {
+        return world.getTileEntity(x, y, z) instanceof TileCable cable ? cable.mask() : -1;
+    }
+
+    /** The owner places a block from {@code stack} against the {@code face} of the block at x, y, z. */
+    private void placeItem(ItemStack stack, int x, int y, int z, ForgeDirection face) {
+        owner.inventory.mainInventory[owner.inventory.currentItem] = stack;
+        float hx = 0.5f + face.offsetX * 0.5f, hy = 0.5f + face.offsetY * 0.5f, hz = 0.5f + face.offsetZ * 0.5f;
+        stack.tryPlaceItemIntoWorld(owner, world, x, y, z, face.ordinal(), hx, hy, hz);
+    }
+
+    /** Lays a cable of a tier joining every side that takes it, as a player laying it piece by piece would. */
+    static void lay(World world, int x, int y, int z, CableTier tier) {
+        world.setBlock(x, y, z, BeComBlocks.phoneCable, tier.ordinal(), 3);
+        if (world.getTileEntity(x, y, z) instanceof TileCable cable) cable.connectAll();
+    }
+
+    /** Opens every cable beside x, y, z toward it, as placing it against each of them would. */
+    static void plug(World world, int x, int y, int z) {
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+            if (world.getTileEntity(x + side.offsetX, y + side.offsetY, z + side.offsetZ) instanceof TileCable cable)
+                cable.connect(side.getOpposite());
+        }
     }
 
     private TileTelephone telephone(int x, int y, int z) {
@@ -1783,10 +1948,10 @@ public final class SelfTest {
         bridgeTerminalB = place(BeComMachines.lineTerminal, X0 + ANTENNA_GAP, Y, RADIO_Z + 5);
         powered.add(bridgeTerminalA.getBaseMetaTileEntity());
         powered.add(bridgeTerminalB.getBaseMetaTileEntity());
-        world.setBlock(X0, Y, RADIO_Z + 6, BeComBlocks.phoneCable);
         bridgePhoneA = telephone(X0, Y, RADIO_Z + 7);
-        world.setBlock(X0 + ANTENNA_GAP, Y, RADIO_Z + 6, BeComBlocks.phoneCable);
+        lay(world, X0, Y, RADIO_Z + 6, CableTier.PHONE);
         bridgePhoneB = telephone(X0 + ANTENNA_GAP, Y, RADIO_Z + 7);
+        lay(world, X0 + ANTENNA_GAP, Y, RADIO_Z + 6, CableTier.PHONE);
         transceiver = place(BeComMachines.transceiver, X0 + 100, Y, DIRECT_Z);
         powered.add(transceiver.getBaseMetaTileEntity());
         transceiver.setChannel(5);
@@ -2751,8 +2916,8 @@ public final class SelfTest {
         phonePylon = head(BeComMachines.pylonHead, X0 + PHONE_PYLON_DX, Y, phoneZ, TALLEST_STACK);
         phoneTerminal = place(BeComMachines.lineTerminal, X0 + PHONE_TERMINAL_DX, Y, phoneZ);
         powered.add(phoneTerminal.getBaseMetaTileEntity());
-        world.setBlock(X0 + PHONE_TERMINAL_DX, Y, phoneZ + 1, BeComBlocks.phoneCable);
         phoneTelephone = telephone(X0 + PHONE_TERMINAL_DX, Y, phoneZ + 2);
+        lay(world, X0 + PHONE_TERMINAL_DX, Y, phoneZ + 1, CableTier.PHONE);
         clearWeather();
         return 2;
     }
@@ -3551,8 +3716,8 @@ public final class SelfTest {
             .setFrontFacing(ForgeDirection.NORTH);
         ((IConstructable) meExchange).construct(BeComMachines.exchange.getStackForm(1), false);
         exchangeHatches(meExchange);
-        world.setBlock(X0 + 7, Y, z + 1, BeComBlocks.phoneCable);
-        world.setBlock(X0 + 7, Y, z + 2, BeComBlocks.phoneCable);
+        lay(world, X0 + 7, Y, z + 1, CableTier.PHONE);
+        lay(world, X0 + 7, Y, z + 2, CableTier.PHONE);
         return SETTLE_TICKS;
     }
 
@@ -3830,9 +3995,9 @@ public final class SelfTest {
         }
         videophone = place(BeComMachines.videophone, X0, Y, z);
         powered.add(videophone.getBaseMetaTileEntity());
-        world.setBlock(X0, Y, z + 1, BeComBlocks.phoneCable);
         videophoneTerminal = place(BeComMachines.lineTerminal, X0, Y, z + 2);
         powered.add(videophoneTerminal.getBaseMetaTileEntity());
+        lay(world, X0, Y, z + 1, CableTier.PHONE);
         clearWeather();
         return 2;
     }

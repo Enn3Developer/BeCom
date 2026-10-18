@@ -19,5 +19,6 @@ public final class BeComBlocks {
         GameRegistry.registerBlock(telephone, "telephone");
         GameRegistry.registerBlock(phoneCable, ItemBlockCable.class, "phone_cable");
         GameRegistry.registerTileEntity(TileTelephone.class, "becom.telephone");
+        GameRegistry.registerTileEntity(TileCable.class, "becom.cable");
     }
 }

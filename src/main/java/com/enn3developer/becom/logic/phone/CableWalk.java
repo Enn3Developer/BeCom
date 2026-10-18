@@ -10,7 +10,8 @@ import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
 
 /**
- * Follows cable out from a Line Terminal or an Exchange: a breadth-first walk over the cable touching it,
+ * Follows cable out from a Line Terminal or an Exchange: a breadth-first walk over the cable joining it, through the
+ * sides each cable has open,
  * collecting the devices within {@code maxLength} blocks of cable, each with the length of its shortest run and the
  * poorest cable on it. The walk stops after {@code maxCables} blocks of cable in all, so a solid blob of cable can't
  * make every scan read thousands of blocks; it then keeps the devices nearer than where it stopped, which never
@@ -35,6 +36,11 @@ public final class CableWalk {
         /** The tier of the cable at a position {@link #at} called cable. */
         default CableTier tier(int x, int y, int z) {
             return CableTier.PHONE;
+        }
+
+        /** Whether the cable at a position {@link #at} called cable is open on a side, by ForgeDirection ordinal. */
+        default boolean open(int x, int y, int z, int side) {
+            return true;
         }
     }
 
@@ -70,13 +76,20 @@ public final class CableWalk {
             long pos = entry[0];
             long length = entry[1];
             int poorest = (int) entry[2];
+            boolean onCable = pos != start;
+            int x0 = BlockPos.x(pos), y0 = BlockPos.y(pos), z0 = BlockPos.z(pos);
             for (int side = 0; side < 6; side++) {
-                int nx = BlockPos.x(pos) + DX[side];
-                int ny = BlockPos.y(pos) + DY[side];
-                int nz = BlockPos.z(pos) + DZ[side];
+                // Off a cable only through its open sides; off the start only into cable open toward it.
+                if (onCable && !probe.open(x0, y0, z0, side)) continue;
+                int nx = x0 + DX[side];
+                int ny = y0 + DY[side];
+                int nz = z0 + DZ[side];
                 long next = BlockPos.pack(nx, ny, nz);
-                if (!seen.add(next)) continue;
-                switch (probe.at(nx, ny, nz)) {
+                if (seen.contains(next)) continue;
+                CableWalk.Block found = probe.at(nx, ny, nz);
+                if (!onCable && found == CableWalk.Block.CABLE && !probe.open(nx, ny, nz, side ^ 1)) continue;
+                seen.add(next);
+                switch (found) {
                     case PHONE -> phones.add(new Found(next, (int) length, tiers[poorest]));
                     case CABLE -> {
                         if (length >= maxLength) continue;

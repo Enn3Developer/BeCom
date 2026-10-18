@@ -21,6 +21,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.enn3developer.becom.BeCom;
+import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.block.TileTelephone;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
@@ -50,7 +51,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTEVideophone extends MTETieredMachineBlock {
+public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
 
     private static final int TIER = 2;
     public static final int FORMAT = 1;

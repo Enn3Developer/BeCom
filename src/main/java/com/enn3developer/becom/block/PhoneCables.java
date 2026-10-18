@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.enn3developer.becom.logic.net.BlockPos;
 import com.enn3developer.becom.logic.net.CableTier;
@@ -18,7 +19,7 @@ import com.enn3developer.becom.server.NodeHost;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 /**
- * The world side of {@link CableWalk}: what a Line Terminal's or an Exchange's cable reaches, over cable of any tier.
+ * The world side of {@link CableWalk}: what a Line Terminal's or an Exchange's cable reaches, through open sides.
  * Both find Telephones, Videophones and computers with a wired BeCom Card; an Exchange also finds the gateways cabled
  * to it. Only loaded chunks are walked.
  */
@@ -54,6 +55,12 @@ public final class PhoneCables {
             @Override
             public CableTier tier(int nx, int ny, int nz) {
                 return BlockPhoneCable.tierOf(world.getBlockMetadata(nx, ny, nz));
+            }
+
+            @Override
+            public boolean open(int nx, int ny, int nz, int side) {
+                return world.getTileEntity(nx, ny, nz) instanceof TileCable cable
+                    && cable.open(ForgeDirection.getOrientation(side));
             }
         });
     }

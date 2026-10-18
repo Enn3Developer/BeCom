@@ -18,6 +18,7 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
@@ -52,7 +53,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGridProxyable {
+public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGridProxyable, CableEnd {
 
     private static final int TIER = 4;
     public static final int FORMAT = 1;
@@ -85,6 +86,12 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
     @Override
     public ItemStack getStackForm(long amount) {
         return BeComMachines.stack(this, amount);
+    }
+
+    /** A gateway on two buses would carry calls between them like a router: it takes a single cable. */
+    @Override
+    public boolean oneCable() {
+        return true;
     }
 
     @Override

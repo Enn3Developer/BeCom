@@ -12,6 +12,7 @@ import org.lwjgl.opengl.GL11;
 import com.enn3developer.becom.block.BeComBlocks;
 import com.enn3developer.becom.block.BlockPhoneCable;
 import com.enn3developer.becom.block.BlockTelephone;
+import com.enn3developer.becom.block.TileCable;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
@@ -30,8 +31,11 @@ public final class TelephoneRenderer implements ISimpleBlockRenderingHandler {
     /** Boxes in sixteenths, for a phone facing south: {x1, y1, z1, x2, y2, z2}. */
     private static final float[][] BODY = { { 2, 0, 3, 14, 3, 13 }, { 3, 3, 4, 13, 5, 12 } };
     private static final float[][] DIAL = { { 6, 5, 7, 10, 5.5f, 11 } };
-    private static final ForgeDirection[] HORIZONTAL = { ForgeDirection.NORTH, ForgeDirection.SOUTH,
+    // The sides a cable reaches its cord from; one below meets the body where it stands.
+    private static final ForgeDirection[] CORDED = { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.SOUTH,
         ForgeDirection.WEST, ForgeDirection.EAST };
+    // How far in from a side the cord runs at the cable's height, and where it drops into the body, in blocks.
+    private static final double CORD_IN = 5 / 16.0, NECK_FROM = 3 / 16.0, BODY_TOP = 3 / 16.0, NECK = 1 / 16.0;
     private static final float[][] HANDSET = { { 2.5f, 5, 4.5f, 4.5f, 7, 6.5f }, { 11.5f, 5, 4.5f, 13.5f, 7, 6.5f },
         { 2.5f, 6.5f, 5, 13.5f, 7.5f, 6 } };
 
@@ -58,16 +62,41 @@ public final class TelephoneRenderer implements ISimpleBlockRenderingHandler {
         if (!BlockTelephone.isOffHook(meta)) {
             for (float[] box : HANDSET) world(renderer, phone, box, phone.handsetIcon(), facing, x, y, z);
         }
-        renderer.clearOverrideBlockTexture();
-        // Its cord: from under the body out to each Phone Cable beside it, the way the cable's own arms run.
-        for (ForgeDirection side : HORIZONTAL) {
-            if (world.getBlock(x + side.offsetX, y, z + side.offsetZ) instanceof BlockPhoneCable) {
-                PhoneCableRenderer.box(renderer, BeComBlocks.phoneCable, BlockPhoneCable.arm(side), x, y, z);
-            }
+        // Its cord toward each cable open to it, in the cable's colour.
+        for (ForgeDirection side : CORDED) {
+            int cx = x + side.offsetX, cy = y + side.offsetY, cz = z + side.offsetZ;
+            if (!(world.getTileEntity(cx, cy, cz) instanceof TileCable cable) || !cable.open(side.getOpposite()))
+                continue;
+            renderer.setOverrideBlockTexture(BeComBlocks.phoneCable.getIcon(0, world.getBlockMetadata(cx, cy, cz)));
+            for (double[] box : cord(side)) PhoneCableRenderer.box(renderer, BeComBlocks.phoneCable, box, x, y, z);
         }
+        renderer.clearOverrideBlockTexture();
         renderer.renderAllFaces = false;
         renderer.setRenderBounds(0, 0, 0, 1, 1, 1);
         return true;
+    }
+
+    /**
+     * The cord toward a cable across {@code side}: in from that face at the cable's height, then a thinner neck down
+     * into the body. From above, straight down onto the handset's cradle.
+     */
+    static double[][] cord(ForgeDirection side) {
+        double lo = BlockPhoneCable.LO, hi = BlockPhoneCable.HI;
+        if (side == ForgeDirection.UP) return new double[][] { { lo, 5 / 16.0, lo, hi, 1, hi } };
+        return new double[][] { inward(side, 0, CORD_IN, lo, hi, lo, hi),
+            inward(side, NECK_FROM, CORD_IN, 0.5 - NECK, 0.5 + NECK, BODY_TOP, lo) };
+    }
+
+    /**
+     * A box {@code from} to {@code to} in from a horizontal side's face, {@code across1} to {@code across2} along the
+     * other horizontal axis, and {@code y1} to {@code y2} high.
+     */
+    private static double[] inward(ForgeDirection side, double from, double to, double across1, double across2,
+        double y1, double y2) {
+        boolean far = side.offsetX + side.offsetZ > 0;
+        double a = far ? 1 - to : from, b = far ? 1 - from : to;
+        return side.offsetX != 0 ? new double[] { a, y1, across1, b, y2, across2 }
+            : new double[] { across1, y1, a, across2, y2, b };
     }
 
     private static void world(RenderBlocks renderer, Block block, float[] box, IIcon icon, int facing, int x, int y,

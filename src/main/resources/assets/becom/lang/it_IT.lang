@@ -31,6 +31,11 @@ item.becom.switching_rack_lv.name=Rack di commutazione (LV)
 item.becom.switching_rack_mv.name=Rack di commutazione (MV)
 item.becom.switching_rack_hv.name=Rack di commutazione (HV)
 becom.cable.tooltip=Cavo %s: %s KB/s, su tratte fino a %s blocchi
+becom.cable.tooltip_join=Si unisce al cavo dello stesso tipo. Le tronchesi GT ne aprono e chiudono i lati.
+becom.cable.join.other_tier=%s non si unisce a %s: il cavo si unisce solo a cavo dello stesso tipo.
+becom.cable.join.over_tier=Lì si collega cavo fino a %s.
+becom.cable.join.taken=Ha già il suo unico cavo.
+becom.cable.join.nothing=Lì non c'è niente che prenda il cavo.
 becom.cable.tooltip_span=Tende le campate dei tralicci: tienilo nella barra rapida e usa la chiave su due nodi.
 becom.switching_rack.info=Smista %s chiamate insieme, nell'input bus di una Centrale
 

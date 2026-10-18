@@ -31,6 +31,41 @@ class CableWalkTest {
         world.put(BlockPos.pack(length + 1, 64, 0), CableWalk.Block.PHONE);
     }
 
+    /** A walk where each cable is open only on the sides in {@code masks}, by ForgeDirection flag. */
+    private CableWalk.Result walk(Map<Long, Integer> masks) {
+        return CableWalk.walk(0, 64, 0, 32, 128, new CableWalk.Probe() {
+
+            @Override
+            public CableWalk.Block at(int x, int y, int z) {
+                return world.getOrDefault(BlockPos.pack(x, y, z), CableWalk.Block.OTHER);
+            }
+
+            @Override
+            public boolean open(int x, int y, int z, int side) {
+                return (masks.getOrDefault(BlockPos.pack(x, y, z), 0) & (1 << side)) != 0;
+            }
+        });
+    }
+
+    @Test
+    void onlyOpenSidesAreWalked() {
+        // West is 4 and east 5: cable 1 is open both ways, cable 2 only toward cable 1, so the phone past it is cut.
+        cableLine(2);
+        Map<Long, Integer> masks = new HashMap<>();
+        masks.put(BlockPos.pack(1, 64, 0), 0b110000);
+        masks.put(BlockPos.pack(2, 64, 0), 0b010000);
+        assertTrue(
+            walk(masks).phones()
+                .isEmpty());
+        masks.put(BlockPos.pack(2, 64, 0), 0b110000);
+        assertEquals(List.of(BlockPos.pack(3, 64, 0)), walk(masks).phones());
+        // Cable that isn't open toward the terminal isn't on it, whatever it joins past that.
+        masks.put(BlockPos.pack(1, 64, 0), 0b100000);
+        assertTrue(
+            walk(masks).phones()
+                .isEmpty());
+    }
+
     @Test
     void findsThePhoneAtTheEndOf32Cables() {
         cableLine(32);

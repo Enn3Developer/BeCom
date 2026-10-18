@@ -50,6 +50,7 @@ import com.enn3developer.becom.item.BeComItems;
 import com.enn3developer.becom.item.ItemCarriedPhone;
 import com.enn3developer.becom.logic.SignalLevel;
 import com.enn3developer.becom.logic.Tunables;
+import com.enn3developer.becom.logic.net.CableTier;
 import com.enn3developer.becom.logic.radio.RadioModel;
 import com.enn3developer.becom.machine.BeComMachines;
 import com.enn3developer.becom.packet.AnalyzerPacket;
@@ -478,11 +479,11 @@ public final class ClientSelfTest {
                 for (int j = 0; j < 3; j++) world.setBlockToAir(x + i * rx, y + j, z + i * rz);
             }
             world.setBlock(x, y, z, BeComBlocks.telephone, (quarter + 2) & 3, 3);
-            world.setBlock(x + rx, y, z + rz, BeComBlocks.phoneCable);
-            world.setBlock(x + 2 * rx, y, z + 2 * rz, BeComBlocks.phoneCable);
-            world.setBlock(x + 2 * rx, y + 1, z + 2 * rz, BeComBlocks.phoneCable);
+            SelfTest.lay(world, x + rx, y, z + rz, CableTier.PHONE);
+            SelfTest.lay(world, x + 2 * rx, y, z + 2 * rz, CableTier.PHONE);
+            SelfTest.lay(world, x + 2 * rx, y + 1, z + 2 * rz, CableTier.PHONE);
             world.setBlock(x + 3 * rx, y, z + 3 * rz, Blocks.stone);
-            world.setBlock(x + 3 * rx, y + 1, z + 3 * rz, BeComBlocks.phoneCable);
+            SelfTest.lay(world, x + 3 * rx, y + 1, z + 3 * rz, CableTier.PHONE);
         });
     }
 

@@ -13,7 +13,7 @@ import com.enn3developer.becom.block.BlockPhoneCable;
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 
 /**
- * The cables: a cord on the floor in its tier's colour, with an arm toward each neighbour it joins.
+ * The cables: a core through the middle of the block in its tier's colour, with an arm out to each open side.
  */
 public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
 
@@ -52,9 +52,9 @@ public final class PhoneCableRenderer implements ISimpleBlockRenderingHandler {
         RenderBlocks renderer) {
         renderer.renderAllFaces = true;
         box(renderer, block, BlockPhoneCable.core(), x, y, z);
+        int mask = BlockPhoneCable.maskAt(world, x, y, z);
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-            double[] arm = BlockPhoneCable.connects(world, x, y, z, side) ? BlockPhoneCable.arm(side) : null;
-            if (arm != null) box(renderer, block, arm, x, y, z);
+            if ((mask & side.flag) != 0) box(renderer, block, BlockPhoneCable.arm(side), x, y, z);
         }
         renderer.renderAllFaces = false;
         renderer.setRenderBounds(0, 0, 0, 1, 1, 1);

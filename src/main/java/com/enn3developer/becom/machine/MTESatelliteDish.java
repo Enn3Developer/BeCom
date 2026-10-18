@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ListWidget;
+import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.data.BeComNbt;
 import com.enn3developer.becom.gui.InfoScreen;
@@ -73,7 +74,7 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish>
-    implements ISurvivalConstructable, NodeHost {
+    implements ISurvivalConstructable, NodeHost, CableEnd {
 
     private static final String PIECE_DISH = "dish";
     private static final int TICKS_PER_SECOND = 20;
@@ -148,6 +149,12 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
     @Override
     public ItemStack getStackForm(long amount) {
         return BeComMachines.stack(this, amount);
+    }
+
+    /** A gateway on two buses would carry calls between them like a router: it takes a single cable. */
+    @Override
+    public boolean oneCable() {
+        return true;
     }
 
     @Override

@@ -25,6 +25,7 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.enn3developer.becom.block.CableEnd;
 import com.enn3developer.becom.block.PhoneCables;
 import com.enn3developer.becom.config.BeComConfig;
 import com.enn3developer.becom.gui.ExchangeScreen;
@@ -77,7 +78,8 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
-public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange> implements ISurvivalConstructable, NodeHost {
+public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
+    implements ISurvivalConstructable, NodeHost, CableEnd {
 
     /** The most racks an Exchange counts, across all its input buses. */
     public static final int RACK_SLOTS = 8;
