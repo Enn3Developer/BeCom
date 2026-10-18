@@ -57,14 +57,28 @@ public final class InfoLines {
         static final Shape NONE = new Shape(PLAIN, "", 0);
     }
 
-    private record Line(String key, boolean detail, boolean problem, List<Arg> args, Shape shape) {
+    /**
+     * A line: {@code detail} for the scanner and screens alone; {@code brief} for one of the few rows WAILA shows
+     * besides the status and what's wrong.
+     */
+    private record Line(String key, boolean detail, boolean problem, List<Arg> args, Shape shape, boolean brief) {
 
         Line(String key, boolean detail, boolean problem, List<Arg> args) {
             this(key, detail, problem, args, Shape.NONE);
         }
 
+        Line(String key, boolean detail, boolean problem, List<Arg> args, Shape shape) {
+            this(key, detail, problem, args, shape, false);
+        }
+
         Line shaped(Shape shape) {
-            return new Line(key, detail, problem, args, shape);
+            return new Line(key, detail, problem, args, shape, brief);
+        }
+
+        /** Whether WAILA shows it: the status, what's wrong, and the brief rows; never a detail. */
+        boolean inWaila() {
+            if (detail) return false;
+            return problem || brief || shape.kind() == Shape.STATUS;
         }
 
         /**
@@ -169,6 +183,15 @@ public final class InfoLines {
             last,
             lines.get(last)
                 .shaped(new Shape(kind, label, fraction)));
+        return this;
+    }
+
+    /** The last line is one of the few WAILA shows: the machine's main number, such as its calls. */
+    public InfoLines brief() {
+        if (lines.isEmpty()) return this;
+        int last = lines.size() - 1;
+        Line line = lines.get(last);
+        lines.set(last, new Line(line.key(), line.detail(), line.problem(), line.args(), line.shape(), true));
         return this;
     }
 
@@ -360,11 +383,11 @@ public final class InfoLines {
         return translate().toArray(new String[0]);
     }
 
-    /** Writes the lines WAILA shows into the tag the server sends it. */
+    /** Writes the lines WAILA shows into the tag the server sends it: the status, what's wrong, and the brief rows. */
     public void write(NBTTagCompound tag) {
         NBTTagList list = new NBTTagList();
         for (Line line : ordered()) {
-            if (line.detail()) continue;
+            if (!line.inWaila()) continue;
             NBTTagCompound entry = new NBTTagCompound();
             entry.setString("k", line.key());
             if (line.problem()) entry.setBoolean("p", true);
@@ -529,6 +552,7 @@ public final class InfoLines {
         else info.add("becom.info.state_carries")
             .status();
         bus(info, becom, dimension, bus);
+        info.brief();
         info.add(
             "becom.info.on_bus",
             bus.ends(Buses.Kind.PHONE)
@@ -551,7 +575,8 @@ public final class InfoLines {
             tile.getWorld().provider.dimensionId,
             BlockPos.pack(tile.getXCoord(), tile.getYCoord(), tile.getZCoord()));
         info.add("becom.info.of_slots", calls, slots)
-            .bar("becom.info.row.calls", slots <= 0 ? 0 : Math.min(1, calls / (double) slots));
+            .bar("becom.info.row.calls", slots <= 0 ? 0 : Math.min(1, calls / (double) slots))
+            .brief();
         return slots > 0 && calls >= slots;
     }
 }

@@ -222,9 +222,7 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         int number = number(stack);
         if (number >= 0) lines.add(Tips.row("becom.tip.number", number));
         lines.add(Tips.state(on(stack), batteryLine(stack)));
-        if (moreInformation(stack, lines)) return;
-        lines.add(Tips.howTo("becom.tip.phone_open", BeCom.proxy.phoneKeyName()));
-        lines.add(Tips.howTo("becom.tip.phone_bauble"));
+        moreInformation(stack, lines);
     }
 
     /** Its battery, for the tooltip, as a percent of what its battery holds. */
@@ -232,10 +230,8 @@ public abstract class ItemCarriedPhone extends Item implements IBaubleExpanded, 
         return Tips.battery(charge(stack), maxCharge(stack));
     }
 
-    /** Lines a kind of phone adds to the tooltip; true when they say how to use it in place of the phone's own. */
-    protected boolean moreInformation(ItemStack stack, List<String> lines) {
-        return false;
-    }
+    /** Lines a kind of phone adds to the tooltip. */
+    protected void moreInformation(ItemStack stack, List<String> lines) {}
 
     @Override
     public boolean showDurabilityBar(ItemStack stack) {

@@ -603,7 +603,8 @@ public class MTEAntenna extends MTEEnhancedMultiBlockBase<MTEAntenna>
             becom.calls.callsAt(ref.dimension(), ref.pos()),
             BeComConfig.get()
                 .antennaCalls(tier))
-            .row("becom.info.row.calls");
+            .row("becom.info.row.calls")
+            .brief();
         UUID owner = owner();
         String name = owner == null ? null : net.minecraftforge.common.UsernameCache.getLastKnownUsername(owner);
         if (locked) info.add("becom.info.serves_team", name == null ? "?" : name)

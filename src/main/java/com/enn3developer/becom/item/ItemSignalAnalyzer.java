@@ -1,11 +1,7 @@
 package com.enn3developer.becom.item;
 
-import java.util.List;
-
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.StatCollector;
 
 import com.enn3developer.becom.BeCom;
 
@@ -23,12 +19,5 @@ public class ItemSignalAnalyzer extends Item {
 
     public static boolean is(ItemStack stack) {
         return stack != null && stack.getItem() instanceof ItemSignalAnalyzer;
-    }
-
-    @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
-        lines.add(StatCollector.translateToLocal("becom.analyzer.help"));
-        lines.add(StatCollector.translateToLocal("becom.analyzer.sneak"));
     }
 }

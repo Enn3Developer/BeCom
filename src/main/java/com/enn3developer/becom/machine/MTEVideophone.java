@@ -332,7 +332,8 @@ public class MTEVideophone extends MTETieredMachineBlock implements CableEnd {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
         if (number >= 0) info.add("becom.info.value", number)
-            .row("becom.info.row.number");
+            .row("becom.info.row.number")
+            .brief();
         BeComServer becom = BeComServer.get();
         if (becom != null && tile != null) InfoLines.buses(
             info,

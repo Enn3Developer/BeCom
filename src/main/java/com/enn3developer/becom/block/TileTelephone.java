@@ -175,7 +175,8 @@ public class TileTelephone extends TileEntity implements IGuiHolder<PosGuiData> 
         else info.add("becom.info.state_idle")
             .status();
         if (number >= 0) info.add("becom.info.value", number)
-            .row("becom.info.row.number");
+            .row("becom.info.row.number")
+            .brief();
         if (becom != null && worldObj != null)
             InfoLines.buses(info, becom, worldObj.provider.dimensionId, BlockPos.pack(xCoord, yCoord, zCoord));
         return info;

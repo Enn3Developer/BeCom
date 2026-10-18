@@ -445,14 +445,16 @@ public class MTELaunchPad extends MTEEnhancedMultiBlockBase<MTELaunchPad> implem
         } else info.add("becom.launch_pad.status_ready")
             .status();
         info.add("becom.launch_pad.rockets", rockets)
-            .row("becom.info.row.waiting");
+            .row("becom.info.row.waiting")
+            .brief();
         long fuel = 0;
         for (FluidStack fluid : getStoredFluids()) {
             if (fluid != null && FluidUtil.testFuel(FluidRegistry.getFluidName(fluid))) fuel += fluid.amount;
         }
         if (t.launchFuel() > 0) {
             info.add("becom.launch_pad.litres", fuel)
-                .row("becom.info.row.fuel");
+                .row("becom.info.row.fuel")
+                .brief();
             info.add("becom.launch_pad.launches", fuel / t.launchFuel())
                 .sub();
         }

@@ -60,7 +60,6 @@ public class ItemBecomCard extends Item {
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
-        lines.add(StatCollector.translateToLocal("becom.card.info"));
         lines.add(StatCollector.translateToLocal(wired(stack) ? "becom.card.wired" : "becom.card.radio"));
         if (stack.hasTagCompound() && stack.getTagCompound()
             .hasKey("oc:data")) {

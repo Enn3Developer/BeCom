@@ -310,7 +310,6 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
         return Tips.wrap(
             Tips.MACHINE,
             StatCollector.translateToLocal("becom.machine.me_bridge.info"),
-            StatCollector.translateToLocal("becom.machine.me_bridge.link"),
             Tips.power(t.meBridgePower(), "EV"));
     }
 
@@ -360,7 +359,8 @@ public class MTEMeBridge extends MTETieredMachineBlock implements NodeHost, IGri
                         .getGrid()),
                 tile.getWorld().provider.dimensionId);
             info.add("becom.bridge.linked", phones[0])
-                .row("becom.info.row.me_phones");
+                .row("becom.info.row.me_phones")
+                .brief();
             info.add("becom.bridge.in_calls", phones[1])
                 .sub();
         }

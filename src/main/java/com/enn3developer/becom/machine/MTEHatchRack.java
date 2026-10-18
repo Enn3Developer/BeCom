@@ -203,7 +203,8 @@ public class MTEHatchRack extends MTEHatch {
         else info.add("becom.rack.idle")
             .status();
         info.add("becom.rack.calls", calls())
-            .row("becom.info.row.calls");
+            .row("becom.info.row.calls")
+            .brief();
         return info;
     }
 

@@ -286,7 +286,8 @@ public class MTETransceiver extends MTETieredMachineBlock implements NodeHost {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         InfoLines.state(info, true, tile != null && tile.isAllowedToWork(), working);
         info.add("becom.info.value", channel)
-            .row("becom.info.row.channel");
+            .row("becom.info.row.channel")
+            .brief();
         info.add(loudspeaker ? "becom.info.on" : "becom.info.off")
             .row("becom.info.row.loudspeaker");
         return info;

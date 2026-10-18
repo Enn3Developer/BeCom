@@ -1,6 +1,5 @@
 package com.enn3developer.becom.item;
 
-import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.creativetab.CreativeTabs;
@@ -128,14 +127,10 @@ public class ItemMePhone extends ItemCarriedPhone implements INetworkEncodable, 
     }
 
     @Override
-    protected boolean moreInformation(ItemStack stack, List<String> lines) {
-        if (!getEncryptionKey(stack).isEmpty()) {
+    protected void moreInformation(ItemStack stack, List<String> lines) {
+        if (!getEncryptionKey(stack).isEmpty())
             lines.add("\u00a7a" + StatCollector.translateToLocal("becom.tip.me_linked"));
-            return false;
-        }
-        lines.add("\u00a76" + StatCollector.translateToLocal("becom.tip.me_unlinked"));
-        Collections.addAll(lines, Tips.wrap(Tips.ITEM, Tips.howTo("becom.tip.me_link")));
-        return true;
+        else lines.add("\u00a76" + StatCollector.translateToLocal("becom.tip.me_unlinked"));
     }
 
     @Override

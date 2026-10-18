@@ -720,7 +720,8 @@ public class MTEExchange extends MTEEnhancedMultiBlockBase<MTEExchange>
         int dimension = tile.getWorld().provider.dimensionId;
         int now = becom.calls.callsAt(dimension, pos());
         info.add("becom.info.of", now, calls)
-            .row("becom.info.row.calls");
+            .row("becom.info.row.calls")
+            .brief();
         if (calls > 0 && now >= calls) info.warn("becom.info.calls_full", calls);
         int[] data = becom.apps.dataAt(new CallGraph.NodeVertex(dimension, pos()));
         if (data[1] > 0) info.add("becom.exchange.data_value", data[0], data[1])

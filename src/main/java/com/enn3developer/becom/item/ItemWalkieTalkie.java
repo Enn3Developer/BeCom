@@ -219,11 +219,6 @@ public class ItemWalkieTalkie extends Item
                 on(stack),
                 StatCollector.translateToLocalFormatted("becom.tip.channel", Tips.value(channel(stack)))));
         lines.add(Tips.battery(charge(stack), getMaxCharge(stack)));
-        // Switched off, as on the board, it only says so.
-        if (on(stack)) {
-            lines.add(Tips.howTo("becom.tip.walkie_talk"));
-            lines.add(Tips.howTo("becom.tip.walkie_channel"));
-        }
     }
 
     @Override

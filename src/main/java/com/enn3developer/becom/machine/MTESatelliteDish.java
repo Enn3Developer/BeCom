@@ -442,9 +442,11 @@ public class MTESatelliteDish extends MTEEnhancedMultiBlockBase<MTESatelliteDish
         if (t.dishCalls() > 0 && calls >= t.dishCalls()) info.warn("becom.info.calls_full", t.dishCalls());
         int[] sky = becom.calls.skyCalls(dimension);
         if (sky[1] > 0) info.add("becom.dish.overhead_calls", view.satellites(), sky[0], sky[1])
-            .row("becom.info.row.satellites");
+            .row("becom.info.row.satellites")
+            .brief();
         else info.add("becom.dish.overhead", view.satellites())
-            .row("becom.info.row.satellites");
+            .row("becom.info.row.satellites")
+            .brief();
         if (view.sky()) info.add("becom.dish.sky_clear")
             .good("becom.info.row.sky");
         else info.problem("becom.dish.sky_covered")

@@ -350,8 +350,6 @@ public class MTEPortalRelay extends MTETieredMachineBlock implements NodeHost, C
             StatCollector.translateToLocalFormatted(
                 "becom.machine.portal_relay.portal",
                 String.format(Locale.ROOT, "%.0f", t.relayPortalDistance())),
-            StatCollector.translateToLocal("becom.machine.portal_relay.pair"),
-            StatCollector.translateToLocal("becom.machine.portal_relay.link"),
             StatCollector
                 .translateToLocalFormatted("becom.machine.portal_relay.calls", t.relayCalls(mTier), t.relayRate(mTier)),
             Tips.power(power(t), GTValues.VN[mTier]));

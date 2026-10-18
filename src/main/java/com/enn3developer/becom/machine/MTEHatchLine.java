@@ -246,6 +246,7 @@ public class MTEHatchLine extends MTEHatch implements CableEnd {
                 tile.getXCoord() + front.offsetX,
                 tile.getYCoord() + front.offsetY,
                 tile.getZCoord() + front.offsetZ));
+        info.brief();
         return info;
     }
 
