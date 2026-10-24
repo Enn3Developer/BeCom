@@ -22,9 +22,11 @@ values.
 | Tier | What it brings | Read |
 | --- | --- | --- |
 | LV | Telephones on cable, and the first antenna, T1 | [The wired network](wired.md), [Antennas](antennas.md) |
-| MV | The T2 antenna, walkie-talkies, the Transceiver, the Signal Analyzer, the Videophone, the Portal Relay and the BeCom Card | [Antennas](antennas.md), [Radios](radios.md), [The Signal Analyzer](analyzer.md), [Phones](phones.md), [Phone apps](apps.md), [Space and other dimensions](space.md) |
-| HV | The T3 antenna, the Mobile Phone, satellites and their Launch Pad, the Satellite Dish and the Rocket Radio Receiver | [Antennas](antennas.md), [Phones](phones.md), [Space and other dimensions](space.md) |
-| EV | The ME Phone and the ME Bridge | [Phones](phones.md) |
+| MV | The T2 antenna, walkie-talkies, the Transceiver, the Signal Analyzer, the Videophone and the Portal Relay | [Antennas](antennas.md), [Radios](radios.md), [The Signal Analyzer](analyzer.md), [Phones](phones.md), [Space and other dimensions](space.md) |
+| HV | The T3 antenna, the Mobile Phone, the App Store Mirror and the BeCom Cards, satellites and their Launch Pad, the Satellite Dish and the Rocket Radio Receiver | [Antennas](antennas.md), [Phones](phones.md), [Phone apps](apps.md), [Space and other dimensions](space.md) |
+| EV | The ME Phone, the ME Bridge, the ME App Store Mirror and the BeCom Card (ME) | [Phones](phones.md), [Phone apps](apps.md) |
+
+What goes into all of it, and how BeCom crafts: [Parts and recipes](parts.md).
 
 ## The numbers behind a link
 

@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "A circuit, a note block for the bell and a steel body, put together in the Assembler with a cord of Phone Cable: that's a Telephone.%n%nRight-click it to pick up the handset. It's yours, and so is its six-digit number.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "A Handset, which is a loudspeaker and a microphone on a cord, with a note block for the bell, a circuit, a steel body and a Phone Cable to the wall: that's a Telephone. Craft it, or make it a little cheaper in the Assembler.%n%nRight-click it to pick up the handset. It's yours, and so is its six-digit number.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

@@ -41,7 +41,7 @@ all'app, anche se l'ha chiesta. Un'app che non raggiunge il suo computer, senza 
 ## Il Mirror dell'App Store
 
 L'App Store è di tutto il server, ma i telefoni ci arrivano solo attraverso un
-<ItemLink id="becom:machine:25022" showIcon="left">Mirror dell'App Store</ItemLink>: una macchina MV, 64 EU/t,
+<ItemLink id="becom:machine:25022" showIcon="left">Mirror dell'App Store</ItemLink>: una macchina HV, 64 EU/t,
 collegata con il cavo su qualsiasi faccia a un bus. Un telefono con un percorso verso un mirror in funzione, attraverso
 antenne, router e tutto ciò che porta una chiamata, apre lo store; senza, lo store lo dice. Ogni mirror porta allo
 stesso store.

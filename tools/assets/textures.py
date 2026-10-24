@@ -48,6 +48,9 @@ DEFAULT = {
     "1": (200, 200, 200),  # LV mark
     "2": (230, 120, 40),  # MV mark
     "3": (236, 210, 50),  # HV mark
+    "4": (150, 70, 200),  # EV mark
+    "c": (40, 96, 56),  # circuit board
+    "C": (64, 136, 80),  # circuit board, lit edge
 }
 MODERNITY = {
     "o": (34, 33, 30),
@@ -74,6 +77,9 @@ MODERNITY = {
     "1": (205, 200, 188),
     "2": (214, 124, 60),
     "3": (220, 196, 80),
+    "4": (150, 104, 186),
+    "c": (44, 70, 58),
+    "C": (70, 104, 86),
 }
 LIT = {"L"}
 
@@ -464,6 +470,115 @@ def rocket_radio_receiver():
     return c
 
 
+def loudspeaker():
+    """A loudspeaker from the front: its frame, the cone in rings, the dust cap in the middle."""
+    c = Canvas()
+    c.panel(1, 1, 14, 14)
+    for r, role in ((5, "o"), (4, "d"), (3, "s"), (2, "d")):
+        for y in range(16):
+            for x in range(16):
+                if round(((x - 7.5) ** 2 + (y - 7.5) ** 2) ** 0.5) == r:
+                    c.set(x, y, role)
+    c.rect(7, 7, 8, 8, "h")
+    for x, y in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        c.set(x, y, "k")
+    return c
+
+
+def microphone():
+    """A microphone: a grille head on a handle."""
+    c = Canvas()
+    c.rect(5, 1, 10, 7, "o")
+    c.rect(6, 2, 9, 6, "s")
+    for y in (3, 5):
+        for x in (6, 8):
+            c.set(x, y, "k")
+    c.rect(4, 8, 11, 8, "h")
+    c.panel(6, 9, 9, 15)
+    return c
+
+
+def handset():
+    """A telephone handset: the earpiece and the mouthpiece on a curved grip."""
+    c = Canvas()
+    for x0, y0 in ((1, 1), (10, 10)):
+        c.rect(x0, y0, x0 + 4, y0 + 4, "o")
+        c.rect(x0 + 1, y0 + 1, x0 + 3, y0 + 3, "p")
+        c.set(x0 + 2, y0 + 2, "k")
+    for i in range(5, 11):
+        c.rect(i - 1, i - 1, i, i, "p")
+        c.set(i + 1, i - 1, "o")
+        c.set(i - 1, i + 1, "o")
+    return c
+
+
+def board(c):
+    """A circuit board under a part: green, a lit edge, solder traces."""
+    c.rect(1, 3, 14, 13, "o")
+    c.rect(2, 4, 13, 12, "c")
+    c.rect(2, 4, 13, 4, "C")
+
+
+def rf_module(tier):
+    """An RF Module: on its tier's board, the emitter and the sensor, traces to a chip, and the tier's mark."""
+    c = Canvas()
+    board(c)
+    c.rect(3, 6, 5, 7, "i")
+    c.set(5, 7, "j")
+    c.rect(3, 9, 5, 10, "r")
+    c.set(4, 10, "k")
+    c.rect(9, 6, 12, 10, "o")
+    c.rect(10, 7, 11, 9, "d")
+    c.rect(6, 7, 8, 7, "s")
+    c.rect(6, 10, 8, 10, "s")
+    c.rect(4, 1, 4, 5, "h")
+    c.rect(3, 12, 12, 12, str(tier))
+    return c
+
+
+def crossbar_switch():
+    """A crossbar switch: bars across bars on a board, a relay where each pair meets."""
+    c = Canvas()
+    board(c)
+    for x in (4, 7, 10):
+        c.rect(x, 5, x, 11, "s")
+    for y in (6, 9):
+        c.rect(3, y, 12, y, "h")
+    for x in (4, 7, 10):
+        for y in (6, 9):
+            c.set(x, y, "o")
+    c.rect(3, 12, 12, 12, "1")
+    return c
+
+
+def switching_board():
+    """A switching board: two logic chips on a board, with their traces."""
+    c = Canvas()
+    board(c)
+    for x0 in (3, 9):
+        c.rect(x0, 6, x0 + 3, 9, "o")
+        c.rect(x0 + 1, 7, x0 + 2, 8, "d")
+        c.rect(x0, 10, x0 + 3, 10, "s")
+    c.rect(7, 7, 8, 7, "s")
+    c.rect(3, 12, 12, 12, "2")
+    return c
+
+
+def packet_switch():
+    """A packet switch: a row of ports on a board, a chip and its lamps."""
+    c = Canvas()
+    board(c)
+    for x in (3, 6, 9, 12):
+        c.rect(x - 1, 5, x, 7, "r")
+        c.rect(x - 1, 6, x, 7, "k")
+    c.rect(5, 9, 10, 11, "o")
+    c.rect(6, 10, 9, 10, "d")
+    c.lamp(3, 9, 1, 1)
+    c.lamp(12, 9, 1, 1)
+    c.rect(3, 12, 12, 12, "3")
+    return c
+
+
 ITEMS = {
     "walkie_talkie": lambda: walkie(False),
     "walkie_talkie_tx": lambda: walkie(True),
@@ -473,6 +588,16 @@ ITEMS = {
     "satellite": satellite,
     "satellite_rocket": satellite_rocket,
     "rocket_radio_receiver": rocket_radio_receiver,
+    "loudspeaker": loudspeaker,
+    "microphone": microphone,
+    "handset": handset,
+    "rf_module_lv": lambda: rf_module(1),
+    "rf_module_mv": lambda: rf_module(2),
+    "rf_module_hv": lambda: rf_module(3),
+    "rf_module_ev": lambda: rf_module(4),
+    "crossbar_switch": crossbar_switch,
+    "switching_board": switching_board,
+    "packet_switch": packet_switch,
 }
 
 # Block textures for BeCom's own models: base colour, shade, and highlight per style.

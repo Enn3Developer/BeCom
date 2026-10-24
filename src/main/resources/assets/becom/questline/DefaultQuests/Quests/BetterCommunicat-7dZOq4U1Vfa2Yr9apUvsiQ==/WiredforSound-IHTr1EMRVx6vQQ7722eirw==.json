@@ -2,7 +2,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you make it in the Assembler.%n%nPlaced against a block, it joins that block, and GT wire cutters open and close its sides. It runs from a Telephone to a Router, up to 128 blocks of it. Wire is digital: it loses nothing on the way, rain or shine. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Every phone network starts with a wire. Phone Cable is a twisted pair of fine copper wire in rubber, and the Assembler makes four at a time.%n%nPlaced against a block, it joins that block, and GT wire cutters open and close its sides. It runs from a Telephone to a Router, up to 128 blocks of it. Wire is digital: it loses nothing on the way, rain or shine. Make a couple to get started.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

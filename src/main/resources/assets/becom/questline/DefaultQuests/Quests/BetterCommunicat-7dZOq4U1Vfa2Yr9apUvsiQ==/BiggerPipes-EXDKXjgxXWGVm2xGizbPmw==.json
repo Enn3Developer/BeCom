@@ -8,7 +8,7 @@
   "properties:10": {
     "betterquesting:10": {
       "autoClaim:1": 0,
-      "desc:8": "Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 KB/s on buses up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and polyethylene. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, at least.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
+      "desc:8": "Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 KB/s on buses up to 512 blocks, and you make it in the Assembler from fine annealed copper wire, aluminium foil and plastic. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, at least.%n%nMore in the guide: [guide page=becom:wired.md]The wired network[/guide].",
       "globalShare:1": 1,
       "icon:10": {
         "Count:3": 1,

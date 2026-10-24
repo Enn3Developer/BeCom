@@ -118,8 +118,8 @@ QUESTS = [
         "key": "phone_cable",
         "tier": "LV",
         "name": "Wired for Sound",
-        "desc": "Every phone network starts with a wire. Phone Cable is red alloy wire wrapped in rubber, and you "
-        "make it in the Assembler.%n%nPlaced against a block, it joins that block, and GT wire cutters open and close "
+        "desc": "Every phone network starts with a wire. Phone Cable is a twisted pair of fine copper wire in rubber, "
+        "and the Assembler makes four at a time.%n%nPlaced against a block, it joins that block, and GT wire cutters open and close "
         "its sides. It runs from a Telephone to a Router, up to 128 blocks of it. Wire is digital: it loses nothing on "
         "the way, rain or shine. Make a couple to get started.",
         "icon": ("becom:phone_cable", 0),
@@ -132,8 +132,9 @@ QUESTS = [
         "key": "telephone",
         "tier": "LV",
         "name": "Ring, Ring",
-        "desc": "A circuit, a note block for the bell and a steel body, put together in the Assembler with a cord "
-        "of Phone Cable: that's a Telephone.%n%nRight-click it to pick up the handset. It's yours, and so is its "
+        "desc": "A Handset, which is a loudspeaker and a microphone on a cord, with a note block for the bell, a "
+        "circuit, a steel body and a Phone Cable to the wall: that's a Telephone. Craft it, or make it a little "
+        "cheaper in the Assembler.%n%nRight-click it to pick up the handset. It's yours, and so is its "
         "six-digit number.",
         "icon": ("becom:telephone", 0),
         "pre": ["phone_cable"],
@@ -190,8 +191,8 @@ QUESTS = [
         "tier": "MV",
         "name": "Bigger Pipes",
         "desc": "Phone Cable carries 16 KB/s, enough for 8 calls, on buses up to 128 blocks. Coaxial carries 64 "
-        "KB/s on buses up to 512 blocks, and you make it in the Assembler from annealed copper, aluminium foil and "
-        "polyethylene. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own "
+        "KB/s on buses up to 512 blocks, and you make it in the Assembler from fine annealed copper wire, aluminium foil "
+        "and plastic. At HV, Fibre carries 256 KB/s up to 4096 blocks.%n%nEach cable joins only cable of its own "
         "tier, and a router takes it only up to the router's tier: Coaxial needs an MV Router, or an MV Line Hatch, "
         "at least.",
         "icon": ("becom:phone_cable", 1),
@@ -371,9 +372,9 @@ QUESTS = [
     },
     {
         "key": "app_mirror",
-        "tier": "MV",
+        "tier": "HV",
         "name": "Mirror, Mirror",
-        "desc": "The App Store is the whole server's, but a phone only gets to it through an App Store Mirror: an MV "
+        "desc": "The App Store is the whole server's, but a phone only gets to it through an App Store Mirror: an HV "
         "machine, 64 EU/t, cabled on any face to a bus your phones reach.%n%nWhile a phone has a path to a working "
         "mirror, its App Store opens and apps download at that path's rate; computers publish through one too. A "
         "screwdriver keeps a mirror for its owner's team.",
@@ -471,7 +472,7 @@ QUESTS = [
         "key": "satellite_rocket",
         "tier": "HV",
         "name": "Payload",
-        "desc": "A Satellite is an HV emitter and sensor with two solar panels. Put it on Galacticraft's Tier 1 "
+        "desc": "A Satellite is the HV RF Module with two solar panels and a stainless antenna. Put it on Galacticraft's Tier 1 "
         "rocket parts in the Assembler, and you've got a Satellite Rocket.%n%nDon't bother with Galacticraft's "
         "launch pads: this rocket only flies from a Satellite Launch Pad.",
         "icon": ("becom:satellite_rocket", 0),

@@ -23,9 +23,11 @@ mostrano i valori del server.
 | Livello | Cosa porta | Leggi |
 | --- | --- | --- |
 | LV | Telefoni sul cavo, e la prima antenna, la T1 | [La rete cablata](wired.md), [Antenne](antennas.md) |
-| MV | L'antenna T2, i walkie-talkie, il Ricetrasmettitore, l'Analizzatore di segnale, il Videotelefono, il Ripetitore di portale e la Scheda BeCom | [Antenne](antennas.md), [Radio](radios.md), [L'Analizzatore di segnale](analyzer.md), [Telefoni](phones.md), [App del telefono](apps.md), [Lo spazio e le altre dimensioni](space.md) |
-| HV | L'antenna T3, il Telefono cellulare, i satelliti e la loro Rampa di lancio, la Parabola satellitare e il Ricevitore radio per razzi | [Antenne](antennas.md), [Telefoni](phones.md), [Lo spazio e le altre dimensioni](space.md) |
-| EV | Il Telefono ME e il Ponte ME | [Telefoni](phones.md) |
+| MV | L'antenna T2, i walkie-talkie, il Ricetrasmettitore, l'Analizzatore di segnale, il Videotelefono e il Ripetitore di portale | [Antenne](antennas.md), [Radio](radios.md), [L'Analizzatore di segnale](analyzer.md), [Telefoni](phones.md), [Lo spazio e le altre dimensioni](space.md) |
+| HV | L'antenna T3, il Telefono cellulare, il Mirror dell'App Store e le Schede BeCom, i satelliti e la loro Rampa di lancio, la Parabola satellitare e il Ricevitore radio per razzi | [Antenne](antennas.md), [Telefoni](phones.md), [App del telefono](apps.md), [Lo spazio e le altre dimensioni](space.md) |
+| EV | Il Telefono ME, il Ponte ME, il Mirror dell'App Store ME e la Scheda BeCom (ME) | [Telefoni](phones.md), [App del telefono](apps.md) |
+
+Cosa ci va dentro, e come fabbrica BeCom: [Componenti e ricette](parts.md).
 
 ## I numeri dietro un collegamento
 

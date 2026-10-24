@@ -41,7 +41,7 @@ app even though it asked for it. An app that can't reach its computer, out of si
 ## The App Store Mirror
 
 The App Store is the whole server's, but phones get to it only through an
-<ItemLink id="becom:machine:25022" showIcon="left">App Store Mirror</ItemLink>: an MV machine, 64 EU/t, cabled on any
+<ItemLink id="becom:machine:25022" showIcon="left">App Store Mirror</ItemLink>: an HV machine, 64 EU/t, cabled on any
 face to a bus. A phone with a path to a working mirror, through antennas, routers and everything else that carries a
 call, opens the store; with none, the store says so. Every mirror leads to the same store.
 

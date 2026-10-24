@@ -42,16 +42,17 @@ import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
 /**
- * The App Store Mirror: an MV machine on a bus of cable, the App Store's door into the network. A phone browses and
- * downloads store apps only while it has a path to a working mirror, at that path's rate, and a computer publishes
- * only through one. The store itself is the server's, the same behind every mirror. A screwdriver locks it to its
+ * The App Store Mirror: an HV machine on a bus of cable, the App Store's door into the network, HV like the Mobile
+ * Phone it serves. A phone browses and downloads store apps only while it has a path to a working mirror, at that
+ * path's rate, and a computer publishes only through one. The store itself is the server's, the same behind every
+ * mirror. A screwdriver locks it to its
  * owner's team.
  */
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public class MTEAppMirror extends MTETieredMachineBlock implements CableEnd {
 
-    private static final int TIER = 2;
+    private static final int TIER = 3;
     private static final String NUMBER = "becomNumber";
     private static final String LOCKED = "becomLocked";
 
@@ -281,7 +282,7 @@ public class MTEAppMirror extends MTETieredMachineBlock implements CableEnd {
             Tips.power(
                 BeComConfig.get()
                     .mirrorPower(),
-                "MV"));
+                "HV"));
     }
 
     private final WailaInfo waila = new WailaInfo(this::info);

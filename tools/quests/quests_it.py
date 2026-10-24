@@ -4,13 +4,14 @@ LINE_IT = ("Better Communications",
            "Telefoni via cavo, radio, telefoni cellulari e satelliti, portati dalla chat vocale.")
 QUESTS_IT = {
     "phone_cable": ("Cablato per il suono",
-        "Ogni rete telefonica comincia da un filo. Il Cavo telefonico è filo di red alloy avvolto nella gomma, e si "
-        "fa nell'Assembler.%n%nPiazzato contro un blocco, si unisce a quel blocco, e le tronchesi GT ne aprono e "
+        "Ogni rete telefonica comincia da un filo. Il Cavo telefonico è una coppia intrecciata di filo sottile di rame "
+        "nella gomma, e l'Assembler ne fa quattro alla volta.%n%nPiazzato contro un blocco, si unisce a quel blocco, e le tronchesi GT ne aprono e "
         "chiudono i lati. Va da un Telefono a un Router, fino a 128 blocchi. Il filo è digitale: non perde nulla per "
         "strada, con la pioggia o col sole. Fanne un paio per cominciare."),
     "telephone": ("Driin, driin",
-        "Un circuito, un note block per la suoneria e un corpo d'acciaio, messi insieme nell'Assembler con un filo "
-        "di Cavo telefonico: ecco un Telefono.%n%nClic destro per alzare la cornetta. È tuo, e lo è anche il suo "
+        "Una Cornetta, cioè un altoparlante e un microfono su un filo, con un note block per la suoneria, "
+        "un circuito, un corpo d'acciaio e un Cavo telefonico al muro: ecco un Telefono. Fallo al banco, o un po' "
+        "più a buon mercato nell'Assembler.%n%nClic destro per alzare la cornetta. È tuo, e lo è anche il suo "
         "numero di sei cifre."),
     "router": ("Capolinea",
         "La rete di ogni edificio parte da un Router. Dagli corrente LV, bastano 8 EU/t, e collegagli con il cavo i "
@@ -31,8 +32,8 @@ QUESTS_IT = {
         "è stretta e ruvida. Però arriva fin dove arriva il cavo."),
     "coaxial": ("Tubi più grossi",
         "Il Cavo telefonico porta 16 KB/s, abbastanza per 8 chiamate, su bus fino a 128 blocchi. Il Cavo coassiale "
-        "porta 64 KB/s su bus fino a 512 blocchi, e si fa nell'Assembler con rame ricotto, lamina d'alluminio e "
-        "polietilene. In HV, il Cavo in fibra porta 256 KB/s fino a 4096 blocchi.%n%nOgni cavo si unisce solo al cavo "
+        "porta 64 KB/s su bus fino a 512 blocchi, e si fa nell'Assembler con filo sottile di rame ricotto, lamina "
+        "d'alluminio e plastica. In HV, il Cavo in fibra porta 256 KB/s fino a 4096 blocchi.%n%nOgni cavo si unisce solo al cavo "
         "del suo livello, e un router lo prende solo fino al livello del router: il coassiale vuole almeno un Router "
         "MV, o una Line Hatch MV."),
     "exchange": ("Centralino",
@@ -94,7 +95,7 @@ QUESTS_IT = {
         "Store ME, e app e computer si scambiano dati sulla rete ME."),
     "app_mirror": ("Specchio, specchio",
         "L'App Store è di tutto il server, ma un telefono ci arriva solo attraverso un Mirror dell'App Store: una "
-        "macchina MV, 64 EU/t, collegata con il cavo su qualsiasi faccia a un bus che i tuoi telefoni raggiungono."
+        "macchina HV, 64 EU/t, collegata con il cavo su qualsiasi faccia a un bus che i tuoi telefoni raggiungono."
         "%n%nFinché un telefono ha un percorso verso un mirror in funzione, il suo App Store si apre e le app si "
         "scaricano alla velocità di quel percorso; anche i computer pubblicano attraverso un mirror. Un cacciavite "
         "lo riserva alla squadra del suo proprietario."),
@@ -141,7 +142,7 @@ QUESTS_IT = {
         "attraversa il portale e metti un ripetitore dall'altra parte, collegato a uno di là: i due si accoppiano da soli. La coppia unisce le due reti al livello Alto, e porta 16 chiamate.%n%nI "
         "ripetitori HV ed EV ne portano 32 e 64; una coppia lavora al livello del ripetitore più basso."),
     "satellite_rocket": ("Carico utile",
-        "Un Satellite è un emitter e un sensor HV con due pannelli solari. Mettilo sui pezzi del razzo di livello 1 "
+        "Un Satellite è il Modulo RF HV con due pannelli solari e un'antenna d'acciaio inossidabile. Mettilo sui pezzi del razzo di livello 1 "
         "di Galacticraft nell'Assembler, e hai un Razzo per satelliti.%n%nLascia stare le piattaforme di "
         "Galacticraft: questo razzo parte solo da una Rampa di lancio per satelliti."),
     "first_satellite": ("Decollo",
